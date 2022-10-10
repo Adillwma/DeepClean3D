@@ -8,7 +8,6 @@ Created on Mon Oct 10 2022
 """
 
 #%% - Dependencies
-
 import numpy as np
 import matplotlib.pyplot as plt
 import torch
