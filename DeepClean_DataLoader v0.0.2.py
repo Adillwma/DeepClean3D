@@ -2,29 +2,37 @@
 """
 Created on Mon Oct 10 04:20:57 2022
 DeepClean_DataLoader v0.0.2
-@author: Adill Al-Ashgar
+@authors: Adill Al-Ashgar & Max Carter
+
+#############
+#Takes in a batch size, a data path, debugging choice, and debugging step size
+
+#Returns two dataloaders prepared with a randomised?(not yet) batch of images from the path. 
+#trainloader and testloader
+#Also prints the images in the batch to user, if debug mode is on (ie = 1). debugging step size sets for how many images 1 is printed, in form (step_size:1) ie 1:1 2:1 5:1 etc 
+#############
 
 """
 
-#%% ###Dependencies
+#%% - Dependencies
 import torch
 import matplotlib.pyplot as plt
 from torchvision import transforms, datasets
 
 
 #%% - User Inputs
-batch_size = 4                 #Data Loader # of Images to pull per batch (add a check to make sure the batch size is smaller than the total number of images in the path selected)
 data_path = "C:/Users/Student/Desktop/fake im data/"  #"/local/path/to/the/images/"
 
-debug_loader_batch = 0         #(Default = 0 = [OFF]) //INPUT 0 or 1// Setting debug loader batch will print to user the images taken in by the dataoader in this current batch and print the corresponding labels
-plot_every_other = 1           #(Default = 1) //MUST BE INTEGER INPUT// If debug loader batch is enabled this sets the interval for printing for user, 1 is every single img in the batch, 2 is every other img, 5 is every 5th image etc 
+batch_size = 4             #Data Loader # of Images to pull per batch (add a check to make sure the batch size is smaller than the total number of images in the path selected)
+debug_loader_batch = 0     #(Default = 0 = [OFF]) //INPUT 0 or 1// Setting debug loader batch will print to user the images taken in by the dataoader in this current batch and print the corresponding labels
+plot_every_other = 1       #(Default = 1) //MUST BE INTEGER INPUT// If debug loader batch is enabled this sets the interval for printing for user, 1 is every single img in the batch, 2 is every other img, 5 is every 5th image etc 
 
 
-#%% - Data Preparation
+#%% - Data Preparation  #!!!Perhaps these should be passed ino the loader as user inputs, that allows for ease of changing between differnt tranforms in testing without having to flip to the data loader code
 train_transforms = transforms.Compose([#transforms.RandomRotation(30),         #Compose is required to chain together multiple transforms in serial 
                                        #transforms.RandomResizedCrop(224),
                                        #transforms.RandomHorizontalFlip(),
-                                       transforms.ToTensor()])
+                                       transforms.ToTensor()])                #other transforms can be dissabled but to tensor must be left enabled
 
 test_transforms = transforms.Compose([#transforms.Resize(255),
                                       #transforms.CenterCrop(224),
