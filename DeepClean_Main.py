@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 LHC-B Torch ML Noise Reduction
-DeepClean v0.0.1
+DeepClean Main v0.0.1
 Created on Mon Oct 10 2022
 @authors: Adill Al-Ashgar & Max Carter
 
