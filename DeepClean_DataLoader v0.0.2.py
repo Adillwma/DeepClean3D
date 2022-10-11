@@ -18,14 +18,31 @@ DeepClean_DataLoader v0.0.2
 import torch
 import matplotlib.pyplot as plt
 from torchvision import transforms, datasets
-
+import os
 
 #%% - User Inputs
 data_path = "C:/Users/Student/Desktop/fake im data/"  #"/local/path/to/the/images/"
+batch_size = 6             #Data Loader # of Images to pull per batch (add a check to make sure the batch size is smaller than the total number of images in the path selected)
 
-batch_size = 4             #Data Loader # of Images to pull per batch (add a check to make sure the batch size is smaller than the total number of images in the path selected)
-debug_loader_batch = 0     #(Default = 0 = [OFF]) //INPUT 0 or 1// Setting debug loader batch will print to user the images taken in by the dataoader in this current batch and print the corresponding labels
-plot_every_other = 1       #(Default = 1) //MUST BE INTEGER INPUT// If debug loader batch is enabled this sets the interval for printing for user, 1 is every single img in the batch, 2 is every other img, 5 is every 5th image etc 
+
+#%% - Advanced Settings
+debug_loader_batch = 0     #(Default = 0 = [OFF]) //INPUT 0 or 1//   #Setting debug loader batch will print to user the images taken in by the dataoader in this current batch and print the corresponding labels
+plot_every_other = 1       #(Default = 1) //MUST BE INTEGER INPUT//  #If debug loader batch is enabled this sets the interval for printing for user, 1 is every single img in the batch, 2 is every other img, 5 is every 5th image etc 
+batch_size_protection = 1  #(Default = 1 = [ON]) //INPUT 0 or 1//    #WARNING if turned off, debugging print will cause and exeption due to the index growing too large in the printing loop (img = train_features[i])
+
+
+#%% - Path images, greater than batch choice? CHECK
+####check for file count in folder####
+if batch_size_protection == 1:
+    files_in_path = os.listdir(data_path+ '/Image_Data') 
+    num_of_files_in_path = len(files_in_path)
+    print("#files in path=",num_of_files_in_path ,"batch size=",batch_size)
+    if num_of_files_in_path < batch_size:
+        print("Error, the path selected has", num_of_files_in_path, "image files, which is", (batch_size - num_of_files_in_path) , "less than the chosen batch size. Please select a batch size less than the total number of images in the directory")
+        
+        #!!!Need code to make this event cancel the running of program and re ask for user input on batch size or just reask for the batch size
+        batch_err_message = "Choose new batch size, must be less than total amount of images in directory", (num_of_files_in_path)
+        batch_size = int(input(batch_err_message))  #!!! not sure why input message is printing with wierd brakets and speech marks in the terminal? Investigate
 
 
 #%% - Data Preparation  #!!!Perhaps these should be passed ino the loader as user inputs, that allows for ease of changing between differnt tranforms in testing without having to flip to the data loader code
@@ -55,7 +72,7 @@ if debug_loader_batch == 1:
     print(f"Labels batch shape: {train_labels.size()}")
     
     for i in range (0, batch_size, plot_every_other):   # Display image and label.
-        print ("Image #",i+1)
+        print ("\nImage #",i+1)
         img = train_features[i].squeeze()
         label = train_labels[i]
         plt.imshow(img.T, cmap="gray")   #!!!fix the need for img.T which is the transpose, as it flips the image, 
