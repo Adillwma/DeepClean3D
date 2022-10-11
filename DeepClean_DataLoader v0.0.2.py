@@ -21,36 +21,32 @@ plot_every_other = 1           #(Default = 1) //MUST BE INTEGER INPUT// If debug
 
 
 #%% - Data Preparation
-train_transforms = transforms.Compose([
-                                       #transforms.RandomRotation(30),
+train_transforms = transforms.Compose([#transforms.RandomRotation(30),         #Compose is required to chain together multiple transforms in serial 
                                        #transforms.RandomResizedCrop(224),
                                        #transforms.RandomHorizontalFlip(),
                                        transforms.ToTensor()])
 
-test_transforms = transforms.Compose([
-                                      #transforms.Resize(255),
+test_transforms = transforms.Compose([#transforms.Resize(255),
                                       #transforms.CenterCrop(224),
                                       transforms.ToTensor()])
 
-train_data = datasets.ImageFolder(data_path,transform=train_transforms)                                       
-test_data = datasets.ImageFolder(data_path,transform=test_transforms)
 
-"""
-specific_folder_data = datasets.ImageFolder(data_path + '/specific folder name', 
-                                    transform=test_transforms)
-"""
 
 #%% - Data Loading
+train_data = datasets.ImageFolder(data_path,transform=train_transforms)   #Training data and test data can pull from the same source, but then have differnt transforms applied to each ie there might be noise added to one ?  or maybe we will be given clean data? or perhaps we just have to work with the bad data and work out how to make a good loss function                                    
+test_data = datasets.ImageFolder(data_path,transform=test_transforms)
+#specific_folder_data = datasets.ImageFolder(data_path + '/specific folder name', transform=test_transforms)   #If we need to call data from a specific subfolder
+
 trainloader = torch.utils.data.DataLoader(train_data,batch_size=batch_size)
 testloader = torch.utils.data.DataLoader(test_data, batch_size=batch_size)
 
 #%% - Debugging Outputs
 if debug_loader_batch == 1:
-    # Display image and label.
     train_features, train_labels = next(iter(trainloader))
     print(f"Feature batch shape: {train_features.size()}")
     print(f"Labels batch shape: {train_labels.size()}")
-    for i in range (0, batch_size, plot_every_other):
+    
+    for i in range (0, batch_size, plot_every_other):   # Display image and label.
         print ("Image #",i+1)
         img = train_features[i].squeeze()
         label = train_labels[i]
