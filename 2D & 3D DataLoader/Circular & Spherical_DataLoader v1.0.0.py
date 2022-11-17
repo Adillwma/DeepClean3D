@@ -1,18 +1,16 @@
 # -*- coding: utf-8 -*-
 """
-Created on Mon Oct 10 04:20:57 2022
-DeepClean_DataLoader v0.0.7
+DeepClean_DataLoader Driver v1.0.0
 @author: Adill Al-Ashgar
+Created on Mon Oct 10 04:20:57 2022
 
-#############
-#Takes in a batch size, a data path, debugging choice, and debugging step size
-
-#Returns two dataloaders prepared with a randomised?(not yet) batch of images from the path. 
-#trainloader and testloader
-#Also prints the images in the batch to user, if debug mode is on (ie = 1). debugging step size sets for how many images 1 is printed, in form (step_size:1) ie 1:1 2:1 5:1 etc 
-#############
-
+USER NOTICE!
+x Takes in a batch size, a data path, debugging choice, and debugging step size.
+x Returns two dataloaders (trainloader and testloader) prepared with a randomised?(not yet) batch of images from the path. 
+x Also prints the images in the batch to user, if debug mode is on (ie = 1). debugging step size sets for how 
+  many images one will be printed, in form (step_size:1) ie 1:1 2:1 5:1 etc 
 """
+
 #%% - START OF DATA LOADING
 #%% - Dependencies
 from torchvision import transforms
@@ -29,7 +27,6 @@ plot_every_other = 1       #(Default = 1) //MUST BE INTEGER INPUT//  #If debug l
 batch_size_protection = 1  #(Default = 1 = [ON]) //INPUT 0 or 1//    #WARNING if turned off, debugging print will cause and exeption due to the index growing too large in the printing loop (img = train_features[i])
 
 #%% - Data Loader Preparation Transforms 
-
 #####For info on all transforms check out: https://pytorch.org/vision/0.9/transforms.html
 train_transforms = transforms.Compose([#transforms.RandomRotation(30),         #Compose is required to chain together multiple transforms in serial 
                                        #transforms.RandomResizedCrop(224),
