@@ -1,43 +1,22 @@
 # -*- coding: utf-8 -*-
 """
+DataLoader Functions V1
+@author: Adill Al-Ashgar
 Created on Tue Nov 15 19:02:32 2022
 
-@author: Student
+USER NOTICE!
+x Must be inside the root dir of the DataLoader or the Neural Net that calls it.
 """
+
+#%% - Dependencies
 import torch
 import matplotlib.pyplot as plt
 from torchvision import datasets
 import os
 import numpy as np
 
-
-#%%
-def train_loader2d(path):   #fix need for two seperate loads, one on each loader
-    sample = (np.load(path))
-    sample = sample[0]               
-    return (sample)
-
-#%%
-def test_loader2d(path):
-    load = 1 # Set manually, 0 = Blank, no data, 1 = just signal, 2 = just noise, 3 = both, but with differing values (1,2)    #!!! OPION 3 NOT WORKING
-    sample = (np.load(path))
-    sample2 = np.ma.masked_where(sample[1] == load, sample[1])                   
-    return (sample2)
-
-#%%
-def train_loader3d(path):   #fix need for two seperate loads, one on each loader
-    sample = (np.load(path))
-    sample = sample               
-    return torch.tensor(sample)
-
-#%%
-def test_loader3d(path):
-    #load = 1 # Set manually, 0 = Blank, no data, 1 = just signal, 2 = just noise, 3 = both, but with differing values (1,2)    #!!! OPION 3 NOT WORKING
-    sample = (np.load(path))
-    #sample2 = np.ma.masked_where(sample                   
-    return torch.tensor(sample)
-
-#%%
+#%% - Helper/Loader Functions
+#Learning Batch Method Feedback
 def batch_learning(training_dataset_size, batch_size):
     if batch_size == 1: 
         output = "Stochastic Gradient Descent"
@@ -45,10 +24,36 @@ def batch_learning(training_dataset_size, batch_size):
         output = "Batch Gradient Descent"        
     else:
         output = "Mini-Batch Gradient Descent"
-    return(output) 
+    return(output)
 
-#%%
-def initialise_data_loader (dataset_title, data_path, batch_size, train_transforms, test_transforms, debug_loader_batch = 0, plot_every_other = 1, batch_size_protection = 1):
+#2D Training Loader
+def train_loader2d(path):   #fix need for two seperate loads, one on each loader
+    sample = (np.load(path))
+    sample = sample[0]               
+    return (sample)
+
+#2D Test Loader
+def test_loader2d(path):
+    load = 1 # Set manually, 0 = Blank, no data, 1 = just signal, 2 = just noise, 3 = both, but with differing values (1,2)    #!!! OPION 3 NOT WORKING
+    sample = (np.load(path))
+    sample2 = np.ma.masked_where(sample[1] == load, sample[1])                   
+    return (sample2)
+
+#3D Training Loader
+def train_loader3d(path):   #fix need for two seperate loads, one on each loader
+    sample = (np.load(path))
+    sample = sample               
+    return torch.tensor(sample)
+
+#3D Test Loader
+def test_loader3d(path):
+    #load = 1 # Set manually, 0 = Blank, no data, 1 = just signal, 2 = just noise, 3 = both, but with differing values (1,2)    #!!! OPION 3 NOT WORKING
+    sample = (np.load(path))
+    #sample2 = np.ma.masked_where(sample                   
+    return torch.tensor(sample)
+
+#%% - DataLoader Wrapper Function
+def initialise_data_loader(dataset_title, data_path, batch_size, train_transforms, test_transforms, debug_loader_batch = 0, plot_every_other = 1, batch_size_protection = 1):
     # Input type check, 2D or 3D. Based on dataset foldr name. 3D if folder starts with S_
     if dataset_title.startswith('S_'):
         print("Detected 3D Input")
@@ -78,7 +83,8 @@ def initialise_data_loader (dataset_title, data_path, batch_size, train_transfor
     else:
         train_data = datasets.DatasetFolder(data_path + dataset_title, loader=train_loader3d, extensions='.npy', transform=train_transforms)
         test_data = datasets.DatasetFolder(data_path + dataset_title, loader=test_loader3d, extensions='.npy', transform=test_transforms)
-            
+
+    #####Might need this??? what s didffernce between test, train and validation? do we need validation on unsupervised.        
     ###Following section splits the training dataset into two, train_data (to be noised) and valid data (to use in eval)
     #m=len(train_dataset) #Just calculates length of train dataset, m is only used in the next line to decide the values of the split, (4/5 m) and (1/5 m)
     #train_data, val_data = random_split(train_dataset, [int(round((m-m*0.2)), int(round((m*0.2))])    #random_split(data_to_split, [size of output1, size of output2]) just splits the train_dataset into two parts, 4/5 goes to train_data and 1/5 goes to val_data , validation?
@@ -129,6 +135,8 @@ def initialise_data_loader (dataset_title, data_path, batch_size, train_transfor
 
 
 """
+###All just previous work, dissregard, soon will clear up, just need to double check there is nothing important here
+
 #%% - Data Importer
 data_dir = 'dataset'
 train_dataset = torchvision.datasets.MNIST(data_dir, train=True, download=True)
