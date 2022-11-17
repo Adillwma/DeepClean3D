@@ -1,45 +1,74 @@
 # -*- coding: utf-8 -*-
 """
 Created on Fri Nov 11 02:45:06 2022
-
-@author: Student
+Convoloutional Layer Output Size Calculator V2.0.1
+@author: Adill Al-Ashgar
 """
-#import numpy as np 
+#%% - Dependencies
 import matplotlib.pyplot as plt
 
-def conv_outputs_h(H_in, P_h, D_h, K_h, S_h):
-    H_out = ((H_in + 2*P_h - D_h * (K_h - 1) - 1 )/S_h) + 1
-    return(H_out)
+#%% - User Inputs
+conv_type = 2 #Select conv type: 0=conv2D, 1=conv2D.Transpose, 2=conv3D, 3=conv3D.Transpose (WARNING: Values other than 0-3 will select conv3D.Transpose)
 
-def conv_outputs_w(W_in, P_w, D_w, K_w, S_w):
-    W_out = ((W_in + 2*P_w - D_w * (K_w - 1) - 1)/S_w) + 1
-    return(W_out)
-
-def square_conv_outputs(I, P, D, K, S):
-    out = ((I + 2*P - D * (K - 1) - 1 )/S) + 1
-    return(out)
-
-def square_conv_T_outputs(I, P, D, K, S, O):
-    out = (I - 1) *S - 2 *P + D * (K - 1) + O + 1 
-    return(out)
-
-C_in = 16           # number of input channels
-C_out = 32          # number of output channels
-
-
-H_in = 64         # height of the inputs
-W_in = 44          # width of the inputs
+H_in = 128          # height of the inputs
+W_in = 88          # width of the inputs
+D_in = 100          # depth of the input (Only used if one of the 3D conv types is selected above)
 K = 3              # kernel size (can be an integer of a two-value-integer tuple)
 P = 1              # padding  (can be an integer of a two-value-integer tuple)
 S = 2              # stride   (can be an integer of a two-value-integer tuple)
 D = 1              # dilation (can be an integer of a two-value-integer tuple)
 O = 1              # Output padding (used only in the conv Transpose )
 
-print("Height:", conv_outputs_w(H_in, P, D, K, S))
-print("Width:",conv_outputs_w(W_in, P, D, K, S))
+#Note: Currently channels are unused in this script, possible improvment? Can add layer channel/parameter calculation from it?
+C_in = 16           # number of input channels
+C_out = 32          # number of output channels
 
-print(".T Height:", square_conv_T_outputs(H_in, P, D, K, S, O))
-print(".T Width:",square_conv_T_outputs(W_in, P, D, K, S, O))
+
+
+#%% - Functions
+#Conv2D
+def conv_outputs_2d(I, P, D, K, S):
+    out = ((I + 2*P - D * (K - 1) - 1 )/S) + 1
+    return(out)
+
+#Conv2D.Transpose
+def conv_T_outputs_2d(I, P, D, K, S, O):
+    out = (I - 1) *S - 2 *P + D * (K - 1) + O + 1  
+    return(out)
+
+#Conv3D
+def conv_outputs_3d(I, P, D, K, S):
+    out = ((I + 2*P - D * (K - 1) - 1 )/S) + 1
+    return(out)
+
+#Conv3D.Transpose
+def conv_T_outputs_3d(I, P, D, K, S, O):
+    out = (I - 1) *S - 2 *P + D * (K - 1) + O + 1  
+    return(out)
+
+#%% - Outputs
+print("\nCompleted... Remember to round down non integer values.")
+if conv_type == 0:      #conv2D
+    print("Height:", conv_outputs_2d(H_in, P, D, K, S))
+    print("Width:", conv_outputs_2d(W_in, P, D, K, S))
+
+elif conv_type == 1:    #conv2D.Transpose
+    print("Height:", conv_T_outputs_2d(H_in, P, D, K, S, O))
+    print("Width:", conv_T_outputs_2d(W_in, P, D, K, S, O))
+
+elif conv_type == 2:    #conv3D
+    print("Height:", conv_outputs_3d(H_in, P, D, K, S))
+    print("Width:", conv_outputs_3d(W_in, P, D, K, S))
+    print("Depth:", conv_outputs_3d(D_in, P, D, K, S))
+
+else:                   #conv3D.Transpose
+    print("Height:", conv_T_outputs_3d(H_in, P, D, K, S, O))
+    print("Width:", conv_T_outputs_3d(W_in, P, D, K, S, O))
+    print("Depth:", conv_T_outputs_3d(D_in, P, D, K, S, O))
+print("\n")
+
+
+#%% - Automated Testing    
 run_tests = 0 #Set to 1 to run the tests, 0 to turn off
 
 if run_tests == 1:
