@@ -1,13 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-Created on Fri Nov 11 02:45:06 2022
 Convolutional Layer Output Size Calculator V2.0.2
 @author: Adill Al-Ashgar
-"""
-#%% - Dependencies
-import matplotlib.pyplot as plt
+Created on Fri Nov 11 02:45:06 2022
 
-"""
 USER NOTICE!
 x To use this code standalone as a calculator, just set the parameters below in 'User Inputs' section, 
   then run the entire code, it should then print your results to terminal.
@@ -15,6 +11,9 @@ x To use this code standalone as a calculator, just set the parameters below in 
 x You can also import this function into another page by putting it into the same 
   root dir and importing conv_calculator
 """
+
+#%% - Dependencies
+import matplotlib.pyplot as plt
 
 #%% - User Inputs
 conv_type = 2 #Select conv type: 0=conv2D, 1=conv2D.Transpose, 2=conv3D, 3=conv3D.Transpose (WARNING: Values other than 0-3 will select conv3D.Transpose)
