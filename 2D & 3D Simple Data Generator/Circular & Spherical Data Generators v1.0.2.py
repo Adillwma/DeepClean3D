@@ -1,21 +1,62 @@
 # -*- coding: utf-8 -*-
 """
-Created on Wed Nov  9 15:06:59 2022
-Circular & Spherical data test generator v1.0.2
+Circular & Spherical Data Test Generator v1.0.3
 @author: Adill Al-Ashgar
+Created on Wed Nov  9 15:06:59 2022
+
+USER NOTICE!
+x Simulates Detector Readings of Generated Circular and Spherical Signals.
+
+x To run standalone, just configure the variables in the 'User Settings' section 
+below and then run full code.
 """
 
 ####TO DO LIST:
-#add label data to pixel block out
-#make condition so that 2d and 3d scatter plots dont show if printing black data, use imshow instead?
-#do the signal variations (movement and scaling)
-#fix flipped axis on the imshow plot ??
+# Add label data to pixel block out
+# Make condition so that 2d and 3d scatter plots dont show if printing black data, use imshow instead?
+# Do the signal variations (movement and scaling)
+# Fix flipped axis on the imshow plot ??
+# Work out how best to deal with the radius parameter
+# Turn into fuction so can be imported to other files
 
-#%%Dependencies
+
+#%% - User settings
+#Generator Variables
+radius = 40 #User setting can be one number i.e (x) or a range in a tuple (min,max)
+signal_points_input = (50,200) #(50,200) #User setting can be a range i.e "range(min,max,increment). If wanting to set a constant value then pass it as both min and max i.e (4,4)
+noise_points_input = (80,100)  #(80,100) #If 0 there is no noise added
+dataset_size = 100 #Number of individual data plots to generate and save for the dataset
+
+detector_pixel_dimensions = (11*8, 128) #x, y in pixels
+time_resoloution = 100 #time aka z axis
+
+#Output options
+output_type = 1 #0 outputs hit pixel locations, 1 outputs full sensor pixel array including no hit spaces
+create_circular = 0 #0 means no circular data generated, 1 will generate circular data
+create_spherical = 1 #0 means no spherical data generated, 1 will generate spherical data
+filename = 'TEST'
+directory = "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Yr 3 Project/Circular and Spherical Dummy Datasets/"
+
+#Debugging Options
+seeding_value = 0 #Seed for the random number generators, selecting a value here will make the code deterministic, returnign same vlaues from RNG's each time. If set to 0, seeding is turned off
+auto_variables_debug_readout = 1 # 0=off, 1=on
+
+debug_visulisations_on = 1 #0 is defualt, if set to 1 the circular and spherical data is plotted for visualisation
+seperate_noise_colour = 1 #0 if desire noise same colour as signal, 1 to seperate noise and signal by colour
+signal_hit_size = 10 # 1 is default small, 10 is medium, 20 is large, values in between are fine
+noise_hit_size = 10 # 1 is default small, 10 is medium, 20 is large, values in between are fine
+
+debug_block_outputs = 0 # 0=off, 1=on
+seperate_block_noise_colour = 1 # 0=off, 1=on
+coord_transform_sig_fig = 12    #Setting significant figures for the coordinate transofrms (polar to cartesian, spherical to cartesian), using set amount of sig figures avoids floating point rounding errors 
+
+
+#%% - Dependencies
 import matplotlib.pyplot as plt
 import numpy as np
 
-#%%Helper Functions
+
+#%% - Helper Functions
 def pol2cart(magnitude, angle, significant_figures = 12):                     
     x = abs(magnitude) * np.cos(angle)
     y = abs(magnitude) * np.sin(angle)
@@ -27,42 +68,8 @@ def spherical2cartesian(magnitude, angle1, angle2, significant_figures = 12):
     z = magnitude * np.cos(angle1)
     return(round(x, significant_figures), round(y, significant_figures), round(z, significant_figures))
 
-#%%User settings
-radius = 40 #User setting can be one number i.e (x) or a range in a tuple (min,max)
-signal_points_input = (50,200) #(50,200) #User setting can be a range i.e "range(min,max,increment). If wanting to set a constant value then pass it as both min and max i.e (4,4)
-noise_points_input = (80,100)  #(80,100) #If 0 there is no noise added
-dataset_size = 100
-
-detector_pixel_dimensions = (11*8, 128) #x, y in pixels
-time_resoloution = 100 #time aka z axis
-
-
-#Output options
-output_type = 1 #0 outputs hit pixel locations, 1 outputs full sensor pixel array including no hit spaces
-
-create_circular = 0 #0 means no circular data generated, 1 will generate circular data
-create_spherical = 1 #0 means no spherical data generated, 1 will generate spherical data
-
-filename = 'TEST'
-directory = "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Yr 3 Project/Circular and Spherical Dummy Datasets/"
-
-
-#Debugging Options
-seeding_value = 0 #Seed for the random number generators, selecting a value here will make the code deterministic, returnign same vlaues from RNG's each time. If set to 0, seeding is turned off
-
-auto_variables_debug_readout = 1
-
-debug_visulisations_on = 1 #0 is defualt, if set to 1 the circular and spherical data is plotted for visualisation
-seperate_noise_colour = 1 #0 if desire noise same colour as signal, 1 to seperate noise and signal by colour
-signal_hit_size = 10 # 1 is default small, 10 is medium, 20 is large, values in between are fine
-noise_hit_size = 10 # 1 is default small, 10 is medium, 20 is large, values in between are fine
-
-debug_block_outputs = 0
-seperate_block_noise_colour = 1
-
-#%%Internal config 
-coord_transform_sig_fig = 12    #Setting significant figures for the coordinate transofrms (polar to cartesian, spherical to cartesian), using set amount of sig figures avoids floating point rounding errors 
-
+#%% - Internal Program Setup 
+#Defines the dimensions of the simulated detector
 detector_x_lim_low = 0
 detector_x_lim_high = detector_pixel_dimensions[0]
 detector_y_lim_low = 0
@@ -70,20 +77,19 @@ detector_y_lim_high = detector_pixel_dimensions[1]
 detector_z_lim_low = 0
 detector_z_lim_high =  time_resoloution
 
-
+#Checks if user selected a seeding for the RNGs
 if seeding_value != 0:          #Setting seeding for the random number generators (usefull for debugging, result validation and collaboration)
     np.random.seed(seeding_value)
 else:
     np.random.seed()
 
+#Checks if user wants to plot noise in seperate colour to the signal
 if seperate_noise_colour == 0:   #Setting colour to plot noise in, either blue (same as the signal colour) or red (for visual distinction)
     noise_colour = "b"
 else:
     noise_colour = "r"    
 
-
-
-#%%####COMPUTE####
+#%% - COMPUTE?
 for f in range(0, dataset_size): 
     #Int or range detection for noise and signal inputs
     print("### Dataset run number:", f+1)
@@ -116,7 +122,6 @@ for f in range(0, dataset_size):
     noise_points = np.random.randint(noise_points_input[0], noise_points_input[-1])
     print("signal points/noise points", signal_points, noise_points)
     """
-
     #Run settings for output file titling
     sp = '[sp %s]' % (signal_points)                 #signal_points
     npt = '[npt %s]' % (noise_points)                  #noise_points   
@@ -144,7 +149,7 @@ for f in range(0, dataset_size):
     noise_labels = np.zeros(noise_points)
     labels_output = np.concatenate((signal_labels, noise_labels))
 
-#%% Circular Generator
+#%% - Circular Signal Simulator
     if create_circular == 1:     
         #Circular Data Generator
         for i in range (0,signal_points):    #Generates points data
@@ -209,7 +214,7 @@ for f in range(0, dataset_size):
                 #!!! FINSIH BLOCK OUTPUT by adding label data 
             np.save(directory + filename + ' Circle (pixel block data) %s - Variables = ' % (f+1) + run_settings, pixel_block)
     
-#%% Spherical Generator
+#%% - Spherical Signal Simulator
     if create_spherical == 1:     
         #Spherical Data Generator
         for i in range (0,signal_points):    #Generates points data
@@ -282,7 +287,7 @@ for f in range(0, dataset_size):
 
             np.save(directory + filename + ' Sphere (pixel block data) %s - Variables = ' % (f+1) + run_settings, pixel_block_3d)
                    
-#%% End
+#%% - End of Program
 #Final success message, also includes data path for easy copy paste to open    
 print("\nDataset generated successfully.\nSaved in path:",directory,"\n \nIMPORTANT - Remember to change the filename setting next time you run OR move this runs files out of the directory to avoid overwriting your data!")    
     
