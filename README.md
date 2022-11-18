@@ -3,7 +3,7 @@
 # Physics Department - University of Bristol 
 
 
-# Motivation / Background
+# Motivation / Background:
 
 One of the four largest experiments on the LHC, the LHCb's (Large Hadron Collider Beauty) main focus is in investigating
 baryon anti-baryon asymmetry, responsible for the matter dominated universe we inhabit today.
@@ -22,7 +22,7 @@ points on to the reconstruction algorithm saving the computation time spent on r
 
 This is critical in the efficiency of the processing pipeline as the LHC moves into its high luminosity upgrade where data rates will be further increased.
 
-# Code Contents Page:
+# Code Contents:
 01 - Simple Circular & Spherical Dataset Generator
    
 02 - Dataset Validator
