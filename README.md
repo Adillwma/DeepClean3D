@@ -1,6 +1,6 @@
-# DeepClean - [PyTorch Convolutional Neural Network Architecture to Perform Noise Suppression for LHCb Torch Detector]
-# Authors: Adill Al-Ashgar & Max Carter
-# Physics Department - University of Bristol 
+DeepClean - [PyTorch Convolutional Neural Network Architecture to Perform Noise Suppression for LHCb Torch Detector]
+- Authors: Adill Al-Ashgar & Max Carter
+- Physics Department - University of Bristol 
 
 
 # Motivation / Background
