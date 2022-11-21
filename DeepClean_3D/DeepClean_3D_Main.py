@@ -30,7 +30,7 @@ num_epochs = 15                                               #User controll to 
 
 #%% - Program Settings
 seed = 10              #0 is default which gives no seeeding to RNG, if the value is not zero then this is used for the RNG seeding for numpy, random, and torch libraries
-encoder_debug = 0
+encoder_debug = 1
 decoder_debug = 0
 reconstruction_threshold = 0.4
 telemetry_on = 0
@@ -289,8 +289,8 @@ torch.manual_seed(seed)
 d = latent_space_nodes #!!!d is passed to the encoder & decoder in the lines below and represents the encoded space dimension. This is the number of layers the linear stages will shrink to? #!!!
 
 #model = Autoencoder(encoded_space_dim=encoded_space_dim)
-encoder = Encoder(encoded_space_dim=d,fc2_input_dim=128)
-decoder = Decoder(encoded_space_dim=d,fc2_input_dim=128)
+encoder = Encoder(encoded_space_dim=d,fc2_input_dim=128, encoder_debug=encoder_debug)
+decoder = Decoder(encoded_space_dim=d,fc2_input_dim=128, decoder_debug=decoder_debug)
 params_to_optimize = [{'params': encoder.parameters()} ,{'params': decoder.parameters()}] #Selects what to optimise, 
 
 ### Define an optimizer (both for the encoder and the decoder!)

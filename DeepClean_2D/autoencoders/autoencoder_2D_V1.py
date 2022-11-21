@@ -8,16 +8,16 @@ Autoencoder 2D V1
 import torch
 from torch import nn
 
-encoder_debug = 1
-decoder_debug = 1
-
 
 ###Convoloution + Linear Autoencoder
 ###Encoder
 class Encoder(nn.Module):
     
-    def __init__(self, encoded_space_dim,fc2_input_dim):
+    def __init__(self, encoded_space_dim,fc2_input_dim, encoder_debug):
         super().__init__()
+
+
+        self.encoder_debug=encoder_debug
         
         ###Convolutional Encoder Layers
         
@@ -90,26 +90,30 @@ class Encoder(nn.Module):
         )
         
     def forward(self, x):
-        if encoder_debug == 1:
+        if self.encoder_debug == 1:
             print("ENCODER LAYER SIZE DEBUG")
             print("x in", x.size())
         x = self.encoder_cnn(x)                           #Runs convoloutional encoder on x #!!! input data???
-        if encoder_debug == 1:
+        if self.encoder_debug == 1:
             print("x CNN out", x.size())
         x = self.flatten(x)                               #Runs flatten  on output of conv encoder #!!! what is flatten?
-        if encoder_debug == 1:
+        if self.encoder_debug == 1:
             print("x Flatten out", x.size())
         x = self.encoder_lin(x)                           #Runs linear encoder on flattened output 
-        if encoder_debug == 1:
+        if self.encoder_debug == 1:
             print("x Lin out", x.size(),"\n")
         return x                                          #Return final result
 
 ###Decoder
 class Decoder(nn.Module):
     
-    def __init__(self, encoded_space_dim,fc2_input_dim):
+    def __init__(self, encoded_space_dim,fc2_input_dim, decoder_debug):
         super().__init__()
         
+
+        self.decoder_debug = decoder_debug
+
+
         ###Linear Decoder Layers
         self.decoder_lin = nn.Sequential(
             #Linear decoder layer 1            
@@ -149,17 +153,17 @@ class Decoder(nn.Module):
         )
         
     def forward(self, x):
-        if decoder_debug == 1:            
+        if self.decoder_debug == 1:            
             print("DECODER LAYER SIZE DEBUG")
             print("x in", x.size())
         x = self.decoder_lin(x)       #Runs linear decoder on x #!!! is x input data? where does it come from??
-        if decoder_debug == 1:
+        if self.decoder_debug == 1:
             print("x Lin out", x.size())            
         x = self.unflatten(x)         #Runs unflatten on output of linear decoder #!!! what is unflatten?
-        if decoder_debug == 1:
+        if self.decoder_debug == 1:
             print("x Unflatten out", x.size())            
         x = self.decoder_conv(x)      #Runs convoloutional decoder on output of unflatten
-        if decoder_debug == 1:
+        if self.decoder_debug == 1:
             print("x CNN out", x.size(),"\n")            
         x = torch.sigmoid(x)          #THIS IS IMPORTANT PART OF FINAL OUTPUT!: Runs sigmoid function which turns the output data values to range (0-1)#!!! ????    Also can use tanh fucntion if wanting outputs from -1 to 1
         return x                      #Retuns the final output

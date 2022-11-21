@@ -8,17 +8,16 @@ Autoencoder 2D V1
 import torch
 from torch import nn
 
-encoder_debug = 1
-decoder_debug = 1
-
-
 ###Convoloution + Linear Autoencoder
 ###Encoder
 class Encoder(nn.Module):
     
-    def __init__(self, encoded_space_dim,fc2_input_dim):
+    def __init__(self, encoded_space_dim,fc2_input_dim, encoder_debug):
         super().__init__()
         
+
+
+        self.encoder_debug=encoder_debug
         ###Convolutional Encoder Layers
         
         #Conv2d function takes arguments: (input channels, output channels, kernel size/receiptive field (), stride and padding. # here for more info on arguments https://uob-my.sharepoint.com/personal/ex18871_bristol_ac_uk/_layouts/15/Doc.aspx?sourcedoc={109841d1-79cb-45c2-ac39-0fd24300c883}&action=edit&wd=target%28Code%20Companion.one%7C%2FUntitled%20Page%7C55b8dfad-d53c-4d8e-a2ef-de1376232896%2F%29&wdorigin=NavigationUrl
@@ -94,25 +93,28 @@ class Encoder(nn.Module):
         )
         
     def forward(self, x):
-        if encoder_debug == 1:
+        if self.encoder_debug == 1:
             print("ENCODER LAYER SIZE DEBUG")
             print("x in", x.size())
         x = self.encoder_cnn(x)                           #Runs convoloutional encoder on x #!!! input data???
-        if encoder_debug == 1:
+        if self.encoder_debug == 1:
             print("x CNN out", x.size())
         x = self.flatten(x)                               #Runs flatten  on output of conv encoder #!!! what is flatten?
-        if encoder_debug == 1:
+        if self.encoder_debug == 1:
             print("x Flatten out", x.size())
         x = self.encoder_lin(x)                           #Runs linear encoder on flattened output 
-        if encoder_debug == 1:
+        if self.encoder_debug == 1:
             print("x Lin out", x.size(),"\n")
         return x                                          #Return final result
 
 ###Decoder
 class Decoder(nn.Module):
     
-    def __init__(self, encoded_space_dim,fc2_input_dim):
+    def __init__(self, encoded_space_dim,fc2_input_dim, decoder_debug):
         super().__init__()
+
+
+        self.decoder_debug=decoder_debug
         
         ###Linear Decoder Layers
         self.decoder_lin = nn.Sequential(
@@ -153,17 +155,17 @@ class Decoder(nn.Module):
         )
         
     def forward(self, x):
-        if decoder_debug == 1:            
+        if self.decoder_debug == 1:            
             print("DECODER LAYER SIZE DEBUG")
             print("x in", x.size())
         x = self.decoder_lin(x)       #Runs linear decoder on x #!!! is x input data? where does it come from??
-        if decoder_debug == 1:
+        if self.decoder_debug == 1:
             print("x Lin out", x.size())            
         x = self.unflatten(x)         #Runs unflatten on output of linear decoder #!!! what is unflatten?
-        if decoder_debug == 1:
+        if self.decoder_debug == 1:
             print("x Unflatten out", x.size())            
         x = self.decoder_conv(x)      #Runs convoloutional decoder on output of unflatten
-        if decoder_debug == 1:
+        if self.decoder_debug == 1:
             print("x CNN out", x.size(),"\n")            
         x = torch.sigmoid(x)          #THIS IS IMPORTANT PART OF FINAL OUTPUT!: Runs sigmoid function which turns the output data values to range (0-1)#!!! ????    Also can use tanh fucntion if wanting outputs from -1 to 1
         return x                      #Retuns the final output
