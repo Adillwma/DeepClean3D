@@ -41,7 +41,7 @@ simple_belief_reports = 1
 #%% Dataloading
 # - Data Loader User Inputs
 batch_size = 10            #Data Loader # of Images to pull per batch (add a check to make sure the batch size is smaller than the total number of images in the path selected)
-dataset_title = "S_Dataset 6"
+dataset_title = "S_Dataset 5"
 data_path = "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Yr 3 Project/Circular and Spherical Dummy Datasets/" #"C:/Users/Student/Desktop/fake im data/"  #"/local/path/to/the/images/"
 
 # - Advanced Data Loader Settings
