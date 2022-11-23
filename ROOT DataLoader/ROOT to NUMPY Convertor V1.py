@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 ROOT to NUMPY Convertor
-@author: Max Carter
+@author: Adill Al-Ashgar
 Created on Tue Nov 23 2022
 """
 
