@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 DeepClean_DataLoader Driver v1.0.0
-@author: Adill Al-Ashgar
+@author: Adill Al-Ashgar & Max Carter
 Created on Mon Oct 10 04:20:57 2022
 
 USER NOTICE!
