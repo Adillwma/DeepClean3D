@@ -19,7 +19,7 @@ import random
 #import torch.optim as optim
 import os
 
-from DataLoader_Functions_V1 import initialise_data_loader
+from DataLoader_Functions_V2 import initialise_data_loader
 from autoencoders.autoencoder_3D_V2 import Encoder, Decoder
 
 #%% - User Inputs (Hyperparameters)
@@ -62,7 +62,7 @@ test_transforms = transforms.Compose([#transforms.Resize(255),
                                       ])
 
 # - Initialise Data Loader
-train_loader, test_loader, train_dataset, test_dataset = initialise_data_loader(dataset_title, data_path, batch_size, train_transforms, test_transforms, debug_loader_batch, plot_every_other, batch_size_protection)
+train_loader, test_loader, val_loader, train_dataset, test_dataset, val_dataset = initialise_data_loader(dataset_title, data_path, batch_size, train_transforms, test_transforms, debug_loader_batch, plot_every_other, batch_size_protection)
 
 
 #%% - Classes
@@ -334,7 +334,7 @@ for epoch in range(num_epochs):                              #For loop that iter
                               encoder=encoder, 
                               decoder=decoder, 
                               device=device, 
-                              dataloader=test_loader, 
+                              dataloader=val_loader, 
                               loss_fn=loss_fn,
                               noise_factor=noise_factor)
     
