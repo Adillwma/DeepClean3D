@@ -7,7 +7,7 @@ Autoencoder 2D V1
 
 import torch
 from torch import nn
-
+#
 
 ###Convoloution + Linear Autoencoder
 ###Encoder
