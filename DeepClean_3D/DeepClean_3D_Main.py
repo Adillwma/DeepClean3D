@@ -27,7 +27,7 @@ learning_rate = 0.001  #User controll to set optimiser learning rate(Hyperparame
 optim_w_decay = 1e-05  #User controll to set optimiser weight decay (Hyperparameter)
 latent_space_nodes = 4
 noise_factor = 0                                           #User controll to set the noise factor, a multiplier for the magnitude of noise added. 0 means no noise added, 1 is defualt level of noise added, 10 is 10x default level added (Hyperparameter)
-num_epochs = 45                                               #User controll to set number of epochs (Hyperparameter)
+num_epochs = 40                                               #User controll to set number of epochs (Hyperparameter)
 
 #%% - Program Settings
 seed = 10              #0 is default which gives no seeeding to RNG, if the value is not zero then this is used for the RNG seeding for numpy, random, and torch libraries
@@ -35,10 +35,13 @@ encoder_debug = 0
 decoder_debug = 0
 reconstruction_threshold = 0.4
 telemetry_on = 0
+simple_belief_reports = 1
+
+
 #%% Dataloading
 # - Data Loader User Inputs
 batch_size = 10            #Data Loader # of Images to pull per batch (add a check to make sure the batch size is smaller than the total number of images in the path selected)
-dataset_title = "S_Dataset 5"
+dataset_title = "S_Dataset 6"
 data_path = "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Yr 3 Project/Circular and Spherical Dummy Datasets/" #"C:/Users/Student/Desktop/fake im data/"  #"/local/path/to/the/images/"
 
 # - Advanced Data Loader Settings
@@ -99,11 +102,12 @@ def plot_telemetry(telemetry):
 def plot_3D(pixel_block_3d):
     #pixel_block_3d_est = np.around(pixel_block_3d)
     #print(pixel_block_3d_est)
-    print("Max belief value:", np.amax(pixel_block_3d))
-    print("Max disbelief value:", np.amin(pixel_block_3d))
-             
-    hits_3d = np.argwhere(pixel_block_3d.squeeze() >= reconstruction_threshold)
     
+    if simple_belief_reports == 1:
+        print("Max belief value:", np.amax(pixel_block_3d))
+        print("Min belief value:", np.amin(pixel_block_3d))         
+    
+    hits_3d = np.argwhere(pixel_block_3d.squeeze() >= reconstruction_threshold)    
     print("NUMBER OF HITS", np.shape(hits_3d))
     x3d = hits_3d[:,2]
     y3d = hits_3d[:,1]
@@ -342,6 +346,13 @@ for epoch in range(num_epochs):                              #For loop that iter
 
 if telemetry_on == 1:    
     plot_telemetry(telemetry)
-    
-    
-    
+
+###Loss fucntion plots
+epochs_range = range(1,num_epochs+1)
+plt.plot(epochs_range, history_da['train_loss']) 
+plt.title("Training loss")   
+plt.show()
+
+plt.plot(epochs_range, history_da['train_loss']) 
+plt.title("Validation loss") 
+plt.show()
