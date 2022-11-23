@@ -15,22 +15,8 @@ class Encoder(nn.Module):
     def __init__(self, encoded_space_dim,fc2_input_dim, encoder_debug):
         super().__init__()
         
-
-
         self.encoder_debug=encoder_debug
         ###Convolutional Encoder Layers
-        
-        #Conv2d function takes arguments: (input channels, output channels, kernel size/receiptive field (), stride and padding. # here for more info on arguments https://uob-my.sharepoint.com/personal/ex18871_bristol_ac_uk/_layouts/15/Doc.aspx?sourcedoc={109841d1-79cb-45c2-ac39-0fd24300c883}&action=edit&wd=target%28Code%20Companion.one%7C%2FUntitled%20Page%7C55b8dfad-d53c-4d8e-a2ef-de1376232896%2F%29&wdorigin=NavigationUrl
-        
-        #Input channels is 1 as the image is black and white so only has luminace values no rgb channels, 
-        #Output channels which is the amount of seperate output tensors?????????, this defines the number of seperate kernals that will be run across image, all which produce thier own output arrays
-        #The kernal size, is the size of the convolving layer. best visualised at the link above. Ours is set at is 3 so i guess a line of 3 pixels? it can be square ie give a tuple (x,x) but out data has been linearlised for some reason? NOTE: Kernal size can be even but is almost always an odd number to there is symetry round a central pixel
-        #Stride is how far the kernal moves across each time, the default is across by one pixel a time untill end of line then back to start of line and down by a pixel, followed by the cycle of across etc again. 
-        #    setting the stride to larger values makes it move across jumping pixels, i.e (1,3) the filter moves across by 3 pixels, and then back to begining of line and down by 1 pixel, this is used to downsample data, so that is why our stride is larger than default. 
-        #Padding adds padding to the edges of the data array  before the convoloution filtering, the padding value are noramlly zero but can be made other things. this is normally used to mamke the input array same size as the output
-        #Dilation (not used param) sets the spread of the kernal, by defualt it is one contigous block, dilation spreads it out. best visulaised in the link above
-        
-        
         #torch.nn.Conv3d(in_channels, out_channels, kernel_size, stride=1, padding=0, dilation=1, groups=1, bias=True, padding_mode='zeros', device=None, dtype=None)
         #torch.nn.Conv2d(in_channels, out_channels, kernel_size, stride=1, padding=0, dilation=1, groups=1, bias=True, padding_mode='zeros', device=None, dtype=None)
         
@@ -48,42 +34,7 @@ class Encoder(nn.Module):
             nn.Conv3d(32, 64, 3, stride=2, padding=0),     #Input_channels, Output_channels, Kernal_size, Stride, Padding
             nn.ReLU(True)        
         )
-        
 
-
-
-
-        #NEW Encoder nodes: 
-        #input data format = [batchsize, 1, 128 88] # [batchsize, channels, pixels_in_x, pixels_in_y]
-        #conv layers: input---Conv_L1---> [batchsize, 8, 64, 44]
-        #conv layers: input---Conv_L2---> [batchsize, 16, 32, 22]
-        #conv layers: input---Conv_L3---> [batchsize, 32, 15, 10]
-        #Flatten layer: input --flat_L1-> [10 * 15 * 32, 512]
-        #Linear layer: input--Lin_L1----> [512, encoded_space_dim]        
-                                        # [batchsize, 32, 15, 10]
-                                                
-                                                
-        #conv layers: input---T Conv_L1---> [batchsize, 16, 31, 21]
-        #conv layers: input---T Conv_L2---> [batchsize, 8, 62, 42]        
-        #conv layers: input---T Conv_L3---> [batchsize, 1, 124, 84]  
-
-        
-        #OLD Encoder nodes: 
-        #input data format = [batchsize, 1, 28, 28] # [batchsize, channels, pixels_in_x, pixels_in_y]
-        #conv layers: input---Conv_L1---> [batchsize, 8, 14, 14]
-        #conv layers: input---Conv_L2---> [batchsize, 16, 7, 7]
-        #conv layers: input---Conv_L3---> [batchsize, 32, 3, 3]
-        #Flatten layer: input --flat_L1-> [3 * 3 * 32, 128]
-        #Linear layer: input--Lin_L1----> [128, encoded_space_dim]
-        
-        #Linear layer: input--Lin_L1----> [encoded_space_dim, 128]        
-        #Flatten layer: input --flat_L1-> [128, 3 * 3 * 32]        
-        #conv layers: input---Conv_L1---> [batchsize, 32, 43, 63]
-        #conv layers: input---Conv_L2---> [batchsize, 16, 21, 31]
-        #conv layers: input---Conv_L3---> [batchsize, 8, 9,  14]        
-        #output data format = [batchsize, 1, 28, 28] # [batchsize, channels, pixels_in_x, pixels_in_y]
-        
-        
         ###Flatten layer
         self.flatten = nn.Flatten(start_dim=1)
 
@@ -135,18 +86,6 @@ class Decoder(nn.Module):
         self.unflatten = nn.Unflatten(dim=1, 
         unflattened_size=(64, 7, 4, 5))
 
-        ###Convolutional Decoder Layers
-        #NOTE - as this is the decoder and it must perform the reverse operations to the encoder, instead of using conv2d here ConvTranspose2d is used which is the inverse opperation
-        #ConvTransopose2d function takes arguments: (input channels, output channels, kernel size/receiptive field (), stride and padding. # here for more info on arguments https://uob-my.sharepoint.com/personal/ex18871_bristol_ac_uk/_layouts/15/Doc.aspx?sourcedoc={109841d1-79cb-45c2-ac39-0fd24300c883}&action=edit&wd=target%28Code%20Companion.one%7C%2FUntitled%20Page%7C55b8dfad-d53c-4d8e-a2ef-de1376232896%2F%29&wdorigin=NavigationUrl
-        
-        #Input channels 
-        #Output channels which is the amount of seperate output tensors?????????, 
-        #The kernal size, 
-        #Stride 
-        #Padding ??? ##!!!!
-        #Output_Padding adds padding to the edges of the data array
-        #Dilation (not used param) 
-        
         self.decoder_conv = nn.Sequential(
             nn.ConvTranspose3d(64, 32, 3, stride=2, padding=0, output_padding=(0,1,1)),             #Input_channels, Output_channels, Kernal_size, Stride, padding(unused), Output_padding
             nn.BatchNorm3d(32),                                                    #BatchNorm normalises the outputs as a batch? #!!!. argument is 'num_features' (expected input of size)
@@ -157,7 +96,7 @@ class Decoder(nn.Module):
             nn.BatchNorm3d(16),                                                    #BatchNorm normalises the outputs as a batch? #!!!. argument is 'num_features' (expected input of size)
             nn.ReLU(True),                                                         #ReLU activation function - Activation function determinines if a neuron fires, i.e is the output of the node considered usefull. also allows for backprop. the arg 'True' makes the opperation carry out in-place(changes the values in the input array to the output values rather than making a new one), default would be false
             #Convolutional decoder layer 2
-            nn.ConvTranspose3d(16, 8, 3, stride=2, padding=1, output_padding=(0,0,0)),   #Input_channels, Output_channels, Kernal_size, Stride, padding, Output_padding
+            nn.ConvTranspose3d(16, 8, 3, stride=2, padding=1, output_padding=0),   #Input_channels, Output_channels, Kernal_size, Stride, padding, Output_padding
             nn.BatchNorm3d(8),                                                     #BatchNorm normalises the outputs as a batch? #!!!. argument is 'num_features' (expected input of size)
             nn.ReLU(True),                                                         #ReLU activation function - Activation function determinines if a neuron fires, i.e is the output of the node considered usefull. also allows for backprop. the arg 'True' makes the opperation carry out in-place(changes the values in the input array to the output values rather than making a new one), default would be false
             #Convolutional decoder layer 3
