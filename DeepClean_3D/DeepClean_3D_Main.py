@@ -7,6 +7,7 @@ DeepClean 3D v0.0.1
 #%% - Dependencies
 import numpy as np 
 import matplotlib.pyplot as plt
+
 import torch
 import torchvision
 from torchvision import transforms, datasets
@@ -19,18 +20,18 @@ import random
 import os
 
 from DataLoader_Functions_V1 import initialise_data_loader
-from autoencoders.autoencoder_3D_V1 import Encoder, Decoder
+from autoencoders.autoencoder_3D_V2 import Encoder, Decoder
 
 #%% - User Inputs (Hyperparameters)
 learning_rate = 0.001  #User controll to set optimiser learning rate(Hyperparameter)
 optim_w_decay = 1e-05  #User controll to set optimiser weight decay (Hyperparameter)
 latent_space_nodes = 4
 noise_factor = 0                                           #User controll to set the noise factor, a multiplier for the magnitude of noise added. 0 means no noise added, 1 is defualt level of noise added, 10 is 10x default level added (Hyperparameter)
-num_epochs = 15                                               #User controll to set number of epochs (Hyperparameter)
+num_epochs = 45                                               #User controll to set number of epochs (Hyperparameter)
 
 #%% - Program Settings
 seed = 10              #0 is default which gives no seeeding to RNG, if the value is not zero then this is used for the RNG seeding for numpy, random, and torch libraries
-encoder_debug = 1
+encoder_debug = 0
 decoder_debug = 0
 reconstruction_threshold = 0.4
 telemetry_on = 0

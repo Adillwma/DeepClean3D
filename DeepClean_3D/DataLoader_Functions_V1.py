@@ -105,7 +105,7 @@ def initialise_data_loader (dataset_title, data_path, batch_size, train_transfor
             if circular_or_spherical == 0:
                 img = train_features[i].squeeze()
                 plt.imshow(img, cmap="gray")  #.T, cmap="gray")   #!!!fix the need for img.T which is the transpose, as it flips the image, 
-                plt.show()
+                plt.show() #block=False)
             
             ##Checks if data is 3d if so plots 3d image
             else:           
@@ -122,7 +122,7 @@ def initialise_data_loader (dataset_title, data_path, batch_size, train_transfor
                 ax.set_xlim(0, 100) #Time resoloution of detector
                 ax.set_ylim(0, 88)  #width (px) of detector
                 ax.set_zlim(0, 128) #hight (px) of detector
-                plt.show()
+                plt.show() #block=False)
     
 
     return(trainloader, testloader, train_data, test_data)
