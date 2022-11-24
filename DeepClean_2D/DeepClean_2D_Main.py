@@ -27,7 +27,7 @@ optim_w_decay = 1e-05  #User controll to set optimiser weight decay (Hyperparame
 latent_space_nodes = 4
 #%% - Program Settings
 seed = 10              #0 is default which gives no seeeding to RNG, if the value is not zero then this is used for the RNG seeding for numpy, random, and torch libraries
-encoder_debug = 1
+encoder_debug = 0
 decoder_debug = 0
 
 #%% Dataloading
@@ -37,7 +37,7 @@ dataset_title = "Dataset 3"
 data_path = "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Yr 3 Project/Circular and Spherical Dummy Datasets/" #"C:/Users/Student/Desktop/fake im data/"  #"/local/path/to/the/images/"
 
 # - Advanced Data Loader Settings
-debug_loader_batch = 1     #(Default = 0 = [OFF]) //INPUT 0 or 1//   #Setting debug loader batch will print to user the images taken in by the dataoader in this current batch and print the corresponding labels
+debug_loader_batch = 0     #(Default = 0 = [OFF]) //INPUT 0 or 1//   #Setting debug loader batch will print to user the images taken in by the dataoader in this current batch and print the corresponding labels
 plot_every_other = 1       #(Default = 1) //MUST BE INTEGER INPUT//  #If debug loader batch is enabled this sets the interval for printing for user, 1 is every single img in the batch, 2 is every other img, 5 is every 5th image etc 
 batch_size_protection = 1  #(Default = 1 = [ON]) //INPUT 0 or 1//    #WARNING if turned off, debugging print will cause and exeption due to the index growing too large in the printing loop (img = train_features[i])
 
@@ -139,19 +139,17 @@ def test_epoch_den(encoder, decoder, device, dataloader, loss_fn,noise_factor=0.
     return val_loss.data
 
 ###Plotting Function
-def plot_ae_outputs_den(encoder,decoder,n=10,noise_factor=0):       #Defines a function for plotting the output of the autoencoder. And also the input + clean training data? Function takes inputs, 'encoder' and 'decoder' which are expected to be classes (defining the encode and decode nets), 'n' which is the number of ?????Images in the batch????, and 'noise_factor' which is a multiplier for the magnitude of the added noise allowing it to be scaled in intensity.  
+def plot_ae_outputs_den(encoder,decoder,n=10,noise_factor=0.5):       #Defines a function for plotting the output of the autoencoder. And also the input + clean training data? Function takes inputs, 'encoder' and 'decoder' which are expected to be classes (defining the encode and decode nets), 'n' which is the number of ?????Images in the batch????, and 'noise_factor' which is a multiplier for the magnitude of the added noise allowing it to be scaled in intensity.  
     plt.figure(figsize=(16,4.5))                                      #Sets the figure size
-    targets = np.array(test_dataset.targets, dtype = np.float32)                            #Creates a numpy array (from the .numpy part) the array is created from the values in the specified tensor, which in this case is test_dataset.targets (test_dataset is the dataloader, .targets is a subclass of the dataloader that holds the labels, i.e the correct answer data (in this case the unnoised images).)                          
     #print("TARget",targets)
     #print("tsize", np.shape(targets))
     #print("ttype", type(targets))
-    t_idx = {i:np.where(targets==i)[0] for i in range(n)}          #!!! ????
     for i in range(n):                                                #Runs for loop where 'i' itterates over 'n' total values which range from 0 to n-1
       
       #Following section creates the noised image data drom the original clean labels (images)   
       ax = plt.subplot(3,n,i+1)                                       #Creates a number of subplots for the 'Original images??????' i.e the labels. the position of the subplot is i+1 as it falls in the first row
       img = test_dataset[i][0].unsqueeze(0)
-      image_noisy = img  #add_noise(img,noise_factor)     
+      image_noisy = add_noise(img,noise_factor)     
       image_noisy = image_noisy.to(device)
       
       
@@ -235,7 +233,7 @@ decoder.to(device)   #Moves decoder to selected device, CPU/GPU
 
 #%% - Compute
 noise_factor = 0                                           #User controll to set the noise factor, a multiplier for the magnitude of noise added. 0 means no noise added, 1 is defualt level of noise added, 10 is 10x default level added (Hyperparameter)
-num_epochs = 8                                               #User controll to set number of epochs (Hyperparameter)
+num_epochs = 30                                               #User controll to set number of epochs (Hyperparameter)
 batch_size= 10
 
 history_da={'train_loss':[],'val_loss':[]}                   #Just creates a variable called history_da which contains two lists, 'train_loss' and 'val_loss' which are both empty to start with. value are latter appeneded to the two lists by way of history_da['val_loss'].append(x)
@@ -270,3 +268,12 @@ for epoch in range(num_epochs):                              #For loop that iter
     
     
     
+###Loss fucntion plots
+epochs_range = range(1,num_epochs+1)
+plt.plot(epochs_range, history_da['train_loss']) 
+plt.title("Training loss")   
+plt.show()
+
+plt.plot(epochs_range, history_da['train_loss']) 
+plt.title("Validation loss") 
+plt.show()
