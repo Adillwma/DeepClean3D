@@ -30,7 +30,7 @@ noise_factor = 0                                           #User controll to set
 num_epochs = 40                                               #User controll to set number of epochs (Hyperparameter)
 
 #%% - Program Settings
-seed = 10              #0 is default which gives no seeeding to RNG, if the value is not zero then this is used for the RNG seeding for numpy, random, and torch libraries
+seed = 0              #0 is default which gives no seeeding to RNG, if the value is not zero then this is used for the RNG seeding for numpy, random, and torch libraries
 encoder_debug = 0
 decoder_debug = 0
 reconstruction_threshold = 0.5
@@ -40,8 +40,8 @@ simple_belief_reports = 1
 
 #%% Dataloading
 # - Data Loader User Inputs
-batch_size = 100            #Data Loader # of Images to pull per batch (add a check to make sure the batch size is smaller than the total number of images in the path selected)
-dataset_title = "S_Dataset 7"
+batch_size = 1            #Data Loader # of Images to pull per batch (add a check to make sure the batch size is smaller than the total number of images in the path selected)
+dataset_title = "S_Dataset 8"
 data_path = "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Yr 3 Project/Circular and Spherical Dummy Datasets/" #"C:/Users/Student/Desktop/fake im data/"  #"/local/path/to/the/images/"
 
 # - Advanced Data Loader Settings
@@ -83,13 +83,23 @@ class AddGaussianNoise(object):                   #Class generates noise based o
 ###Ploting beleif of each pixel as histogram per epoch with line showing the detection threshold
 def belief_telemetry(data, reconstruction_threshold, epoch):
     data2 = data.flatten()
-    #print(np.shape(data2))
+
+    #Plots histogram showing the confidence level of each pixel being a signal point
     plt.hist(data2, 10, histtype='bar')
     plt.axvline(x= reconstruction_threshold, color='red', marker='|', linestyle='dashed', linewidth=2, markersize=12)
     plt.title("Epoch %s" %epoch)
     plt.show()    
     above_threshold = (data2 >= reconstruction_threshold).sum()
     below_threshold = (data2 < reconstruction_threshold).sum()
+    
+    #Just plots the data above threshold (usefull when the number of points below threshold is >> than that above it )
+    plt.hist(data2, 10, histtype='bar')
+    plt.axvline(x= reconstruction_threshold, color='red', marker='|', linestyle='dashed', linewidth=2, markersize=12)
+    plt.xlim(left=reconstruction_threshold)
+    plt.title("Data above threshold in Epoch %s" %epoch)
+    plt.show()    
+    
+    
     return (above_threshold, below_threshold)
 
 def plot_telemetry(telemetry):
@@ -191,11 +201,7 @@ def test_epoch_den(encoder, decoder, device, dataloader, loss_fn,noise_factor=0)
 ###Plotting Function
 def plot_ae_outputs_den(encoder, decoder, epoch, n=10, noise_factor=0):       #Defines a function for plotting the output of the autoencoder. And also the input + clean training data? Function takes inputs, 'encoder' and 'decoder' which are expected to be classes (defining the encode and decode nets), 'n' which is the number of ?????Images in the batch????, and 'noise_factor' which is a multiplier for the magnitude of the added noise allowing it to be scaled in intensity.  
     plt.figure(figsize=(16,4.5))                                      #Sets the figure size
-    targets = np.array(test_dataset.targets, dtype = np.float32)                            #Creates a numpy array (from the .numpy part) the array is created from the values in the specified tensor, which in this case is test_dataset.targets (test_dataset is the dataloader, .targets is a subclass of the dataloader that holds the labels, i.e the correct answer data (in this case the unnoised images).)                          
-    #print("TARget",targets)
-    #print("tsize", np.shape(targets))
-    #print("ttype", type(targets))
-    t_idx = {i:np.where(targets==i)[0] for i in range(n)}          #!!! ????
+
     for i in range(n):                                                #Runs for loop where 'i' itterates over 'n' total values which range from 0 to n-1
       
         #Following section creates the noised image data from the original clean labels (images)   
@@ -346,8 +352,8 @@ for epoch in range(num_epochs):                              #For loop that iter
 
 if telemetry_on == 1:    
     plot_telemetry(telemetry)
-
-###Loss fucntion plots
+    
+###Loss function plots
 epochs_range = range(1,num_epochs+1)
 plt.plot(epochs_range, history_da['train_loss']) 
 plt.title("Training loss")   
