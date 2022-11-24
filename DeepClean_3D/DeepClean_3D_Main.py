@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on Sat Oct 8 2022
-DeepClean 3D v0.0.1
+DeepClean 3D v0.0.2
 @author: Adill Al-Ashgar
 """
 #%% - Dependencies
@@ -27,7 +27,7 @@ learning_rate = 0.001  #User controll to set optimiser learning rate(Hyperparame
 optim_w_decay = 1e-05  #User controll to set optimiser weight decay (Hyperparameter)
 latent_space_nodes = 4
 noise_factor = 0                                           #User controll to set the noise factor, a multiplier for the magnitude of noise added. 0 means no noise added, 1 is defualt level of noise added, 10 is 10x default level added (Hyperparameter)
-num_epochs = 40                                               #User controll to set number of epochs (Hyperparameter)
+num_epochs = 40   #40                                            #User controll to set number of epochs (Hyperparameter)
 
 #%% - Program Settings
 seed = 0              #0 is default which gives no seeeding to RNG, if the value is not zero then this is used for the RNG seeding for numpy, random, and torch libraries
@@ -85,27 +85,23 @@ def belief_telemetry(data, reconstruction_threshold, epoch):
     data2 = data.flatten()
 
     #Plots histogram showing the confidence level of each pixel being a signal point
-    plt.hist(data2, 10, histtype='bar')
+    values, bins, bars = plt.hist(data2, 10, histtype='bar')
     plt.axvline(x= reconstruction_threshold, color='red', marker='|', linestyle='dashed', linewidth=2, markersize=12)
     plt.title("Epoch %s" %epoch)
+    plt.bar_label(bars, fontsize=10, color='navy')
     plt.show()    
     above_threshold = (data2 >= reconstruction_threshold).sum()
     below_threshold = (data2 < reconstruction_threshold).sum()
-    
-    #Just plots the data above threshold (usefull when the number of points below threshold is >> than that above it )
-    plt.hist(data2, 10, histtype='bar')
-    plt.axvline(x= reconstruction_threshold, color='red', marker='|', linestyle='dashed', linewidth=2, markersize=12)
-    plt.xlim(left=reconstruction_threshold)
-    plt.title("Data above threshold in Epoch %s" %epoch)
-    plt.show()    
+ 
     
     
     return (above_threshold, below_threshold)
 
 def plot_telemetry(telemetry):
     tele = np.array(telemetry)
-    plt.plot(tele[:,0],tele[:,1], color='r')
-    plt.plot(tele[:,0],tele[:,2], color='b')    
+    #!!! Add labels to lines
+    plt.plot(tele[:,0],tele[:,1], color='r') #red = points above threshold
+    plt.plot(tele[:,0],tele[:,2], color='b') #blue = points below threshold
     plt.show()    
 
 ###3D plotter
@@ -352,7 +348,7 @@ for epoch in range(num_epochs):                              #For loop that iter
 
 if telemetry_on == 1:    
     plot_telemetry(telemetry)
-    
+
 ###Loss function plots
 epochs_range = range(1,num_epochs+1)
 plt.plot(epochs_range, history_da['train_loss']) 
