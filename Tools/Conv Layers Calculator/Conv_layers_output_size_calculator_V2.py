@@ -16,13 +16,13 @@ x You can also import this function into another page by putting it into the sam
 import matplotlib.pyplot as plt
 
 #%% - User Inputs
-conv_type = 2 #Select conv type: 0=conv2D, 1=conv2D.Transpose, 2=conv3D, 3=conv3D.Transpose (WARNING: Values other than 0-3 will select conv3D.Transpose)
+conv_type = 3 #Select conv type: 0=conv2D, 1=conv2D.Transpose, 2=conv3D, 3=conv3D.Transpose (WARNING: Values other than 0-3 will select conv3D.Transpose)
 
-H_in = 15          # height of the inputs
-W_in = 10          # width of the inputs
-D_in = 12          # depth of the input (Only used if one of the 3D conv types is selected above)
+H_in = 97         # height of the inputs
+W_in = 65         # width of the inputs
+D_in = 81         # depth of the input (Only used if one of the 3D conv types is selected above)
 K = 3              # kernel size (can be an integer of a two-value-integer tuple)
-P = 0              # padding  (can be an integer of a two-value-integer tuple)
+P = 1              # padding  (can be an integer of a two-value-integer tuple)
 S = 2              # stride   (can be an integer of a two-value-integer tuple)
 D = 1              # dilation (can be an integer of a two-value-integer tuple)
 O = 0              # Output padding (used only in the conv Transpose )
@@ -31,7 +31,25 @@ O = 0              # Output padding (used only in the conv Transpose )
 C_in = 16           # number of input channels
 C_out = 32          # number of output channels
 
+if type(K) == int:
+    K=[K,K,K]
+print(K)
 
+if type(P) == int:
+    P=[P,P,P]
+print(P)
+
+if type(S) == int:
+    S=[S,S,S]
+print(S)
+
+if type(D) == int:
+    D=[D,D,D]
+print(D)
+
+if type(O) == int:
+    O=[O,O,O]
+print(O)
 
 #%% - Helper Functions
 #Conv2D
@@ -71,22 +89,22 @@ def conv_calculator(conv_type, K, P, S, D, H_in, W_in, D_in=0, O=1):
     """
     print("\nCompleted... Remember to round down non integer values.")
     if conv_type == 0:      #conv2D
-        print("Height:", conv_outputs_2d(H_in, P, D, K, S))
-        print("Width:", conv_outputs_2d(W_in, P, D, K, S))
+        print("Height:", conv_outputs_2d(H_in, P[0], D[0], K[0], S[0]))
+        print("Width:", conv_outputs_2d(W_in, P[1], D[1], K[1], S[1]))
 
     elif conv_type == 1:    #conv2D.Transpose
-        print("Height:", conv_T_outputs_2d(H_in, P, D, K, S, O))
-        print("Width:", conv_T_outputs_2d(W_in, P, D, K, S, O))
+        print("Height:", conv_T_outputs_2d(H_in, P[0], D[0], K[0], S[0], O[0]))
+        print("Width:", conv_T_outputs_2d(W_in, P[1], D[1], K[1], S[1], O[1]))
 
     elif conv_type == 2:    #conv3D
-        print("Height:", conv_outputs_3d(H_in, P, D, K, S))
-        print("Width:", conv_outputs_3d(W_in, P, D, K, S))
-        print("Depth:", conv_outputs_3d(D_in, P, D, K, S))
+        print("Height:", conv_outputs_3d(H_in, P[0], D[0], K[0], S[0]))
+        print("Width:", conv_outputs_3d(W_in, P[1], D[1], K[1], S[1]))
+        print("Depth:", conv_outputs_3d(D_in, P[2], D[2], K[2], S[2]))
 
     else:                   #conv3D.Transpose
-        print("Height:", conv_T_outputs_3d(H_in, P, D, K, S, O))
-        print("Width:", conv_T_outputs_3d(W_in, P, D, K, S, O))
-        print("Depth:", conv_T_outputs_3d(D_in, P, D, K, S, O))
+        print("Height:", conv_T_outputs_3d(H_in, P[0], D[0], K[0], S[0], O[0]))
+        print("Width:", conv_T_outputs_3d(W_in, P[1], D[1], K[1], S[1], O[1]))
+        print("Depth:", conv_T_outputs_3d(D_in, P[2], D[2], K[2], S[2], O[2]))
     print("\n")
 
 
