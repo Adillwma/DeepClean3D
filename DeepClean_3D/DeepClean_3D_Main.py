@@ -27,13 +27,13 @@ learning_rate = 0.001  #User controll to set optimiser learning rate(Hyperparame
 optim_w_decay = 1e-05  #User controll to set optimiser weight decay (Hyperparameter)
 latent_space_nodes = 4
 noise_factor = 0                                           #User controll to set the noise factor, a multiplier for the magnitude of noise added. 0 means no noise added, 1 is defualt level of noise added, 10 is 10x default level added (Hyperparameter)
-num_epochs = 40   #40                                            #User controll to set number of epochs (Hyperparameter)
+num_epochs = 8   #40                                            #User controll to set number of epochs (Hyperparameter)
 
 #%% - Program Settings
 seed = 0              #0 is default which gives no seeeding to RNG, if the value is not zero then this is used for the RNG seeding for numpy, random, and torch libraries
 encoder_debug = 0
 decoder_debug = 0
-reconstruction_threshold = 0.5
+reconstruction_threshold = 0.4
 telemetry_on = 1
 simple_belief_reports = 1
 
@@ -64,7 +64,8 @@ test_transforms = transforms.Compose([#transforms.Resize(255),
 # - Initialise Data Loader
 train_loader, test_loader, val_loader, train_dataset, test_dataset, val_dataset = initialise_data_loader(dataset_title, data_path, batch_size, train_transforms, test_transforms, debug_loader_batch, plot_every_other, batch_size_protection)
 
-
+recovered_hits = []
+true_hits = []
 #%% - Classes
 ### Gaussian Noise Generator Class
 class AddGaussianNoise(object):                   #Class generates noise based on the mean 0 and std deviation 1, (gaussian)
@@ -89,32 +90,30 @@ def belief_telemetry(data, reconstruction_threshold, epoch):
     plt.axvline(x= reconstruction_threshold, color='red', marker='|', linestyle='dashed', linewidth=2, markersize=12)
     plt.title("Epoch %s" %epoch)
     plt.bar_label(bars, fontsize=10, color='navy')
-    plt.show()    
+    plt.show()  
+
     above_threshold = (data2 >= reconstruction_threshold).sum()
     below_threshold = (data2 < reconstruction_threshold).sum()
- 
-    
-    
+
     return (above_threshold, below_threshold)
 
 def plot_telemetry(telemetry):
     tele = np.array(telemetry)
     #!!! Add labels to lines
-    plt.plot(tele[:,0],tele[:,1], color='r') #red = points above threshold
-    plt.plot(tele[:,0],tele[:,2], color='b') #blue = points below threshold
+    plt.plot(tele[:,0],tele[:,1], color='r') #red = num of points above threshold
+    plt.plot(tele[:,0],tele[:,2], color='b') #blue = num of points below threshold
     plt.show()    
 
 ###3D plotter
 def plot_3D(pixel_block_3d):
-    #pixel_block_3d_est = np.around(pixel_block_3d)
-    #print(pixel_block_3d_est)
-    
+
     if simple_belief_reports == 1:
         print("Max belief value:", np.amax(pixel_block_3d))
-        print("Min belief value:", np.amin(pixel_block_3d))         
-    
+        print("Min belief value:", np.amin(pixel_block_3d))
+                
     hits_3d = np.argwhere(pixel_block_3d.squeeze() >= reconstruction_threshold)    
-    print("NUMBER OF HITS", np.shape(hits_3d))
+    noh = (np.shape(hits_3d)[0])
+    print("NUMBER OF HITS", noh)
     x3d = hits_3d[:,2]
     y3d = hits_3d[:,1]
     z3d = hits_3d[:,0]
@@ -125,7 +124,7 @@ def plot_3D(pixel_block_3d):
     ax.scatter(x3d, y3d, z3d)  
     plt.show()
     
-    
+    return (noh)
     
     
 ### Random Noise Generator Function
@@ -163,6 +162,8 @@ def train_epoch_den(encoder, decoder, device, dataloader, loss_fn, optimizer,noi
         loss.backward()
         optimizer.step()
         # Print batch loss
+        #print("Epoch:",epoch, "Batch:", batch_idx ,'\t partial train loss (single batch): %f' % (loss.data))
+
         print('\t partial train loss (single batch): %f' % (loss.data))
         train_loss.append(loss.detach().cpu().numpy())
     return np.mean(train_loss)
@@ -258,11 +259,11 @@ def plot_ae_outputs_den(encoder, decoder, epoch, n=10, noise_factor=0):       #D
     plt.show()                                 #After entire loop is finished, the generated plot is printed to screen
     
     print("\nOriginal")
-    plot_3D(raw_data)
+    true_hits.append(plot_3D(raw_data))
     #plot_3D(imn_data)
     print("\nRecovered")
-    plot_3D(rec_data)
-  
+    recovered_hits.append(plot_3D(rec_data))
+
     if telemetry_on == 1:
         above_threshold, below_threshold = belief_telemetry(rec_data, reconstruction_threshold, epoch)   
         telemetry.append([epoch, above_threshold, below_threshold])
@@ -346,9 +347,6 @@ for epoch in range(num_epochs):                              #For loop that iter
     print('\n EPOCH {}/{} \t train loss {:.3f} \t val loss {:.3f}'.format(epoch + 1, num_epochs,train_loss,val_loss))     #epoch +1 is to make up for the fact the range spans 0 to epoch-1 but we want to numerate things from 1 upwards for sanity
     plot_ae_outputs_den(encoder,decoder,epoch + 1, noise_factor=noise_factor)
 
-if telemetry_on == 1:    
-    plot_telemetry(telemetry)
-
 ###Loss function plots
 epochs_range = range(1,num_epochs+1)
 plt.plot(epochs_range, history_da['train_loss']) 
@@ -358,3 +356,18 @@ plt.show()
 plt.plot(epochs_range, history_da['train_loss']) 
 plt.title("Validation loss") 
 plt.show()
+
+#telemetry plots
+if telemetry_on == 1:       #needs ttitles and labels etc added
+    plot_telemetry(telemetry)
+
+#hit reconstruction accuray plots
+if simple_belief_reports == 1:
+    percentage_of_recovery = (np.array(recovered_hits)/np.array(true_hits))*100
+    plt.plot(epochs_range, percentage_of_recovery)
+    plt.title("percentage of True Hits vs Epoch")
+    plt.show()
+    plt.plot(epochs_range, recovered_hits)
+    plt.title("raw value of recovered Hits vs Epoch")
+    plt.show()
+                
