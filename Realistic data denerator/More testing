@@ -1,4 +1,6 @@
 import numpy as np
+import matplotlib.pyplot as plt
+
 x = [1,2,3]
 y = [3,2,1]
 y = np.negative(y)
@@ -8,6 +10,17 @@ z = np.append(x,y)
 # print(z)
 # print(len(z))
 
-import random
-x = random.random()
-print(x)
+# import random
+# x = random.random()
+# print(x)
+
+# print([i for i in x if i != 1])
+
+a = ("John", "Charles", "Mike")
+b = ("Jenny", "Christy", "Monica")
+
+x = np.dstack((a,b))
+x = np.squeeze(x)
+
+print(x[:,0])
+
