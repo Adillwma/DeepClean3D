@@ -31,8 +31,17 @@ C_out = 32          # number of output channels
 
 def least_padding_solver(number_of_layers, input_dimensions):
     output_size = 4 
+    dimensions = len(input_dimensions)
+    
+
     for i in range (0,number_of_layers):
-        input_dimensions = conv_calculator(input_dimensions)
+        if dimensions == 2:
+            conv_type = 0
+        
+        elif dimensions == 3:
+            conv_type = 2
+        
+        input_dimensions = conv_calculator(conv_type)
         print(input_dimensions)
 
         """
