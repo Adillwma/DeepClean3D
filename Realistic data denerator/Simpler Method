@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import random
 
-reflect_x = 0.1
+reflect_x = 0.2
 
 y_points = []
 num_points = 100
@@ -18,13 +18,37 @@ for i in linear_x_points:
             i = -i - 2 * reflect_x
         elif i > reflect_x:
             i = -i + 2 * reflect_x
-    x_reflect_points.append(i)
+    x_reflect_points.append(i)              # this has been checked and works
 
 
 y_points = [np.cos(i) for i in linear_x_points]
 conjoined = np.squeeze(np.dstack((x_reflect_points, y_points)))
-angle_filter = [i for i in conjoined if not np.cos(130.49 * np.pi / 180) < i[1] < np.cos(40.49 * np.pi / 180)]
+angle_filter = [i for i in conjoined if np.cos(139.51 * np.pi / 180) > i[1] or i[1] > np.cos(40.49 * np.pi / 180)] # filters out points less than critical angle
+
+print(angle_filter[:20])
+
+# time axis
+hit_point = 30          # point of impact of the particle in cm
+quartz_length = 160     # length of the quartz screen
+particle_speed = 3E8
+time = []
+for i in angle_filter:
+    if i[1] > 0:
+        # this is just time = dist / speed formula
+        time.append((hit_point / i[1]) / particle_speed )
+    elif i[1] < 0:
+        time.append(((2 * quartz_length - hit_point) / abs(i[1])) / particle_speed)
 
 
-plt.scatter(x_reflect_points, y_points, s = 1)
+# plt.scatter([i[0] for i in angle_filter], [i[1] for i in angle_filter], s = 1)
+# plt.show()
+
+fig = plt.figure()
+ax = fig.add_subplot(projection='3d')
+ax.scatter([i[0] for i in angle_filter], [i[1] for i in angle_filter], time)    # first is x_axis, next is y axis, then time axis
+
+ax.set_xlabel('Width Plane')
+ax.set_ylabel('Y Label')
+ax.set_zlabel('Z Label')
+
 plt.show()
