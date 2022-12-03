@@ -291,6 +291,6 @@ for f in range(0, dataset_size):
                    
 #%% - End of Program
 #Final success message, also includes data path for easy copy paste to open    
-print("\nDataset generated successfully.\nSaved in path:",directory,"\n \nIMPORTANT - Remember to change the filename setting next time you run OR move this runs files out of the directory to avoid overwriting your data!")    
+print("\nDataset generated successfully.\nSaved in path:",directory,"\n \nIMPORTANT - Remember to change the filename setting next time you run OR move this runs files out of the directory to avoid overwriting your data!\n")    
     
 
