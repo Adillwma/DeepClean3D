@@ -25,21 +25,22 @@ from autoencoders.autoencoder_2D_V1 import Encoder, Decoder
 learning_rate = 0.001  #User controll to set optimiser learning rate(Hyperparameter)
 optim_w_decay = 1e-05  #User controll to set optimiser weight decay (Hyperparameter)
 latent_space_nodes = 4
-noise_factor = 0                                           #User controll to set the noise factor, a multiplier for the magnitude of noise added. 0 means no noise added, 1 is defualt level of noise added, 10 is 10x default level added (Hyperparameter)
-num_epochs = 20                                              #User controll to set number of epochs (Hyperparameter)
+noise_factor = 1                                           #User controll to set the noise factor, a multiplier for the magnitude of noise added. 0 means no noise added, 1 is defualt level of noise added, 10 is 10x default level added (Hyperparameter)
+num_epochs = 1                                              #User controll to set number of epochs (Hyperparameter)
 batch_size= 10
 
 #%% - Program Settings
-seed = 10              #0 is default which gives no seeeding to RNG, if the value is not zero then this is used for the RNG seeding for numpy, random, and torch libraries
-encoder_debug = 0
-decoder_debug = 0
-
+seed = 0              #0 is default which gives no seeeding to RNG, if the value is not zero then this is used for the RNG seeding for numpy, random, and torch libraries
+print_partial_training_losses = 1
+encoder_debug = 1
+decoder_debug = 1
+debug_noise_function = 0
 #%% Dataloading
 # - Data Loader User Inputs
 batch_size = 10            #Data Loader # of Images to pull per batch (add a check to make sure the batch size is smaller than the total number of images in the path selected)
-dataset_title = "Dataset 3_Flat"
+dataset_title = "Dataset 1_Flat"
 data_path = "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Yr 3 Project/Circular and Spherical Dummy Datasets/" #"C:/Users/Student/Desktop/fake im data/"  #"/local/path/to/the/images/"
-
+time_dimension = 100
 # - Advanced Data Loader Settings
 debug_loader_batch = 0     #(Default = 0 = [OFF]) //INPUT 0 or 1//   #Setting debug loader batch will print to user the images taken in by the dataoader in this current batch and print the corresponding labels
 plot_every_other = 1       #(Default = 1) //MUST BE INTEGER INPUT//  #If debug loader batch is enabled this sets the interval for printing for user, 1 is every single img in the batch, 2 is every other img, 5 is every 5th image etc 
@@ -77,10 +78,28 @@ class AddGaussianNoise(object):                   #Class generates noise based o
 
 #%% - Functions
 ### Random Noise Generator Function
-def add_noise(inputs,noise_factor=0.3):
-     noisy = inputs + torch.randn_like(inputs) * noise_factor
-     noisy = torch.clip(noisy,0.,1.)
+def add_noise(inputs,noise_factor=0.3, time_dimension=100):
+     cNOISE = torch.randn_like(inputs) * noise_factor
+     noise_init = torch.randn_like(inputs)**2 * time_dimension
+     noise = torch.clip(noise_init,0.,100.)
+     noisy = inputs + noise
+     if debug_noise_function == 1:
+        print("INPUT")
+        plt.imshow(inputs[0][0])
+        plt.show()
+        print("cNOISE")
+        plt.imshow(cNOISE[0][0])
+        plt.show()
+        print("noise")
+        plt.imshow(noise[0][0])
+        plt.show()
+        print("noisy")
+        plt.imshow(noisy[0][0])
+        plt.show()
      return noisy
+
+
+
 
 ###RNG Seeding for Determinism Function
 def Determinism_Seeding(seed):
@@ -89,7 +108,7 @@ def Determinism_Seeding(seed):
     np.random.seed(seed)
 
 ### Training Function
-def train_epoch_den(encoder, decoder, device, dataloader, loss_fn, optimizer,noise_factor=0.3):
+def train_epoch_den(encoder, decoder, device, dataloader, loss_fn, optimizer,noise_factor=0.3, print_partial_training_losses=print_partial_training_losses):
     # Set train mode for both the encoder and the decoder
     encoder.train()
     decoder.train()
@@ -110,8 +129,9 @@ def train_epoch_den(encoder, decoder, device, dataloader, loss_fn, optimizer,noi
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-        # Print batch loss
-        print('\t partial train loss (single batch): %f' % (loss.data))
+        if print_partial_training_losses == 1:
+            # Print batch loss
+            print('\t partial train loss (single batch): %f' % (loss.data))
         train_loss.append(loss.detach().cpu().numpy())
     return np.mean(train_loss)
 
