@@ -25,6 +25,10 @@ from autoencoders.autoencoder_2D_V1 import Encoder, Decoder
 learning_rate = 0.001  #User controll to set optimiser learning rate(Hyperparameter)
 optim_w_decay = 1e-05  #User controll to set optimiser weight decay (Hyperparameter)
 latent_space_nodes = 4
+noise_factor = 0                                           #User controll to set the noise factor, a multiplier for the magnitude of noise added. 0 means no noise added, 1 is defualt level of noise added, 10 is 10x default level added (Hyperparameter)
+num_epochs = 20                                              #User controll to set number of epochs (Hyperparameter)
+batch_size= 10
+
 #%% - Program Settings
 seed = 10              #0 is default which gives no seeeding to RNG, if the value is not zero then this is used for the RNG seeding for numpy, random, and torch libraries
 encoder_debug = 0
@@ -232,9 +236,6 @@ decoder.to(device)   #Moves decoder to selected device, CPU/GPU
 
 
 #%% - Compute
-noise_factor = 1                                           #User controll to set the noise factor, a multiplier for the magnitude of noise added. 0 means no noise added, 1 is defualt level of noise added, 10 is 10x default level added (Hyperparameter)
-num_epochs = 120                                               #User controll to set number of epochs (Hyperparameter)
-batch_size= 10
 
 history_da={'train_loss':[],'val_loss':[]}                   #Just creates a variable called history_da which contains two lists, 'train_loss' and 'val_loss' which are both empty to start with. value are latter appeneded to the two lists by way of history_da['val_loss'].append(x)
 
