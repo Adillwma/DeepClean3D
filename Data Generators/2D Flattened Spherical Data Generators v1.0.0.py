@@ -24,9 +24,9 @@ below and then run full code.
 #Generator Variables
 radius = 40 #User setting can be one number i.e (x) or a range in a tuple (min,max)
 signal_points_input = (50,200) #(50,200) #User setting can be a range i.e "range(min,max,increment). If wanting to set a constant value then pass it as both min and max i.e (4,4)
-noise_points_input = (50,200)#(50,100)#(80,100)  #(80,100) #If 0 there is no noise added
-dataset_size = 1000 #Number of individual data plots to generate and save for the dataset
-
+noise_points_input = 0#(50,100)#(80,100)  #(80,100) #If 0 there is no noise added
+dataset_size = 1 #Number of individual data plots to generate and save for the dataset
+centre_ofset_input = (10,40)
 detector_pixel_dimensions = (11*8, 128) #x, y in pixels
 time_resoloution = 100 #time aka z axis
 
@@ -41,12 +41,12 @@ directory = "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Yr 
 seeding_value = 0 #Seed for the random number generators, selecting a value here will make the code deterministic, returnign same vlaues from RNG's each time. If set to 0, seeding is turned off
 auto_variables_debug_readout = 0 # 0=off, 1=on
 
-debug_visulisations_on = 0 #0 is defualt, if set to 1 the circular and spherical data is plotted for visualisation
+debug_visulisations_on = 1 #0 is defualt, if set to 1 the circular and spherical data is plotted for visualisation
 seperate_noise_colour = 1 #0 if desire noise same colour as signal, 1 to seperate noise and signal by colour
 signal_hit_size = 10 # 1 is default small, 10 is medium, 20 is large, values in between are fine
 noise_hit_size = 10 # 1 is default small, 10 is medium, 20 is large, values in between are fine
 
-debug_block_outputs = 0 # 0=off, 1=on
+debug_block_outputs = 1 # 0=off, 1=on
 block_output_labeled_data = 0  #this has taken over the setting below 
 seperate_block_noise_colour = 1 # 0=off, 1=on
 coord_transform_sig_fig = 12    #Setting significant figures for the coordinate transofrms (polar to cartesian, spherical to cartesian), using set amount of sig figures avoids floating point rounding errors 
@@ -108,6 +108,15 @@ for f in range(0, dataset_size):
     else: 
         noise_points = np.random.randint(noise_points_input[0], noise_points_input[1])      
         noise_select_debug_message = "Noise points selected from range:"
+
+    if type(centre_ofset_input) == int: 
+        centre_ofset_x = centre_ofset_input
+        centre_ofset_y = centre_ofset_input
+        centre_ofset_debug_message = "Centre ofset given as Int:"
+    else: 
+        centre_ofset_x = np.random.randint(-centre_ofset_input[0], centre_ofset_input[0])
+        centre_ofset_y = np.random.randint(-centre_ofset_input[1], centre_ofset_input[1])      
+        centre_ofset_debug_message = "Centre ofset selected from range:"
         
     #Debugging readout for variable selection including automaticly selected values        
     if auto_variables_debug_readout == 1:
@@ -116,8 +125,10 @@ for f in range(0, dataset_size):
         print("Random seeding:", seeding_value)
         print("Radius setting:", radius)
         print("Detector pixel dimensions:", detector_pixel_dimensions)
-        print("Time resoloution", time_resoloution,"\n")
-    
+        print("Time resoloution", time_resoloution)
+        print("Centre ofset x:", centre_ofset_x)
+        print("Centre ofset y:", centre_ofset_y,"\n")   
+
     """ #Attampt to simplify the above. Works well but cant handle integers in any format ive tried i.e 4 or (4) or (4,4)
     signal_points = np.random.randint(signal_points_input[0], signal_points_input[-1])
     noise_points = np.random.randint(noise_points_input[0], noise_points_input[-1])
@@ -130,7 +141,9 @@ for f in range(0, dataset_size):
     rad = '[rad %s]' % (radius)                      #radius
     dpd = '[dpd {} {}]'.format(detector_pixel_dimensions[0], detector_pixel_dimensions[1])   #detector_pixel_dimensions
     tr = '[tr %s]' % (time_resoloution)              #time_resoloution
-    run_settings = sp + npt + sv + rad + dpd + tr
+    cox = '[cox %s]' % (centre_ofset_x)
+    coy = '[coy %s]' % (centre_ofset_y)
+    run_settings = sp + npt + sv + rad + dpd + tr + cox + coy
     
     #Data list initialisation
     x_circ_data = []
@@ -158,8 +171,8 @@ for f in range(0, dataset_size):
             x, y = pol2cart(radius, angle, coord_transform_sig_fig)
             x = round(x) # pixel_quantisation
             y = round(y) # pixel_quantisation
-            x_circ_data.append(x + (detector_pixel_dimensions[0]/2))   #detector_pixel_dimensions[0]/2) centres circle x axis on centre of detector 
-            y_circ_data.append(y + (detector_pixel_dimensions[1]/2))   #detector_pixel_dimensions[1]/2) centres circle y axis on centre of detector 
+            x_circ_data.append(x + (detector_pixel_dimensions[0]/2) + centre_ofset_x)   #detector_pixel_dimensions[0]/2) centres circle x axis on centre of detector 
+            y_circ_data.append(y + (detector_pixel_dimensions[1]/2) + centre_ofset_y)   #detector_pixel_dimensions[1]/2) centres circle y axis on centre of detector 
         
         if noise_points > 0:              #Generates noise data
             for i in range (0,noise_points):
@@ -225,8 +238,8 @@ for f in range(0, dataset_size):
             x = round(x)
             y = round(y)
             z = round(z)
-            x_sph_data.append(x + (detector_pixel_dimensions[0]/2))     
-            y_sph_data.append(y + (detector_pixel_dimensions[1]/2)) 
+            x_sph_data.append(x + (detector_pixel_dimensions[0]/2) + centre_ofset_x)     
+            y_sph_data.append(y + (detector_pixel_dimensions[1]/2) + centre_ofset_y) 
             z_sph_data.append(z + (time_resoloution/2))    
             
         if noise_points > 0:              #Generates noise data
@@ -273,11 +286,13 @@ for f in range(0, dataset_size):
             pixel_block_3d_flattened = np.zeros((2, detector_pixel_dimensions[1],detector_pixel_dimensions[0]),dtype = np.single)
             for row, _ in enumerate(sphere_data[ :,2]):
                 x_coordinate, y_coordinate, TOF = sphere_data[row]
-                pixel_block_3d_flattened[0][int(y_coordinate)][int(x_coordinate)] = TOF
+                if -detector_pixel_dimensions[1]/2 <= x_coordinate <= detector_pixel_dimensions[1]/2 and -detector_pixel_dimensions[0]/2 <= y_coordinate <= detector_pixel_dimensions[0]/2:
+                    pixel_block_3d_flattened[0][int(y_coordinate)][int(x_coordinate)] = TOF
             
             for row, _ in enumerate(sphere_data_labels[ :,2]):                
                 labels_x_coordinate, labels_y_coordinate, labels_TOF = sphere_data_labels[row]
-                pixel_block_3d_flattened[1][int(y_coordinate)][int(x_coordinate)] = TOF
+                if -detector_pixel_dimensions[1]/2 <= labels_x_coordinate <= detector_pixel_dimensions[1]/2 and -detector_pixel_dimensions[0]/2 <= labels_y_coordinate <= detector_pixel_dimensions[0]/2:                
+                    pixel_block_3d_flattened[1][int(y_coordinate)][int(x_coordinate)] = TOF
 
             if debug_block_outputs == 1:
                 if block_output_labeled_data == 1:
