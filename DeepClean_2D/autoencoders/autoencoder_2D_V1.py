@@ -102,6 +102,7 @@ class Encoder(nn.Module):
         x = self.encoder_lin(x)                           #Runs linear encoder on flattened output 
         if self.encoder_debug == 1:
             print("x Lin out", x.size(),"\n")
+            self.encoder_debug = 0                             #Turns off the encoder debug printout as it stays the same so no need to print every single time
         return x                                          #Return final result
 
 ###Decoder
@@ -165,6 +166,7 @@ class Decoder(nn.Module):
         x = self.decoder_conv(x)      #Runs convoloutional decoder on output of unflatten
         if self.decoder_debug == 1:
             print("x CNN out", x.size(),"\n")            
+            self.decoder_debug = 0                             #Turns off the decoder debug printout as it stays the same so no need to print every single time        
         x = torch.sigmoid(x)          #THIS IS IMPORTANT PART OF FINAL OUTPUT!: Runs sigmoid function which turns the output data values to range (0-1)#!!! ????    Also can use tanh fucntion if wanting outputs from -1 to 1
         return x                      #Retuns the final output
     
