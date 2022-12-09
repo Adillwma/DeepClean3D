@@ -25,8 +25,8 @@ below and then run full code.
 radius = 40 #User setting can be one number i.e (x) or a range in a tuple (min,max)
 signal_points_input = 100#(50,200) #(50,200) #User setting can be a range i.e "range(min,max,increment). If wanting to set a constant value then pass it as both min and max i.e (4,4)
 noise_points_input = 0#(50,100)#(80,100)  #(80,100) #If 0 there is no noise added
-dataset_size = 1 #Number of individual data plots to generate and save for the dataset
-centre_ofset_input = 0#(100,400)
+dataset_size = 100 #Number of individual data plots to generate and save for the dataset
+centre_ofset_input = (200,200)#(100,400)    #This is maximum displacment from centre for x and then for y (NOT a range)
 detector_pixel_dimensions = (11*8, 128) #x, y in pixels
 time_resoloution = 100 #time aka z axis
 
@@ -34,19 +34,19 @@ time_resoloution = 100 #time aka z axis
 output_type = 1 #0 outputs hit pixel locations, 1 outputs full sensor pixel array including no hit spaces
 create_circular = 0 #0 means no circular data generated, 1 will generate circular data
 create_spherical = 1 #0 means no spherical data generated, 1 will generate spherical data
-filename = 'TEST_Flattened_Data'
+filename = 'TEST_Flattened_Offset_Data'
 directory = "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Yr 3 Project/Circular and Spherical Dummy Datasets/"
 
 #Debugging Options
 seeding_value = 0 #Seed for the random number generators, selecting a value here will make the code deterministic, returnign same vlaues from RNG's each time. If set to 0, seeding is turned off
 auto_variables_debug_readout = 0 # 0=off, 1=on
 
-debug_visulisations_on = 1 #0 is defualt, if set to 1 the circular and spherical data is plotted for visualisation
+debug_visulisations_on = 0 #0 is defualt, if set to 1 the circular and spherical data is plotted for visualisation
 seperate_noise_colour = 1 #0 if desire noise same colour as signal, 1 to seperate noise and signal by colour
 signal_hit_size = 10 # 1 is default small, 10 is medium, 20 is large, values in between are fine
 noise_hit_size = 10 # 1 is default small, 10 is medium, 20 is large, values in between are fine
 
-debug_block_outputs = 1 # 0=off, 1=on
+debug_block_outputs = 0 # 0=off, 1=on
 block_output_labeled_data = 0  #this has taken over the setting below 
 seperate_block_noise_colour = 1 # 0=off, 1=on
 coord_transform_sig_fig = 12    #Setting significant figures for the coordinate transofrms (polar to cartesian, spherical to cartesian), using set amount of sig figures avoids floating point rounding errors 
@@ -112,11 +112,11 @@ for f in range(0, dataset_size):
     if type(centre_ofset_input) == int: 
         centre_ofset_x = centre_ofset_input
         centre_ofset_y = centre_ofset_input
-        centre_ofset_debug_message = "Centre ofset given as Int:"
+        centre_ofset_debug_message = "Centre offset given as Int:"
     else: 
         centre_ofset_x = np.random.randint(-centre_ofset_input[0], centre_ofset_input[0])
         centre_ofset_y = np.random.randint(-centre_ofset_input[1], centre_ofset_input[1])      
-        centre_ofset_debug_message = "Centre ofset selected from range:"
+        centre_ofset_debug_message = "Centre offset selected from range:"
         
     #Debugging readout for variable selection including automaticly selected values        
     if auto_variables_debug_readout == 1:
@@ -292,7 +292,7 @@ for f in range(0, dataset_size):
             for row, _ in enumerate(sphere_data_labels[ :,2]):                
                 labels_x_coordinate, labels_y_coordinate, labels_TOF = sphere_data_labels[row]
                 if 0 <= labels_x_coordinate < detector_pixel_dimensions[0] and 0 <= labels_y_coordinate < detector_pixel_dimensions[1]:                
-                    pixel_block_3d_flattened[1][int(y_coordinate)][int(x_coordinate)] = TOF
+                    pixel_block_3d_flattened[1][int(labels_y_coordinate)][int(labels_x_coordinate)] = TOF
 
             if debug_block_outputs == 1:
                 if block_output_labeled_data == 1:
