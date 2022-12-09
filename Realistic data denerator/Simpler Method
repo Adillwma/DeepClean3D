@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import random
 
 
-def realistic(hit_point, signal_points, noise_points, seed_val, cox=0, coy=0, dim=[88,128,100]):
+def realistic(hit_point, signal_points, noise_points, seed_val, dim=[88,128,100]):
     '''
     hit_point = the point on the detector the particle makes impact. May be able to make this 2D later (x,y)
     signal_points = number of points the hit produces (average 30 for realistic photon), N.B. these may not be at critical angle to 60 is maximum number
@@ -11,7 +11,7 @@ def realistic(hit_point, signal_points, noise_points, seed_val, cox=0, coy=0, di
     seed_val = seed value
     cox = image offset in x, default = 0
     coy = image offset in y, defauly = 0
-    dim = dimensions of the data we want to output (for us, 88x128x100)
+    dim = dimensions of the data we want to output (for us, 88x128x100) as a list
     '''
 
     reflect_x = 0.2
@@ -20,7 +20,7 @@ def realistic(hit_point, signal_points, noise_points, seed_val, cox=0, coy=0, di
     y_points = []
     min_num = -np.pi
     max_num = np.pi
-    step = (max_num - min_num) /signal_points
+    step = (max_num - min_num) / signal_points
     linear_x_points = np.linspace(min_num,max_num,signal_points)
     x_reflect_points = []
 
@@ -82,17 +82,28 @@ def realistic(hit_point, signal_points, noise_points, seed_val, cox=0, coy=0, di
     final = list(zip(angle_filter, time))     # This is list of ((x,y), time) - dont ask me why, its annoying
     print(final[:5])
 
-    #create bins for pixels
-
+    # create bins
     # x axis is between the reflectors, and the pixels of the x axis are the first dim of the input dim
-    x_pixels = np.linspace(-reflect_x, reflect_x, dim[0])
+    x_idxs = np.digitize([i[0][0] for i in final],np.linspace(-reflect_x, reflect_x, dim[0])) #takes x points, then bins, returns indices
 
-    # add noise points? now?
+    y_idxs = np.digitize([i[0][1] for i in final],np.linspace(-1, 1, dim[1]))
 
+    z_idxs = np.digitize([i[1] for i in final],np.linspace(0, t_max, dim[2]))
 
+    # all of the above are 1 too few as they go from 0 to 87 index. We want 1 to 88 so.
+    x_pixel = [i+1 for i in x_idxs]
+    y_pixel = [i+1 for i in y_idxs]
+    z_pixel = [i+1 for i in z_idxs]
+
+    # noise points
+    x_noise = [random.randint(1, dim[0]) for _ in range(noise_points)]
+    y_noise = [random.randint(1, dim[1]) for _ in range(noise_points)]
+    z_noise = [random.randint(1, dim[2]) for _ in range(noise_points)]
+    
+    # plotting the figure
     fig = plt.figure()
     ax = fig.add_subplot(projection='3d')
-    ax.scatter([i[0][0] for i in final], [i[0][1] for i in final], [i[1] for i in final])    # first is x_axis, next is y axis, then time axis
+    ax.scatter(x_pixel, y_pixel, z_pixel)
 
     ax.set_xlabel('X')
     ax.set_ylabel('Y')
@@ -102,4 +113,4 @@ def realistic(hit_point, signal_points, noise_points, seed_val, cox=0, coy=0, di
 
 
 
-realistic(hit_point=30, signal_points=60, noise_points=0, seed_val=123, cox=0, coy=0, dim=[88,128,100])
+realistic(hit_point=30, signal_points=60, noise_points=0, seed_val=123, dim=[88,128,100])

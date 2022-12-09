@@ -32,3 +32,14 @@ import matplotlib.pyplot as plt
 # print(list(j)[0])
 
 print(np.linspace(-1,1,2))
+
+numbers = np.array([0.5, 1.5, 2.5, 3.5, 4.5])
+
+# create an array of bins
+bins = np.array([1, 2, 3])
+
+# use np.digitize() to find the indices of the bins to which each number belongs
+indices = np.digitize(numbers, bins)
+
+# print the indices
+print(indices)
