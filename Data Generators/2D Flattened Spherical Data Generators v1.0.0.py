@@ -26,7 +26,7 @@ radius = 40 #User setting can be one number i.e (x) or a range in a tuple (min,m
 signal_points_input = 100#(50,200) #(50,200) #User setting can be a range i.e "range(min,max,increment). If wanting to set a constant value then pass it as both min and max i.e (4,4)
 noise_points_input = 0#(50,100)#(80,100)  #(80,100) #If 0 there is no noise added
 dataset_size = 100 #Number of individual data plots to generate and save for the dataset
-centre_ofset_input = (200,200)#(100,400)    #This is maximum displacment from centre for x and then for y (NOT a range)
+centre_ofset_input = 0#(200,200)#(100,400)    #This is maximum displacment from centre for x and then for y (NOT a range)
 detector_pixel_dimensions = (11*8, 128) #x, y in pixels
 time_resoloution = 100 #time aka z axis
 
@@ -34,7 +34,7 @@ time_resoloution = 100 #time aka z axis
 output_type = 1 #0 outputs hit pixel locations, 1 outputs full sensor pixel array including no hit spaces
 create_circular = 0 #0 means no circular data generated, 1 will generate circular data
 create_spherical = 1 #0 means no spherical data generated, 1 will generate spherical data
-filename = 'TEST_Flattened_Offset_Data'
+filename = 'TEST_Hemisphere_Flattened_Offset_Data'
 directory = "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Yr 3 Project/Circular and Spherical Dummy Datasets/"
 
 #Debugging Options
@@ -232,7 +232,7 @@ for f in range(0, dataset_size):
     if create_spherical == 1:     
         #Spherical Data Generator
         for i in range (0,signal_points):    #Generates points data
-            angle1 = np.random.uniform(0, 2*np.pi)
+            angle1 = np.random.uniform(0, np.pi/2)
             angle2 = np.random.uniform(0, 2*np.pi)
             x, y, z = spherical2cartesian(radius, angle1, angle2, coord_transform_sig_fig)
             x = round(x)
