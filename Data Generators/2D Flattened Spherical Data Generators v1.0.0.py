@@ -23,10 +23,10 @@ below and then run full code.
 #%% - User settings
 #Generator Variables
 radius = 40 #User setting can be one number i.e (x) or a range in a tuple (min,max)
-signal_points_input = (50,200) #(50,200) #User setting can be a range i.e "range(min,max,increment). If wanting to set a constant value then pass it as both min and max i.e (4,4)
+signal_points_input = 100#(50,200) #(50,200) #User setting can be a range i.e "range(min,max,increment). If wanting to set a constant value then pass it as both min and max i.e (4,4)
 noise_points_input = 0#(50,100)#(80,100)  #(80,100) #If 0 there is no noise added
 dataset_size = 1 #Number of individual data plots to generate and save for the dataset
-centre_ofset_input = (10,40)
+centre_ofset_input = 0#(100,400)
 detector_pixel_dimensions = (11*8, 128) #x, y in pixels
 time_resoloution = 100 #time aka z axis
 
@@ -277,7 +277,7 @@ for f in range(0, dataset_size):
         sphere_data_labels = np.vstack((x_sph_data, y_sph_data, z_sph_data)).T
         #Randomises the order of the points so that the noise values are not all the last values, just in case the network uses that fact
         np.random.shuffle(sphere_data)
-        
+
         #Data output to disk
         if output_type == 0:
             np.save(directory + filename + ' Sphere (hits data) %s  - Variables = ' % (f+1) + run_settings, sphere_data)
@@ -286,12 +286,12 @@ for f in range(0, dataset_size):
             pixel_block_3d_flattened = np.zeros((2, detector_pixel_dimensions[1], detector_pixel_dimensions[0]), dtype = np.single)
             for row, _ in enumerate(sphere_data[ :,2]):
                 x_coordinate, y_coordinate, TOF = sphere_data[row]
-                if -detector_pixel_dimensions[1]/2 <= x_coordinate <= detector_pixel_dimensions[1]/2 and -detector_pixel_dimensions[0]/2 <= y_coordinate <= detector_pixel_dimensions[0]/2:
+                if 0 <= x_coordinate < detector_pixel_dimensions[0] and 0 <= y_coordinate < detector_pixel_dimensions[1]:
                     pixel_block_3d_flattened[0][int(y_coordinate)][int(x_coordinate)] = TOF
             
             for row, _ in enumerate(sphere_data_labels[ :,2]):                
                 labels_x_coordinate, labels_y_coordinate, labels_TOF = sphere_data_labels[row]
-                if -detector_pixel_dimensions[1]/2 <= labels_x_coordinate <= detector_pixel_dimensions[1]/2 and -detector_pixel_dimensions[0]/2 <= labels_y_coordinate <= detector_pixel_dimensions[0]/2:                
+                if 0 <= labels_x_coordinate < detector_pixel_dimensions[0] and 0 <= labels_y_coordinate < detector_pixel_dimensions[1]:                
                     pixel_block_3d_flattened[1][int(y_coordinate)][int(x_coordinate)] = TOF
 
             if debug_block_outputs == 1:
