@@ -26,8 +26,11 @@ learning_rate = 0.001  #User controll to set optimiser learning rate(Hyperparame
 optim_w_decay = 1e-05  #User controll to set optimiser weight decay (Hyperparameter)
 latent_space_nodes = 4
 noise_factor = 1                                           #User controll to set the noise factor, a multiplier for the magnitude of noise added. 0 means no noise added, 1 is defualt level of noise added, 10 is 10x default level added (Hyperparameter)
-num_epochs = 1                                              #User controll to set number of epochs (Hyperparameter)
+num_epochs = 10                                              #User controll to set number of epochs (Hyperparameter)
 batch_size= 10
+print_epochs = 1   #[default = 1] prints every other 'print_epochs' i.e if set to two then at end of every other epoch it will print a test on results
+save_epoch_printouts = 1 #[default = 0] 0 is normal behavior, If set to 1 then saves all end of epoch printouts to disk, if set to 2 then saves outputs whilst also printing for user
+outputfig_title = "Flattened, and Shifted "  #Must be string, value is used in the titling of the output plots if save_epoch_printouts is selected above
 
 #%% - Program Settings
 seed = 0              #0 is default which gives no seeeding to RNG, if the value is not zero then this is used for the RNG seeding for numpy, random, and torch libraries
@@ -35,10 +38,11 @@ print_partial_training_losses = 1
 encoder_debug = 1
 decoder_debug = 1
 debug_noise_function = 0
+
 #%% Dataloading
 # - Data Loader User Inputs
 batch_size = 10            #Data Loader # of Images to pull per batch (add a check to make sure the batch size is smaller than the total number of images in the path selected)
-dataset_title = "Dataset 1_Flat"
+dataset_title = "Dataset 4_Flat"
 data_path = "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Yr 3 Project/Circular and Spherical Dummy Datasets/" #"C:/Users/Student/Desktop/fake im data/"  #"/local/path/to/the/images/"
 time_dimension = 100
 # - Advanced Data Loader Settings
@@ -164,7 +168,7 @@ def test_epoch_den(encoder, decoder, device, dataloader, loss_fn,noise_factor=0.
     return val_loss.data
 
 ###Plotting Function
-def plot_ae_outputs_den(encoder,decoder,n=10,noise_factor=0.5):       #Defines a function for plotting the output of the autoencoder. And also the input + clean training data? Function takes inputs, 'encoder' and 'decoder' which are expected to be classes (defining the encode and decode nets), 'n' which is the number of ?????Images in the batch????, and 'noise_factor' which is a multiplier for the magnitude of the added noise allowing it to be scaled in intensity.  
+def plot_ae_outputs_den(encoder, decoder, epoch, outputfig_title, save_epoch_printouts=0, n=10,noise_factor=0.5):       #Defines a function for plotting the output of the autoencoder. And also the input + clean training data? Function takes inputs, 'encoder' and 'decoder' which are expected to be classes (defining the encode and decode nets), 'n' which is the number of ?????Images in the batch????, and 'noise_factor' which is a multiplier for the magnitude of the added noise allowing it to be scaled in intensity.  
     plt.figure(figsize=(16,4.5))                                      #Sets the figure size
     #print("TARget",targets)
     #print("tsize", np.shape(targets))
@@ -214,7 +218,14 @@ def plot_ae_outputs_den(encoder,decoder,n=10,noise_factor=0.5):       #Defines a
                     top=0.9, 
                     wspace=0.3, 
                     hspace=0.3)     
-    plt.show()                                 #After entire loop is finished, the generated plot is printed to screen
+    
+    if save_epoch_printouts == 1:
+        fig_epoch_number = 'Epoch: %s ' %epoch
+        plt.savefig('DeepClean2D testing ' + outputfig_title + fig_epoch_number + '.png')
+        plt.close()
+        print("\n# SAVED OUTPUT TEST IMAGE TO DISK #\n")
+    else:
+        plt.show()                                 #After entire loop is finished, the generated plot is printed to screen
 
 #%% - Program Internal Setup
 #image_noisy_list = []
@@ -285,8 +296,10 @@ for epoch in range(num_epochs):                              #For loop that iter
     history_da['train_loss'].append(train_loss)
     history_da['val_loss'].append(val_loss)
     print('\n EPOCH {}/{} \t train loss {:.3f} \t val loss {:.3f}'.format(epoch + 1, num_epochs,train_loss,val_loss))     #epoch +1 is to make up for the fact the range spans 0 to epoch-1 but we want to numerate things from 1 upwards for sanity
-    plot_ae_outputs_den(encoder,decoder,noise_factor=noise_factor)
-    
+
+    if epoch % print_epochs == 0:
+        plot_ae_outputs_den(encoder, decoder, epoch, outputfig_title, save_epoch_printouts, n=10, noise_factor=noise_factor)
+
     
     
     
