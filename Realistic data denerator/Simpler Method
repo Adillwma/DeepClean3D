@@ -4,6 +4,7 @@ import random
 
 reflect_x = 0.2
 
+# uniform points to see the pattern
 y_points = []
 num_points = 100
 min_num = -np.pi
@@ -12,7 +13,12 @@ step = (max_num - min_num) / num_points
 linear_x_points = np.linspace(min_num,max_num,num_points)
 x_reflect_points = []
 
-for i in linear_x_points:
+# random numbers that are more accurate to data
+random.seed(123)
+random_numbers = [random.uniform(-2 * np.pi, 2 * np.pi) for _ in range(60)]
+
+# here can set to either random numbers or to linear_x_points depending on what you want
+for i in random_numbers:
     while i < -reflect_x or i > reflect_x:
         if i < -reflect_x:
             i = -i - 2 * reflect_x
@@ -21,22 +27,44 @@ for i in linear_x_points:
     x_reflect_points.append(i)              # this has been checked and works
 
 
-y_points = [np.cos(i) for i in linear_x_points]
+# y points for each axxociated x
+y_points = [np.cos(i) for i in random_numbers]
+
+# join these x and y points into one list
 conjoined = np.squeeze(np.dstack((x_reflect_points, y_points)))
+
+# filter list to remove those that arent at critical angle
 angle_filter = [i for i in conjoined if np.cos(139.51 * np.pi / 180) > i[1] or i[1] > np.cos(40.49 * np.pi / 180)] # filters out points less than critical angle
 
+# check printing correctly
 print(angle_filter[:20])
 
-# time axis
-hit_point = 30          # point of impact of the particle in cm
-quartz_length = 160     # length of the quartz screen
+# adding time axis
+
+# point of impact of the particle in m
+hit_point = 1.3     
+
+# length of the quartz screen in m
+quartz_length = 1.6     
+
+# Speed of the cherenkov radiation in m
 particle_speed = 3E8
+
+
+
 time = []
+# for each of the allowed cherenkov particles
 for i in angle_filter:
+
+    # if it moves straight towards the detector
     if i[1] > 0:
-        # this is just time = dist / speed formula
+        # this is just time = dist / speed formula. dist / cos(angle) is true distance
         time.append((hit_point / i[1]) / particle_speed )
+
+    # if it moves away from the detector and gets reflected back up
     elif i[1] < 0:
+
+        # goes down and back up
         time.append(((2 * quartz_length - hit_point) / abs(i[1])) / particle_speed)
 
 
@@ -47,8 +75,8 @@ fig = plt.figure()
 ax = fig.add_subplot(projection='3d')
 ax.scatter([i[0] for i in angle_filter], [i[1] for i in angle_filter], time)    # first is x_axis, next is y axis, then time axis
 
-ax.set_xlabel('Width Plane')
-ax.set_ylabel('Y Label')
-ax.set_zlabel('Z Label')
+ax.set_xlabel('X')
+ax.set_ylabel('Y')
+ax.set_zlabel('Time plane')
 
 plt.show()
