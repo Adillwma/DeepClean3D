@@ -14,6 +14,8 @@ def realistic(hit_point, signal_points, noise_points, seed_val, dim=[88,128,100]
     dim = dimensions of the data we want to output (for us, 88x128x100) as a list
     '''
 
+
+
     reflect_x = 0.2
 
     # uniform points to see the pattern
@@ -28,8 +30,15 @@ def realistic(hit_point, signal_points, noise_points, seed_val, dim=[88,128,100]
     random.seed(seed_val)
     random_numbers = [random.uniform(-2 * np.pi, 2 * np.pi) for _ in range(signal_points)]
 
+    # ideal or random? 1 if want ideal or 0 if want random
+    ideal = 1
+    if ideal == 1:
+        x = linear_x_points
+    elif ideal == 0:
+        x = random_numbers
+
     # here can set to either random numbers or to linear_x_points depending on what you want
-    for i in random_numbers:
+    for i in x:
         while i < -reflect_x or i > reflect_x:
             if i < -reflect_x:
                 i = -i - 2 * reflect_x
@@ -39,18 +48,18 @@ def realistic(hit_point, signal_points, noise_points, seed_val, dim=[88,128,100]
 
 
     # y points for each accociated x
-    y_points = [np.cos(i) for i in random_numbers]
+    y_points = [np.cos(i) for i in x]
 
     # join these x and y points into one list
     conjoined = list(zip(x_reflect_points, y_points))
 
+    # critical angle quarts in radians
+    q_crit = 40.49 * np.pi / 180
+
     # filter list to remove those that arent at critical angle
-    angle_filter = [i for i in conjoined if np.cos(139.51 * np.pi / 180) > i[1] or i[1] > np.cos(40.49 * np.pi / 180)] # filters out points less than critical angle
+    angle_filter = [i for i in conjoined if np.cos(np.pi-q_crit) > i[1] or i[1] > np.cos(q_crit)] # filters out points less than critical angle
 
-    # adding time axis
-
-    # point of impact of the particle in m
-    hit_point = 1.3     
+    # adding time axis   
 
     # length of the quartz screen in m
     quartz_length = 1.6     
@@ -59,8 +68,9 @@ def realistic(hit_point, signal_points, noise_points, seed_val, dim=[88,128,100]
     particle_speed = 3E8
 
     # max time particle could take. This allows us to set the z axis.
-    t_max = (2*quartz_length) / particle_speed
-
+    t_max = ((2*quartz_length) / np.cos(q_crit)) / particle_speed
+    print(np.cos(40.49))
+    print(np.cos(1))
     #Alternatively, just define each pixel in z axis to be i.e. 0.01ns later, then assign from there
 
     time = []
@@ -80,7 +90,6 @@ def realistic(hit_point, signal_points, noise_points, seed_val, dim=[88,128,100]
             time.append(((2 * quartz_length - hit_point) / abs(i[1])) / particle_speed)
 
     final = list(zip(angle_filter, time))     # This is list of ((x,y), time) - dont ask me why, its annoying
-    print(final[:5])
 
     # create bins
     # x axis is between the reflectors, and the pixels of the x axis are the first dim of the input dim
@@ -104,6 +113,7 @@ def realistic(hit_point, signal_points, noise_points, seed_val, dim=[88,128,100]
     fig = plt.figure()
     ax = fig.add_subplot(projection='3d')
     ax.scatter(x_pixel, y_pixel, z_pixel)
+    ax.scatter(x_noise, y_noise, z_noise)
 
     ax.set_xlabel('X')
     ax.set_ylabel('Y')
@@ -113,4 +123,4 @@ def realistic(hit_point, signal_points, noise_points, seed_val, dim=[88,128,100]
 
 
 
-realistic(hit_point=30, signal_points=60, noise_points=0, seed_val=123, dim=[88,128,100])
+realistic(hit_point=1.5, signal_points=1000, noise_points=0, seed_val=123, dim=[88,128,100])
