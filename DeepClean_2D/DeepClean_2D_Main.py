@@ -48,10 +48,11 @@ batch_size_protection = 1  #(Default = 1 = [ON]) //INPUT 0 or 1//    #WARNING if
 
 # - Data Loader Preparation Transforms 
 #####For info on all transforms check out: https://pytorch.org/vision/0.9/transforms.html
-train_transforms = transforms.Compose([#transforms.RandomRotation(30),         #Compose is required to chain together multiple transforms in serial 
+train_transforms = transforms.Compose([transforms.ToTensor(),
+                                       #transforms.RandomRotation(30),         #Compose is required to chain together multiple transforms in serial 
                                        #transforms.RandomResizedCrop(224),
                                        #transforms.RandomHorizontalFlip(),
-                                       transforms.ToTensor()               #other transforms can be dissabled but to tensor must be left enabled
+                                       #transforms.ToTensor()               #other transforms can be dissabled but to tensor must be left enabled
                                        ]) 
 test_transforms = transforms.Compose([#transforms.Resize(255),
                                       #transforms.CenterCrop(224),

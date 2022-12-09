@@ -283,7 +283,7 @@ for f in range(0, dataset_size):
             np.save(directory + filename + ' Sphere (hits data) %s  - Variables = ' % (f+1) + run_settings, sphere_data)
         
         else:
-            pixel_block_3d_flattened = np.zeros((2, detector_pixel_dimensions[1],detector_pixel_dimensions[0]),dtype = np.single)
+            pixel_block_3d_flattened = np.zeros((2, detector_pixel_dimensions[1], detector_pixel_dimensions[0]), dtype = np.single)
             for row, _ in enumerate(sphere_data[ :,2]):
                 x_coordinate, y_coordinate, TOF = sphere_data[row]
                 if -detector_pixel_dimensions[1]/2 <= x_coordinate <= detector_pixel_dimensions[1]/2 and -detector_pixel_dimensions[0]/2 <= y_coordinate <= detector_pixel_dimensions[0]/2:
