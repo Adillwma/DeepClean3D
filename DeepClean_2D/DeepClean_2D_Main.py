@@ -30,7 +30,7 @@ num_epochs = 10                                              #User controll to s
 batch_size= 10
 print_epochs = 1   #[default = 1] prints every other 'print_epochs' i.e if set to two then at end of every other epoch it will print a test on results
 save_epoch_printouts = 1 #[default = 0] 0 is normal behavior, If set to 1 then saves all end of epoch printouts to disk, if set to 2 then saves outputs whilst also printing for user
-outputfig_title = "Flattened, and Shifted "  #Must be string, value is used in the titling of the output plots if save_epoch_printouts is selected above
+outputfig_title = "Flattened, and Shifted"  #Must be string, value is used in the titling of the output plots if save_epoch_printouts is selected above
 
 #%% - Program Settings
 seed = 0              #0 is default which gives no seeeding to RNG, if the value is not zero then this is used for the RNG seeding for numpy, random, and torch libraries
@@ -45,6 +45,7 @@ batch_size = 10            #Data Loader # of Images to pull per batch (add a che
 dataset_title = "Dataset 4_Flat"
 data_path = "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Yr 3 Project/Circular and Spherical Dummy Datasets/" #"C:/Users/Student/Desktop/fake im data/"  #"/local/path/to/the/images/"
 time_dimension = 100
+
 # - Advanced Data Loader Settings
 debug_loader_batch = 0     #(Default = 0 = [OFF]) //INPUT 0 or 1//   #Setting debug loader batch will print to user the images taken in by the dataoader in this current batch and print the corresponding labels
 plot_every_other = 1       #(Default = 1) //MUST BE INTEGER INPUT//  #If debug loader batch is enabled this sets the interval for printing for user, 1 is every single img in the batch, 2 is every other img, 5 is every 5th image etc 
@@ -220,8 +221,8 @@ def plot_ae_outputs_den(encoder, decoder, epoch, outputfig_title, save_epoch_pri
                     hspace=0.3)     
     
     if save_epoch_printouts == 1:
-        fig_epoch_number = 'Epoch: %s ' %epoch
-        plt.savefig('DeepClean2D testing ' + outputfig_title + fig_epoch_number + '.png')
+        Out_Label = 'Output_Graphics/DeepClean2D Testing {out_title} Epoch: {ep}.png'.format(ep = epoch, out_title=outputfig_title) #!!!
+        plt.savefig("Output_Graphics/DeepClean2D Testing.png", format='png') #!!!
         plt.close()
         print("\n# SAVED OUTPUT TEST IMAGE TO DISK #\n")
     else:
