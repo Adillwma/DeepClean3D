@@ -29,7 +29,7 @@ noise_factor = 1                                           #User controll to set
 num_epochs = 10                                              #User controll to set number of epochs (Hyperparameter)
 batch_size= 10
 print_epochs = 1   #[default = 1] prints every other 'print_epochs' i.e if set to two then at end of every other epoch it will print a test on results
-save_epoch_printouts = 1 #[default = 0] 0 is normal behavior, If set to 1 then saves all end of epoch printouts to disk, if set to 2 then saves outputs whilst also printing for user
+save_epoch_printouts = 0 #[default = 0] 0 is normal behavior, If set to 1 then saves all end of epoch printouts to disk, if set to 2 then saves outputs whilst also printing for user
 outputfig_title = "Flattened, and Shifted"  #Must be string, value is used in the titling of the output plots if save_epoch_printouts is selected above
 
 #%% - Program Settings
@@ -42,7 +42,7 @@ debug_noise_function = 0
 #%% Dataloading
 # - Data Loader User Inputs
 batch_size = 10            #Data Loader # of Images to pull per batch (add a check to make sure the batch size is smaller than the total number of images in the path selected)
-dataset_title = "Dataset 4_Flat"
+dataset_title = "Dataset 5_Flat"
 data_path = "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Yr 3 Project/Circular and Spherical Dummy Datasets/" #"C:/Users/Student/Desktop/fake im data/"  #"/local/path/to/the/images/"
 time_dimension = 100
 
@@ -171,13 +171,12 @@ def test_epoch_den(encoder, decoder, device, dataloader, loss_fn,noise_factor=0.
 ###Plotting Function
 def plot_ae_outputs_den(encoder, decoder, epoch, outputfig_title, save_epoch_printouts=0, n=10,noise_factor=0.5):       #Defines a function for plotting the output of the autoencoder. And also the input + clean training data? Function takes inputs, 'encoder' and 'decoder' which are expected to be classes (defining the encode and decode nets), 'n' which is the number of ?????Images in the batch????, and 'noise_factor' which is a multiplier for the magnitude of the added noise allowing it to be scaled in intensity.  
     plt.figure(figsize=(16,4.5))                                      #Sets the figure size
-    #print("TARget",targets)
-    #print("tsize", np.shape(targets))
-    #print("ttype", type(targets))
+    plt.suptitle("Epoch %s" %(epoch+1))
+
     for i in range(n):                                                #Runs for loop where 'i' itterates over 'n' total values which range from 0 to n-1
       
       #Following section creates the noised image data drom the original clean labels (images)   
-      ax = plt.subplot(3,n,i+1)                                       #Creates a number of subplots for the 'Original images??????' i.e the labels. the position of the subplot is i+1 as it falls in the first row
+      ax = plt.subplot(3,n,i+1)                                      #Creates a number of subplots for the 'Original images??????' i.e the labels. the position of the subplot is i+1 as it falls in the first row
       img = test_dataset[i][0].unsqueeze(0)
       image_noisy = add_noise(img,noise_factor)     
       image_noisy = image_noisy.to(device)
