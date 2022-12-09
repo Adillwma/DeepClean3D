@@ -7,6 +7,7 @@ Created on Tue Nov 15 19:02:32 2022
 USER NOTICE!
 x Must be inside the root dir of the DataLoader or the Neural Net that calls it.
 """
+#%% - Dependencies
 import torch
 import matplotlib.pyplot as plt
 from torchvision import datasets
