@@ -22,18 +22,17 @@ from DataLoader_Functions_V2 import initialise_data_loader
 from autoencoders.autoencoder_2D_V1 import Encoder, Decoder
 
 #%% - User Inputs
-learning_rate = 0.001  #User controll to set optimiser learning rate(Hyperparameter)
-optim_w_decay = 1e-05  #User controll to set optimiser weight decay (Hyperparameter)
+learning_rate = 0.001                       #User controll to set optimiser learning rate(Hyperparameter)
+optim_w_decay = 1e-05                       #User controll to set optimiser weight decay (Hyperparameter)
 latent_space_nodes = 4
-noise_factor = 1                                           #User controll to set the noise factor, a multiplier for the magnitude of noise added. 0 means no noise added, 1 is defualt level of noise added, 10 is 10x default level added (Hyperparameter)
-num_epochs = 10                                              #User controll to set number of epochs (Hyperparameter)
-batch_size= 10
-print_epochs = 1   #[default = 1] prints every other 'print_epochs' i.e if set to two then at end of every other epoch it will print a test on results
-save_epoch_printouts = 0 #[default = 0] 0 is normal behavior, If set to 1 then saves all end of epoch printouts to disk, if set to 2 then saves outputs whilst also printing for user
-outputfig_title = "Flattened, and Shifted"  #Must be string, value is used in the titling of the output plots if save_epoch_printouts is selected above
-
+noise_factor = 0                            #User controll to set the noise factor, a multiplier for the magnitude of noise added. 0 means no noise added, 1 is defualt level of noise added, 10 is 10x default level added (Hyperparameter)
+num_epochs = 10                             #User controll to set number of epochs (Hyperparameter)
+batch_size = 10                           #Data Loader # of Images to pull per batch (add a check to make sure the batch size is smaller than the total number of images in the path selected)
+print_epochs = 1                            #[default = 1] prints every other 'print_epochs' i.e if set to two then at end of every other epoch it will print a test on results
+save_epoch_printouts = 1                    #[default = 0] 0 is normal behavior, If set to 1 then saves all end of epoch printouts to disk, if set to 2 then saves outputs whilst also printing for user
+outputfig_title = "Test"  #Must be string, value is used in the titling of the output plots if save_epoch_printouts is selected above
 #%% - Program Settings
-seed = 0              #0 is default which gives no seeeding to RNG, if the value is not zero then this is used for the RNG seeding for numpy, random, and torch libraries
+seed = 0                                    #0 is default which gives no seeeding to RNG, if the value is not zero then this is used for the RNG seeding for numpy, random, and torch libraries
 print_partial_training_losses = 1
 encoder_debug = 1
 decoder_debug = 1
@@ -41,8 +40,7 @@ debug_noise_function = 0
 
 #%% Dataloading
 # - Data Loader User Inputs
-batch_size = 10            #Data Loader # of Images to pull per batch (add a check to make sure the batch size is smaller than the total number of images in the path selected)
-dataset_title = "Dataset 5_Flat"
+dataset_title = "Dataset 6_Flat"
 data_path = "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Yr 3 Project/Circular and Spherical Dummy Datasets/" #"C:/Users/Student/Desktop/fake im data/"  #"/local/path/to/the/images/"
 time_dimension = 100
 
@@ -54,14 +52,17 @@ batch_size_protection = 1  #(Default = 1 = [ON]) //INPUT 0 or 1//    #WARNING if
 # - Data Loader Preparation Transforms 
 #####For info on all transforms check out: https://pytorch.org/vision/0.9/transforms.html
 train_transforms = transforms.Compose([transforms.ToTensor(),
+                                       #transforms.Normalize(),
                                        #transforms.RandomRotation(30),         #Compose is required to chain together multiple transforms in serial 
                                        #transforms.RandomResizedCrop(224),
                                        #transforms.RandomHorizontalFlip(),
                                        #transforms.ToTensor()               #other transforms can be dissabled but to tensor must be left enabled
                                        ]) 
+
 test_transforms = transforms.Compose([#transforms.Resize(255),
                                       #transforms.CenterCrop(224),
-                                      transforms.ToTensor()
+                                      transforms.ToTensor(),
+                                      #transforms.Normalize()
                                       ])
 
 # - Initialise Data Loader
@@ -85,26 +86,45 @@ class AddGaussianNoise(object):                   #Class generates noise based o
 #%% - Functions
 ### Random Noise Generator Function
 def add_noise(inputs,noise_factor=0.3, time_dimension=100):
-     cNOISE = torch.randn_like(inputs) * noise_factor
+     cNOISE = torch.randn_like(inputs) #* time_dimension
      noise_init = torch.randn_like(inputs)**2 * time_dimension
-     noise = torch.clip(noise_init,0.,100.)
-     noisy = inputs + noise
+     noise = torch.clip(cNOISE,0.,100.)
+     noisy = inputs# + noise
      if debug_noise_function == 1:
-        print("INPUT")
+        print("INPUT", torch.min(inputs), torch.max(inputs))
         plt.imshow(inputs[0][0])
         plt.show()
-        print("cNOISE")
+        print("cNOISE", torch.min(cNOISE), torch.max(cNOISE))
         plt.imshow(cNOISE[0][0])
         plt.show()
-        print("noise")
+        print("noise", torch.min(noise), torch.max(noise))
         plt.imshow(noise[0][0])
         plt.show()
-        print("noisy")
+        print("noisy", torch.min(noisy), torch.max(noisy))
         plt.imshow(noisy[0][0])
         plt.show()
      return noisy
 
-
+### Random Noise Generator Function
+def add_noise2(inputs,noise_points=0.3, time_dimension=100):
+     cNOISE = torch.randn_like(inputs) #* time_dimension
+     noise_init = torch.randn_like(inputs)**2 * time_dimension
+     noise = torch.clip(cNOISE,0.,100.)
+     noisy = inputs# + noise
+     if debug_noise_function == 1:
+        print("INPUT", torch.min(inputs), torch.max(inputs))
+        plt.imshow(inputs[0][0])
+        plt.show()
+        print("cNOISE", torch.min(cNOISE), torch.max(cNOISE))
+        plt.imshow(cNOISE[0][0])
+        plt.show()
+        print("noise", torch.min(noise), torch.max(noise))
+        plt.imshow(noise[0][0])
+        plt.show()
+        print("noisy", torch.min(noisy), torch.max(noisy))
+        plt.imshow(noisy[0][0])
+        plt.show()
+     return noisy
 
 
 ###RNG Seeding for Determinism Function
@@ -171,13 +191,15 @@ def test_epoch_den(encoder, decoder, device, dataloader, loss_fn,noise_factor=0.
 ###Plotting Function
 def plot_ae_outputs_den(encoder, decoder, epoch, outputfig_title, save_epoch_printouts=0, n=10,noise_factor=0.5):       #Defines a function for plotting the output of the autoencoder. And also the input + clean training data? Function takes inputs, 'encoder' and 'decoder' which are expected to be classes (defining the encode and decode nets), 'n' which is the number of ?????Images in the batch????, and 'noise_factor' which is a multiplier for the magnitude of the added noise allowing it to be scaled in intensity.  
     plt.figure(figsize=(16,4.5))                                      #Sets the figure size
-    plt.suptitle("Epoch %s" %(epoch+1))
+    plt.suptitle("Epoch %s \n" %(epoch))
 
     for i in range(n):                                                #Runs for loop where 'i' itterates over 'n' total values which range from 0 to n-1
       
       #Following section creates the noised image data drom the original clean labels (images)   
       ax = plt.subplot(3,n,i+1)                                      #Creates a number of subplots for the 'Original images??????' i.e the labels. the position of the subplot is i+1 as it falls in the first row
       img = test_dataset[i][0].unsqueeze(0)
+      #print("MAX", torch.max(img))
+      #print("MIN", torch.min(img))
       image_noisy = add_noise(img,noise_factor)     
       image_noisy = image_noisy.to(device)
       
@@ -214,14 +236,16 @@ def plot_ae_outputs_den(encoder, decoder, epoch, outputfig_title, save_epoch_pri
     
     plt.subplots_adjust(left=0.1,              #Adjusts the exact layout of the plots including whwite space round edges
                     bottom=0.1, 
-                    right=0.7, 
+                    right=0.9, 
                     top=0.9, 
-                    wspace=0.3, 
+                    wspace=0.1, 
                     hspace=0.3)     
     
     if save_epoch_printouts == 1:
-        Out_Label = 'Output_Graphics/DeepClean2D Testing {out_title} Epoch: {ep}.png'.format(ep = epoch, out_title=outputfig_title) #!!!
-        plt.savefig("Output_Graphics/DeepClean2D Testing.png", format='png') #!!!
+        settings = "Settings = [ep {}][bs {}][lr {}][od {}][ls {}][nf {}][ds {}][sd {}]".format(num_epochs, batch_size, learning_rate, optim_w_decay, latent_space_nodes, noise_factor, dataset_title, seed)
+        Out_Label = 'Output_Graphics/{}, Epoch {}, {} .png'.format(outputfig_title, epoch, settings) #!!!
+        plt.savefig(Out_Label, format='png')
+        #plt.savefig("Output_Graphics/DeepClean2D Testing.png", format='png') #!!!
         plt.close()
         print("\n# SAVED OUTPUT TEST IMAGE TO DISK #\n")
     else:
