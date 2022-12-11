@@ -25,7 +25,7 @@ below and then run full code.
 radius = (10,40) #User setting can be one number i.e (x) or a range in a tuple (min,max)
 signal_points_input = 100#(50,200) #(50,200) #User setting can be a range i.e "range(min,max,increment). If wanting to set a constant value then pass it as both min and max i.e (4,4)
 noise_points_input = 0#(50,100)#(80,100)  #(80,100) #If 0 there is no noise added
-dataset_size = 1000 #Number of individual data plots to generate and save for the dataset
+dataset_size = 5000 #Number of individual data plots to generate and save for the dataset
 centre_ofset_input = (50,50)#(100,400)    #This is maximum displacment from centre for x and then for y (NOT a range)
 detector_pixel_dimensions = (11*8, 128) #x, y in pixels
 time_resoloution = 100 #time aka z axis
@@ -34,7 +34,7 @@ time_resoloution = 100 #time aka z axis
 output_type = 1 #0 outputs hit pixel locations, 1 outputs full sensor pixel array including no hit spaces
 create_circular = 0 #0 means no circular data generated, 1 will generate circular data
 create_spherical = 1 #0 means no spherical data generated, 1 will generate spherical data
-filename = 'TEST_Hemisphere_Flattened_Offset_Data'
+filename = 'TEST_H_F_O_S_Normalised_Data'
 directory = "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Yr 3 Project/Circular and Spherical Dummy Datasets/"
 
 #Debugging Options
@@ -282,8 +282,13 @@ for f in range(0, dataset_size):
         #Combines the different dimensions (x, y & z, and labels) into one N x 4 array    
         sphere_data = np.vstack((x_sph_output, y_sph_output, z_sph_output)).T #, labels_output)).T
         sphere_data_labels = np.vstack((x_sph_data, y_sph_data, z_sph_data)).T
+        
         #Randomises the order of the points so that the noise values are not all the last values, just in case the network uses that fact
         np.random.shuffle(sphere_data)
+
+        #Normalise TOF Data
+        #mean, std = sphere_data.mean(), sphere_data.std()
+        #print(mean, std)
 
         #Data output to disk
         if output_type == 0:
@@ -294,7 +299,7 @@ for f in range(0, dataset_size):
             for row, _ in enumerate(sphere_data[ :,2]):
                 x_coordinate, y_coordinate, TOF = sphere_data[row]
                 if 0 <= x_coordinate < detector_pixel_dimensions[0] and 0 <= y_coordinate < detector_pixel_dimensions[1]:
-                    pixel_block_3d_flattened[0][int(y_coordinate)][int(x_coordinate)] = TOF
+                    pixel_block_3d_flattened[0][int(y_coordinate)][int(x_coordinate)] = TOF    #TOF normalisation to 0-1
             
             for row, _ in enumerate(sphere_data_labels[ :,2]):                
                 labels_x_coordinate, labels_y_coordinate, labels_TOF = sphere_data_labels[row]
