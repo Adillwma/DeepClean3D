@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-2D Flattened Spherical Data Test Generator v1.0.0
+2D Flattened Data Test Generator v2.0.0
 @author: Adill Al-Ashgar
 Created on Fri Dec 2 22:50:59 2022
 
