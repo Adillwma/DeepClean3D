@@ -19,7 +19,7 @@ import random
 import os
 
 from DataLoader_Functions_V2 import initialise_data_loader
-from autoencoders.autoencoder_2D_V1 import Encoder, Decoder
+from autoencoders.autoencoder_2D_V2 import Encoder, Decoder
 
 #%% - User Inputs
 learning_rate = 0.001                       #User controll to set optimiser learning rate(Hyperparameter)
@@ -41,7 +41,7 @@ outputfig_title = "Test"  #Must be string, value is used in the titling of the o
 
 #%% Dataloading
 # - Data Loader User Inputs
-dataset_title = "Dataset 4_Flat"
+dataset_title = "Dataset 6_Flat"
 data_path = "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Yr 3 Project/Circular and Spherical Dummy Datasets/" #"C:/Users/Student/Desktop/fake im data/"  #"/local/path/to/the/images/"
 time_dimension = 100
 
