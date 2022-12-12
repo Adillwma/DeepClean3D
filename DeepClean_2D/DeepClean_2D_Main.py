@@ -35,8 +35,8 @@ print_partial_training_losses = 1
 encoder_debug = 1
 decoder_debug = 1
 debug_noise_function = 0
-print_epochs = 1                            #[default = 1] prints every other 'print_epochs' i.e if set to two then at end of every other epoch it will print a test on results
-save_epoch_printouts = 1                    #[default = 0] 0 is normal behavior, If set to 1 then saves all end of epoch printouts to disk, if set to 2 then saves outputs whilst also printing for user
+print_epochs = 5                            #[default = 1] prints every other 'print_epochs' i.e if set to two then at end of every other epoch it will print a test on results
+save_epoch_printouts = 0                    #[default = 0] 0 is normal behavior, If set to 1 then saves all end of epoch printouts to disk, if set to 2 then saves outputs whilst also printing for user
 outputfig_title = "Test"  #Must be string, value is used in the titling of the output plots if save_epoch_printouts is selected above
 
 #%% Dataloading
@@ -280,8 +280,8 @@ def plot_ae_outputs_den(encoder, decoder, epoch, outputfig_title, time_dimension
     else:
         plt.show()                                 #After entire loop is finished, the generated plot is printed to screen
 
-    ###3D Reconstruction
-    reconstruction_3D(rec_img.cpu().squeeze().numpy(), time_dimension, threshold)
+        ###3D Reconstruction
+        reconstruction_3D(rec_img.cpu().squeeze().numpy(), time_dimension, threshold)
 
 #%% - Program Internal Setup
 #image_noisy_list = []
