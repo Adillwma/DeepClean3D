@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Convolutional Layer Output Size Calculator V3.0
+Convolutional Layer Finder V1
 @author: Adill Al-Ashgar
 Created on Fri Nov 11 02:45:06 2022
 
@@ -15,25 +15,6 @@ x You can also import this function into another page by putting it into the sam
 #%% - Dependencies
 import matplotlib.pyplot as plt
 from math import floor
-
-#%% - User Inputs
-"""
-conv_type = 1 #Select conv type: 0=conv2D, 1=conv2D.Transpose, 2=conv3D, 3=conv3D.Transpose (WARNING: Values other than 0-3 will select conv3D.Transpose)
-
-H_in = 7         # height of the inputs
-W_in = 4         # width of the inputs
-D_in = 81         # depth of the input (Only used if one of the 3D conv types is selected above)
-K = 3              # kernel size (can be an integer of a two-value-integer tuple)
-P = 0            # padding  (can be an integer of a two-value-integer tuple)
-S = 2              # stride   (can be an integer of a two-value-integer tuple)
-D = 1              # dilation (can be an integer of a two-value-integer tuple)
-O = (0,1)           # Output padding (used only in the conv Transpose )
-
-#Note: Currently channels are unused in this script, possible improvment? Can add layer channel/parameter calculation from it?
-C_in = 16           # number of input channels
-C_out = 32          # number of output channels
-"""
-
 
 #%% - Helper Functions
 #Conv2D
@@ -56,8 +37,8 @@ def conv_T_outputs_3d(I, P, D, K, S, O):
     out = (I - 1) *S - 2 *P + D * (K - 1) + O + 1  
     return(out)
 
-#%% - Wrapper function
-def conv_calculator(conv_type, K, P, S, D, H_in, W_in, D_in=0, O=1):
+#%% - Function
+def conv_calculator(conv_type, K, P, S, D, H_in, W_in, D_in=0, O=0):
     """
     conv_type = Select convolution type: \n0=conv2D, 1=conv2D.Transpose, 2=conv3D, 3=conv3D.Transpose \n(WARNING: Values other than 0-3 will select conv3D.Transpose)\n
     H_in = height of the inputs\n
@@ -128,23 +109,24 @@ def conv_calculator(conv_type, K, P, S, D, H_in, W_in, D_in=0, O=1):
         outputs = floor(H), floor(W), floor(Dep)
     return(outputs)
 
-#%% - Outputs
+#%% - Driver
 
+#User Inputs
 start_size = 128, 88
 Kernal = (3,3)
 
-CL1 = conv_calculator(conv_type=0, K=Kernal, P=0, S=2, D=1, H_in=start_size[0], W_in=start_size[1], D_in=0, O=0)
-CL2 = conv_calculator(conv_type=0, K=Kernal, P=0, S=2, D=1, H_in=CL1[0], W_in=CL1[1], D_in=0, O=0)
-CL3 = conv_calculator(conv_type=0, K=Kernal, P=(0,1), S=2, D=1, H_in=CL2[0], W_in=CL2[1], D_in=0, O=0)
-CL4 = conv_calculator(conv_type=0, K=Kernal, P=0, S=2, D=1, H_in=CL3[0], W_in=CL3[1], D_in=0, O=0)
+CL1 = conv_calculator(conv_type=0, K=Kernal, P=0, S=2, D=1, H_in=start_size[0], W_in=start_size[1])
+CL2 = conv_calculator(conv_type=0, K=Kernal, P=0, S=2, D=1, H_in=CL1[0], W_in=CL1[1])
+CL3 = conv_calculator(conv_type=0, K=Kernal, P=(0,1), S=2, D=1, H_in=CL2[0], W_in=CL2[1])
+CL4 = conv_calculator(conv_type=0, K=Kernal, P=0, S=2, D=1, H_in=CL3[0], W_in=CL3[1])
 
-CLT1 = conv_calculator(conv_type=1, K=Kernal, P=0, S=2, D=1, H_in=CL4[0], W_in=CL4[1], D_in=0, O=0)
-CLT2 = conv_calculator(conv_type=1, K=Kernal, P=(0,1), S=2, D=1, H_in=CLT1[0], W_in=CLT1[1], D_in=0, O=0)
-CLT3 = conv_calculator(conv_type=1, K=Kernal, P=0, S=2, D=1, H_in=CLT2[0], W_in=CLT2[1], D_in=0, O=0)
-CLT4 = conv_calculator(conv_type=1, K=Kernal, P=0, S=2, D=1, H_in=CLT3[0], W_in=CLT3[1], D_in=0, O=1)
+CLT1 = conv_calculator(conv_type=1, K=Kernal, P=0, S=2, D=1, H_in=CL4[0], W_in=CL4[1], O=0)
+CLT2 = conv_calculator(conv_type=1, K=Kernal, P=(0,1), S=2, D=1, H_in=CLT1[0], W_in=CLT1[1], O=0)
+CLT3 = conv_calculator(conv_type=1, K=Kernal, P=0, S=2, D=1, H_in=CLT2[0], W_in=CLT2[1], O=0)
+CLT4 = conv_calculator(conv_type=1, K=Kernal, P=0, S=2, D=1, H_in=CLT3[0], W_in=CLT3[1], O=1)
 
-print("Initial Size:", start_size)
-print()
+#Outputs
+print("Initial Size:", start_size,"\n")
 print ("Conv 1 Size:", CL1)
 print ("Conv 2 Size:", CL2)
 print ("Conv 3 Size:", CL3)
