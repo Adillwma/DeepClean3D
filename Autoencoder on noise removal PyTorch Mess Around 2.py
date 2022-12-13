@@ -24,6 +24,7 @@ learning_rate = 0.001
 path = "C:/Users/Student/Desktop/fake im data/"  #"/path/to/your/images/"
 #%% - Classes
 
+
 ### Gaussian Noise Generator Class
 class AddGaussianNoise(object):
     def __init__(self, mean=0., std=1.):
