@@ -1,0 +1,137 @@
+# -*- coding: utf-8 -*-
+"""
+Realistic Data Simulator v1.0.0
+@author: Max Carter
+Created on Fri Dec 13 06:50:34 2022
+"""
+
+#%% - Dependencies
+import numpy as np
+import matplotlib.pyplot as plt
+import random
+   
+#%% - Function
+def realistic_data_generator(signal_points, noise_points, seed_val, detector_pixel_dimensions=(88,128), time_resoloution=100, hit_point=1.5, ideal=1, debug_image_generator=0):
+    '''
+    hit_point = the point on the detector the particle makes impact. May be able to make this 2D later (x,y)
+    signal_points = number of points the hit produces (average 30 for realistic photon), N.B. these may not be at critical angle to 60 is maximum number
+    noise_points = number of noise points
+    seed_val = seed value
+    cox = image offset in x, default = 0
+    coy = image offset in y, defauly = 0
+    dim = dimensions of the data we want to output (for us, 88x128x100) as a list
+    '''
+
+
+
+    reflect_x = 0.2
+
+    # uniform points to see the pattern
+    y_points = []
+    min_num = -np.pi
+    max_num = np.pi
+    step = (max_num - min_num) / signal_points
+    linear_x_points = np.linspace(min_num,max_num,signal_points)
+    x_reflect_points = []
+
+    # random numbers that are more accurate to data
+    #random.seed(seed_val)
+    random_numbers = [random.uniform(-2 * np.pi, 2 * np.pi) for _ in range(signal_points)]
+
+    # ideal or random? 1 if want ideal or 0 if want random
+
+    if ideal == 1:
+        x = linear_x_points
+    elif ideal == 0:
+        x = random_numbers
+
+    # here can set to either random numbers or to linear_x_points depending on what you want
+    for i in x:
+        while i < -reflect_x or i > reflect_x:
+            if i < -reflect_x:
+                i = -i - 2 * reflect_x
+            elif i > reflect_x:
+                i = -i + 2 * reflect_x
+        x_reflect_points.append(i)              # this has been checked and works
+
+
+    # y points for each accociated x
+    y_points = [np.cos(i) for i in x]
+
+    # join these x and y points into one list
+    conjoined = list(zip(x_reflect_points, y_points))
+
+    # critical angle quarts in radians
+    q_crit = 40.49 * np.pi / 180
+
+    # filter list to remove those that arent at critical angle
+    angle_filter = [i for i in conjoined if np.cos(np.pi-q_crit) > i[1] or i[1] > np.cos(q_crit)] # filters out points less than critical angle
+
+    # adding time axis   
+
+    # length of the quartz screen in m
+    quartz_length = 1.6     
+
+    # Speed of the cherenkov radiation in m, need to add n for quartz
+    particle_speed = 3E8
+
+    # max time particle could take. This allows us to set the z axis.
+    t_max = ((2*quartz_length) / np.cos(q_crit)) / particle_speed
+    #print(np.cos(40.49))
+    #print(np.cos(1))
+    #Alternatively, just define each pixel in z axis to be i.e. 0.01ns later, then assign from there
+
+    time = []
+    # for each of the allowed cherenkov particles
+    for i in angle_filter:
+
+        # if it moves straight towards the detector
+        if i[1] > 0:
+            # this is just time = dist / speed formula. dist / cos(angle) is true distance
+            time.append((hit_point / i[1]) / particle_speed )
+
+
+        # if it moves away from the detector and gets reflected back up
+        elif i[1] < 0:
+
+            # goes down and back up
+            time.append(((2 * quartz_length - hit_point) / abs(i[1])) / particle_speed)
+
+    final = list(zip(angle_filter, time))     # This is list of ((x,y), time) - dont ask me why, its annoying
+
+    # create bins
+    # x axis is between the reflectors, and the pixels of the x axis are the first dim of the input dim
+    x_idxs = np.digitize([i[0][0] for i in final],np.linspace(-reflect_x, reflect_x, detector_pixel_dimensions[0])) #takes x points, then bins, returns indices
+
+    y_idxs = np.digitize([i[0][1] for i in final],np.linspace(-1, 1, detector_pixel_dimensions[1]))
+
+    z_idxs = np.digitize([i[1] for i in final],np.linspace(0, t_max, time_resoloution))
+
+    # all of the above are 1 too few as they go from 0 to 87 index. We want 1 to 88 so.
+    x_pixel = [i+1 for i in x_idxs]
+    y_pixel = [i+1 for i in y_idxs]
+    z_pixel = [i+1 for i in z_idxs]
+
+    # noise points
+    x_noise = [random.randint(1, detector_pixel_dimensions[0]) for _ in range(noise_points)]
+    y_noise = [random.randint(1, detector_pixel_dimensions[1]) for _ in range(noise_points)]
+    z_noise = [random.randint(1, time_resoloution) for _ in range(noise_points)]
+    
+    # plotting the figure
+    if debug_image_generator == 1:
+        fig = plt.figure()
+        ax = fig.add_subplot(projection='3d')
+        ax.scatter(x_pixel, y_pixel, z_pixel)
+        ax.scatter(x_noise, y_noise, z_noise)
+
+        ax.set_xlabel('X')
+        ax.set_ylabel('Y')
+        ax.set_zlabel('Time')
+
+        plt.show()
+
+    return(x_pixel, x_noise, y_pixel, y_noise, z_pixel, z_noise)
+
+
+#%% - Driver
+realistic_data_generator(signal_points=1000, noise_points=0, seed_val=123, detector_pixel_dimensions=(88,128), time_resoloution=100, hit_point=1.5, ideal=1, debug_image_generator=1)
