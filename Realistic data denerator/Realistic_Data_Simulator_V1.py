@@ -134,4 +134,4 @@ def realistic_data_generator(signal_points, noise_points, seed_val, detector_pix
 
 
 #%% - Driver
-realistic_data_generator(signal_points=1000, noise_points=0, seed_val=123, detector_pixel_dimensions=(88,128), time_resoloution=100, hit_point=1.5, ideal=1, debug_image_generator=1)
+#realistic_data_generator(signal_points=1000, noise_points=0, seed_val=123, detector_pixel_dimensions=(88,128), time_resoloution=100, hit_point=1.5, ideal=1, debug_image_generator=1)
