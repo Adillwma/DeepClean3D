@@ -132,13 +132,13 @@ def add_noise2(inputs,noise_points=0.3, time_dimension=100):
 #3D Reconstruction
 def reconstruction_3D(image, time_dimension, reconstruction_threshold):
 #Remember image comes in in the form y,x not x,y so column and row are flipped in indexing
-    print("MAX",np.max(image))
-    print("MIN",np.min(image))
+    #print("MAX",np.max(image))
+    #print("MIN",np.min(image))
 
     plt.imshow(image)
     plt.show()
     shape = np.shape(image)
-    print("Input Image Shape",shape)
+
     x_list = []
     y_list = []
     z_list = []
@@ -171,7 +171,8 @@ def belief_telemetry(data, reconstruction_threshold, epoch):
 
     above_threshold = (data2 >= reconstruction_threshold).sum()
     below_threshold = (data2 < reconstruction_threshold).sum()
-
+    print("ABOVE",above_threshold)
+    print("BELOW",below_threshold)
     return (above_threshold, below_threshold)
 
 def plot_telemetry(telemetry):
@@ -313,7 +314,7 @@ def plot_ae_outputs_den(encoder, decoder, epoch, outputfig_title, time_dimension
                     wspace=0.1, 
                     hspace=0.3)     
         
-    #print("End of Epoch %s \n \n" %epoch)
+    print("End of Epoch %s \n \n" %epoch)
 
     if save_epoch_printouts == 1:
         settings = "Settings = [ep {}][bs {}][lr {}][od {}][ls {}][nf {}][ds {}][sd {}]".format(num_epochs, batch_size, learning_rate, optim_w_decay, latent_space_nodes, noise_factor, dataset_title, seed)
@@ -407,7 +408,7 @@ for epoch in range(num_epochs):                              #For loop that iter
     # Print Validation_loss and plots at end of each epoch
     history_da['train_loss'].append(train_loss)
     history_da['val_loss'].append(val_loss)
-    print('\n EPOCH {}/{} \t train loss {:.3f} \t val loss {:.3f}'.format(epoch + 1, num_epochs,train_loss,val_loss))     #epoch +1 is to make up for the fact the range spans 0 to epoch-1 but we want to numerate things from 1 upwards for sanity
+    print('\nEPOCH {}/{} \t train loss {:.3f} \t val loss {:.3f}'.format(epoch + 1, num_epochs,train_loss,val_loss))     #epoch +1 is to make up for the fact the range spans 0 to epoch-1 but we want to numerate things from 1 upwards for sanity
 
     if epoch % print_epochs == 0:
         number_of_true_signal_points, number_of_recovered_signal_points = plot_ae_outputs_den(encoder, decoder, epoch, outputfig_title,time_dimension, reconstruction_threshold, save_epoch_printouts, n=10, noise_factor=noise_factor)
