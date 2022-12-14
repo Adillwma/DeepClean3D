@@ -14,7 +14,7 @@ below and then run full code.
 #%% - User settings
 signal_points_input = (500,1000) #(50,200) #(50,200) #User setting can be a range i.e "range(min,max,increment). If wanting to set a constant value then pass it as both min and max i.e (4,4)
 noise_points_input = 0 #(50,100) #(80,100) #(80,100) #If 0 there is no noise added
-dataset_size = 5000 #Number of individual data plots to generate and save for the dataset
+dataset_size = 1 #Number of individual data plots to generate and save for the dataset
 detector_pixel_dimensions = (11*8, 128) #x, y in pixels
 time_resoloution = 100 #time aka z axis
 hit_point = (150)#(100, 160) #(100,400)  #units in cm  #This is maximum displacment from centre for x and then for y (NOT a range)
@@ -40,7 +40,7 @@ signal_hit_size = 10 # 1 is default small, 10 is medium, 20 is large, values in 
 noise_hit_size = 10 # 1 is default small, 10 is medium, 20 is large, values in between are fine
 
 #Block & Flattening
-debug_block_outputs = 0 # 0=off, 1=on
+debug_block_outputs = 1 # 0=off, 1=on
 block_output_labeled_data = 0  #this has taken over the setting below 
 seperate_block_noise_colour = 1 # 0=off, 1=on
 coord_transform_sig_fig = 12    #Setting significant figures for the coordinate transofrms (polar to cartesian, spherical to cartesian), using set amount of sig figures avoids floating point rounding errors 
@@ -130,7 +130,7 @@ for f in range(0, dataset_size):
         print("Centre ofset x:", hit_point_x)
         print("Centre ofset y:", hit_point_y,"\n")   
 
-    """ #Attampt to simplify the above. Works well but cant handle integers in any format ive tried i.e 4 or (4) or (4,4)
+    """ #Attempt to simplify the above. Works well but cant handle integers in any format ive tried i.e 4 or (4) or (4,4)
     signal_points = np.random.randint(signal_points_input[0], signal_points_input[-1])
     noise_points = np.random.randint(noise_points_input[0], noise_points_input[-1])
     print("signal points/noise points", signal_points, noise_points)

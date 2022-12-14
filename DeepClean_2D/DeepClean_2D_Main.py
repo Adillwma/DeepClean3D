@@ -8,15 +8,8 @@ DeepClean 2D v0.0.1
 import numpy as np 
 import matplotlib.pyplot as plt
 import torch
-import torchvision
-from torchvision import transforms, datasets
-from torch.utils.data import DataLoader,random_split
-from torch import nn
+from torchvision import transforms
 import random 
-#import pandas as pd 
-#import torch.nn.functional as F
-#import torch.optim as optim
-import os
 
 from DataLoader_Functions_V2 import initialise_data_loader
 from autoencoders.autoencoder_2D_V2 import Encoder, Decoder
@@ -31,7 +24,6 @@ batch_size = 10                           #Data Loader # of Images to pull per b
 reconstruction_threshold = 0.5                          #threshold for 3d reconstruction, values below this confidence level are discounted
 seed = 0                                    #0 is default which gives no seeeding to RNG, if the value is not zero then this is used for the RNG seeding for numpy, random, and torch libraries
 
-
 #%% - Program Settings
 print_partial_training_losses = 1
 print_encoder_debug = 1
@@ -39,7 +31,7 @@ print_decoder_debug = 1
 debug_noise_function = 0
 print_epochs = 5                            #[default = 1] prints every other 'print_epochs' i.e if set to two then at end of every other epoch it will print a test on results
 save_epoch_printouts = 0                    #[default = 0] 0 is normal behavior, If set to 1 then saves all end of epoch printouts to disk, if set to 2 then saves outputs whilst also printing for user
-outputfig_title = "Test"  #Must be string, value is used in the titling of the output plots if save_epoch_printouts is selected above
+outputfig_title = "Test"                    #Must be string, value is used in the titling of the output plots if save_epoch_printouts is selected above
 telemetry_on = 1 
 
 #%% Dataloading
@@ -72,10 +64,9 @@ test_transforms = transforms.Compose([#transforms.Resize(255),
 # - Initialise Data Loader
 train_loader, test_loader, val_loader, train_dataset, test_dataset, val_datset = initialise_data_loader(dataset_title, data_path, batch_size, train_transforms, test_transforms, debug_loader_batch, plot_every_other, batch_size_protection)
 
-
 #%% - Classes
 ### Gaussian Noise Generator Class
-class AddGaussianNoise(object):                   #Class generates noise based on the mean 0 and std deviation 1, (gaussian)
+class AddGaussianNoise(object):                   #Class generates noise with mean 0 and std deviation 1, (gaussian)
     def __init__(self, mean=0., std=1.):
         self.std = std
         self.mean = mean
@@ -132,13 +123,12 @@ def add_noise2(inputs,noise_points=0.3, time_dimension=100):
 #3D Reconstruction
 def reconstruction_3D(image, time_dimension, reconstruction_threshold):
 #Remember image comes in in the form y,x not x,y so column and row are flipped in indexing
-    #print("MAX",np.max(image))
-    #print("MIN",np.min(image))
-
+    #2D Plot Check
     plt.imshow(image)
     plt.show()
     shape = np.shape(image)
 
+    #Reconstruct 3D Image
     x_list = []
     y_list = []
     z_list = []
@@ -150,6 +140,7 @@ def reconstruction_3D(image, time_dimension, reconstruction_threshold):
                 y_list.append(column)
                 z_list.append(TOF)
 
+    #3D Plot
     fig = plt.figure()               #Plots spherical data
     ax = plt.axes(projection='3d')
     ax.scatter(x_list, y_list, z_list)#, s = signal_hit_size, c = "b") #Plots spherical data in blue
@@ -171,8 +162,6 @@ def belief_telemetry(data, reconstruction_threshold, epoch):
 
     above_threshold = (data2 >= reconstruction_threshold).sum()
     below_threshold = (data2 < reconstruction_threshold).sum()
-    print("ABOVE",above_threshold)
-    print("BELOW",below_threshold)
     return (above_threshold, below_threshold)
 
 def plot_telemetry(telemetry):
@@ -255,37 +244,29 @@ def plot_ae_outputs_den(encoder, decoder, epoch, outputfig_title, time_dimension
 
     for i in range(n):                                                #Runs for loop where 'i' itterates over 'n' total values which range from 0 to n-1
       
-      #Following section creates the noised image data drom the original clean labels (images)   
       ax = plt.subplot(3,n,i+1)                                      #Creates a number of subplots for the 'Original images??????' i.e the labels. the position of the subplot is i+1 as it falls in the first row
       img = test_dataset[i][0].unsqueeze(0)
 
-      #Determine the number of signal points on the input image (have to change this to take it directly from the embeded val in the datsaset as when addig noise this method will break)
-      #int_sig_points = torch.IntTensor((img >= reconstruction_threshold).sum())      
+      #Determine the number of signal points on the input image (have to change this to take it directly from the embeded val in the datsaset as when addig noise this method will break)   
       int_sig_points = (img >= reconstruction_threshold).sum()
-      number_of_true_signal_points.append(int_sig_points)
-      print(number_of_true_signal_points[i])
+      number_of_true_signal_points.append(int(int_sig_points.numpy()))
 
-      #print("MAX", torch.max(img))
-      #print("MIN", torch.min(img))
+      #Following section creates the noised image data drom the original clean labels (images)   
       image_noisy = add_noise(img,noise_factor)     
       image_noisy = image_noisy.to(device)
-      
       
       #Following section sets the autoencoder to evaluation mode rather than training (up till line 'with torch.no_grad()')
       encoder.eval()                                   #.eval() is a kind of switch for some specific layers/parts of the model that behave differently during training and inference (evaluating) time. For example, Dropouts Layers, BatchNorm Layers etc. You need to turn off them during model evaluation, and .eval() will do it for you. In addition, the common practice for evaluating/validation is using torch.no_grad() in pair with model.eval() to turn off gradients computation
       decoder.eval()                                   #Simarlary as above
-
-
+      
       with torch.no_grad():                                               #As mentioned in .eval() comment, the common practice for evaluating/validation is using torch.no_grad() which turns off gradients computation whilst evaluating the model (the opposite of training the model)     
       #Following line runs the autoencoder on the noised data
          rec_img  = decoder(encoder(image_noisy))                        #Creates a recovered image (denoised image), by running a noisy image through the encoder and then the output of that through the decoder.
       
       #Determine the number of signal points on the recovered image 
-      #int_rec_sig_points = torch.IntTensor((rec_img >= reconstruction_threshold).sum())
       int_rec_sig_points = (rec_img >= reconstruction_threshold).sum()      
-      number_of_recovered_signal_points.append(int_rec_sig_points)
-      print(number_of_recovered_signal_points[i])
-    
+      number_of_recovered_signal_points.append(int(int_rec_sig_points.numpy()))
+
       #Following section generates the img plots for the original(labels), noised, and denoised data)
       plt.imshow(img.cpu().squeeze().numpy(), cmap='gist_gray')           #plt.imshow plots an image. The arguments for imshow are, 'image data array' and cmap= which is the colour map. #.squeeze() acts on a tensor and returns a tensor, it removes all dimensions of the tensor that are of length 1, (A×1×B) becomes (AxB) where A and B are greater than 1 #.numpy() creates a numpy array from a tensor #!!! is the .cpu part becuase the code was not made to accept the gpu/cpu check i made????
       ax.get_xaxis().set_visible(False)                                   #Hides the x axis from showing in the plot as we are plotting images not graphs (we may want to retain axis?)
@@ -313,8 +294,6 @@ def plot_ae_outputs_den(encoder, decoder, epoch, outputfig_title, time_dimension
                     top=0.9, 
                     wspace=0.1, 
                     hspace=0.3)     
-        
-    print("End of Epoch %s \n \n" %epoch)
 
     if save_epoch_printouts == 1:
         settings = "Settings = [ep {}][bs {}][lr {}][od {}][ls {}][nf {}][ds {}][sd {}]".format(num_epochs, batch_size, learning_rate, optim_w_decay, latent_space_nodes, noise_factor, dataset_title, seed)
@@ -324,8 +303,10 @@ def plot_ae_outputs_den(encoder, decoder, epoch, outputfig_title, time_dimension
         plt.close()
         print("\n# SAVED OUTPUT TEST IMAGE TO DISK #\n")
     else:
-        plt.show()                                 #After entire loop is finished, the generated plot is printed to screen
-
+        if (epoch+1) % print_epochs == 0:
+            plt.show()                                 #After entire loop is finished, the generated plot is printed to screen
+        else:
+            plt.close()
         ###3D Reconstruction
         rec_data = rec_img.cpu().squeeze().numpy()
         reconstruction_3D(rec_data, time_dimension, reconstruction_threshold)
@@ -334,7 +315,6 @@ def plot_ae_outputs_den(encoder, decoder, epoch, outputfig_title, time_dimension
         if telemetry_on == 1:       #needs ttitles and labels etc added
             above_threshold, below_threshold = belief_telemetry(rec_data, reconstruction_threshold, epoch+1)   
             telemetry.append([epoch, above_threshold, below_threshold])
-
 
     return(number_of_true_signal_points, number_of_recovered_signal_points)
 
@@ -376,8 +356,6 @@ print(f'Selected device: {device}')  #Informs user if running on CPU or GPU
 encoder.to(device)   #Moves encoder to selected device, CPU/GPU
 decoder.to(device)   #Moves decoder to selected device, CPU/GPU
 
-
-
 #%% - Compute
 
 history_da={'train_loss':[],'val_loss':[]}                   #Just creates a variable called history_da which contains two lists, 'train_loss' and 'val_loss' which are both empty to start with. value are latter appeneded to the two lists by way of history_da['val_loss'].append(x)
@@ -408,14 +386,10 @@ for epoch in range(num_epochs):                              #For loop that iter
     # Print Validation_loss and plots at end of each epoch
     history_da['train_loss'].append(train_loss)
     history_da['val_loss'].append(val_loss)
-    print('\nEPOCH {}/{} \t train loss {:.3f} \t val loss {:.3f}'.format(epoch + 1, num_epochs,train_loss,val_loss))     #epoch +1 is to make up for the fact the range spans 0 to epoch-1 but we want to numerate things from 1 upwards for sanity
+    print('\nEND OF EPOCH {}/{} \t train loss {:.3f} \t val loss {:.3f}\n'.format(epoch + 1, num_epochs,train_loss,val_loss))     #epoch +1 is to make up for the fact the range spans 0 to epoch-1 but we want to numerate things from 1 upwards for sanity
+    number_of_true_signal_points, number_of_recovered_signal_points = plot_ae_outputs_den(encoder, decoder, epoch, outputfig_title,time_dimension, reconstruction_threshold, save_epoch_printouts, n=10, noise_factor=noise_factor)
 
-    if epoch % print_epochs == 0:
-        number_of_true_signal_points, number_of_recovered_signal_points = plot_ae_outputs_den(encoder, decoder, epoch, outputfig_title,time_dimension, reconstruction_threshold, save_epoch_printouts, n=10, noise_factor=noise_factor)
 
-    
-    
-    
 ###Loss function plots
 epochs_range = range(1,num_epochs+1)
 plt.plot(epochs_range, history_da['train_loss']) 
