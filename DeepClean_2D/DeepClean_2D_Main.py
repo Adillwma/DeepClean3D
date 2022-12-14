@@ -17,11 +17,12 @@ from autoencoders.autoencoder_2D_V2 import Encoder, Decoder
 #%% - User Inputs
 learning_rate = 0.001                       #User controll to set optimiser learning rate(Hyperparameter)
 optim_w_decay = 1e-05                       #User controll to set optimiser weight decay (Hyperparameter)
-latent_space_nodes = 3
+loss_function = torch.nn.MSELoss()          #User controll to set loss function (Hyperparameter)
+latent_space_nodes = 3                      #User controll to set number of nodes in the latent space, the bottleneck layer (Hyperparameter)
 noise_factor = 0                            #User controll to set the noise factor, a multiplier for the magnitude of noise added. 0 means no noise added, 1 is defualt level of noise added, 10 is 10x default level added (Hyperparameter)
 num_epochs = 10                             #User controll to set number of epochs (Hyperparameter)
-batch_size = 10                           #Data Loader # of Images to pull per batch (add a check to make sure the batch size is smaller than the total number of images in the path selected)
-reconstruction_threshold = 0.5                          #threshold for 3d reconstruction, values below this confidence level are discounted
+batch_size = 10                             #Data Loader, number of Images to pull per batch (add a check to make sure the batch size is smaller than the total number of images in the path selected)
+reconstruction_threshold = 0.5              #Threshold for 3d reconstruction, values below this confidence level are discounted
 seed = 0                                    #0 is default which gives no seeeding to RNG, if the value is not zero then this is used for the RNG seeding for numpy, random, and torch libraries
 
 #%% - Program Settings
@@ -317,7 +318,7 @@ def plot_ae_outputs_den(encoder, decoder, epoch, outputfig_title, time_dimension
             plt.close()
 
     elif plot_or_save == 1:
-        Out_Label = 'Output_Graphics/{}, Epoch {}, {} .png'.format(outputfig_title, epoch, settings) #!!!
+        Out_Label = 'Output_Graphics/{}, Epoch {}, {} .png'.format(outputfig_title, epoch+1, settings) #!!!
         plt.savefig(Out_Label, format='png')
         plt.close()
         print("\n# SAVED OUTPUT TEST IMAGE TO DISK #\n")    
@@ -335,20 +336,20 @@ def plot_ae_outputs_den(encoder, decoder, epoch, outputfig_title, time_dimension
     return(number_of_true_signal_points, number_of_recovered_signal_points)
 
 #%% - Program Internal Setup
-#image_noisy_list = []
 
+#Sets rng seeding for repoducability and debugging if user inputs a value for variable 'seeding' other than 0
 if seed != 0: 
     Determinism_Seeding(seed)
 
 #%% - Setup model, loss criteria and optimiser    
     
 ### Define the loss function
-loss_fn = torch.nn.MSELoss()
+loss_fn = loss_function
 
 ### Define a learning rate for the optimiser
 lr = learning_rate                                     #Just sets the learing rate value from the user inputs pannel at the top
 
-### Set the random seed for reproducible results
+### Set the random seed for reproducible results WHY IS THIS ON?????????????????????? TEST
 torch.manual_seed(seed)              
 
 ### Initialize the two networks
