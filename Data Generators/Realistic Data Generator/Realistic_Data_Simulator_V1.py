@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-Realistic Data Simulator v1.0.0
-@author: Max Carter
+Realistic Data Simulator v1.0.1
+@author: Max Carter & Adill Al-Ashgar
 Created on Fri Dec 13 06:50:34 2022
 """
 
@@ -11,41 +11,48 @@ import matplotlib.pyplot as plt
 import random
    
 #%% - Function
-def realistic_data_generator(signal_points, noise_points, seed_val, detector_pixel_dimensions=(88,128), time_resoloution=100, hit_point=1.5, ideal=1, debug_image_generator=0):
+def realistic_data_generator(signal_points, noise_points, detector_pixel_dimensions=(88,128), time_resoloution=100, hit_point=1.5, ideal=1, debug_image_generator=0):
     '''
-    hit_point = the point on the detector the particle makes impact. May be able to make this 2D later (x,y)
+    Inputs:
     signal_points = number of points the hit produces (average 30 for realistic photon), N.B. these may not be at critical angle to 60 is maximum number
     noise_points = number of noise points
-    seed_val = seed value
-    cox = image offset in x, default = 0
-    coy = image offset in y, defauly = 0
-    dim = dimensions of the data we want to output (for us, 88x128x100) as a list
+    detector_pixel_dimensions = pixel dimensions of the detector, x,y in a tuple (88x128)
+    time_resoloution = number of discrete points the time dimension is sampled in
+    hit_point = The point on the detector the particle makes impact. May be able to make this 2D later (x,y)
+    ideal = [default=1] XXXXXXXXXXXXXXXXXXXXX
+    debug_image_generator = [default=0] set to 1 to plot the output of this simulator (for debugging purposes)
+    
+    Returns:
+    x_pixel = list of signal x coordinates 
+    x_noise = list of noise x coordinates  
+    y_pixel = list of signal y coordinates  
+    y_noise = list of noise y coordinates  
+    z_pixel = list of signal z coordinates  
+    z_noise = list of noise z coordinates  
+    num_of_signal_points = True number of signal points in the output (as some photons will have left due to passing the critical angle and exiting the block). Could be used to measure error or for the loss function
     '''
+    #Width of Quartz Block in meters (x dimension)
+    Quartz_width = 0.4
 
+    #Half Width of Quartz Block in meters (x dimension) - BEWARE THIS IS HALF WIDTH, TRUE WIDTH GOES FROM -reflect_x to reflect_x
+    reflect_x = Quartz_width/2
 
-
-    reflect_x = 0.2
-
-    # uniform points to see the pattern
-    y_points = []
+    #Creates ideal linearly spaced x data #Uniform points to see the pattern
     min_num = -np.pi
     max_num = np.pi
-    step = (max_num - min_num) / signal_points
-    linear_x_points = np.linspace(min_num,max_num,signal_points)
-    x_reflect_points = []
+    linear_x_points = np.linspace(min_num, max_num, signal_points)
 
-    # random numbers that are more accurate to data
-    #random.seed(seed_val)
-    random_numbers = [random.uniform(-2 * np.pi, 2 * np.pi) for _ in range(signal_points)]
+    #Creates more realistic randomly spaced x data  #random numbers that are more accurate to data
+    random_x_points = [random.uniform(-2 * np.pi, 2 * np.pi) for _ in range(signal_points)]
 
-    # ideal or random? 1 if want ideal or 0 if want random
-
+    #Ideal or random? 1 if want ideal or 0 if want random #Here can set to either random numbers or to linear_x_points depending on what you want
     if ideal == 1:
         x = linear_x_points
     elif ideal == 0:
-        x = random_numbers
+        x = random_x_points
 
-    # here can set to either random numbers or to linear_x_points depending on what you want
+    #Takes the parabola defined by x range (either ideal or random) and creates the reflections
+    x_reflect_points = []
     for i in x:
         while i < -reflect_x or i > reflect_x:
             if i < -reflect_x:
@@ -55,7 +62,8 @@ def realistic_data_generator(signal_points, noise_points, seed_val, detector_pix
         x_reflect_points.append(i)              # this has been checked and works
 
 
-    # y points for each accociated x
+    #Calulates corresponding y points for each x
+    y_points = []
     y_points = [np.cos(i) for i in x]
 
     # join these x and y points into one list
@@ -77,8 +85,7 @@ def realistic_data_generator(signal_points, noise_points, seed_val, detector_pix
 
     # max time particle could take. This allows us to set the z axis.
     t_max = ((2*quartz_length) / np.cos(q_crit)) / particle_speed
-    #print(np.cos(40.49))
-    #print(np.cos(1))
+   
     #Alternatively, just define each pixel in z axis to be i.e. 0.01ns later, then assign from there
 
     time = []
@@ -90,10 +97,8 @@ def realistic_data_generator(signal_points, noise_points, seed_val, detector_pix
             # this is just time = dist / speed formula. dist / cos(angle) is true distance
             time.append((hit_point / i[1]) / particle_speed )
 
-
         # if it moves away from the detector and gets reflected back up
         elif i[1] < 0:
-
             # goes down and back up
             time.append(((2 * quartz_length - hit_point) / abs(i[1])) / particle_speed)
 
@@ -112,26 +117,32 @@ def realistic_data_generator(signal_points, noise_points, seed_val, detector_pix
     y_pixel = [i+1 for i in y_idxs]
     z_pixel = [i+1 for i in z_idxs]
 
-    # noise points
+    #Generates the random noise points
     x_noise = [random.randint(1, detector_pixel_dimensions[0]) for _ in range(noise_points)]
     y_noise = [random.randint(1, detector_pixel_dimensions[1]) for _ in range(noise_points)]
     z_noise = [random.randint(1, time_resoloution) for _ in range(noise_points)]
     
-    # plotting the figure
+    #Plots the figure if user requests debugging
     if debug_image_generator == 1:
+        
         fig = plt.figure()
         ax = fig.add_subplot(projection='3d')
+
         ax.scatter(x_pixel, y_pixel, z_pixel)
         ax.scatter(x_noise, y_noise, z_noise)
-
         ax.set_xlabel('X')
         ax.set_ylabel('Y')
         ax.set_zlabel('Time')
 
         plt.show()
 
-    return(x_pixel, x_noise, y_pixel, y_noise, z_pixel, z_noise)
+    #Determines number of signal points in the output, as some photons will have left due to passing the critical angle and exiting the block
+    num_of_signal_points = int(np.shape(x_pixel)[0])
+    
+    #Outputs to return to main dataset generator script
+    return(x_pixel, x_noise, y_pixel, y_noise, z_pixel, z_noise, num_of_signal_points)
 
+#%% - Testing Driver
+#Uncomment line below for testing, make sure to comment out when done to stop it creating plots when dataset generator is running
 
-#%% - Driver
-#realistic_data_generator(signal_points=1000, noise_points=0, seed_val=123, detector_pixel_dimensions=(88,128), time_resoloution=100, hit_point=1.5, ideal=1, debug_image_generator=1)
+#realistic_data_generator(signal_points=1000, noise_points=0, detector_pixel_dimensions=(88,128), time_resoloution=100, hit_point=1.5, ideal=1, debug_image_generator=1)

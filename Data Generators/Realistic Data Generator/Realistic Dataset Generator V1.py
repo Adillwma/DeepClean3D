@@ -149,7 +149,7 @@ for f in range(0, dataset_size):
 
 
     ######################################REPLACE BELOW WITH NEW FUNCTION##############################
-    x_sph_data, x_sph_noise_data, y_sph_data, y_sph_noise_data, z_sph_data, z_sph_noise_data = realistic_data_generator(signal_points, noise_points, seeding_value, detector_pixel_dimensions, time_resoloution, hit_point_y/100, ideal, debug_image_generator)   #/100 scales cm to m
+    x_sph_data, x_sph_noise_data, y_sph_data, y_sph_noise_data, z_sph_data, z_sph_noise_data, number_of_signal_points_in_output = realistic_data_generator(signal_points, noise_points, detector_pixel_dimensions, time_resoloution, hit_point_y/100, ideal, debug_image_generator)   #/100 scales cm to m
     ######################################REPLACE ABOVE WITH NEW FUNCTION THAT OUTPUTS 6 LISTS, XSIGNAL, XNOISE, YSIGNAL, YNOISE, ZSIGNAL, ZNOISE ##############################
 
     #Plots Initially Generated Image if Requested for Debugging
