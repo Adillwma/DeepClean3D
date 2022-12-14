@@ -25,14 +25,14 @@ reconstruction_threshold = 0.5                          #threshold for 3d recons
 seed = 0                                    #0 is default which gives no seeeding to RNG, if the value is not zero then this is used for the RNG seeding for numpy, random, and torch libraries
 
 #%% - Program Settings
-print_partial_training_losses = 1
-print_encoder_debug = 1
-print_decoder_debug = 1
-debug_noise_function = 0
+print_partial_training_losses = 1           #[default = 1]
+print_encoder_debug = 1                     #[default = 1]
+print_decoder_debug = 1                     #[default = 1]
+debug_noise_function = 0                    #[default = 1]
 print_epochs = 5                            #[default = 1] prints every other 'print_epochs' i.e if set to two then at end of every other epoch it will print a test on results
-save_epoch_printouts = 0                    #[default = 0] 0 is normal behavior, If set to 1 then saves all end of epoch printouts to disk, if set to 2 then saves outputs whilst also printing for user
-outputfig_title = "Test"                    #Must be string, value is used in the titling of the output plots if save_epoch_printouts is selected above
-telemetry_on = 1 
+plot_or_save = 1                            #[default = 0] 0 is normal behavior, If set to 1 then saves all end of epoch printouts to disk, if set to 2 then saves outputs whilst also printing for user
+outputfig_title = "Test"                    #Must be string, value is used in the titling of the output plots if plot_or_save is selected above
+telemetry_on = 1                            #[default = 1]
 
 #%% Dataloading
 # - Data Loader User Inputs
@@ -121,13 +121,16 @@ def add_noise2(inputs,noise_points=0.3, time_dimension=100):
      return noisy
 
 #3D Reconstruction
-def reconstruction_3D(image, time_dimension, reconstruction_threshold):
+def reconstruction_3D(image, time_dimension, reconstruction_threshold, settings, epoch, plot_or_save=0):
 #Remember image comes in in the form y,x not x,y so column and row are flipped in indexing
     #2D Plot Check
     plt.imshow(image)
-    plt.show()
+    if plot_or_save == 0:
+        plt.show()
+    else:
+        plt.close()
+    
     shape = np.shape(image)
-
     #Reconstruct 3D Image
     x_list = []
     y_list = []
@@ -147,18 +150,28 @@ def reconstruction_3D(image, time_dimension, reconstruction_threshold):
     ax.set_xlim(0, shape[0])
     ax.set_ylim(0, shape[1])
     ax.set_zlim(0, time_dimension)
-    plt.show()
+    if plot_or_save == 0:
+        plt.show()
+    else:
+        Out_Label = 'Output_Graphics/{}, Reconstruction, Epoch {}, {} .png'.format(outputfig_title, epoch, settings) #!!!
+        plt.savefig(Out_Label, format='png')        
+        plt.close()
 
 ###Ploting confidence of each pixel as histogram per epoch with line showing the detection threshold
-def belief_telemetry(data, reconstruction_threshold, epoch):
+def belief_telemetry(data, reconstruction_threshold, epoch, settings, plot_or_save=0):
     data2 = data.flatten()
 
     #Plots histogram showing the confidence level of each pixel being a signal point
     values, bins, bars = plt.hist(data2, 10, histtype='bar')
     plt.axvline(x= reconstruction_threshold, color='red', marker='|', linestyle='dashed', linewidth=2, markersize=12)
     plt.title("Epoch %s" %epoch)
-    plt.bar_label(bars, fontsize=10, color='navy')
-    plt.show()  
+    plt.bar_label(bars, fontsize=10, color='navy') 
+    if plot_or_save == 0:
+        plt.show()
+    else:
+        Out_Label = 'Output_Graphics/{}, Confidence Histogram, Epoch {}, {} .png'.format(outputfig_title, epoch, settings) #!!!
+        plt.savefig(Out_Label, format='png')        
+        plt.close()
 
     above_threshold = (data2 >= reconstruction_threshold).sum()
     below_threshold = (data2 < reconstruction_threshold).sum()
@@ -233,7 +246,7 @@ def test_epoch_den(encoder, decoder, device, dataloader, loss_fn,noise_factor=0.
     return val_loss.data
 
 ###Plotting Function
-def plot_ae_outputs_den(encoder, decoder, epoch, outputfig_title, time_dimension, reconstruction_threshold, save_epoch_printouts=0, n=10,noise_factor=0.5):       #Defines a function for plotting the output of the autoencoder. And also the input + clean training data? Function takes inputs, 'encoder' and 'decoder' which are expected to be classes (defining the encode and decode nets), 'n' which is the number of ?????Images in the batch????, and 'noise_factor' which is a multiplier for the magnitude of the added noise allowing it to be scaled in intensity.  
+def plot_ae_outputs_den(encoder, decoder, epoch, outputfig_title, time_dimension, reconstruction_threshold, plot_or_save=0, n=10,noise_factor=0.5):       #Defines a function for plotting the output of the autoencoder. And also the input + clean training data? Function takes inputs, 'encoder' and 'decoder' which are expected to be classes (defining the encode and decode nets), 'n' which is the number of ?????Images in the batch????, and 'noise_factor' which is a multiplier for the magnitude of the added noise allowing it to be scaled in intensity.  
     
     #Initialise lists for true and recovered signal point values 
     number_of_true_signal_points = []
@@ -294,26 +307,29 @@ def plot_ae_outputs_den(encoder, decoder, epoch, outputfig_title, time_dimension
                     top=0.9, 
                     wspace=0.1, 
                     hspace=0.3)     
+    
+    settings = "Settings = [ep {}][bs {}][lr {}][od {}][ls {}][nf {}][ds {}][sd {}]".format(num_epochs, batch_size, learning_rate, optim_w_decay, latent_space_nodes, noise_factor, dataset_title, seed)
 
-    if save_epoch_printouts == 1:
-        settings = "Settings = [ep {}][bs {}][lr {}][od {}][ls {}][nf {}][ds {}][sd {}]".format(num_epochs, batch_size, learning_rate, optim_w_decay, latent_space_nodes, noise_factor, dataset_title, seed)
-        Out_Label = 'Output_Graphics/{}, Epoch {}, {} .png'.format(outputfig_title, epoch, settings) #!!!
-        plt.savefig(Out_Label, format='png')
-        #plt.savefig("Output_Graphics/DeepClean2D Testing.png", format='png') #!!!
-        plt.close()
-        print("\n# SAVED OUTPUT TEST IMAGE TO DISK #\n")
-    else:
+    if plot_or_save == 0:
         if (epoch+1) % print_epochs == 0:
             plt.show()                                 #After entire loop is finished, the generated plot is printed to screen
         else:
             plt.close()
+
+    elif plot_or_save == 1:
+        Out_Label = 'Output_Graphics/{}, Epoch {}, {} .png'.format(outputfig_title, epoch, settings) #!!!
+        plt.savefig(Out_Label, format='png')
+        plt.close()
+        print("\n# SAVED OUTPUT TEST IMAGE TO DISK #\n")    
+
+    if (epoch+1) % print_epochs == 0:        
         ###3D Reconstruction
         rec_data = rec_img.cpu().squeeze().numpy()
-        reconstruction_3D(rec_data, time_dimension, reconstruction_threshold)
+        reconstruction_3D(rec_data, time_dimension, reconstruction_threshold, settings, epoch+1, plot_or_save)
         
         #Telemetry plots
         if telemetry_on == 1:       #needs ttitles and labels etc added
-            above_threshold, below_threshold = belief_telemetry(rec_data, reconstruction_threshold, epoch+1)   
+            above_threshold, below_threshold = belief_telemetry(rec_data, reconstruction_threshold, epoch+1, settings, plot_or_save)   
             telemetry.append([epoch, above_threshold, below_threshold])
 
     return(number_of_true_signal_points, number_of_recovered_signal_points)
@@ -387,7 +403,7 @@ for epoch in range(num_epochs):                              #For loop that iter
     history_da['train_loss'].append(train_loss)
     history_da['val_loss'].append(val_loss)
     print('\nEND OF EPOCH {}/{} \t train loss {:.3f} \t val loss {:.3f}\n'.format(epoch + 1, num_epochs,train_loss,val_loss))     #epoch +1 is to make up for the fact the range spans 0 to epoch-1 but we want to numerate things from 1 upwards for sanity
-    number_of_true_signal_points, number_of_recovered_signal_points = plot_ae_outputs_den(encoder, decoder, epoch, outputfig_title,time_dimension, reconstruction_threshold, save_epoch_printouts, n=10, noise_factor=noise_factor)
+    number_of_true_signal_points, number_of_recovered_signal_points = plot_ae_outputs_den(encoder, decoder, epoch, outputfig_title,time_dimension, reconstruction_threshold, plot_or_save, n=10, noise_factor=noise_factor)
 
 
 ###Loss function plots
@@ -404,5 +420,5 @@ if telemetry_on == 1:
     plot_telemetry(telemetry)
 
 #Comparison of true signal points to recovered signal points
-print(number_of_true_signal_points)
-print(number_of_recovered_signal_points)
+print("True signal points",number_of_true_signal_points)
+print("Recovered signal points: ",number_of_recovered_signal_points)
