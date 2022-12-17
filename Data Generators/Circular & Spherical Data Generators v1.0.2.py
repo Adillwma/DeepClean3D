@@ -25,7 +25,7 @@ below and then run full code.
 radius = 40 #User setting can be one number i.e (x) or a range in a tuple (min,max)
 signal_points_input = (9000,15000) #(50,200) #User setting can be a range i.e "range(min,max,increment). If wanting to set a constant value then pass it as both min and max i.e (4,4)
 noise_points_input = 0#(80,100)  #(80,100) #If 0 there is no noise added
-dataset_size = 3000 #Number of individual data plots to generate and save for the dataset
+dataset_size = 1 #Number of individual data plots to generate and save for the dataset
 
 detector_pixel_dimensions = (11*8, 128) #x, y in pixels
 time_resoloution = 100 #time aka z axis
@@ -41,12 +41,12 @@ directory = "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Yr 
 seeding_value = 0 #Seed for the random number generators, selecting a value here will make the code deterministic, returnign same vlaues from RNG's each time. If set to 0, seeding is turned off
 auto_variables_debug_readout = 1 # 0=off, 1=on
 
-debug_visulisations_on = 0 #0 is defualt, if set to 1 the circular and spherical data is plotted for visualisation
+debug_visulisations_on = 1 #0 is defualt, if set to 1 the circular and spherical data is plotted for visualisation
 seperate_noise_colour = 1 #0 if desire noise same colour as signal, 1 to seperate noise and signal by colour
 signal_hit_size = 10 # 1 is default small, 10 is medium, 20 is large, values in between are fine
 noise_hit_size = 10 # 1 is default small, 10 is medium, 20 is large, values in between are fine
 
-debug_block_outputs = 0 # 0=off, 1=on
+debug_block_outputs = 1 # 0=off, 1=on
 seperate_block_noise_colour = 1 # 0=off, 1=on
 coord_transform_sig_fig = 12    #Setting significant figures for the coordinate transofrms (polar to cartesian, spherical to cartesian), using set amount of sig figures avoids floating point rounding errors 
 
