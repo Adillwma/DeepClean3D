@@ -18,9 +18,6 @@ q_dim = [0.66, 2.5, 0.01]
 # quartz critical angle
 q_crit = 40.49 * np.pi / 180
 
-# so reflection will happen at x / 2 and - x / 2
-# reflect = q_len / 2           DONT NEED THIS AS CAN JUST REFLECT BETWEEN 0 AND q_len[0]. Makes easier for other things
-
 # impact at [x,y], for now we will neglect thickness but this can be trivially added
 # choise now set to make the impact at one point or many different
 impact = [0.33,1]
@@ -28,12 +25,17 @@ impact = [0.33,1]
 # random or ideal? If ideal = 1 then data is perfect and linear, random if = 0
 ideal = 1
 if ideal == 1:
-    # angle is to the vertical y axis (line that joins detector and bottom)
-    angles = np.linspace(-np.pi, np.pi, signal_points)
+    # angle is to the vertical y axis (line that joins detector and bottom) for both
+    # theta is in x-y plane
+    theta_angles = np.linspace(-np.pi, np.pi, signal_points)
+    # psi is in y-z plane
+    psi_angles = np.linspace(-np.pi, np.pi, signal_points)
 
 else:
     # random angles
-    angles = [random.uniform(-np.pi, np.pi) for _ in range(signal_points)]
+    theta_angles = [random.uniform(-np.pi, np.pi) for _ in range(signal_points)]
+    psi_angles = [random.uniform(-np.pi, np.pi) for _ in range(signal_points)]
+
 
 # to save compute, we must first remove all angles that are past the critical angle UNLESS they are too close to the detector
 # as if they are too close to the detector they will hit the detector before they can be ejected
@@ -47,8 +49,8 @@ length = q_dim[0] / np.tan(q_crit)
 # y = -0.66 L x + q_dim[1]
 
 # finds maximum possible angles past the critical angle if too close to the detector for each hit point
-pve_hit_angle = np.arctan((q_dim[0]-impact[0]) / (q_dim[1]-impact[1]))
-nve_hit_angle = - np.arctan((impact[0]) / (q_dim[1]-impact[1]))
+pve_hit_angle_theta = np.arctan((q_dim[0]-impact[0]) / (q_dim[1]-impact[1]))
+nve_hit_angle_theta = - np.arctan((impact[0]) / (q_dim[1]-impact[1]))
 
 # lines of form y = mx + c
 # grad is dy / dx
@@ -70,25 +72,25 @@ above = np.pi/2 + q_crit
 if (impact[1] <= pve_hit_line) and (impact[1] <=  nve_hit_line):
     
     # normal critical angle applies:
-    surv_ang = [angle for angle in angles if not (below <= abs(angle) <= above)]    # if NOT less than crit angle
+    surv_ang = [angle for angle in theta_angles if not (below <= abs(angle) <= above)]    # if NOT less than crit angle
 
 #if impact is closer to left side
 elif (impact[1] > pve_hit_line) and (impact[1] <=  nve_hit_line):
 
     # only one side of cherenkov can be some ways past the critical angle (+ve angle effected)
-    surv_ang = [angle for angle in angles if (below <= angle <= pve_hit_angle) or not (below < abs(angle) < above)]
+    surv_ang = [angle for angle in theta_angles if (below <= angle <= pve_hit_angle_theta) or not (below < abs(angle) < above)]
 
 # impact closer to right side:
 elif (impact[1] <= pve_hit_line) and (impact[1] >  nve_hit_line):
 
     # only one side of cherenkov can be some ways past the critical angle (-ve angle effected)
-    surv_ang = [angle for angle in angles if (nve_hit_angle <= angle <= - below) or not (below < abs(angle) < above)]
+    surv_ang = [angle for angle in theta_angles if (nve_hit_angle_theta <= angle <= - below) or not (below < abs(angle) < above)]
 
 # past critical angle on both sides:
 elif (impact[1] > pve_hit_line) and (impact[1] >  nve_hit_line):
 
     # both sides cherenkov will be detected past the critical angle
-    surv_ang = [angle for angle in angles if (nve_hit_angle <= angle <= - below) or (below <= angle <= pve_hit_angle) or not (below < abs(angle) < above)]
+    surv_ang = [angle for angle in theta_angles if (nve_hit_angle_theta <= angle <= - below) or (below <= angle <= pve_hit_angle_theta) or not (below < abs(angle) < above)]
 
 
 # at what time will these points hit the detector?

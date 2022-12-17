@@ -41,4 +41,5 @@ test_transforms = transforms.Compose([#transforms.Resize(255),
 #%% - Initialise Data Loader
 initialise_data_loader(dataset_title, data_path, batch_size, train_transforms, test_transforms, debug_loader_batch, plot_every_other, batch_size_protection)
 
+# dataset_title, data_path, batch_size, train_transforms, test_transforms, debug_loader_batch = 0, plot_every_other = 1, batch_size_protection = 1
 #%% - END OF DATA LOADING
