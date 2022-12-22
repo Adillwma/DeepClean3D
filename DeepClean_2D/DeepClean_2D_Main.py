@@ -11,18 +11,56 @@ import torch
 from torchvision import transforms
 import random 
 
+from Custom_Normalisation_V1 import scale_Ndata as custom_normalisation
+#from Custom_Normalisation_V1 import custom_normalisation
 from DataLoader_Functions_V2 import initialise_data_loader
-from autoencoders.autoencoder_2D_V2 import Encoder, Decoder
+from autoencoders.autoencoder_2D_V1 import Encoder, Decoder
+
+
+
+def find_np_minmax(data):
+    print("NP SHAPE", np.shape(data))
+    return(data)
+
+
+def tensor_datascan(data):
+    #tensor_min = np.amin(data.numpy())
+    #tensor_max = np.amax(data.numpy())
+    #print("MIN", tensor_min, "MAX", tensor_max)
+    print("SHAPE tensor: ", np.shape(data.numpy()))
+    datascan = data.numpy().flatten()
+
+    data_hit_tensor = datascan[datascan != 0]
+    print("TENSOR SCAN HITS",len(data_hit_tensor))
+    print(data_hit_tensor)
+    plt.hist(datascan,20)
+    plt.show()
+    return(data)
+
+def numpy_datascan(data):
+
+    #tensor_min = np.amin(data.numpy())
+    #tensor_max = np.amax(data.numpy())
+    #print("MIN", tensor_min, "MAX", tensor_max)
+    print("SHAPE numpy: ", np.shape(data))
+    datascan = data.flatten()
+
+    data_hit_numpy = datascan[datascan != 0]
+    print("NUMPY SCAN HITS",len(data_hit_numpy))
+    print(data_hit_numpy)
+    plt.hist(datascan,20)
+    plt.show()
+    return(data)
 
 #%% - User Inputs
 learning_rate = 0.001                       #User controll to set optimiser learning rate(Hyperparameter)
 optim_w_decay = 1e-05                       #User controll to set optimiser weight decay (Hyperparameter)
 loss_function = torch.nn.MSELoss()          #User controll to set loss function (Hyperparameter)
-latent_space_nodes = 3                      #User controll to set number of nodes in the latent space, the bottleneck layer (Hyperparameter)
+latent_space_nodes = 5                      #User controll to set number of nodes in the latent space, the bottleneck layer (Hyperparameter)
 noise_factor = 0                            #User controll to set the noise factor, a multiplier for the magnitude of noise added. 0 means no noise added, 1 is defualt level of noise added, 10 is 10x default level added (Hyperparameter)
-num_epochs = 10                             #User controll to set number of epochs (Hyperparameter)
+num_epochs = 4                            #User controll to set number of epochs (Hyperparameter)
 batch_size = 10                             #Data Loader, number of Images to pull per batch (add a check to make sure the batch size is smaller than the total number of images in the path selected)
-reconstruction_threshold = 0.5              #Threshold for 3d reconstruction, values below this confidence level are discounted
+reconstruction_threshold = 0.2              #Threshold for 3d reconstruction, values below this confidence level are discounted
 seed = 0                                    #0 is default which gives no seeeding to RNG, if the value is not zero then this is used for the RNG seeding for numpy, random, and torch libraries
 
 #%% - Program Settings
@@ -30,14 +68,14 @@ print_partial_training_losses = 1           #[default = 1]
 print_encoder_debug = 1                     #[default = 1]
 print_decoder_debug = 1                     #[default = 1]
 debug_noise_function = 0                    #[default = 1]
-print_epochs = 5                            #[default = 1] prints every other 'print_epochs' i.e if set to two then at end of every other epoch it will print a test on results
-plot_or_save = 1                            #[default = 0] 0 is normal behavior, If set to 1 then saves all end of epoch printouts to disk, if set to 2 then saves outputs whilst also printing for user
+print_epochs = 2                            #[default = 1] prints every other 'print_epochs' i.e if set to two then at end of every other epoch it will print a test on results
+plot_or_save = 0                            #[default = 0] 0 is normal behavior, If set to 1 then saves all end of epoch printouts to disk, if set to 2 then saves outputs whilst also printing for user
 outputfig_title = "Test"                    #Must be string, value is used in the titling of the output plots if plot_or_save is selected above
 telemetry_on = 1                            #[default = 1]
 
 #%% Dataloading
 # - Data Loader User Inputs
-dataset_title = "Dataset 2_Realistic"
+dataset_title = "Dataset 1_Realistic"
 data_path = "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Yr 3 Project/Circular and Spherical Dummy Datasets/" #"C:/Users/Student/Desktop/fake im data/"  #"/local/path/to/the/images/"
 time_dimension = 100
 
@@ -48,7 +86,13 @@ batch_size_protection = 1  #(Default = 1 = [ON]) //INPUT 0 or 1//    #WARNING if
 
 # - Data Loader Preparation Transforms 
 #####For info on all transforms check out: https://pytorch.org/vision/0.9/transforms.html
-train_transforms = transforms.Compose([transforms.ToTensor(),
+train_transforms = transforms.Compose([#transforms.Lambda(numpy_datascan),
+                                       transforms.Lambda(custom_normalisation),
+                                       #transforms.Lambda(numpy_datascan),
+                                       #transforms.Lambda(find_np_minmax),
+                                       transforms.ToTensor(),
+                                       #transforms.Lambda(custom_normalisation), #transforms.Lambda(function) allows creation of custom transform from a function 
+                                       #transforms.Lambda(tensor_datascan),
                                        #transforms.Normalize(),
                                        #transforms.RandomRotation(30),         #Compose is required to chain together multiple transforms in serial 
                                        #transforms.RandomResizedCrop(224),
@@ -56,9 +100,16 @@ train_transforms = transforms.Compose([transforms.ToTensor(),
                                        #transforms.ToTensor()               #other transforms can be dissabled but to tensor must be left enabled
                                        ]) 
 
-test_transforms = transforms.Compose([#transforms.Resize(255),
+test_transforms = transforms.Compose([#transforms.Lambda(numpy_datascan),
+                                      transforms.Lambda(custom_normalisation),
+                                      #transforms.Lambda(numpy_datascan),
+                                      #transforms.Lambda(find_np_minmax),
+                                      #transforms.Resize(255),
                                       #transforms.CenterCrop(224),
                                       transforms.ToTensor(),
+                                      #transforms.Lambda(custom_normalisation),
+                                      #transforms.Lambda(tensor_datascan),
+ 
                                       #transforms.Normalize()
                                       ])
 
@@ -101,48 +152,62 @@ def add_noise(inputs,noise_factor=0.3, time_dimension=100):
      return noisy
 
 ### Random Noise Generator Function
-def add_noise2(inputs,noise_points=0.3, time_dimension=100):
-     cNOISE = torch.randn_like(inputs) #* time_dimension
-     noise_init = torch.randn_like(inputs)**2 * time_dimension
-     noise = torch.clip(cNOISE,0.,100.)
-     noisy = inputs# + noise
-     if debug_noise_function == 1:
-        print("INPUT", torch.min(inputs), torch.max(inputs))
+def add_noise2(inputs, noise_points=0, dimensions=(88,128), time_dimension=100, debug_noise_function=0):
+    print("NOISETEST2",np.shape(inputs.numpy()))
+    for noise_point in range (0, noise_points+1):
+        np_x = np.random.randint(0, dimensions[0]) 
+        np_y = np.random.randint(0, dimensions[1]) 
+        np_TOF = np.random.randint(0, time_dimension) 
+        inputs[np_x][np_y] = np_TOF
+     
+    if debug_noise_function == 1:
         plt.imshow(inputs[0][0])
         plt.show()
-        print("cNOISE", torch.min(cNOISE), torch.max(cNOISE))
-        plt.imshow(cNOISE[0][0])
-        plt.show()
-        print("noise", torch.min(noise), torch.max(noise))
-        plt.imshow(noise[0][0])
-        plt.show()
-        print("noisy", torch.min(noisy), torch.max(noisy))
-        plt.imshow(noisy[0][0])
-        plt.show()
-     return noisy
+    return inputs
+
+
+
+
+def redimensionalise_time(data, reconstruction_threshold):
+    #Reconstruct 3D Image
+    x_list = []
+    y_list = []
+    TOF_list = []
+    #print("re-time in: min{}, max{}".format(0, (np.amax(data))))
+    for row, row_data in enumerate(data):
+        for column, TOF in enumerate(row_data):
+            #print("R,C",row,column)
+            if TOF != 0 and TOF >= reconstruction_threshold:        #the TOF != 0 is important if user sets a reconstruction threshold of 0
+                #Reverse Normalisation
+                x_list.append(row)
+                y_list.append(column)
+                TOF_denorm = (TOF - reconstruction_threshold) * 2 * time_dimension   #the value of 2 needs to be updated to programatic to really be able to modify reconsturction threshold without breaking program 
+                TOF_list.append(TOF_denorm)
+                #print("TOF",TOF,"denorn",TOF_denorm)
+    #print("re-time out: min{}, max{}".format(0, (np.amax(TOF_list))))
+    #plt.hist(data, 100)
+    #plt.show()
+    #plt.hist(TOF_list, 100)
+    #plt.show()
+    #print(TOF_list)
+    return (x_list, y_list, TOF_list)
 
 #3D Reconstruction
 def reconstruction_3D(image, time_dimension, reconstruction_threshold, settings, epoch, plot_or_save=0):
+    data_hit_numpy = image[image != 0]
+    print("IMAGE IN SCAN HITS",len(data_hit_numpy))
+    print(data_hit_numpy)
 #Remember image comes in in the form y,x not x,y so column and row are flipped in indexing
     #2D Plot Check
     plt.imshow(image)
+    plt.title("2D Reconstruction Epoch: %s" %epoch)
     if plot_or_save == 0:
         plt.show()
     else:
         plt.close()
     
     shape = np.shape(image)
-    #Reconstruct 3D Image
-    x_list = []
-    y_list = []
-    z_list = []
-    for column, _ in enumerate(image[0]):
-        for row, _ in enumerate(image[:,]):
-            TOF = int(image[row][column]*time_dimension)
-            if TOF != 0 and TOF >= reconstruction_threshold*time_dimension:
-                x_list.append(row)
-                y_list.append(column)
-                z_list.append(TOF)
+    x_list, y_list, z_list = redimensionalise_time(image, reconstruction_threshold)
 
     #3D Plot
     fig = plt.figure()               #Plots spherical data
@@ -151,6 +216,10 @@ def reconstruction_3D(image, time_dimension, reconstruction_threshold, settings,
     ax.set_xlim(0, shape[0])
     ax.set_ylim(0, shape[1])
     ax.set_zlim(0, time_dimension)
+    ax.set_title("3D Reconstruction Epoch: %s" %epoch)
+    ax.set_xlabel("x")
+    ax.set_ylabel("y")
+    ax.set_zlabel("Time")
     if plot_or_save == 0:
         plt.show()
     else:
@@ -181,8 +250,12 @@ def belief_telemetry(data, reconstruction_threshold, epoch, settings, plot_or_sa
 def plot_telemetry(telemetry):
     tele = np.array(telemetry)
     #!!! Add labels to lines
-    plt.plot(tele[:,0],tele[:,1], color='r') #red = num of points above threshold
-    plt.plot(tele[:,0],tele[:,2], color='b') #blue = num of points below threshold
+    plt.plot(tele[:,0],tele[:,1], color='r', label="Points above threshold") #red = num of points above threshold
+    plt.plot(tele[:,0],tele[:,2], color='b', label="Points below threshold") #blue = num of points below threshold
+    plt.title("Telemetry over epochs")
+    plt.xlabel("Epoch number")
+    plt.ylabel("Number of Signal Points")
+    plt.legend()
     plt.show()    
 
 ###RNG Seeding for Determinism Function
@@ -325,7 +398,9 @@ def plot_ae_outputs_den(encoder, decoder, epoch, outputfig_title, time_dimension
 
     if (epoch+1) % print_epochs == 0:        
         ###3D Reconstruction
+        in_data = img.cpu().squeeze().numpy()
         rec_data = rec_img.cpu().squeeze().numpy()
+        reconstruction_3D(in_data, time_dimension, reconstruction_threshold, settings, epoch+1, plot_or_save)
         reconstruction_3D(rec_data, time_dimension, reconstruction_threshold, settings, epoch+1, plot_or_save)
         
         #Telemetry plots
@@ -350,7 +425,7 @@ loss_fn = loss_function
 lr = learning_rate                                     #Just sets the learing rate value from the user inputs pannel at the top
 
 ### Set the random seed for reproducible results WHY IS THIS ON?????????????????????? TEST
-torch.manual_seed(seed)              
+#torch.manual_seed(seed)              
 
 ### Initialize the two networks
 d = latent_space_nodes #!!!d is passed to the encoder & decoder in the lines below and represents the encoded space dimension. This is the number of layers the linear stages will shrink to? #!!!
@@ -367,7 +442,7 @@ optim = torch.optim.Adam(params_to_optimize, lr=lr, weight_decay=wd)
 #%% - Compute device check
 #Following section checks if a CUDA enabled GPU is available. If found it is selected as the 'device' to perform the tensor opperations. If no CUDA GPU is found the 'device' is set to CPU (much slower) 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-print(f'Selected device: {device}')  #Informs user if running on CPU or GPU
+print(f'Selected device: {device}')  #Informs user if running on CPU or GPU - (NVIDIA CUDA)
 
 #Following section moves both the encoder and the decoder to the selected device i.e detected CUDA enabled GPU or to CPU
 encoder.to(device)   #Moves encoder to selected device, CPU/GPU
