@@ -14,7 +14,7 @@ import random
 from Custom_Normalisation_V1 import scale_Ndata as custom_normalisation
 #from Custom_Normalisation_V1 import custom_normalisation
 from DataLoader_Functions_V2 import initialise_data_loader
-from autoencoders.autoencoder_2D_V1 import Encoder, Decoder
+from autoencoders.autoencoder_2D_V5 import Encoder, Decoder
 
 
 

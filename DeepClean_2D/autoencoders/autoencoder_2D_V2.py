@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on Mon Nov 11 2022
-Autoencoder 2D V2
+Autoencoder 2D V2           #Four conv layers then lin layer down to 512 nodes then one lin layer to latent space
 @author: Adill Al-Ashgar
 """
 

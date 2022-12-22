@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on Mon Nov 11 2022
-Autoencoder 2D V1            #Initial Autoencoder Structure 3 Conv layers  then lin layer down to 512 nodes, then one linear layer down to latent dimension
+Autoencoder 2D V5            # 3 Conv layers  then lin layer down 2048, 1024, 512 nodes, then one linear layer down to latent dimension
 @author: Adill Al-Ashgar
 """
 
@@ -83,9 +83,13 @@ class Encoder(nn.Module):
         #nn.Linear arguments are: in_features – size of each input sample, out_features – size of each output sample, bias – If set to False, the layer will not learn an additive bias. Default: True
         self.encoder_lin = nn.Sequential(
             #Linear encoder layer 1  
-            nn.Linear(10 * 15 * 32, 512),                   #!!! linear network layer. arguuments are input dimensions/size, output dimensions/size. Takes in data of dimensions 3* 3 *32 and outputs it in 1 dimension of size 128
+            nn.Linear(10 * 15 * 32, 2048),                   #!!! linear network layer. arguuments are input dimensions/size, output dimensions/size. Takes in data of dimensions 3* 3 *32 and outputs it in 1 dimension of size 128
             nn.ReLU(True),                                #ReLU activation function - Activation function determinines if a neuron fires, i.e is the output of the node considered usefull. also allows for backprop. the arg 'True' makes the opperation carry out in-place(changes the values in the input array to the output values rather than making a new one), default would be false
             #Linear encoder layer 2
+            nn.Linear(2048, 1024),                   #!!! linear network layer. arguuments are input dimensions/size, output dimensions/size. Takes in data of dimensions 3* 3 *32 and outputs it in 1 dimension of size 128
+            nn.ReLU(True),                                
+            nn.Linear(1024, 512),                   #!!! linear network layer. arguuments are input dimensions/size, output dimensions/size. Takes in data of dimensions 3* 3 *32 and outputs it in 1 dimension of size 128
+            nn.ReLU(True),                                
             nn.Linear(512, encoded_space_dim)             #Takes in data of 1 dimension with size 128 and outputs it in one dimension of size defined by encoded_space_dim (this is the latent space? the smalle rit is the more comression but thte worse the final fidelity)
         )
         
@@ -120,8 +124,12 @@ class Decoder(nn.Module):
             #Linear decoder layer 1            
             nn.Linear(encoded_space_dim, 512),
             nn.ReLU(True),                                 #ReLU activation function - Activation function determinines if a neuron fires, i.e is the output of the node considered usefull. also allows for backprop. the arg 'True' makes the opperation carry out in-place(changes the values in the input array to the output values rather than making a new one), default would be false
-            #Linear decoder layer 2
-            nn.Linear(512, 10 * 15 * 32),
+            #Linear decoder layer 
+            nn.Linear(512, 1024),
+            nn.ReLU(True),  
+            nn.Linear(1024, 2048),
+            nn.ReLU(True),  
+            nn.Linear(2048, 10 * 15 * 32),
             nn.ReLU(True)                                  #ReLU activation function - Activation function determinines if a neuron fires, i.e is the output of the node considered usefull. also allows for backprop. the arg 'True' makes the opperation carry out in-place(changes the values in the input array to the output values rather than making a new one), default would be false
         )
         ###Unflatten layer
