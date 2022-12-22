@@ -1,0 +1,204 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import random
+
+# N.B numpy gives angles in degrees
+# particle track depends upon - point on quartz hit, angle ejected.
+# ill start with creating an ideal version.
+
+# set number of signal points from an impact you want:
+signal_points = 1000
+
+#cherenkov radiation moves at speed of light / refractive index of quartz
+vel = 3E8 / 1.54425
+
+# quartz dim [x,y,z] where x is horiz, y is vertical (line joining bottom and detector), and z is thickness
+# detector is at 2.5 to make velocty +ve when going towards the detector
+q_dim = [0.66, 2.5, 0.01]
+# quartz critical angle
+q_crit = 40.49 * np.pi / 180
+
+# so reflection will happen at x / 2 and - x / 2
+# reflect = q_len / 2           DONT NEED THIS AS CAN JUST REFLECT BETWEEN 0 AND q_len[0]. Makes easier for other things
+
+# impact at [x,y], for now we will neglect thickness but this can be trivially added
+# choise now set to make the impact at one point or many different
+impact = [0.33,1]
+
+# random or ideal? If ideal = 1 then data is perfect and linear, random if = 0
+ideal = 1
+if ideal == 1:
+    # angle is to the vertical y axis (line that joins detector and bottom)
+    angles = np.linspace(-np.pi, np.pi, signal_points)
+
+else:
+    # random angles
+    angles = [random.uniform(-np.pi, np.pi) for _ in range(signal_points)]
+
+# to save compute, we must first remove all angles that are past the critical angle UNLESS they are too close to the detector
+# as if they are too close to the detector they will hit the detector before they can be ejected
+
+# when particle too close looks like upside down v shape of zones that have angles past critical.
+# find the line equations of those v points:
+length = q_dim[0] / np.tan(q_crit)
+
+# y = 0.66 L x + (q_dim[1] - L) 
+# other is 
+# y = -0.66 L x + q_dim[1]
+
+# finds maximum possible angles past the critical angle if too close to the detector for each hit point
+pve_hit_angle = np.arctan((q_dim[0]-impact[0]) / (q_dim[1]-impact[1]))
+nve_hit_angle = - np.arctan((impact[0]) / (q_dim[1]-impact[1]))
+
+# lines of form y = mx + c
+# grad is dy / dx
+pve_hit_line = ( length / q_dim[0] ) * impact[0] + (q_dim[1] - length)
+nve_hit_line = - ( length / q_dim[0] ) * impact[0] + q_dim[1]
+
+# for critical angle, angle has to be below:
+below = np.pi/2 - q_crit
+# or
+above = np.pi/2 + q_crit
+# can use abs() fn to exploit the symmetry
+
+
+
+# surv_ang is the surviving angles coming from the particle impact. Later we will edit these so they are the correct angle
+# when hitting the detector
+
+# if impact is far away from detector
+if (impact[1] <= pve_hit_line) and (impact[1] <=  nve_hit_line):
+    
+    # normal critical angle applies:
+    surv_ang = [angle for angle in angles if not (below <= abs(angle) <= above)]    # if NOT less than crit angle
+
+#if impact is closer to left side
+elif (impact[1] > pve_hit_line) and (impact[1] <=  nve_hit_line):
+
+    # only one side of cherenkov can be some ways past the critical angle (+ve angle effected)
+    surv_ang = [angle for angle in angles if (below <= angle <= pve_hit_angle) or not (below < abs(angle) < above)]
+
+# impact closer to right side:
+elif (impact[1] <= pve_hit_line) and (impact[1] >  nve_hit_line):
+
+    # only one side of cherenkov can be some ways past the critical angle (-ve angle effected)
+    surv_ang = [angle for angle in angles if (nve_hit_angle <= angle <= - below) or not (below < abs(angle) < above)]
+
+# past critical angle on both sides:
+elif (impact[1] > pve_hit_line) and (impact[1] >  nve_hit_line):
+
+    # both sides cherenkov will be detected past the critical angle
+    surv_ang = [angle for angle in angles if (nve_hit_angle <= angle <= - below) or (below <= angle <= pve_hit_angle) or not (below < abs(angle) < above)]
+
+
+# at what time will these points hit the detector?
+time = []
+# and what x point will these points hit the detector?
+x = []
+# at what angle will these hit the detector?
+det_ang = []
+
+for angle in surv_ang:
+
+    # if the cherenkov moves downwards first:
+    if abs(angle) > np.pi/2:
+
+        # calcs total dist cherenkov travels
+        dist = abs((q_dim[1] + impact[1]) / np.cos(angle))
+
+
+    # if goes upwards:
+    elif abs(angle) < np.pi/2:
+
+        dist = abs((q_dim[1] - impact[1]) / np.cos(angle))
+
+    # calc total time for that dist
+    time.append(dist / vel)
+    
+    # how far cherenkov travels in x-axis drn:
+    x_dist = dist * np.sin(angle)
+
+    # taking impact point into account
+    x_dist = x_dist + impact[0]
+    
+    # loop to reflect x
+
+    # we need to add a count to see how many times the particle is reflected. This will effect the angle it hits the detector
+    reflections = 0
+    while x_dist < 0 or x_dist > q_dim[0]:
+        if x_dist < 0:
+            x_dist = abs(x_dist)
+            reflections += 1
+        elif x_dist > q_dim[0]:
+            x_dist = 2 * q_dim[0] - x_dist
+            reflections += 1
+    
+    # downwards first (away from detector)
+    if abs(angle) > np.pi/2:
+
+        if angle > 0:
+            det_ang.append((np.pi - angle) * (-1)**(reflections))
+        else:
+            det_ang.append((-(np.pi + angle)) * (-1)**(reflections))          
+
+    # now upwards
+    elif abs(angle) < np.pi/2:
+        det_ang.append(angle * (-1)**(reflections))
+
+    x.append(x_dist)
+
+print(surv_ang)
+print(det_ang)
+
+# Were almost there! One last thing. The detector does not measure the negative angles coming in. Only the Modulus!. So...
+
+det_ang = [abs(i) for i in det_ang]
+
+# joining them all together:
+# x axis should be the x point hit on the detector - x
+# y axis should be angle of incident cherenkov on detector - det_ang (means detector angle BTW)
+# z axis is time - time
+
+fig = plt.figure()
+ax = fig.add_subplot(projection='3d')
+
+ax.scatter(x, det_ang, time)
+ax.set_xlabel('X')
+ax.set_ylabel('Angle / rad')
+ax.set_zlabel('Time')
+
+plt.show()
+
+# This is not similar to the data shown in the presentation as the angle cant be negative when it hits the detector!
+# This is because it was reflected at the bottom of the TORCH.
+
+
+
+# fig = plt.figure()
+# ax2 = fig.add_subplot(projection='3d')
+
+# detect_ang = [i or i in ]
+
+# ax2.scatter(x, abs_ang, time)
+# ax2.set_xlabel('X')
+# ax2.set_ylabel('Angle / rad')
+# ax2.set_zlabel('Time')
+
+# plt.show()
+
+
+# # this shows the 2d ribbons
+
+# plt.scatter(x,time)
+# plt.xlabel('x / m')
+# plt.ylabel('time')
+# plt.show()
+
+
+
+# at this point we have the angle (in radians) and origin of cherenkov. We can now construct the pattern
+
+
+
+
+
