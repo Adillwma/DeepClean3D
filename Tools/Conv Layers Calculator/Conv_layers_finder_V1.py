@@ -121,8 +121,8 @@ CL3 = conv_calculator(conv_type=0, K=Kernal, P=0, S=2, D=1, H_in=CL2[0], W_in=CL
 CL4 = conv_calculator(conv_type=0, K=Kernal, P=0, S=2, D=1, H_in=CL3[0], W_in=CL3[1])
 CL5 = conv_calculator(conv_type=0, K=Kernal, P=0, S=2, D=1, H_in=CL4[0], W_in=CL4[1])
 
-CLT1 = conv_calculator(conv_type=1, K=Kernal, P=0, S=2, D=1, H_in=CL5[0], W_in=CL5[1], O=(0,1))
-CLT2 = conv_calculator(conv_type=1, K=Kernal, P=0, S=2, D=1, H_in=CLT1[0], W_in=CLT1[1], O=(0,1))
+CLT1 = conv_calculator(conv_type=1, K=Kernal, P=0, S=2, D=1, H_in=CL3[0], W_in=CL3[1], O=0)
+CLT2 = conv_calculator(conv_type=1, K=Kernal, P=0, S=2, D=1, H_in=CLT1[0], W_in=CLT1[1], O=0)
 CLT3 = conv_calculator(conv_type=1, K=Kernal, P=0, S=2, D=1, H_in=CLT2[0], W_in=CLT2[1], O=0)
 CLT4 = conv_calculator(conv_type=1, K=Kernal, P=0, S=2, D=1, H_in=CLT3[0], W_in=CLT3[1], O=0)
 CLT5 = conv_calculator(conv_type=1, K=Kernal, P=0, S=2, D=1, H_in=CLT4[0], W_in=CLT4[1], O=1)
