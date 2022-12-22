@@ -9,6 +9,33 @@ Input data must be tensor, output is tensor with values scaled betwen 0.5 and 1.
 """
 import torch
 import numpy as np
+################################################
+
+def add_noise2(inputs, noise_points=0, dimensions=(88,128), time_dimension=100):
+    for noise_point in range (0, noise_points+1):
+        np_x = np.random.randint(0, dimensions[0]) 
+        np_y = np.random.randint(0, dimensions[1]) 
+        np_TOF = np.random.randint(0, time_dimension) 
+        inputs[np_x][np_y] = np_TOF
+    return(inputs)
+#testin = torch.tensor(np.array([(0,1,10,100),(100,10,1,0),(0,0,0,0)]))
+#print(testin)
+#print(add_noise2(testin, 2, (3,4), 100))
+
+def scale_Ndata(data, reconstruction_cutoff=0.2, min_val=0, max_val=100):  
+# Scale numpy array data to the range reconstruction_cutoff to 1 leaving 0's as 0    
+    scaled_vals = reconstruction_cutoff + (data - min_val) * (1 - reconstruction_cutoff) / (max_val - min_val)
+    output = np.where(data==0, data, scaled_vals)
+    return output
+
+def scale_Tdata(data, reconstruction_cutoff, min_val=0, max_val=100):  
+# Scale tensor array data to the range reconstruction_cutoff to 1 leaving 0's as 0    
+    scaled_vals = torch.min(data, min_val)
+    scaled_vals = torch.mul(scaled_vals, (1 - reconstruction_cutoff) / (max_val - min_val))
+    scaled_vals = torch.add(scaled_vals, reconstruction_cutoff)
+    output = torch.where(data==0, data, scaled_vals)
+    return output
+################################################
 
 def numpy_normalisatation(data):     #old, takes 0 - 100 data and turns it into 127.5-255 with 0's remaining 0
     output = ((data / 100) * 127.5) + 127.5
@@ -19,7 +46,7 @@ def custom_np_to_tensor_no_norm(data):
     data = np.expand_dims(data, axis=0)
     data = torch.tensor(data)
     return(data)
-    
+
 def custom_normalisation(data, min=0, max=100):
     output = data / (max*2)    #Divides all values in the input tensor (data), by the maximum allowed value in time dimension multiplied by 2 (max*2) this normalises the data between 0 and 0.5
     output = output + 0.5
