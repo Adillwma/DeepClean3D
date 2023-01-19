@@ -117,13 +117,16 @@ Kernal = (3,3)
 
 CL1 = conv_calculator(conv_type=0, K=Kernal, P=0, S=2, D=1, H_in=start_size[0], W_in=start_size[1])
 CL2 = conv_calculator(conv_type=0, K=Kernal, P=0, S=2, D=1, H_in=CL1[0], W_in=CL1[1])
-CL3 = conv_calculator(conv_type=0, K=Kernal, P=(0,1), S=2, D=1, H_in=CL2[0], W_in=CL2[1])
+CL3 = conv_calculator(conv_type=0, K=Kernal, P=0, S=2, D=1, H_in=CL2[0], W_in=CL2[1])
 CL4 = conv_calculator(conv_type=0, K=Kernal, P=0, S=2, D=1, H_in=CL3[0], W_in=CL3[1])
+CL5 = conv_calculator(conv_type=0, K=Kernal, P=0, S=2, D=1, H_in=CL4[0], W_in=CL4[1])
 
-CLT1 = conv_calculator(conv_type=1, K=Kernal, P=0, S=2, D=1, H_in=CL4[0], W_in=CL4[1], O=0)
-CLT2 = conv_calculator(conv_type=1, K=Kernal, P=(0,1), S=2, D=1, H_in=CLT1[0], W_in=CLT1[1], O=0)
+CLT1 = conv_calculator(conv_type=1, K=Kernal, P=0, S=2, D=1, H_in=CL3[0], W_in=CL3[1], O=0)
+CLT2 = conv_calculator(conv_type=1, K=Kernal, P=0, S=2, D=1, H_in=CLT1[0], W_in=CLT1[1], O=0)
 CLT3 = conv_calculator(conv_type=1, K=Kernal, P=0, S=2, D=1, H_in=CLT2[0], W_in=CLT2[1], O=0)
-CLT4 = conv_calculator(conv_type=1, K=Kernal, P=0, S=2, D=1, H_in=CLT3[0], W_in=CLT3[1], O=1)
+CLT4 = conv_calculator(conv_type=1, K=Kernal, P=0, S=2, D=1, H_in=CLT3[0], W_in=CLT3[1], O=0)
+CLT5 = conv_calculator(conv_type=1, K=Kernal, P=0, S=2, D=1, H_in=CLT4[0], W_in=CLT4[1], O=1)
+
 
 #Outputs
 print("Initial Size:", start_size,"\n")
@@ -131,8 +134,11 @@ print ("Conv 1 Size:", CL1)
 print ("Conv 2 Size:", CL2)
 print ("Conv 3 Size:", CL3)
 print ("Conv 4 Size:", CL4)
+print ("Conv 5 Size:", CL5)
 print()
 print ("Conv.T 1 Size:", CLT1)
 print ("Conv.T 2 Size:", CLT2)
 print ("Conv.T 3 Size:", CLT3)
 print ("Conv.T 4 Size:", CLT4)
+print ("Conv.T 5 Size:", CLT5)
+

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on Sat Oct 8 2022
-DeepClean 2D v0.0.1
+DeepClean 2D 2 v0.0.1   #USes masking to retrive TOF rather then directly through network
 @author: Adill Al-Ashgar
 """
 #%% - Dependencies
@@ -14,48 +14,14 @@ import random
 from Custom_Normalisation_V1 import scale_Ndata as custom_normalisation
 #from Custom_Normalisation_V1 import custom_normalisation
 from DataLoader_Functions_V2 import initialise_data_loader
-from autoencoders.autoencoder_2D_V5 import Encoder, Decoder
-
-
-
-def find_np_minmax(data):
-    print("NP SHAPE", np.shape(data))
-    return(data)
-
-def tensor_datascan(data):
-    tensor_min = np.amin(data.numpy())
-    tensor_max = np.amax(data.numpy())
-    print("MIN", tensor_min, "MAX", tensor_max)
-    print("SHAPE tensor: ", np.shape(data.numpy()))
-    datascan = data.numpy().flatten()
-
-    data_hit_tensor = datascan[datascan != 0]
-    print("TENSOR SCAN HITS",len(data_hit_tensor))
-    print(data_hit_tensor)
-    plt.hist(datascan,20)
-    plt.show()
-    return(data)
-
-def numpy_datascan(data):
-    np_min = np.amin(data)
-    np_max = np.amax(data)
-    print("MIN", np_min, "MAX", np_max)
-    print("SHAPE numpy: ", np.shape(data))
-    datascan = data.flatten()
-
-    data_hit_numpy = datascan[datascan != 0]
-    print("NUMPY SCAN HITS",len(data_hit_numpy))
-    print(data_hit_numpy)
-    plt.hist(datascan,20)
-    plt.show()
-    return(data)
+from autoencoders.autoencoder_2D_V1 import Encoder, Decoder
 
 #%% - User Inputs
 learning_rate = 0.001                       #User controll to set optimiser learning rate(Hyperparameter)
 optim_w_decay = 1e-05                       #User controll to set optimiser weight decay (Hyperparameter)
 loss_function = torch.nn.MSELoss()          #User controll to set loss function (Hyperparameter)
 latent_space_nodes = 4                      #User controll to set number of nodes in the latent space, the bottleneck layer (Hyperparameter)
-noise_factor = 0                            #User controll to set the noise factor, a multiplier for the magnitude of noise added. 0 means no noise added, 1 is defualt level of noise added, 10 is 10x default level added (Hyperparameter)
+noise_factor = 300                            #User controll to set the noise factor, a multiplier for the magnitude of noise added. 0 means no noise added, 1 is defualt level of noise added, 10 is 10x default level added (Hyperparameter)
 num_epochs = 4                            #User controll to set number of epochs (Hyperparameter)
 batch_size = 10                             #Data Loader, number of Images to pull per batch (add a check to make sure the batch size is smaller than the total number of images in the path selected)
 reconstruction_threshold = 0.2              #Threshold for 3d reconstruction, values below this confidence level are discounted
@@ -128,11 +94,27 @@ class AddGaussianNoise(object):                   #Class generates noise with me
 
 #%% - Functions
 ### Random Noise Generator Function
+### Random Noise Generator Function
+def add_noise2(inputs, noise_points=0, dimensions=(88,128), time_dimension=100, debug_noise_function=0):
+    batch_size_found = np.shape(inputs)[0]
+    for noise_point in range (0, noise_points+1):      #is +1 an error?
+        for batch_index in range (0, batch_size_found):   #is +1 an error?
+            np_x = np.random.randint(0, dimensions[0]-1) 
+            np_y = np.random.randint(0, dimensions[1]-1) 
+            np_TOF = np.random.randint(0, time_dimension) 
+            normalised_np_TOF = custom_normalisation(np_TOF)
+            inputs[batch_index][0][np_y][np_x] = float(normalised_np_TOF)
+     
+    if debug_noise_function == 1:
+        plt.imshow(inputs[0][0])
+        plt.show()
+    return (inputs)
+
 def add_noise(inputs,noise_factor=0.3, time_dimension=100):
      cNOISE = torch.randn_like(inputs) #* time_dimension
      noise_init = torch.randn_like(inputs)**2 * time_dimension
      noise = torch.clip(cNOISE,0.,100.)
-     noisy = inputs# + noise
+     noisy = inputs + noise
      if debug_noise_function == 1:
         print("INPUT", torch.min(inputs), torch.max(inputs))
         plt.imshow(inputs[0][0])
@@ -146,23 +128,13 @@ def add_noise(inputs,noise_factor=0.3, time_dimension=100):
         print("noisy", torch.min(noisy), torch.max(noisy))
         plt.imshow(noisy[0][0])
         plt.show()
-     return noisy
+     return (noisy)
 
-### Random Noise Generator Function
-def add_noise2(inputs, noise_points=0, dimensions=(88,128), time_dimension=100, debug_noise_function=0):
-    print("NOISETEST2",np.shape(inputs.numpy()))
-    for noise_point in range (0, noise_points+1):
-        np_x = np.random.randint(0, dimensions[0]) 
-        np_y = np.random.randint(0, dimensions[1]) 
-        np_TOF = np.random.randint(0, time_dimension) 
-        inputs[np_x][np_y] = np_TOF
-     
-    if debug_noise_function == 1:
-        plt.imshow(inputs[0][0])
-        plt.show()
-    return inputs
-
-
+def reconstruction_mask(rec_data, in_data, time_dimension, reconstruction_threshold):
+    no_hits = np.zeros_like(in_data)
+    reconstruction = np.where(rec_data>=reconstruction_threshold, in_data, no_hits)
+    inv_reconstruction = np.where(rec_data==0, in_data, no_hits)
+    return(reconstruction, inv_reconstruction)
 
 
 def redimensionalise_time(data, reconstruction_threshold):
@@ -224,6 +196,9 @@ def reconstruction_3D(image, time_dimension, reconstruction_threshold, settings,
         plt.savefig(Out_Label, format='png')        
         plt.close()
 
+
+
+
 ###Ploting confidence of each pixel as histogram per epoch with line showing the detection threshold
 def belief_telemetry(data, reconstruction_threshold, epoch, settings, plot_or_save=0):
     data2 = data.flatten()
@@ -270,7 +245,7 @@ def train_epoch_den(encoder, decoder, device, dataloader, loss_fn, optimizer,noi
     # Iterate the dataloader (we do not need the label values, this is unsupervised learning)
     for image_batch, _ in dataloader: # with "_" we just ignore the labels (the second element of the dataloader tuple)
         # Move tensor to the proper device
-        image_noisy = add_noise(image_batch,noise_factor)
+        image_noisy = add_noise2(image_batch,noise_factor)
         image_batch = image_batch.to(device)
         image_noisy = image_noisy.to(device)    
         # Encode data
@@ -300,7 +275,7 @@ def test_epoch_den(encoder, decoder, device, dataloader, loss_fn,noise_factor=0.
         conc_label = []
         for image_batch, _ in dataloader:
             # Move tensor to the proper device
-            image_noisy = add_noise(image_batch,noise_factor)
+            image_noisy = add_noise2(image_batch,noise_factor)
             image_noisy = image_noisy.to(device)
             # Encode data
             encoded_data = encoder(image_noisy)
@@ -336,8 +311,8 @@ def plot_ae_outputs_den(encoder, decoder, epoch, outputfig_title, time_dimension
       number_of_true_signal_points.append(int(int_sig_points.numpy()))
 
       #Following section creates the noised image data drom the original clean labels (images)   
-      image_noisy = add_noise(img,noise_factor)     
-      image_noisy = image_noisy.to(device)
+      image_n = add_noise2(img,noise_factor)     
+      image_noisy = image_n.to(device)
       
       #Following section sets the autoencoder to evaluation mode rather than training (up till line 'with torch.no_grad()')
       encoder.eval()                                   #.eval() is a kind of switch for some specific layers/parts of the model that behave differently during training and inference (evaluating) time. For example, Dropouts Layers, BatchNorm Layers etc. You need to turn off them during model evaluation, and .eval() will do it for you. In addition, the common practice for evaluating/validation is using torch.no_grad() in pair with model.eval() to turn off gradients computation
@@ -396,10 +371,16 @@ def plot_ae_outputs_den(encoder, decoder, epoch, outputfig_title, time_dimension
     if (epoch+1) % print_epochs == 0:        
         ###3D Reconstruction
         in_data = img.cpu().squeeze().numpy()
+        noisy_data = image_noisy.cpu().squeeze().numpy()
         rec_data = rec_img.cpu().squeeze().numpy()
-        reconstruction_3D(in_data, time_dimension, reconstruction_threshold, settings, epoch+1, plot_or_save)
-        reconstruction_3D(rec_data, time_dimension, reconstruction_threshold, settings, epoch+1, plot_or_save)
         
+        reconstruction, inv_reconstruction = reconstruction_mask(rec_data, noisy_data, time_dimension, reconstruction_threshold)
+        reconstruction_3D(in_data, time_dimension, reconstruction_threshold, settings, epoch+1, plot_or_save)
+        reconstruction_3D(noisy_data, time_dimension, reconstruction_threshold, settings, epoch+1, plot_or_save)
+        #(rec_data, time_dimension, reconstruction_threshold, settings, epoch+1, plot_or_save)
+        reconstruction_3D(reconstruction, time_dimension, reconstruction_threshold, settings, epoch+1, plot_or_save)        
+        #reconstruction_3D(inv_reconstruction, time_dimension, reconstruction_threshold, settings, epoch+1, plot_or_save)
+
         #Telemetry plots
         if telemetry_on == 1:       #needs ttitles and labels etc added
             above_threshold, below_threshold = belief_telemetry(rec_data, reconstruction_threshold, epoch+1, settings, plot_or_save)   

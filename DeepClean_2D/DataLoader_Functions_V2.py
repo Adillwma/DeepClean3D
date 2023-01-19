@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-DataLoader Functions V1
+DataLoader Functions V2
 @author: Adill Al-Ashgar
 Created on Tue Nov 15 19:02:32 2022
 
@@ -25,13 +25,14 @@ def train_loader2d(path):   #fix need for two seperate loads, one on each loader
 def test_loader2d(path):
     load = 1 # Set manually, 0 = Blank, no data, 1 = just signal, 2 = just noise, 3 = both, but with differing values (1,2)    #!!! OPION 3 NOT WORKING
     sample = (np.load(path))
-    sample2 = np.ma.masked_where(sample[1] == load, sample[1])                   
+    sample2 = sample[0] 
+    #sample2 = np.ma.masked_where(sample[1] == load, sample[1])                   
     return (sample2)
 
 #%%
 def train_loader3d(path):   #fix need for two seperate loads, one on each loader
     sample = (np.load(path))
-    sample = sample               
+    sample = sample         
     return torch.tensor(sample)
 
 #%%
