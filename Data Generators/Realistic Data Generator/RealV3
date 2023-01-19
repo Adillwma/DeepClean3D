@@ -28,13 +28,11 @@ if ideal == 1:
     # angle is to the vertical y axis (line that joins detector and bottom) for both
     # theta is in x-y plane
     theta_angles = np.linspace(-np.pi, np.pi, signal_points)
-    # psi is in y-z plane
-    psi_angles = np.linspace(-np.pi, np.pi, signal_points)
+    # psi is in y-z plane and added later in the code
 
 else:
     # random angles
     theta_angles = [random.uniform(-np.pi, np.pi) for _ in range(signal_points)]
-    psi_angles = [random.uniform(-np.pi, np.pi) for _ in range(signal_points)]
 
 
 # to save compute, we must first remove all angles that are past the critical angle UNLESS they are too close to the detector
@@ -62,7 +60,6 @@ below = np.pi/2 - q_crit
 # or
 above = np.pi/2 + q_crit
 # can use abs() fn to exploit the symmetry
-
 
 
 # surv_ang is the surviving angles coming from the particle impact. Later we will edit these so they are the correct angle
@@ -93,6 +90,18 @@ elif (impact[1] > pve_hit_line) and (impact[1] >  nve_hit_line):
     surv_ang = [angle for angle in theta_angles if (nve_hit_angle_theta <= angle <= - below) or (below <= angle <= pve_hit_angle_theta) or not (below < abs(angle) < above)]
 
 
+# adding psi angles that would be in the y-z plane and removing them if past critical angle
+# T_P_Angle stands for theta psi angle and has both the theta and psi information
+# N.B. psi is between 0 and pi/2 as is symmetrical to pi/2 to pi
+T_P_Angle = []
+for angle in surv_ang:
+    psi = random.uniform(0, np.pi/2)
+    if q_crit <= psi <= (np.pi/2):
+        T_P_Angle.append([angle, psi])
+
+# IMPORTANT - For now i do not use the psi angles in hte distance calculations ans it makes it unncesarily complicated
+# All Psi is used for is to randomly omit the photons past the critical.
+
 # at what time will these points hit the detector?
 time = []
 # and what x point will these points hit the detector?
@@ -100,25 +109,26 @@ x = []
 # at what angle will these hit the detector?
 det_ang = []
 
-for angle in surv_ang:
+for angle in T_P_Angle:
 
     # if the cherenkov moves downwards first:
-    if abs(angle) > np.pi/2:
+    if abs(angle[0]) > np.pi/2:
 
         # calcs total dist cherenkov travels
-        dist = abs((q_dim[1] + impact[1]) / np.cos(angle))
+        # over np.cos(angle[0]) in x-y axis and np.sin(angle([1])) in y-z axis
+        dist = abs((q_dim[1] + impact[1]) / np.cos(angle[0]))
 
 
     # if goes upwards:
-    elif abs(angle) < np.pi/2:
+    elif abs(angle[0]) < np.pi/2:
 
-        dist = abs((q_dim[1] - impact[1]) / np.cos(angle))
+        dist = abs((q_dim[1] - impact[1]) / np.cos(angle[0]))
 
     # calc total time for that dist
     time.append(dist / vel)
     
     # how far cherenkov travels in x-axis drn:
-    x_dist = dist * np.sin(angle)
+    x_dist = dist * np.sin(angle[0])
 
     # taking impact point into account
     x_dist = x_dist + impact[0]
@@ -136,16 +146,16 @@ for angle in surv_ang:
             reflections += 1
     
     # downwards first (away from detector)
-    if abs(angle) > np.pi/2:
+    if abs(angle[0]) > np.pi/2:
 
-        if angle > 0:
-            det_ang.append((np.pi - angle) * (-1)**(reflections))
+        if angle[0] > 0:
+            det_ang.append((np.pi - angle[0]) * (-1)**(reflections))
         else:
-            det_ang.append((-(np.pi + angle)) * (-1)**(reflections))          
+            det_ang.append((-(np.pi + angle[0])) * (-1)**(reflections))     
 
     # now upwards
-    elif abs(angle) < np.pi/2:
-        det_ang.append(angle * (-1)**(reflections))
+    elif abs(angle[0]) < np.pi/2:
+        det_ang.append(angle[0] * (-1)**(reflections))
 
     x.append(x_dist)
 
