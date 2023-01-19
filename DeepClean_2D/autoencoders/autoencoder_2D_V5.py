@@ -31,6 +31,7 @@ class Encoder(nn.Module):
         #Padding adds padding to the edges of the data array  before the convoloution filtering, the padding value are noramlly zero but can be made other things. this is normally used to mamke the input array same size as the output
         #Dilation (not used param) sets the spread of the kernal, by defualt it is one contigous block, dilation spreads it out. best visulaised in the link above
         
+        # cnn layers
         self.encoder_cnn = nn.Sequential(
             #Convolutional encoder layer 1                 
             nn.Conv2d(1, 8, 3, stride=2, padding=1),       #Input_channels, Output_channels, Kernal_size, Stride, Padding

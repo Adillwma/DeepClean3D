@@ -53,6 +53,14 @@ def batch_learning(training_dataset_size, batch_size):
     return(output) 
 
 #%%
+# Basically this is a big function that checks if data is 2D or 3D, then:
+# 1. Loads the data into train_data and test_data (uses the same data but with different transforms)
+# 2. Further splits training data into training and validation datasets
+# 3. Makes each of these an iterable so it can be analysed one at a time
+# 4. Reconstructs and plots graphs for images in batch 
+# 5. Returns: trainloader, testloader, validloader, train_data, test_data, val_data
+# to be used
+
 def initialise_data_loader (dataset_title, data_path, batch_size, train_transforms, test_transforms, debug_loader_batch = 0, plot_every_other = 1, batch_size_protection = 1):
     # Input type check, 2D or 3D. Based on dataset foldr name. 3D if folder starts with S_
     if dataset_title.startswith('S_'):
@@ -65,7 +73,7 @@ def initialise_data_loader (dataset_title, data_path, batch_size, train_transfor
     # - Path images, greater than batch choice? CHECK
     ####check for file count in folder####
     if batch_size_protection == 1:
-        files_in_path = os.listdir(data_path + dataset_title + '/Data/') 
+        files_in_path = os.listdir(data_path + dataset_title + '/Data/')    # forms list of files/ directories in specified directory
         num_of_files_in_path = len(files_in_path)
         learning = batch_learning(num_of_files_in_path, batch_size)
         print("%s files in path." %num_of_files_in_path ,"// Batch size =",batch_size, "\nLearning via: " + learning,"\n")
@@ -74,27 +82,35 @@ def initialise_data_loader (dataset_title, data_path, batch_size, train_transfor
             
             #!!!Need code to make this event cancel the running of program and re ask for user input on batch size or just reask for the batch size
             batch_err_message = "Choose new batch size, must be less than total amount of images in directory", (num_of_files_in_path)
-            batch_size = int(input(batch_err_message))  #!!! not sure why input message is printing with wierd brakets and speech marks in the terminal? Investigate
+            batch_size = int(input(batch_err_message))  #!!! not sure why input message is printing with weird brakets and speech marks in the terminal? Investigate
 
     # - Data Loading
     if circular_or_spherical == 0:
+        # 2D input (using circle generator output)
+        # DatasetFolder is a generic dataloader that basically just runs the loader, applying transforms.
         train_data = datasets.DatasetFolder(data_path + dataset_title, loader=train_loader2d, extensions='.npy', transform=train_transforms)
         test_data = datasets.DatasetFolder(data_path + dataset_title, loader=test_loader2d, extensions='.npy', transform=test_transforms)
     
     else:
+        # 3D input (using spherical generator output)
         train_data = datasets.DatasetFolder(data_path + dataset_title, loader=train_loader3d, extensions='.npy', transform=train_transforms)
         test_data = datasets.DatasetFolder(data_path + dataset_title, loader=test_loader3d, extensions='.npy', transform=test_transforms)
             
     ###Following section splits the training dataset into two, train_data (to be noised) and valid data (to use in eval)
+
     m=len(train_data) #Just calculates length of train dataset, m is only used in the next line to decide the values of the split, (4/5 m) and (1/5 m)
     train_data, val_data = random_split(train_data, [int(round((m-m*0.2))), int(round((m*0.2)))])    #random_split(data_to_split, [size of output1, size of output2]) just splits the train_dataset into two parts, 4/5 goes to train_data and 1/5 goes to val_data , validation?
     
-    trainloader = torch.utils.data.DataLoader(train_data,batch_size=batch_size)
+    # utils.data.dataloader - Combines dataset and sampler? and provides iterable over the given dataset: 
+    # (hence why you see iter after) Iters are used as they only load one at a time. Saves much compute.
+    # inputs: (dataset(dataset from which to load data), batchsize(No samples per batch to load), shuffle(shuffle every epoch))
+    trainloader = torch.utils.data.DataLoader(train_data, batch_size=batch_size)
     validloader = torch.utils.data.DataLoader(val_data, batch_size=batch_size) 
     testloader = torch.utils.data.DataLoader(test_data, batch_size=batch_size, shuffle=True)
     
     # - Debugging Outputs
     if debug_loader_batch == 1:
+        # one batch at a time
         train_features, train_labels = next(iter(trainloader))
         print(f"Feature batch shape: {train_features.size()}")
         print(f"Labels batch shape: {train_labels.size()}")

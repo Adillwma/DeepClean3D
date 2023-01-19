@@ -1,5 +1,7 @@
-lst = ['a']
-for i in range(3):
-    lst.append(['b','c'])
+import torch
+import numpy as np
 
-print(lst)
+lst = np.array([[1,2,3,4], [1,2,3,4]])
+lst = np.expand_dims(lst, axis=0)
+
+print(torch.tensor(lst))

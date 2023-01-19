@@ -18,9 +18,9 @@ def add_noise2(inputs, noise_points=0, dimensions=(88,128), time_dimension=100):
         np_TOF = np.random.randint(0, time_dimension) 
         inputs[np_x][np_y] = np_TOF
     return(inputs)
-#testin = torch.tensor(np.array([(0,1,10,100),(100,10,1,0),(0,0,0,0)]))
-#print(testin)
-#print(add_noise2(testin, 2, (3,4), 100))
+# testin = torch.tensor(np.array([(0,1,10,100),(100,10,1,0),(0,0,0,0)]))
+# print(testin)
+# print(add_noise2(testin, 2, (3,4), 100))
 
 def scale_Ndata(data, reconstruction_cutoff=0.2, min_val=0, max_val=100):  
 # Scale numpy array data to the range reconstruction_cutoff to 1 leaving 0's as 0    
