@@ -51,7 +51,7 @@ def realistic_data_generator(signal_points, noise_points, detector_pixel_dimensi
     elif ideal == 0:
         x = random_x_points
 
-    #Takes the parabola defined by x range (either ideal or random) and creates the reflections
+    #Takes x range (either uniform (ideal) or random) and creates the reflections
     x_reflect_points = []
     for i in x:
         while i < -reflect_x or i > reflect_x:
@@ -62,20 +62,20 @@ def realistic_data_generator(signal_points, noise_points, detector_pixel_dimensi
         x_reflect_points.append(i)              # this has been checked and works
 
 
-    #Calulates corresponding y points for each x
+    #Calulates corresponding y parabola points for each x
     y_points = []
     y_points = [np.cos(i) for i in x]
 
-    # join these x and y points into one list
+    # join these x reflected x and parabola y points into one list
     conjoined = list(zip(x_reflect_points, y_points))
 
     # critical angle quarts in radians
     q_crit = 40.49 * np.pi / 180
 
-    # filter list to remove those that arent at critical angle
-    angle_filter = [i for i in conjoined if np.cos(np.pi-q_crit) > i[1] or i[1] > np.cos(q_crit)] # filters out points less than critical angle
+    # filter list to remove those that arent at critical angle ## FIRST LESS THAN AS COS(PI - Q_CRIT) IS -VE NUMBER 
+    angle_filter = [i for i in conjoined if np.cos((np.pi/2) + q_crit) > i[1] or i[1] > np.cos((np.pi/2) - q_crit)] # filters out points less than critical angle
 
-    # adding time axis   
+    # ADDING TIME AXIS
 
     # length of the quartz screen in m
     quartz_length = 1.6     
@@ -83,10 +83,10 @@ def realistic_data_generator(signal_points, noise_points, detector_pixel_dimensi
     # Speed of the cherenkov radiation in m, need to add n for quartz
     particle_speed = 3E8
 
-    # max time particle could take. This allows us to set the z axis.
-    t_max = ((2*quartz_length) / np.cos(q_crit)) / particle_speed
+    # max time particle could take. This allows us to set the max z axis.
+    t_max = ((2*quartz_length) / np.cos((np.pi/2)-q_crit)) / particle_speed
    
-    #Alternatively, just define each pixel in z axis to be i.e. 0.01ns later, then assign from there
+    #Alternatively, just define each pixel in z axis to be i.e. 0.01ns later, then assign from there (this is probs better)
 
     time = []
     # for each of the allowed cherenkov particles
@@ -145,4 +145,4 @@ def realistic_data_generator(signal_points, noise_points, detector_pixel_dimensi
 #%% - Testing Driver
 #Uncomment line below for testing, make sure to comment out when done to stop it creating plots when dataset generator is running
 
-realistic_data_generator(signal_points=1000, noise_points=0, detector_pixel_dimensions=(88,128), time_resoloution=100, hit_point=0.1, ideal=1, debug_image_generator=1)
+realistic_data_generator(signal_points=100, noise_points=1000, detector_pixel_dimensions=(88,128), time_resoloution=100, hit_point=1.3, ideal=1, debug_image_generator=1)

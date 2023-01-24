@@ -23,25 +23,25 @@ ideal = 1
 
 #Output options
 output_type = 1 #0 outputs hit pixel locations, 1 outputs full sensor pixel array including no hit spaces
-filename = 'TEST_REALISTIC_Data'
-directory = "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Yr 3 Project/Circular and Spherical Dummy Datasets/"
+filename = "Real_1/"
+directory = r"C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets/"
 
 #### - Debugging Options
-seeding_value = 0 #Seed for the random number generators, selecting a value here will make the code deterministic, returnign same vlaues from RNG's each time. If set to 0, seeding is turned off
+seeding_value = 0 #Seed for the random number generators, selecting a value here will make the code deterministic, returning same vlaues from RNG's each time. If set to 0, seeding is turned off
 auto_variables_debug_readout = 0 # 0=off, 1=on
 
 #Data simulator
-debug_image_generator = 0
+debug_image_generator = 0   # in realistic_data_generator function. (1 plots simulator output, 0 nothing). Same as debug_visulisations_on??
 
 #Dataset Genrator
-debug_visulisations_on = 0 #0 is defualt, if set to 1 the circular and spherical data is plotted for visualisation
+debug_visulisations_on = 0 #0 is defualt, if set to 1 the circular/ spherical/ real data is plotted for visualisation
 seperate_noise_colour = 1 #0 if desire noise same colour as signal, 1 to seperate noise and signal by colour
 signal_hit_size = 10 # 1 is default small, 10 is medium, 20 is large, values in between are fine
 noise_hit_size = 10 # 1 is default small, 10 is medium, 20 is large, values in between are fine
 
-#Block & Flattening
-debug_block_outputs = 1 # 0=off, 1=on
-block_output_labeled_data = 0  #this has taken over the setting below 
+#Block & Flattening plots
+debug_block_outputs = 0 # 0=off, 1=on Plots Final Output Image if Requested for Debugging
+block_output_labeled_data = 0  #this has taken over the setting below (flatten just signal (1) or signal and noise (0)) # Currently doesnt output noise
 seperate_block_noise_colour = 1 # 0=off, 1=on
 coord_transform_sig_fig = 12    #Setting significant figures for the coordinate transofrms (polar to cartesian, spherical to cartesian), using set amount of sig figures avoids floating point rounding errors 
 
@@ -49,6 +49,7 @@ coord_transform_sig_fig = 12    #Setting significant figures for the coordinate 
 #%% - Dependencies
 import matplotlib.pyplot as plt
 import numpy as np
+import random
 from Realistic_Data_Simulator_V1 import realistic_data_generator
 
 #%% - Helper Functions
@@ -110,10 +111,10 @@ for f in range(0, dataset_size):
         noise_points = np.random.randint(noise_points_input[0], noise_points_input[1])      
         noise_select_debug_message = "Noise points selected from range:"
 
-    if type(hit_point) == int: 
+    if type(hit_point) == int or float: 
         hit_point_x = hit_point
         hit_point_y = hit_point
-        centre_ofset_debug_message = "Hit point given as Int:"
+        centre_ofset_debug_message = "Hit point provided as " + str(hit_point) + ":"
     else: 
         hit_point_x = np.random.randint(0, hit_point[0])
         hit_point_y = np.random.randint(0, hit_point[1])      
@@ -149,15 +150,15 @@ for f in range(0, dataset_size):
 
 
     ######################################REPLACE BELOW WITH NEW FUNCTION##############################
-    x_sph_data, x_sph_noise_data, y_sph_data, y_sph_noise_data, z_sph_data, z_sph_noise_data, number_of_signal_points_in_output = realistic_data_generator(signal_points, noise_points, detector_pixel_dimensions, time_resoloution, hit_point_y/100, ideal, debug_image_generator)   #/100 scales cm to m
+    x_R_data, x_R_noise_data, y_R_data, y_R_noise_data, z_R_data, z_R_noise_data, number_of_signal_points_in_output = realistic_data_generator(signal_points, noise_points, detector_pixel_dimensions, time_resoloution, hit_point_y/100, ideal, debug_image_generator)   #/100 scales cm to m
     ######################################REPLACE ABOVE WITH NEW FUNCTION THAT OUTPUTS 6 LISTS, XSIGNAL, XNOISE, YSIGNAL, YNOISE, ZSIGNAL, ZNOISE ##############################
 
     #Plots Initially Generated Image if Requested for Debugging
     if debug_visulisations_on  == 1:         
         fig = plt.figure()               
         ax = plt.axes(projection='3d')
-        ax.scatter(x_sph_data,y_sph_data, z_sph_data, s = signal_hit_size, c = "b") #Plots spherical data in blue
-        ax.scatter(x_sph_noise_data,y_sph_noise_data,z_sph_noise_data, s = noise_hit_size, c = noise_colour) #Plots spherical noise in blue or red depending on the user selection of seperate_noise_colour
+        ax.scatter(x_R_data,y_R_data, z_R_data, s = signal_hit_size, c = "b") #Plots spherical data in blue
+        ax.scatter(x_R_noise_data,y_R_noise_data,z_R_noise_data, s = noise_hit_size, c = noise_colour) #Plots spherical noise in blue or red depending on the user selection of seperate_noise_colour
         ax.set_xlim(detector_x_lim_low, detector_x_lim_high)
         ax.set_ylim(detector_y_lim_low, detector_y_lim_high)
         ax.set_zlim(detector_z_lim_low, detector_z_lim_high)
@@ -165,29 +166,38 @@ for f in range(0, dataset_size):
 
     #######################################Output Processing#####################################
     #Combines noise and signal data into one array
-    x_sph_output = np.concatenate((x_sph_data, x_sph_noise_data))
-    y_sph_output = np.concatenate((y_sph_data, y_sph_noise_data))
-    z_sph_output = np.concatenate((z_sph_data, z_sph_noise_data))
+    x_R_output = np.concatenate((x_R_data, x_R_noise_data))
+    y_R_output = np.concatenate((y_R_data, y_R_noise_data))
+    z_R_output = np.concatenate((z_R_data, z_R_noise_data))
         
     #Combines the different dimensions (x, y & z, and labels) into one N x 4 array    
-    sphere_data = np.vstack((x_sph_output, y_sph_output, z_sph_output)).T       #Signal + Noise Data Output
-    sphere_data_labels = np.vstack((x_sph_data, y_sph_data, z_sph_data)).T      #Just Signal Data Output
+    real_data = np.vstack((x_R_output, y_R_output, z_R_output)).T       #Signal + Noise Data Output
+    real_data_labels = np.vstack((x_R_data, y_R_data, z_R_data)).T      #Just Signal Data Output
 
     #Randomises the order of the points so that the noise values are not all the last values, just in case the network uses that fact
-    np.random.shuffle(sphere_data)
+    np.random.shuffle(real_data)
 
     #Flattening the 3D data to 2D array + TOF data embedded in hit information, ie NxN array with 0 values representing no hit and TOF values representing hits
     pixel_block_3d_flattened = np.zeros((2, detector_pixel_dimensions[1], detector_pixel_dimensions[0]), dtype = np.single)
 
     #Flattening Signal + Noise
-    for row, _ in enumerate(sphere_data[ :,2]):
-        x_coordinate, y_coordinate, TOF = sphere_data[row]
+    for row, _ in enumerate(real_data[ :,2]):
+        x_coordinate, y_coordinate, TOF = real_data[row]
         if 0 <= x_coordinate < detector_pixel_dimensions[0] and 0 <= y_coordinate < detector_pixel_dimensions[1]:
             pixel_block_3d_flattened[0][int(y_coordinate)][int(x_coordinate)] = TOF    
+    
+    # the real data comes out as pixel dimensions between 1 and 88 etc inclusive. Code above would neglect pixel 88.
+    # Also, above doesnt plot the noise points when asked in block_output_labeled_data.
+    # Can be fixed as it has an extra layer of lists when compared to that below ( havent done yet )
+    # for row, _ in enumerate(real_data[ :,2]):
+        # x_coordinate, y_coordinate, TOF = real_data[row]
+        # if 0 < x_coordinate <= detector_pixel_dimensions[0] and 0 < y_coordinate <= detector_pixel_dimensions[1]:
+           # pixel_block_3d_flattened[0][int(y_coordinate)][int(x_coordinate)] = TOF   
 
+    # Same thing for below
     #Flattening Just Signal   
-    for row, _ in enumerate(sphere_data_labels[ :,2]):                
-        labels_x_coordinate, labels_y_coordinate, labels_TOF = sphere_data_labels[row]
+    for row, _ in enumerate(real_data_labels[ :,2]):                
+        labels_x_coordinate, labels_y_coordinate, labels_TOF = real_data_labels[row]
         if 0 <= labels_x_coordinate < detector_pixel_dimensions[0] and 0 <= labels_y_coordinate < detector_pixel_dimensions[1]:                
             pixel_block_3d_flattened[1][int(labels_y_coordinate)][int(labels_x_coordinate)] = TOF
 
@@ -205,8 +215,8 @@ for f in range(0, dataset_size):
         plt.show()
 
     #Saves all data (signal only and signal + noise) to disk and appends all user set variables to the filename
-    np.save(directory + filename + ' Sphere (pixel block data) %s - Variables = ' % (f+1) + run_settings, pixel_block_3d_flattened)
-            
+    np.save(directory + filename + ' Real (pixel block data) %s - Variables = ' % (f+1) + run_settings, pixel_block_3d_flattened)
+    
     #%% - End of Program
     #Final success message, also includes printing the data path for easy copy paste to open the folder the data was just saved into
     print("\nDataset generated successfully.\nSaved in path:",directory,"\n \nIMPORTANT - Remember to change the filename setting next time you run OR move this runs files out of the directory to avoid overwriting your data!\n")    
