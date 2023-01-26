@@ -6,6 +6,8 @@ import random
 # particle track depends upon - point on quartz hit, angle ejected.
 # ill start with creating an ideal version.
 
+# This version 2 has the proper dimensions the det
+
 # set number of signal points from an impact you want:
 signal_points = 1000
 
