@@ -13,7 +13,7 @@ below and then run full code.
 
 #%% - User settings
 signal_points_input = (500,1000) #(50,200) #(50,200) #User setting can be a range i.e "range(min,max,increment). If wanting to set a constant value then pass it as both min and max i.e (4,4)
-noise_points_input = 0 #(50,100) #(80,100) #(80,100) #If 0 there is no noise added
+noise_points_input = 1000 #(50,100) #(80,100) #(80,100) #If 0 there is no noise added
 dataset_size = 1 #Number of individual data plots to generate and save for the dataset
 detector_pixel_dimensions = (11*8, 128) #x, y in pixels
 time_resoloution = 100 #time aka z axis
@@ -28,21 +28,21 @@ directory = r"C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Project\A
 
 #### - Debugging Options
 seeding_value = 0 #Seed for the random number generators, selecting a value here will make the code deterministic, returning same vlaues from RNG's each time. If set to 0, seeding is turned off
-auto_variables_debug_readout = 0 # 0=off, 1=on
+auto_variables_debug_readout = 1 # 0=off, 1=on
 
 #Data simulator
 debug_image_generator = 0   # in realistic_data_generator function. (1 plots simulator output, 0 nothing). Same as debug_visulisations_on??
 
 #Dataset Genrator
-debug_visulisations_on = 0 #0 is defualt, if set to 1 the circular/ spherical/ real data is plotted for visualisation
+debug_visulisations_on = 1 #0 is defualt, if set to 1 the circular/ spherical/ real data is plotted for visualisation (same as debug_image_generator but uses all 100 time axis (not much of a differnce if noise is added))
 seperate_noise_colour = 1 #0 if desire noise same colour as signal, 1 to seperate noise and signal by colour
 signal_hit_size = 10 # 1 is default small, 10 is medium, 20 is large, values in between are fine
 noise_hit_size = 10 # 1 is default small, 10 is medium, 20 is large, values in between are fine
 
 #Block & Flattening plots
-debug_block_outputs = 0 # 0=off, 1=on Plots Final Output Image if Requested for Debugging
-block_output_labeled_data = 0  #this has taken over the setting below (flatten just signal (1) or signal and noise (0)) # Currently doesnt output noise
-seperate_block_noise_colour = 1 # 0=off, 1=on
+debug_block_outputs = 1 # 0=off, 1=on Plots Final Output Image if Requested for Debugging (plots flat data)
+block_output_labeled_data = 0  #this has taken over the setting below (flatten just signal (1) or signal and noise (0))
+seperate_block_noise_colour = 1 # 0=off, 1=on (never used)
 coord_transform_sig_fig = 12    #Setting significant figures for the coordinate transofrms (polar to cartesian, spherical to cartesian), using set amount of sig figures avoids floating point rounding errors 
 
 
@@ -187,8 +187,6 @@ for f in range(0, dataset_size):
             pixel_block_3d_flattened[0][int(y_coordinate)][int(x_coordinate)] = TOF    
     
     # the real data comes out as pixel dimensions between 1 and 88 etc inclusive. Code above would neglect pixel 88.
-    # Also, above doesnt plot the noise points when asked in block_output_labeled_data.
-    # Can be fixed as it has an extra layer of lists when compared to that below ( havent done yet )
     # for row, _ in enumerate(real_data[ :,2]):
         # x_coordinate, y_coordinate, TOF = real_data[row]
         # if 0 < x_coordinate <= detector_pixel_dimensions[0] and 0 < y_coordinate <= detector_pixel_dimensions[1]:

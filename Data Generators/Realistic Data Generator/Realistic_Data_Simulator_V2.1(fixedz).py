@@ -2,16 +2,24 @@
 """
 Realistic Data Simulator v1.0.1
 @author: Max Carter & Adill Al-Ashgar
-Created on Fri Dec 13 06:50:34 2022
+Created on Thurs Jan 26 2023
 """
+# N.B. This is the same function as V2, however the time axis is now defined in set 35ps blocks (time res of TORCH)
+# The detector also has a standard deviation of 70ps on the time axis.
+# It is noted that this generator produces sets of data with a differing number of pixels on the z axis.
+# Time is from 1 to either max of noise or of hits.
+# I have made a duplicate of this that produces a set time dimension.
 
 #%% - Dependencies
 import numpy as np
 import matplotlib.pyplot as plt
 import random
-   
+
+resolution = 35E-12
+std = 70E-12
+
 #%% - Function
-def realistic_data_generator(signal_points, noise_points, detector_pixel_dimensions=(88,128), time_resoloution=100, hit_point=1.5, ideal=1, debug_image_generator=0):
+def realistic_data_generator(signal_points, noise_points, detector_pixel_dimensions=(88,128), hit_point=1.5, ideal=1, debug_image_generator=0):
     '''
     Inputs:
     signal_points = number of points the hit produces (average 30 for realistic photon), N.B. these may not be at critical angle to 60 is maximum number
@@ -82,11 +90,11 @@ def realistic_data_generator(signal_points, noise_points, detector_pixel_dimensi
 
     # Speed of the cherenkov radiation in m, need to add n for quartz
     particle_speed = 3E8
+    
+    # max time particle could take. This allows us to set the max z axis for the noise to take.
+    t_max = (((2*quartz_length) / np.cos((np.pi/2)-q_crit)) / particle_speed)
 
-    # max time particle could take. This allows us to set the max z axis.
-    t_max = ((2*quartz_length) / np.cos((np.pi/2)-q_crit)) / particle_speed
-   
-    #Alternatively, just define each pixel in z axis to be i.e. 0.01ns later, then assign from there (this is probs better)
+    # the resolution in the time axis is 35ps. then assign from there (this is probs better)
 
     time = []
     # for each of the allowed cherenkov particles
@@ -110,19 +118,26 @@ def realistic_data_generator(signal_points, noise_points, detector_pixel_dimensi
 
     y_idxs = np.digitize([i[0][1] for i in final],np.linspace(-1, 1, detector_pixel_dimensions[1]))
 
-    z_idxs = np.digitize([i[1] for i in final],np.linspace(0, t_max, time_resoloution))
+    z_idxs = [np.random.normal(i[1], std)//resolution for i in final] # i[1] add std to time then give z pixel with //resolution
+    z_orig = [i[1]//resolution for i in final]          # This is here for z_pixel
 
+    # the z indeces above can in rare cases have values below 0. This is added onto z_pixel to negate this
     # all of the above are 1 too few as they go from 0 to 87 index. We want 1 to 88 so.
     x_pixel = [i+1 for i in x_idxs]
     y_pixel = [i+1 for i in y_idxs]
-    z_pixel = [i+1 for i in z_idxs]
+    z_pixel = [i+1 - min(z_idxs) + min(z_orig) for i in z_idxs]
 
-    #Generates the random noise points
+    #Generates the random noise points (tmax//resolution sets the max pixels in the z axis)
     x_noise = [random.randint(1, detector_pixel_dimensions[0]) for _ in range(noise_points)]
     y_noise = [random.randint(1, detector_pixel_dimensions[1]) for _ in range(noise_points)]
-    z_noise = [random.randint(1, time_resoloution) for _ in range(noise_points)]
+
+    max_val = max(t_max//resolution, max(z_pixel))
+    z_noise = [random.randint(0, max_val) for _ in range(noise_points)]
+
+
     
     #Plots the figure if user requests debugging
+    # N.B time dimensiton is in pixels. x 3E-12 to get time value.
     if debug_image_generator == 1:
         
         fig = plt.figure()
@@ -145,4 +160,4 @@ def realistic_data_generator(signal_points, noise_points, detector_pixel_dimensi
 #%% - Testing Driver
 #Uncomment line below for testing, make sure to comment out when done to stop it creating plots when dataset generator is running
 
-# realistic_data_generator(signal_points=100, noise_points=1000, detector_pixel_dimensions=(88,128), time_resoloution=100, hit_point=1.3, ideal=1, debug_image_generator=1)
+realistic_data_generator(signal_points=100, noise_points=1000, detector_pixel_dimensions=(88,128), hit_point=0.3, ideal=1, debug_image_generator=1)
