@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import torch
 from torchvision import transforms
 import random 
+from torchinfo import summary
 
 from Custom_Normalisation_V1 import scale_Ndata as custom_normalisation
 #from Custom_Normalisation_V1 import custom_normalisation
@@ -425,6 +426,11 @@ print(f'Selected device: {device}')  #Informs user if running on CPU or GPU - (N
 #Following section moves both the encoder and the decoder to the selected device i.e detected CUDA enabled GPU or to CPU
 encoder.to(device)   #Moves encoder to selected device, CPU/GPU
 decoder.to(device)   #Moves decoder to selected device, CPU/GPU
+
+
+
+print(summary(encoder(), input_size=((batch_size,1,128,88))))
+
 
 #%% - Compute
 
