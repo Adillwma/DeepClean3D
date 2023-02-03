@@ -429,7 +429,7 @@ decoder.to(device)   #Moves decoder to selected device, CPU/GPU
 
 
 
-print(summary(encoder(), input_size=((batch_size,1,128,88))))
+print(summary(encoder, input_size=((batch_size,1,128,88))))
 
 
 #%% - Compute
