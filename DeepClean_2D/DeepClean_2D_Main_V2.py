@@ -15,7 +15,7 @@ from torchinfo import summary
 from Custom_Normalisation_V1 import scale_Ndata as custom_normalisation
 #from Custom_Normalisation_V1 import custom_normalisation
 from DataLoader_Functions_V2 import initialise_data_loader
-from autoencoders.autoencoder_2D_V1 import Encoder, Decoder
+from autoencoders.autoencoder_2D_V2 import Encoder, Decoder
 
 #%% - User Inputs
 learning_rate = 0.001                       #User controll to set optimiser learning rate(Hyperparameter)
@@ -40,9 +40,12 @@ telemetry_on = 1                            #[default = 1]
 
 #%% Dataloading
 # - Data Loader User Inputs
-dataset_title = "Dataset 1_Realistic"
-data_path = "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Yr 3 Project/Circular and Spherical Dummy Datasets/" #"C:/Users/Student/Desktop/fake im data/"  #"/local/path/to/the/images/"
+dataset_title = "/New_Circle 1/"
+data_path = r"C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets" #"C:/Users/Student/Desktop/fake im data/"  #"/local/path/to/the/images/"
 time_dimension = 100
+
+##
+
 
 # - Advanced Data Loader Settings
 debug_loader_batch = 0     #(Default = 0 = [OFF]) //INPUT 0 or 1//   #Setting debug loader batch will print to user the images taken in by the dataoader in this current batch and print the corresponding labels
