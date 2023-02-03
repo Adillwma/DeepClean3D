@@ -44,6 +44,9 @@ dataset_title = "/New_Circle 1/"
 data_path = r"C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets" #"C:/Users/Student/Desktop/fake im data/"  #"/local/path/to/the/images/"
 time_dimension = 100
 
+##
+
+
 # - Advanced Data Loader Settings
 debug_loader_batch = 0     #(Default = 0 = [OFF]) //INPUT 0 or 1//   #Setting debug loader batch will print to user the images taken in by the dataoader in this current batch and print the corresponding labels
 plot_every_other = 10       #(Default = 1) //MUST BE INTEGER INPUT//  #If debug loader batch is enabled this sets the interval for printing for user, 1 is every single img in the batch, 2 is every other img, 5 is every 5th image etc 
