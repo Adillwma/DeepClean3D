@@ -111,11 +111,14 @@ def realistic_data_generator(signal_points, noise_points, detector_pixel_dimensi
     y_idxs = np.digitize([i[0][1] for i in final],np.linspace(-1, 1, detector_pixel_dimensions[1]))
 
     z_idxs = np.digitize([i[1] for i in final],np.linspace(0, t_max, time_resoloution))
+    
 
-    # all of the above are 1 too few as they go from 0 to 87 index. We want 1 to 88 so.
-    x_pixel = [i+1 for i in x_idxs]
-    y_pixel = [i+1 for i in y_idxs]
-    z_pixel = [i+1 for i in z_idxs]
+    # easier for it to take the indexes instead of actual pixels. Hence, below has been commented out to change this
+    # and subsequent x_pixel etc is changed to x_idxs
+    # # all of the above are 1 too few as they go from 0 to 87 index. We want 1 to 88 so.
+    # x_pixel = [i+1 for i in x_idxs]
+    # y_pixel = [i+1 for i in y_idxs]
+    # z_pixel = [i+1 for i in z_idxs]
 
     #Generates the random noise points
     x_noise = [random.randint(1, detector_pixel_dimensions[0]) for _ in range(noise_points)]
@@ -128,7 +131,7 @@ def realistic_data_generator(signal_points, noise_points, detector_pixel_dimensi
         fig = plt.figure()
         ax = fig.add_subplot(projection='3d')
 
-        ax.scatter(x_pixel, y_pixel, z_pixel)
+        ax.scatter(x_idxs, y_idxs, z_idxs)
         ax.scatter(x_noise, y_noise, z_noise)
         ax.set_xlabel('X')
         ax.set_ylabel('Y')
@@ -137,10 +140,10 @@ def realistic_data_generator(signal_points, noise_points, detector_pixel_dimensi
         plt.show()
 
     #Determines number of signal points in the output, as some photons will have left due to passing the critical angle and exiting the block
-    num_of_signal_points = int(np.shape(x_pixel)[0])
+    num_of_signal_points = int(np.shape(x_idxs)[0])
     
     #Outputs to return to main dataset generator script
-    return(x_pixel, x_noise, y_pixel, y_noise, z_pixel, z_noise, num_of_signal_points)
+    return(x_idxs, x_noise, y_idxs, y_noise, z_idxs, z_noise, num_of_signal_points)
 
 #%% - Testing Driver
 #Uncomment line below for testing, make sure to comment out when done to stop it creating plots when dataset generator is running
