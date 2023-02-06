@@ -16,6 +16,7 @@ import random
 #import torch.nn.functional as F
 #import torch.optim as optim
 #import os
+from Calc import conv_calculator
 
 #%% - User Inputs
 learning_rate = 0.001  #User controll to set optimiser learning rate(Hyperparameter)
@@ -24,6 +25,17 @@ optim_w_decay = 1e-05  #User controll to set optimiser weight decay (Hyperparame
 #%% - Program Settings
 seed = 10              #0 is default which gives no seeeding to RNG, if the value is not zero then this is used for the RNG seeding for numpy, random, and torch libraries
 path = "C:/Users/Student/Desktop/fake im data/"  #"/path/to/your/images/"
+
+# for conv converter:
+conv_type = 0
+K = 3
+P = 1 # (changed later)
+S = 2
+D = 1
+H_in = 28 # (change later)
+W_in = 28
+D_in = None
+O = None
 
 #%% - Classes
 
@@ -58,6 +70,8 @@ class Encoder(nn.Module):
         # Dilation spreads out kernel
         
         self.encoder_cnn = nn.Sequential(
+            # N.B. input channel dimensions are not the same as output channel dimensions:
+            # the images will get smaller into the encoded layer
             #Convolutional encoder layer 1                 
             nn.Conv2d(1, 8, 3, stride=2, padding=1),       #Input_channels, Output_channels, Kernal_size, Stride, Padding
             nn.ReLU(True),                                 #ReLU activation function - Activation function determinines if a neuron fires, i.e is the output of the node considered usefull. also allows for backprop. the arg 'True' makes the opperation carry out in-place(changes the values in the input array to the output values rather than making a new one), default would be false
@@ -71,9 +85,20 @@ class Encoder(nn.Module):
         )
         #Encoder nodes: 
         #input data format = [batchsize, 1, 28, 28] # [batchsize, channels, pixels_in_x, pixels_in_y]
-        #conv layers: input---Conv_L1---> []
+        #conv layers: input---Conv_L1---> 
+        # 1 [batchsize, 8, 14, 14]
+        # 2 [batchsize, 16, 7, 7]
+        # 4 [batchsize, 32, 3, 3]
         
+        # im importing the kernel calculator to make the autoencoder more dynamic with its imputs for nn.Linear(3 * 3 * 32, 128)
+
+        # # for first 2 conv layers:
+        # L1 = conv_calculator(conv_type, K, P, S, D, H_in, W_in, D_in, O)
+        # L2 = conv_calculator(conv_type, K, P, S, D, L1[0], L1[2], D_in, O)
         
+        # # for 3rd and final layer: (padding changed)
+        # P = 0
+        # L3 = conv_calculator(conv_type, K, P, S, D, L2[0], L2[2], D_in, O)
         
         ###Flatten layer
         self.flatten = nn.Flatten(start_dim=1)
@@ -84,6 +109,7 @@ class Encoder(nn.Module):
         self.encoder_lin = nn.Sequential(
             #Linear encoder layer 1  
             nn.Linear(3 * 3 * 32, 128),                   #!!! linear network layer. arguuments are input dimensions/size, output dimensions/size. Takes in data of dimensions 3* 3 *32 and outputs it in 1 dimension of size 128
+            # nn.Linear(L3[0] * L3[1] * 32, 128),
             nn.ReLU(True),                                #ReLU activation function - Activation function determinines if a neuron fires, i.e is the output of the node considered usefull. also allows for backprop. the arg 'True' makes the opperation carry out in-place(changes the values in the input array to the output values rather than making a new one), default would be false
             #Linear encoder layer 2
             nn.Linear(128, encoded_space_dim)             #Takes in data of 1 dimension with size 128 and outputs it in one dimension of size defined by encoded_space_dim (this is the latent space? the smalle rit is the more comression but thte worse the final fidelity)

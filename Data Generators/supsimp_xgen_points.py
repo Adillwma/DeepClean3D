@@ -4,13 +4,13 @@ import numpy as np
 
 # define min and max of graph (pixels)
 x_min = 0
-x_max = 88     
+x_max = 28     
 
 y_min = 0
-y_max = 128
+y_max = 28
 
 z_min = 0
-z_max = 100
+z_max = 28
 
 # coords of min/max of line 1
 x1 = (x_min, y_min, z_min)
@@ -34,7 +34,14 @@ y2_data_points = y_max, y_min
 z2_data_points = z_max, z_min
 
 #-------------------------------
-# might want to use np.linspace or other to make physical points?
+# im going to make 28 points on each axis:
+x_array = np.linspace(x1_data_points[0], x1_data_points[1], 28)
+y_array = np.linspace(y1_data_points[0], y1_data_points[1], 28)
+z_array = np.linspace(z1_data_points[1], z1_data_points[1], 28)
+
+L1_comb = np.column_stack((x_array, y_array, z_array))      # joins them all together. Should be 28 at each point 0 to 28:
+print(np.shape(L1_comb))
+print(L1_comb[0])
 
 
 fig = plt.figure()

@@ -89,8 +89,9 @@ def conv_calculator(conv_type, K, P, S, D, H_in, W_in, D_in=0, O=1):
     """
     print("\nCompleted... Remember to round down non integer values.")
     if conv_type == 0:      #conv2D
-        print("Height:", conv_outputs_2d(H_in, P[0], D[0], K[0], S[0]))
-        print("Width:", conv_outputs_2d(W_in, P[1], D[1], K[1], S[1]))
+        # print("Height:", conv_outputs_2d(H_in, P[0], D[0], K[0], S[0]))
+        # print("Width:", conv_outputs_2d(W_in, P[1], D[1], K[1], S[1]))
+        return ([conv_outputs_2d(H_in, P[0], D[0], K[0], S[0]), conv_outputs_2d(W_in, P[1], D[1], K[1], S[1])])
 
     elif conv_type == 1:    #conv2D.Transpose
         print("Height:", conv_T_outputs_2d(H_in, P[0], D[0], K[0], S[0], O[0]))

@@ -19,6 +19,13 @@ from math import floor
 #%% - Helper Functions
 #Conv2D
 def conv_outputs_2d(I, P, D, K, S):
+    """
+    I = Input Size
+    P = padding
+    D = Dilation
+    K = Kernel size
+    S = Stride
+    """
     out = ((I + 2*P - D * (K - 1) - 1 )/S) + 1
     return(out)
 
