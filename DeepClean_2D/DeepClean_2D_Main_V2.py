@@ -15,7 +15,7 @@ from torchinfo import summary
 from Custom_Normalisation_V1 import scale_Ndata as custom_normalisation
 #from Custom_Normalisation_V1 import custom_normalisation
 from DataLoader_Functions_V2 import initialise_data_loader
-from autoencoders.autoencoder_2D_V2 import Encoder, Decoder
+from autoencoders.autoencoder_2D_V1 import Encoder, Decoder
 
 #%% - User Inputs
 learning_rate = 0.001                       #User controll to set optimiser learning rate(Hyperparameter)

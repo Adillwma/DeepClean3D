@@ -165,6 +165,7 @@ def Determinism_Seeding(seed):
 ### Training Function
 def train_epoch_den(encoder, decoder, device, dataloader, loss_fn, optimizer,noise_factor=0.3):
     # Set train mode for both the encoder and the decoder
+    # train mode makes the autoencoder know the parameters can change
     encoder.train()
     decoder.train()
     train_loss = []
@@ -297,7 +298,9 @@ if seed != 0:
 
 #%% - Data Importer
 data_dir = 'dataset'
-train_dataset = torchvision.datasets.MNIST(data_dir, train=True, download=True)
+
+# changing MNIST to DatasetFolder: (MNIST Calls inbuilt files from online, DatasetFolder pulls local files)
+train_dataset = torchvision.datasets.DatasetFolder(data_dir, train=True, download=True)
 test_dataset  = torchvision.datasets.MNIST(data_dir, train=False, download=True)
 
 
