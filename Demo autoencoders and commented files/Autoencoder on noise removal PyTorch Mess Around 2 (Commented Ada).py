@@ -165,6 +165,7 @@ def Determinism_Seeding(seed):
 ### Training Function
 def train_epoch_den(encoder, decoder, device, dataloader, loss_fn, optimizer,noise_factor=0.3):
     # Set train mode for both the encoder and the decoder
+    # train mode makes the autoencoder know the parameters can change
     encoder.train()
     decoder.train()
     train_loss = []
@@ -291,15 +292,9 @@ if seed != 0:
     Determinism_Seeding(seed)
 
 #%% - Data Importer
-# data_dir = 'dataset'
-# train_dataset = torchvision.datasets.MNIST(data_dir, train=True, download=True)
-# test_dataset  = torchvision.datasets.MNIST(data_dir, train=False, download=True)
-
-data_directory = 'dataset'
-train_dataset = torchvision.datasets.DatasetFolder(data_dir, train=True, download=True)
-# as MNIST is a dataset on web, the download argument authorises download from there.
-# Train argument decides whether to take from train or test folder.
-test_dataset  = torchvision.datasets.DatasetFolder(data_dir, train=False, download=True)
+data_dir = 'dataset'
+train_dataset = torchvision.datasets.MNIST(data_dir, train=True, download=True)
+test_dataset  = torchvision.datasets.MNIST(data_dir, train=False, download=True)
 
 # in this, were now going to try to work the data generator for a super simple 28x28 cross. This will be
 # generated in the 'supersimp' then added here through the data_directory function:
