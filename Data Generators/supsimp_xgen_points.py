@@ -33,6 +33,8 @@ x2_data_points = x_min, x_max
 y2_data_points = y_max, y_min
 z2_data_points = z_max, z_min
 
+#-------------------------------
+# might want to use np.linspace or other to make physical points?
 
 
 fig = plt.figure()

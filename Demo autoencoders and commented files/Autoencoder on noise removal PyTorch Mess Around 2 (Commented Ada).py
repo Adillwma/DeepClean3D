@@ -190,6 +190,7 @@ def train_epoch_den(encoder, decoder, device, dataloader, loss_fn, optimizer,noi
     return np.mean(train_loss)
 
 ### Testing Function
+# exact same as train, but doesnt alter the encoder, and defines the loss over the entire batch, not individually.
 def test_epoch_den(encoder, decoder, device, dataloader, loss_fn,noise_factor=0.3):
     # Set evaluation mode for encoder and decoder
     encoder.eval()
@@ -222,12 +223,6 @@ def test_epoch_den(encoder, decoder, device, dataloader, loss_fn,noise_factor=0.
 ##########################################################################################################################################################################
 
 #Second half 
-
-
-
-
-
-
 
 
 
@@ -296,10 +291,18 @@ if seed != 0:
     Determinism_Seeding(seed)
 
 #%% - Data Importer
-data_dir = 'dataset'
-train_dataset = torchvision.datasets.MNIST(data_dir, train=True, download=True)
-test_dataset  = torchvision.datasets.MNIST(data_dir, train=False, download=True)
+# data_dir = 'dataset'
+# train_dataset = torchvision.datasets.MNIST(data_dir, train=True, download=True)
+# test_dataset  = torchvision.datasets.MNIST(data_dir, train=False, download=True)
 
+data_directory = 'dataset'
+train_dataset = torchvision.datasets.DatasetFolder(data_dir, train=True, download=True)
+# as MNIST is a dataset on web, the download argument authorises download from there.
+# Train argument decides whether to take from train or test folder.
+test_dataset  = torchvision.datasets.DatasetFolder(data_dir, train=False, download=True)
+
+# in this, were now going to try to work the data generator for a super simple 28x28 cross. This will be
+# generated in the 'supersimp' then added here through the data_directory function:
 
 #%% - Data Preparation  #!!!Perhaps these should be passed ino the loader as user inputs, that allows for ease of changing between differnt tranforms in testing without having to flip to the data loader code
 
@@ -317,7 +320,7 @@ test_transform = transforms.Compose([                                          #
                                       #transforms.Normalize((0.5), (0.5)),     #transforms.Normalize can be used to normalise the values in the array
                                       transforms.ToTensor()])                  #other transforms can be dissabled but to tensor must be left enabled ! it creates a tensor from a numpy array #!!! ?
 
-
+# this applies above transforms to dataset (dataset transform = transform above)
 train_dataset.transform = train_transform       #!!! train_dataset is the class? object 'dataset' it has a subclass called transforms which is the list of transofrms to perform on the dataset when loading it. train_tranforms is the set of chained transofrms we created, this is set to the dataset transforms subclass 
 test_dataset.transform = test_transform         #!!! similar to the above but for the test(eval) dataset, check into this for the exact reason for using it, have seen it deone in other ways i.e as in the dataloader.py it is performed differntly. this way seems to be easier to follow
 #####For info on all transforms check out: https://pytorch.org/vision/0.9/transforms.html
@@ -327,12 +330,14 @@ test_dataset.transform = test_transform         #!!! similar to the above but fo
 
 ###Following section splits the training dataset into two, train_data (to be noised) and valid data (to use in eval)
 m=len(train_dataset) #Just calculates length of train dataset, m is only used in the next line to decide the values of the split, (4/5 m) and (1/5 m)
+# 80% 20% is the absolute classic split
 train_data, val_data = random_split(train_dataset, [int(m-m*0.2), int(m*0.2)])    #random_split(data_to_split, [size of output1, size of output2]) just splits the train_dataset into two parts, 4/5 goes to train_data and 1/5 goes to val_data , validation?
 
 
 ###Following section for Dataloaders, they just pull a random sample of images from each of the datasets we now have, train_data, valid_data, and test_data. the batch size defines how many are taken from each set, shuffle argument shuffles them each time?? #!!!
 batch_size=256                                                                                #User controll to set batch size for the dataloaders (Hyperparameter)?? #!!!
 
+# required to load the data into the endoder/decoder. Combines a dataset and a sampler, and provides an iterable over the given dataset.
 train_loader = torch.utils.data.DataLoader(train_data, batch_size=batch_size)                 #Training data loader, can be run to pull training data as configured
 valid_loader = torch.utils.data.DataLoader(val_data, batch_size=batch_size)                   #Validation data loader, can be run to pull training data as configured
 test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size,shuffle=True)   #Testing data loader, can be run to pull training data as configured. Also is shuffled using parameter shuffle #!!! why is it shuffled?
@@ -341,10 +346,11 @@ test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size,sh
 
 #%% - Setup model, loss criteria and optimiser    
     
-### Define the loss function
+### Define the loss function (mean square error)
 loss_fn = torch.nn.MSELoss()
 
-### Define a learning rate for the optimiser
+### Define a learning rate for the optimiser. 
+# Its how much to change the model in response to the estimated error each time the model weights are updated.
 lr = learning_rate                                     #Just sets the learing rate value from the user inputs pannel at the top
 
 ### Set the random seed for reproducible results
@@ -353,7 +359,8 @@ torch.manual_seed(seed)
 ### Initialize the two networks
 d = 4 #!!!d is passed to the encoder & decoder in the lines below and represents the encoded space dimension. This is the number of layers the linear stages will shrink to? #!!!
 
-#model = Autoencoder(encoded_space_dim=encoded_space_dim)
+# model = Autoencoder(encoded_space_dim=encoded_space_dim)
+# use encoder and decoder classes, providing dimensions for your dataset. FC2_INPUT_DIM IS NOT USED!! This would be extremely useful.
 encoder = Encoder(encoded_space_dim=d,fc2_input_dim=128)
 decoder = Decoder(encoded_space_dim=d,fc2_input_dim=128)
 params_to_optimize = [{'params': encoder.parameters()} ,{'params': decoder.parameters()}] #Selects what to optimise, 

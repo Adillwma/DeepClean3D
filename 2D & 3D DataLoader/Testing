@@ -18,7 +18,10 @@ lst = np.expand_dims(lst, axis=0)
 # dir = "C:/Users/maxsc/OneDrive - University of Bristol/3rd Year Project/Autoencoder/2D 3D simple version/Circular and Spherical Dummy Datasets/"
 # np.save(dir + file + 'a', a)
 # x = np.load(dir+file+'a.npy')
-# print(x)
-a = [1,2,3,4,-6]
+# # print(x)
+# a = [1,2,3,4,-6]
 
-print(min(a))
+# print(min(a))
+
+lis = 2, 5
+print(lis)
