@@ -228,10 +228,17 @@ def test_epoch_den(encoder, decoder, device, dataloader, loss_fn,noise_factor=0.
 
 
 ###Plotting Function
+
 def plot_ae_outputs_den(encoder,decoder,n=10,noise_factor=0.3):       #Defines a function for plotting the output of the autoencoder. And also the input + clean training data? Function takes inputs, 'encoder' and 'decoder' which are expected to be classes (defining the encode and decode nets), 'n' which is the number of ?????Images in the batch????, and 'noise_factor' which is a multiplier for the magnitude of the added noise allowing it to be scaled in intensity.  
+    """
+    n is the number of images to plot i think?
+    """
     plt.figure(figsize=(16,4.5))                                      #Sets the figure size
+    # numpy array of correct unnoised data
     targets = test_dataset.targets.numpy()                            #Creates a numpy array (from the .numpy part) the array is created from the values in the specified tensor, which in this case is test_dataset.targets (test_dataset is the dataloader, .targets is a subclass of the dataloader that holds the labels, i.e the correct answer data (in this case the unnoised images).)                          
+    # defines dictionary keys 0-(n-1), values are indices in the targets array where those integers can be found 
     t_idx = {i:np.where(targets==i)[0][0] for i in range(n)}          #!!! ????
+    
     for i in range(n):                                                #Runs for loop where 'i' itterates over 'n' total values which range from 0 to n-1
         
       #Following section creates the noised image data drom the original clean labels (images)   
@@ -380,12 +387,16 @@ decoder.to(device)   #Moves decoder to selected device, CPU/GPU
 noise_factor = 0.4                                           #User controll to set the noise factor, a multiplier for the magnitude of noise added. 0 means no noise added, 1 is defualt level of noise added, 10 is 10x default level added (Hyperparameter)
 num_epochs = 5                                               #User controll to set number of epochs (Hyperparameter)
 
-
+# this is a dictionary ledger of train val loss history
 history_da={'train_loss':[],'val_loss':[]}                   #Just creates a variable called history_da which contains two lists, 'train_loss' and 'val_loss' which are both empty to start with. value are latter appeneded to the two lists by way of history_da['val_loss'].append(x)
 
+# bringing everything together to train model
 for epoch in range(num_epochs):                              #For loop that iterates over the number of epochs where 'epoch' takes the values (0) to (num_epochs - 1)
     print('EPOCH %d/%d' % (epoch + 1, num_epochs))
     ### Training (use the training function)
+    # N.B. train_epoch_den does training phase with encoder/decoder, but only returns the trainloss to show for it. Same w valloss.
+    # this has batches built in from dataloader part. Does all train batches.
+    # loss for each batch is averaged and single loss produced as output.
     train_loss=train_epoch_den(
                                encoder=encoder, 
                                decoder=decoder, 
@@ -396,6 +407,7 @@ for epoch in range(num_epochs):                              #For loop that iter
                                noise_factor=noise_factor)
     
     ### Validation (use the testing function)
+    # does all validation batches. single average loss produced.
     val_loss = test_epoch_den(
                               encoder=encoder, 
                               decoder=decoder, 
@@ -408,6 +420,8 @@ for epoch in range(num_epochs):                              #For loop that iter
     history_da['train_loss'].append(train_loss)
     history_da['val_loss'].append(val_loss)
     print('\n EPOCH {}/{} \t train loss {:.3f} \t val loss {:.3f}'.format(epoch + 1, num_epochs,train_loss,val_loss))     #epoch +1 is to make up for the fact the range spans 0 to epoch-1 but we want to numerate things from 1 upwards for sanity
+    
+    # finally plot the figure with all images on it.
     plot_ae_outputs_den(encoder,decoder,noise_factor=noise_factor)
     
     
