@@ -25,3 +25,10 @@ lst = np.expand_dims(lst, axis=0)
 
 lis = 2, 5
 print(lis)
+
+a = np.array([1,2,3])
+b = np.array([4,5,6])
+
+print(np.concatenate((a,b)))
+
+print(np.zeros((2,2)))
