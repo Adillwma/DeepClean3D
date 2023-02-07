@@ -324,20 +324,31 @@ if seed != 0:
     Determinism_Seeding(seed)
 
 #%% - Data Importer
-data_dir = 'dataset'
-# mnist data is 28x28, and black and white (so 1x28x28)
-train_dataset = torchvision.datasets.MNIST(data_dir, train=True, download=True)
-# train argument selects folder. download argument decides whether to download from internet.
-test_dataset  = torchvision.datasets.MNIST(data_dir, train=False, download=True)
+# data_dir = 'dataset'
+# # mnist data is 28x28, and black and white (so 1x28x28)
+# train_dataset = torchvision.datasets.MNIST(data_dir, train=True, download=True)
+# # train= true
+# # train argument selects folder. download argument decides whether to download from internet.
+# test_dataset  = torchvision.datasets.MNIST(data_dir, train=False, download=True)
 
 # in this, were now going to try to work the data generator for a super simple 28x28 cross. This will be
 # generated in the 'supersimp' then added here through the data_directory function:
 
-data_directory = 'dataset'
-# our testing data is 28x28x28 for simple cross. Were checking if this works here:
-train_dataset = torchvision.datasets.DatasetFolder(data_directory, train=True, download=True)
-# train argument selects folder. download argument decides whether to download from internet.
-test_dataset  = torchvision.datasets.DatasetFolder(data_directory, train=False, download=True)
+"""
+The DatasetFolder is a generic DATALOADER. It takes arguments:
+root - Root directory path
+loader - a function to load a sample given its path
+others that arent so relevant....
+"""
+# root to files
+data_directory = r'C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Simple Cross/'
+
+# need to import dataloader function:
+from DeepClean_3D.DataLoader_Functions_V2 import train_loader2d, test_loader2d
+
+# our testing data is 28x28 for flattened simple cross. Were checking if this works here:
+train_dataset = torchvision.datasets.DatasetFolder(data_directory, train_loader2d)
+test_dataset  = torchvision.datasets.DatasetFolder(data_directory, test_loader2d)
 
 
 #%% - Data Preparation  #!!!Perhaps these should be passed ino the loader as user inputs, that allows for ease of changing between differnt tranforms in testing without having to flip to the data loader code

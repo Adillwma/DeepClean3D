@@ -10,8 +10,10 @@ that matters, i will generate and test the same amount here:
 # specify where to save the flattened data
 directory = r"C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Simple Cross\\"
 
+
+# ----------------------------------------------------------------------------------
 # you can change all the arguments below:
-def simp_generator(dataset_size = 50, sig_pts = 28, n_pts = 0, x_dim = 28, y_dim = 28, z_dim = 28):
+def simp_generator(dataset_size = 2560, sig_pts = 28, n_pts = 0, x_dim = 28, y_dim = 28, z_dim = 28):
     """
     This function simply creates and saves a specified number of different flattened arrays (these arrays include both the clean
     data np array at index [0] and the noisy np array at index [1])
@@ -24,6 +26,8 @@ def simp_generator(dataset_size = 50, sig_pts = 28, n_pts = 0, x_dim = 28, y_dim
         flattened_data = simp_simulator(sig_pts, n_pts, x_dim, y_dim, z_dim)
 
         np.save(directory + 'Simple Cross (flat pixel block data) ' + str(idx), flattened_data)
+    
+    print ('Saved to : ' + directory)
     
 simp_generator()
 

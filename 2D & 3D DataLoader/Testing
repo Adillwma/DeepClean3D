@@ -23,13 +23,7 @@ lst = np.expand_dims(lst, axis=0)
 
 # print(min(a))
 
-lis = 2, 5
-print(lis)
+import sys
+from DeepClean_3D.DataLoader_Functions_V2 import initialise_data_loader
 
-a = np.array([1,2,3])
-b = np.array([4,5,6])
-
-print(np.concatenate((a,b)))
-
-print(np.zeros((2,2)))
-print(int(1.3))
+print(sys.path.insert(0, "../DeepClean_3D"))
