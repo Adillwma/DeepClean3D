@@ -324,12 +324,14 @@ if seed != 0:
     Determinism_Seeding(seed)
 
 #%% - Data Importer
-# data_dir = 'dataset'
+data_dir = 'dataset'
 # # mnist data is 28x28, and black and white (so 1x28x28)
 # train_dataset = torchvision.datasets.MNIST(data_dir, train=True, download=True)
 # # train= true
 # # train argument selects folder. download argument decides whether to download from internet.
 # test_dataset  = torchvision.datasets.MNIST(data_dir, train=False, download=True)
+# print(type(test_dataset)) # a dataset
+# print(type(test_dataset[0][0])) # PIL image
 
 # in this, were now going to try to work the data generator for a super simple 28x28 cross. This will be
 # generated in the 'supersimp' then added here through the data_directory function:
@@ -341,14 +343,33 @@ loader - a function to load a sample given its path
 others that arent so relevant....
 """
 # root to files
-data_directory = r'C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Simple Cross/'
+data_directory = r'C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Simple Cross\\'
 
 # need to import dataloader function:
-from DeepClean_3D.DataLoader_Functions_V2 import train_loader2d, test_loader2d
+# IDK why this isnt working --> from DeepClean_3D.DataLoader_Functions_V2 import train_loader2d, test_loader2d
+# so ill import the functions manually:
+def train_loader2d(path):
+    sample = (np.load(path))
+    sample = sample[0]               
+    return (sample)
+def test_loader2d(path):
+    load = 1 # Set manually, 0 = Blank, no data, 1 = just signal, 2 = just noise, 3 = both, but with differing values (1,2)    #!!! OPION 3 NOT WORKING
+    sample = (np.load(path))
+    sample2 = np.ma.masked_where(sample[1] == load, sample[1])                   
+    return (sample2)
 
 # our testing data is 28x28 for flattened simple cross. Were checking if this works here:
-train_dataset = torchvision.datasets.DatasetFolder(data_directory, train_loader2d)
-test_dataset  = torchvision.datasets.DatasetFolder(data_directory, test_loader2d)
+# train_dataset = torchvision.datasets.DatasetFolder(data_directory, train_loader2d, extensions='.npy')
+# test_dataset  = torchvision.datasets.DatasetFolder(data_directory, test_loader2d, extensions='.npy')
+
+
+# the train_epoch_den and test both add noise themselves?? so i will have to call all of the clean versions:
+train_dir = r'C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Simple Cross\\'
+train_dataset = torchvision.datasets.DatasetFolder(train_dir, train_loader2d, extensions='.npy')
+
+# N.B. We will use the train loader for this as it takes the clean data, and thats what we want as theres a built in nois adder here already:
+test_dir = r'C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Simple Cross Test\\'
+test_dataset = torchvision.datasets.DatasetFolder(test_dir, train_loader2d, extensions='.npy')
 
 
 #%% - Data Preparation  #!!!Perhaps these should be passed ino the loader as user inputs, that allows for ease of changing between differnt tranforms in testing without having to flip to the data loader code
