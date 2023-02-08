@@ -50,20 +50,21 @@ def simp_simulator(sig_pts = 28, n_pts = 0, x_dim = 28, y_dim = 28, z_dim = 28):
     z2_data_points = z_max, z_min
 
     #--------------------------------------------
-    # im going to make half of signal points on each line
+    # im origionally had only 14 (every other point) on each axis but this didt give proper rounded numbers.
+    # so im going to make my life simpler by just having 28...
     # for line 1:
-    x1_array = np.linspace(x1_data_points[0], x1_data_points[1], int(sig_pts/2))
-    y1_array = np.linspace(y1_data_points[0], y1_data_points[1], int(sig_pts/2))
-    z1_array = np.linspace(z1_data_points[0], z1_data_points[1], int(sig_pts/2))
+    x1_array = np.linspace(x1_data_points[0], x1_data_points[1], sig_pts)
+    y1_array = np.linspace(y1_data_points[0], y1_data_points[1], sig_pts)
+    z1_array = np.linspace(z1_data_points[0], z1_data_points[1], sig_pts)
 
     L1_comb = np.column_stack((x1_array, y1_array, z1_array))      # joins them all together. Should be 28 at each point 0 to 28:
     # print(np.shape(L1_comb))
-    # print(L1_comb[0])
+    # print(L1_comb)
 
     # for line2:
-    x2_array = np.linspace(x2_data_points[0], x2_data_points[1], int(sig_pts/2))
-    y2_array = np.linspace(y2_data_points[0], y2_data_points[1], int(sig_pts/2))
-    z2_array = np.linspace(z2_data_points[0], z2_data_points[1], int(sig_pts/2))
+    x2_array = np.linspace(x2_data_points[0], x2_data_points[1], sig_pts)
+    y2_array = np.linspace(y2_data_points[0], y2_data_points[1], sig_pts)
+    z2_array = np.linspace(z2_data_points[0], z2_data_points[1], sig_pts)
 
     L2_comb = np.column_stack((x2_array, y2_array, z2_array))      # joins them all together. Should be 28 at each point 0 to 28:
     # print(np.shape(L2_comb))
@@ -77,17 +78,16 @@ def simp_simulator(sig_pts = 28, n_pts = 0, x_dim = 28, y_dim = 28, z_dim = 28):
     # flattening the data
 
     # this creates a 28x28 zeros array  (plus 1 as max is 27.)
-    flattened_data = np.zeros((2,x_dim, y_dim))
+    flattened_data = np.zeros((x_dim, y_dim))
 
-    # random noise in x, y, z
+    # random noise in x, y, z and join to one list like with hits:
     # random.randint(low, high=None, size=None, dtype=int)
     noise_pts_x = np.random.randint(0,x_max, n_pts)
     noise_pts_y = np.random.randint(0,y_max, n_pts)
     noise_pts_z = np.random.randint(0,z_max, n_pts)
-
-    # join to one list like with hits:
     noise = np.column_stack((noise_pts_x, noise_pts_y, noise_pts_z))
-    # and join hits and noise to make list of signal noise (SN) points :
+
+    # join hits and noise to make list of signal noise (SN) points :
     SN_pts = np.concatenate((hits_comb, noise))
     
     ###############################################################################
@@ -97,16 +97,18 @@ def simp_simulator(sig_pts = 28, n_pts = 0, x_dim = 28, y_dim = 28, z_dim = 28):
         # TOF is the z axis
         TOF = point[2]
         # index is the x and y axis
-        flattened_data[0][int(point[0])][int(point[1])] = TOF
+        flattened_data[int(point[0])][int(point[1])] = TOF
     
-    for point in SN_pts:
-        # TOF is the z axis
-        TOF = point[2]
-        # index is the x and y axis
-        flattened_data[1][int(point[0])][int(point[1])] = TOF
+    # for point in SN_pts:
+    #     # TOF is the z axis
+    #     TOF = point[2]
+    #     # index is the x and y axis
+    #     flattened_data[1][int(point[0])][int(point[1])] = TOF
     
     return flattened_data
 
+
+# The array has all FLOAT64!!!!
 
 #------------------------------------------------------------------
 # calling function and plotting results for clean and noisy:
@@ -114,9 +116,9 @@ def simp_simulator(sig_pts = 28, n_pts = 0, x_dim = 28, y_dim = 28, z_dim = 28):
 flattened_data = simp_simulator(sig_pts = 28, n_pts=50, x_dim = 28, y_dim = 28, z_dim = 28)
 
 # plot 2d clean data
-plt.imshow(flattened_data[0])
+plt.imshow(flattened_data)
 plt.show()
-# plot 2d noisy data
-plt.imshow(flattened_data[1])
-plt.show()
+# # plot 2d noisy data
+# plt.imshow(flattened_data[1])
+# plt.show()
 

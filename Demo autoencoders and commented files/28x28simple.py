@@ -93,6 +93,7 @@ class Encoder(nn.Module):
         # im importing the kernel calculator to make the autoencoder more dynamic with its imputs for nn.Linear(3 * 3 * 32, 128)
 
         # # for first 2 conv layers:
+        # H_in, W_in and D_in would be given in fc2_input_dim
         # L1 = conv_calculator(conv_type, K, P, S, D, H_in, W_in, D_in, O)
         # L2 = conv_calculator(conv_type, K, P, S, D, L1[0], L1[2], D_in, O)
         
@@ -343,7 +344,7 @@ loader - a function to load a sample given its path
 others that arent so relevant....
 """
 # root to files
-data_directory = r'C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Simple Cross\\'
+# data_directory = r'C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Simple Cross\\'
 
 # need to import dataloader function:
 # IDK why this isnt working --> from DeepClean_3D.DataLoader_Functions_V2 import train_loader2d, test_loader2d
@@ -364,11 +365,11 @@ def test_loader2d(path):
 
 
 # the train_epoch_den and test both add noise themselves?? so i will have to call all of the clean versions:
-train_dir = r'C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Simple Cross\\'
+train_dir = r'C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Cross Clean\\'
 train_dataset = torchvision.datasets.DatasetFolder(train_dir, train_loader2d, extensions='.npy')
 
 # N.B. We will use the train loader for this as it takes the clean data, and thats what we want as theres a built in nois adder here already:
-test_dir = r'C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Simple Cross Test\\'
+test_dir = r'C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Cross Clean Test\\'
 test_dataset = torchvision.datasets.DatasetFolder(test_dir, train_loader2d, extensions='.npy')
 
 

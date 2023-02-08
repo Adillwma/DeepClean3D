@@ -105,7 +105,7 @@ def simp_simulator(sig_pts = 28, n_pts = 0, x_dim = 28, y_dim = 28, z_dim = 28):
         # index is the x and y axis
         flattened_data[1][int(point[0])][int(point[1])] = TOF
     
-    flattened_data.astype(double)
+    flattened_data.astype(np.float32)
     
     return flattened_data
 
@@ -116,12 +116,12 @@ def simp_simulator(sig_pts = 28, n_pts = 0, x_dim = 28, y_dim = 28, z_dim = 28):
 flattened_data = simp_simulator(sig_pts = 28, n_pts=50, x_dim = 28, y_dim = 28, z_dim = 28)
 
 # specify where to save the flattened data
-directory = r"C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Simple Cross Test\Data\\"
+directory = r"C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Cross Float\Data\\"
 
 
 # ----------------------------------------------------------------------------------
 # you can change all the arguments below:
-def simp_generator(dataset_size = 256, sig_pts = 28, n_pts = 0, x_dim = 28, y_dim = 28, z_dim = 28):
+def simp_generator(dataset_size = 2560, sig_pts = 28, n_pts = 0, x_dim = 28, y_dim = 28, z_dim = 28):
     """
     This function simply creates and saves a specified number of different flattened arrays (these arrays include both the clean
     data np array at index [0] and the noisy np array at index [1])
@@ -135,7 +135,7 @@ def simp_generator(dataset_size = 256, sig_pts = 28, n_pts = 0, x_dim = 28, y_di
 
         np.save(directory + 'Simple Cross (flat pixel block data) ' + str(idx), flattened_data)
     
-    print(str(dataset_size) + 'images saved to: ' + directory)
+    print(str(dataset_size) + ' images saved to: ' + directory)
     
 simp_generator()
 
