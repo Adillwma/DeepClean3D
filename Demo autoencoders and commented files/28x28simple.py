@@ -18,6 +18,19 @@ import random
 #import os
 from Calc import conv_calculator
 
+def custom_normalisation(input):
+    input = (input / (2 * np.max(input))) + 0.5
+    # print(input)
+    # print(' Shapep' + str(np.shape(input)))
+    for row in input:
+        for i, ipt in enumerate(row):
+            if ipt == 0.5:
+                row[i] = 0
+    return input
+
+
+
+
 #%% - User Inputs
 learning_rate = 0.001  #User controll to set optimiser learning rate(Hyperparameter)
 optim_w_decay = 1e-05  #User controll to set optimiser weight decay (Hyperparameter)
@@ -103,13 +116,14 @@ class Encoder(nn.Module):
         
         ###Flatten layer
         self.flatten = nn.Flatten(start_dim=1)
+        
 
         ###Linear Encoder Layers
         
         #nn.Linear arguments are: in_features – size of each input sample, out_features – size of each output sample, bias – If set to False, the layer will not learn an additive bias. Default: True
         self.encoder_lin = nn.Sequential(
             #Linear encoder layer 1  
-            nn.Linear(3 * 3 * 32, 128),                   #!!! linear network layer. arguuments are input dimensions/size, output dimensions/size. Takes in data of dimensions 3* 3 *32 and outputs it in 1 dimension of size 128
+            nn.Linear(4800, 128),                   #!!! linear network layer. arguuments are input dimensions/size, output dimensions/size. Takes in data of dimensions 3* 3 *32 and outputs it in 1 dimension of size 128
             # nn.Linear(L3[0] * L3[1] * 32, 128),
             nn.ReLU(True),                                #ReLU activation function - Activation function determinines if a neuron fires, i.e is the output of the node considered usefull. also allows for backprop. the arg 'True' makes the opperation carry out in-place(changes the values in the input array to the output values rather than making a new one), default would be false
             #Linear encoder layer 2
@@ -118,7 +132,9 @@ class Encoder(nn.Module):
         
     def forward(self, x):
         x = self.encoder_cnn(x)                           #Runs convoloutional encoder on x #!!! input data???
+        #print(np.shape(x))
         x = self.flatten(x)                               #Runs flatten  on output of conv encoder #!!! what is flatten?
+        #print(np.shape(x))
         x = self.encoder_lin(x)                           #Runs linear encoder on flattened output 
         return x                                          #Return final result
 
@@ -134,12 +150,12 @@ class Decoder(nn.Module):
             nn.Linear(encoded_space_dim, 128),
             nn.ReLU(True),                                 #ReLU activation function - Activation function determinines if a neuron fires, i.e is the output of the node considered usefull. also allows for backprop. the arg 'True' makes the opperation carry out in-place(changes the values in the input array to the output values rather than making a new one), default would be false
             #Linear decoder layer 2
-            nn.Linear(128, 3 * 3 * 32),
+            nn.Linear(128, 4800),
             nn.ReLU(True)                                  #ReLU activation function - Activation function determinines if a neuron fires, i.e is the output of the node considered usefull. also allows for backprop. the arg 'True' makes the opperation carry out in-place(changes the values in the input array to the output values rather than making a new one), default would be false
         )
         ###Unflatten layer
         self.unflatten = nn.Unflatten(dim=1, 
-        unflattened_size=(32, 3, 3))
+        unflattened_size=(32, 15, 10))
 
         ###Convolutional Decoder Layers
         #NOTE - as this is the decoder and it must perform the reverse operations to the encoder, instead of using conv2d here ConvTranspose2d is used which is the inverse opperation
@@ -155,7 +171,7 @@ class Decoder(nn.Module):
         
         self.decoder_conv = nn.Sequential(
             #Convolutional decoder layer 1
-            nn.ConvTranspose2d(32, 16, 3, stride=2, output_padding=0),             #Input_channels, Output_channels, Kernal_size, Stride, padding(unused), Output_padding
+            nn.ConvTranspose2d(32, 16, 3, stride=2, output_padding=1),             #Input_channels, Output_channels, Kernal_size, Stride, padding(unused), Output_padding
             nn.BatchNorm2d(16),                                                    #BatchNorm normalises the outputs as a batch? #!!!. argument is 'num_features' (expected input of size)
             nn.ReLU(True),                                                         #ReLU activation function - Activation function determinines if a neuron fires, i.e is the output of the node considered usefull. also allows for backprop. the arg 'True' makes the opperation carry out in-place(changes the values in the input array to the output values rather than making a new one), default would be false
             #Convolutional decoder layer 2
@@ -168,7 +184,9 @@ class Decoder(nn.Module):
         
     def forward(self, x):
         x = self.decoder_lin(x)       #Runs linear decoder on x #!!! is x input data? where does it come from??
+        #print(np.shape(x))
         x = self.unflatten(x)         #Runs unflatten on output of linear decoder #!!! what is unflatten?
+        #print(np.shape(x))
         x = self.decoder_conv(x)      #Runs convoloutional decoder on output of unflatten
         x = torch.sigmoid(x)          #THIS IS IMPORTANT PART OF FINAL OUTPUT!: Runs sigmoid function which turns the output data values to range (0-1)#!!! ????    Also can use tanh fucntion if wanting outputs from -1 to 1
         return x                      #Retuns the final output
@@ -196,7 +214,7 @@ def train_epoch_den(encoder, decoder, device, dataloader, loss_fn, optimizer,noi
     decoder.train()
     train_loss = []
     # Iterate the dataloader (we do not need the label values, this is unsupervised learning)
-    for image_batch, _ in dataloader: # with "_" we just ignore the labels (the second element of the dataloader tuple)
+    for image_batch, _ in dataloader: # with "_" we just ignore the labels (the second element of the dataloader tuple
         # Move tensor to the proper device
         image_noisy = add_noise(image_batch,noise_factor)
         image_batch = image_batch.to(device)
@@ -261,15 +279,15 @@ def plot_ae_outputs_den(encoder,decoder,n=10,noise_factor=0.3):       #Defines a
     """
     plt.figure(figsize=(16,4.5))                                      #Sets the figure size
     # numpy array of correct unnoised data
-    targets = test_dataset.targets.numpy()                            #Creates a numpy array (from the .numpy part) the array is created from the values in the specified tensor, which in this case is test_dataset.targets (test_dataset is the dataloader, .targets is a subclass of the dataloader that holds the labels, i.e the correct answer data (in this case the unnoised images).)                          
+    # targets = test_dataset.targets.numpy()                            #Creates a numpy array (from the .numpy part) the array is created from the values in the specified tensor, which in this case is test_dataset.targets (test_dataset is the dataloader, .targets is a subclass of the dataloader that holds the labels, i.e the correct answer data (in this case the unnoised images).)                          
     # defines dictionary keys 0-(n-1), values are indices in the targets array where those integers can be found 
-    t_idx = {i:np.where(targets==i)[0][0] for i in range(n)}          #!!! ????
+    # t_idx = {i:np.where(targets==i)[0][0] for i in range(n)}          #!!! ????
     
     for i in range(n):                                                #Runs for loop where 'i' itterates over 'n' total values which range from 0 to n-1
         
       #Following section creates the noised image data drom the original clean labels (images)   
       ax = plt.subplot(3,n,i+1)                                       #Creates a number of subplots for the 'Original images??????' i.e the labels. the position of the subplot is i+1 as it falls in the first row
-      img = test_dataset[t_idx[i]][0].unsqueeze(0)                    #!!! ????
+      img = test_dataset[i][0].unsqueeze(0) # [t_idx[i]][0].unsqueeze(0)                    #!!! ????
       if epoch <= 0:                                                  #CHECKS TO SEE IF THE EPOCH IS LESS THAN ZERO , I ADDED THIS TO GET THE SAME NOISED IMAGES EACH EPOCH THOUGH THIS COULD BE WRONG TO DO?
           global image_noisy                                          #'global' means the variable (image_noisy) set inside a function is globally defined, i.e defined also outside the function
           image_noisy = add_noise(img,noise_factor)                   #Runs the function 'add_noise' (in this code) the function adds noise to a set of data, the function takes two arguments, img is the data to add noise to, noise factor is a multiplier for the noise values added, i.e if multiplier is 0 no noise is added, if it is 1 default amount is added, if it is 10 then the values are raised 10x 
@@ -315,6 +333,35 @@ def plot_ae_outputs_den(encoder,decoder,n=10,noise_factor=0.3):       #Defines a
                     hspace=0.3)     
     plt.show()                                 #After entire loop is finished, the generated plot is printed to screen
     
+    # reconstruction
+
+    data = rec_img.cpu().squeeze().numpy()
+
+    print(np.shape(data))
+
+    def rev_norm(data):
+        
+        data_output = []
+
+        for cdx, row in enumerate(data):
+
+            for idx, num in enumerate(row):
+                if num > 0.5:
+                    num -= 0.5
+                    num = num * (27*2)
+                    data_output.append([cdx,idx,num])
+
+        return np.array(data_output)
+    
+    rec_data = rev_norm(data)
+    if rec_data.ndim != 1:
+        # print(np.shape(rec_data))
+        fig = plt.figure()
+        ax = plt.axes(projection='3d')
+        ax.scatter(rec_data[:,0], rec_data[:,1], rec_data[:,2])
+        ax.set_zlim(0,28)
+        plt.show()
+
     
     
 
@@ -350,14 +397,14 @@ others that arent so relevant....
 # IDK why this isnt working --> from DeepClean_3D.DataLoader_Functions_V2 import train_loader2d, test_loader2d
 # so ill import the functions manually:
 def train_loader2d(path):
+
     sample = (np.load(path))
-    sample = sample[0]               
+    #print(np.shape(sample), type(sample))             
     return (sample)
 def test_loader2d(path):
-    load = 1 # Set manually, 0 = Blank, no data, 1 = just signal, 2 = just noise, 3 = both, but with differing values (1,2)    #!!! OPION 3 NOT WORKING
     sample = (np.load(path))
-    sample2 = np.ma.masked_where(sample[1] == load, sample[1])                   
-    return (sample2)
+    # print(np.shape(sample))                  
+    return (sample)
 
 # our testing data is 28x28 for flattened simple cross. Were checking if this works here:
 # train_dataset = torchvision.datasets.DatasetFolder(data_directory, train_loader2d, extensions='.npy')
@@ -365,11 +412,11 @@ def test_loader2d(path):
 
 
 # the train_epoch_den and test both add noise themselves?? so i will have to call all of the clean versions:
-train_dir = r'C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Cross Clean\\'
+train_dir = r'C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\New big simp\Rectangle\\'
 train_dataset = torchvision.datasets.DatasetFolder(train_dir, train_loader2d, extensions='.npy')
 
 # N.B. We will use the train loader for this as it takes the clean data, and thats what we want as theres a built in nois adder here already:
-test_dir = r'C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Cross Clean Test\\'
+test_dir = r'C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\New big simp test\Rectangle\\'
 test_dataset = torchvision.datasets.DatasetFolder(test_dir, train_loader2d, extensions='.npy')
 
 
@@ -381,12 +428,14 @@ train_transform = transforms.Compose([                                         #
                                        #transforms.RandomResizedCrop(224),     #transforms.RandomResizedCrop(pixels) crops the data to 'pixels' in height and width (#!!! and (maybe) chooses a random centre point????)
                                        #transforms.RandomHorizontalFlip(),     #transforms.RandomHorizontalFlip() flips the image data horizontally 
                                        #transforms.Normalize((0.5), (0.5)),    #transforms.Normalize can be used to normalise the values in the array
+                                       transforms.Lambda(custom_normalisation),
                                        transforms.ToTensor()])                 #other transforms can be dissabled but to tensor must be left enabled ! it creates a tensor from a numpy array #!!! ?
 
 test_transform = transforms.Compose([                                          #test_transform variable holds the tensor tranformations to be performed on the evaluation data.  transforms.Compose([ ,  , ]) allows multiple transforms to be chained together (in serial?) (#!!! does it do more than this??)
                                       #transforms.Resize(255),                 #transforms.Resize(pixels? #!!!) ??
                                       #transforms.CenterCrop(224),             #transforms.CenterCrop(pixels? #!!!) ?? Crops the given image at the center. If the image is torch Tensor, it is expected to have […, H, W] shape, where … means an arbitrary number of leading dimensions. If image size is smaller than output size along any edge, image is padded with 0 and then center cropp
                                       #transforms.Normalize((0.5), (0.5)),     #transforms.Normalize can be used to normalise the values in the array
+                                      transforms.Lambda(custom_normalisation),
                                       transforms.ToTensor()])                  #other transforms can be dissabled but to tensor must be left enabled ! it creates a tensor from a numpy array #!!! ?
 
 # this applies above transforms to dataset (dataset transform = transform above)
@@ -404,7 +453,7 @@ train_data, val_data = random_split(train_dataset, [int(m-m*0.2), int(m*0.2)])  
 
 
 ###Following section for Dataloaders, they just pull a random sample of images from each of the datasets we now have, train_data, valid_data, and test_data. the batch size defines how many are taken from each set, shuffle argument shuffles them each time?? #!!!
-batch_size=256                                                                                #User controll to set batch size for the dataloaders (Hyperparameter)?? #!!!
+batch_size=10                                                                                #User controll to set batch size for the dataloaders (Hyperparameter)?? #!!!
 
 # required to load the data into the endoder/decoder. Combines a dataset and a sampler, and provides an iterable over the given dataset.
 train_loader = torch.utils.data.DataLoader(train_data, batch_size=batch_size)                 #Training data loader, can be run to pull training data as configured
@@ -432,6 +481,8 @@ d = 4 #!!!d is passed to the encoder & decoder in the lines below and represents
 # use encoder and decoder classes, providing dimensions for your dataset. FC2_INPUT_DIM IS NOT USED!! This would be extremely useful.
 encoder = Encoder(encoded_space_dim=d,fc2_input_dim=128)
 decoder = Decoder(encoded_space_dim=d,fc2_input_dim=128)
+encoder.double()
+decoder.double()
 params_to_optimize = [{'params': encoder.parameters()} ,{'params': decoder.parameters()}] #Selects what to optimise, 
 
 
@@ -452,7 +503,7 @@ decoder.to(device)   #Moves decoder to selected device, CPU/GPU
 
 #%% - Compute
 noise_factor = 0.4                                           #User controll to set the noise factor, a multiplier for the magnitude of noise added. 0 means no noise added, 1 is defualt level of noise added, 10 is 10x default level added (Hyperparameter)
-num_epochs = 5                                               #User controll to set number of epochs (Hyperparameter)
+num_epochs = 20                                               #User controll to set number of epochs (Hyperparameter)
 
 # this is a dictionary ledger of train val loss history
 history_da={'train_loss':[],'val_loss':[]}                   #Just creates a variable called history_da which contains two lists, 'train_loss' and 'val_loss' which are both empty to start with. value are latter appeneded to the two lists by way of history_da['val_loss'].append(x)
@@ -490,6 +541,8 @@ for epoch in range(num_epochs):                              #For loop that iter
     
     # finally plot the figure with all images on it.
     plot_ae_outputs_den(encoder,decoder,noise_factor=noise_factor)
+
+    
     
     
     

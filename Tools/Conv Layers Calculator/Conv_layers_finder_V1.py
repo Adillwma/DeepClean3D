@@ -122,15 +122,15 @@ def conv_calculator(conv_type, K, P, S, D, H_in, W_in, D_in=0, O=0):
 start_size = 128, 88
 Kernal = (3,3)
 
-CL1 = conv_calculator(conv_type=0, K=Kernal, P=0, S=2, D=1, H_in=start_size[0], W_in=start_size[1])
-CL2 = conv_calculator(conv_type=0, K=Kernal, P=0, S=2, D=1, H_in=CL1[0], W_in=CL1[1])
+CL1 = conv_calculator(conv_type=0, K=Kernal, P=1, S=2, D=1, H_in=start_size[0], W_in=start_size[1])
+CL2 = conv_calculator(conv_type=0, K=Kernal, P=1, S=2, D=1, H_in=CL1[0], W_in=CL1[1])
 CL3 = conv_calculator(conv_type=0, K=Kernal, P=0, S=2, D=1, H_in=CL2[0], W_in=CL2[1])
 CL4 = conv_calculator(conv_type=0, K=Kernal, P=0, S=2, D=1, H_in=CL3[0], W_in=CL3[1])
 CL5 = conv_calculator(conv_type=0, K=Kernal, P=0, S=2, D=1, H_in=CL4[0], W_in=CL4[1])
 
-CLT1 = conv_calculator(conv_type=1, K=Kernal, P=0, S=2, D=1, H_in=CL3[0], W_in=CL3[1], O=0)
-CLT2 = conv_calculator(conv_type=1, K=Kernal, P=0, S=2, D=1, H_in=CLT1[0], W_in=CLT1[1], O=0)
-CLT3 = conv_calculator(conv_type=1, K=Kernal, P=0, S=2, D=1, H_in=CLT2[0], W_in=CLT2[1], O=0)
+CLT1 = conv_calculator(conv_type=1, K=Kernal, P=0, S=2, D=1, H_in=CL3[0], W_in=CL3[1], O=1)
+CLT2 = conv_calculator(conv_type=1, K=Kernal, P=1, S=2, D=1, H_in=CLT1[0], W_in=CLT1[1], O=1)
+CLT3 = conv_calculator(conv_type=1, K=Kernal, P=1, S=2, D=1, H_in=CLT2[0], W_in=CLT2[1], O=1)
 CLT4 = conv_calculator(conv_type=1, K=Kernal, P=0, S=2, D=1, H_in=CLT3[0], W_in=CLT3[1], O=0)
 CLT5 = conv_calculator(conv_type=1, K=Kernal, P=0, S=2, D=1, H_in=CLT4[0], W_in=CLT4[1], O=1)
 

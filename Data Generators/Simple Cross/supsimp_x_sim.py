@@ -104,7 +104,8 @@ def simp_simulator(sig_pts = 28, n_pts = 0, x_dim = 28, y_dim = 28, z_dim = 28):
     #     TOF = point[2]
     #     # index is the x and y axis
     #     flattened_data[1][int(point[0])][int(point[1])] = TOF
-    
+
+
     return flattened_data
 
 
@@ -113,7 +114,9 @@ def simp_simulator(sig_pts = 28, n_pts = 0, x_dim = 28, y_dim = 28, z_dim = 28):
 #------------------------------------------------------------------
 # calling function and plotting results for clean and noisy:
 
-flattened_data = simp_simulator(sig_pts = 28, n_pts=50, x_dim = 28, y_dim = 28, z_dim = 28)
+flattened_data = simp_simulator(sig_pts = 200, n_pts=50, x_dim = 128, y_dim = 88, z_dim = 28)
+
+print(np.shape(flattened_data))
 
 # plot 2d clean data
 plt.imshow(flattened_data)
