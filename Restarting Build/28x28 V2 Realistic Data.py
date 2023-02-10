@@ -19,8 +19,9 @@ import random
 #from Calc import conv_calculator
 
 def custom_normalisation(input):
+    print("SHAPE",np.shape(input))
     input = (input / (2 * np.max(input))) + 0.5
-    # print(input)
+    #print(input)
     # print(' Shapep' + str(np.shape(input)))
     for row in input:
         for i, ipt in enumerate(row):
@@ -39,19 +40,8 @@ optim_w_decay = 1e-05  #User controll to set optimiser weight decay (Hyperparame
 seed = 10              #0 is default which gives no seeeding to RNG, if the value is not zero then this is used for the RNG seeding for numpy, random, and torch libraries
 #path = "C:/Users/Student/Desktop/fake im data/"  #"/path/to/your/images/"
 
-dataset_title = "Dataset 1_Realistic"
-data_path = "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Yr 3 Project/Circular and Spherical Dummy Datasets/"
-
-# for conv converter:
-conv_type = 0
-K = 3
-P = 1 # (changed later)
-S = 2
-D = 1
-H_in = 28 # (change later)
-W_in = 28
-D_in = None
-O = None
+dataset_title = "Simple Cross Test"
+data_path = "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Git Hub Repos/DeepClean Repo/DeepClean-Noise-Suppression-for-LHC-B-Torch-Detector/Datasets/"
 
 #%% - Classes
 
@@ -99,31 +89,11 @@ class Encoder(nn.Module):
             nn.Conv2d(16, 32, 3, stride=2, padding=0),     #Input_channels, Output_channels, Kernal_size, Stride, Padding
             nn.ReLU(True)                                  #ReLU activation function - Activation function determinines if a neuron fires, i.e is the output of the node considered usefull. also allows for backprop. the arg 'True' makes the opperation carry out in-place(changes the values in the input array to the output values rather than making a new one), default would be false
         )
-        #Encoder nodes: 
-        #input data format = [batchsize, 1, 28, 28] # [batchsize, channels, pixels_in_x, pixels_in_y]
-        #conv layers: input---Conv_L1---> 
-        # 1 [batchsize, 8, 14, 14]
-        # 2 [batchsize, 16, 7, 7]
-        # 4 [batchsize, 32, 3, 3]
-        
-        # im importing the kernel calculator to make the autoencoder more dynamic with its imputs for nn.Linear(3 * 3 * 32, 128)
-
-        # # for first 2 conv layers:
-        # H_in, W_in and D_in would be given in fc2_input_dim
-        # L1 = conv_calculator(conv_type, K, P, S, D, H_in, W_in, D_in, O)
-        # L2 = conv_calculator(conv_type, K, P, S, D, L1[0], L1[2], D_in, O)
-        
-        # # for 3rd and final layer: (padding changed)
-        # P = 0
-        # L3 = conv_calculator(conv_type, K, P, S, D, L2[0], L2[2], D_in, O)
-        
+ 
         ###Flatten layer
         self.flatten = nn.Flatten(start_dim=1)
-        
-
+    
         ###Linear Encoder Layers
-        
-        #nn.Linear arguments are: in_features – size of each input sample, out_features – size of each output sample, bias – If set to False, the layer will not learn an additive bias. Default: True
         self.encoder_lin = nn.Sequential(
             #Linear encoder layer 1  
             nn.Linear(4800, 128),                   #!!! linear network layer. arguuments are input dimensions/size, output dimensions/size. Takes in data of dimensions 3* 3 *32 and outputs it in 1 dimension of size 128
@@ -159,18 +129,6 @@ class Decoder(nn.Module):
         ###Unflatten layer
         self.unflatten = nn.Unflatten(dim=1, 
         unflattened_size=(32, 15, 10))
-
-        ###Convolutional Decoder Layers
-        #NOTE - as this is the decoder and it must perform the reverse operations to the encoder, instead of using conv2d here ConvTranspose2d is used which is the inverse opperation
-        #ConvTransopose2d function takes arguments: (input channels, output channels, kernel size/receiptive field (), stride and padding. # here for more info on arguments https://uob-my.sharepoint.com/personal/ex18871_bristol_ac_uk/_layouts/15/Doc.aspx?sourcedoc={109841d1-79cb-45c2-ac39-0fd24300c883}&action=edit&wd=target%28Code%20Companion.one%7C%2FUntitled%20Page%7C55b8dfad-d53c-4d8e-a2ef-de1376232896%2F%29&wdorigin=NavigationUrl
-        
-        #Input channels 
-        #Output channels which is the amount of seperate output tensors?????????, 
-        #The kernal size, 
-        #Stride 
-        #Padding ??? ##!!!!
-        #Output_Padding adds padding to the edges of the data array
-        #Dilation (not used param) 
         
         self.decoder_conv = nn.Sequential(
             #Convolutional decoder layer 1
@@ -207,7 +165,6 @@ def Determinism_Seeding(seed):
     torch.manual_seed(seed)
     random.seed(seed)
     np.random.seed(seed)
-
 
 ### Training Function
 def train_epoch_den(encoder, decoder, device, dataloader, loss_fn, optimizer,noise_factor=0.3):
@@ -265,17 +222,7 @@ def test_epoch_den(encoder, decoder, device, dataloader, loss_fn,noise_factor=0.
         val_loss = loss_fn(conc_out, conc_label)
     return val_loss.data
 
-
-
-
-##########################################################################################################################################################################
-
-#Second half 
-
-
-
 ###Plotting Function
-
 def plot_ae_outputs_den(encoder,decoder,n=10,noise_factor=0.3):       #Defines a function for plotting the output of the autoencoder. And also the input + clean training data? Function takes inputs, 'encoder' and 'decoder' which are expected to be classes (defining the encode and decode nets), 'n' which is the number of ?????Images in the batch????, and 'noise_factor' which is a multiplier for the magnitude of the added noise allowing it to be scaled in intensity.  
     """
     n is the number of images to plot i think?
@@ -301,7 +248,6 @@ def plot_ae_outputs_den(encoder,decoder,n=10,noise_factor=0.3):       #Defines a
       #Following section sets the autoencoder to evaluation mode rather than training (up till line 'with torch.no_grad()')
       encoder.eval()                                   #.eval() is a kind of switch for some specific layers/parts of the model that behave differently during training and inference (evaluating) time. For example, Dropouts Layers, BatchNorm Layers etc. You need to turn off them during model evaluation, and .eval() will do it for you. In addition, the common practice for evaluating/validation is using torch.no_grad() in pair with model.eval() to turn off gradients computation
       decoder.eval()                                   #Simarlary as above
-
 
       with torch.no_grad():                                               #As mentioned in .eval() comment, the common practice for evaluating/validation is using torch.no_grad() which turns off gradients computation whilst evaluating the model (the opposite of training the model)     
       #Following line runs the autoencoder on the noised data
@@ -336,24 +282,17 @@ def plot_ae_outputs_den(encoder,decoder,n=10,noise_factor=0.3):       #Defines a
                     hspace=0.3)     
     plt.show()                                 #After entire loop is finished, the generated plot is printed to screen
     
-    # reconstruction
-
+    # 3D Reconstruction
     data = rec_img.cpu().squeeze().numpy()
-
-    print(np.shape(data))
-
+    #print(np.shape(data))
     def rev_norm(data):
-        
         data_output = []
-
         for cdx, row in enumerate(data):
-
             for idx, num in enumerate(row):
                 if num > 0.5:
                     num -= 0.5
                     num = num * (27*2)
                     data_output.append([cdx,idx,num])
-
         return np.array(data_output)
     
     rec_data = rev_norm(data)
@@ -396,23 +335,13 @@ others that arent so relevant....
 # root to files
 # data_directory = r'C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Simple Cross\\'
 
-# need to import dataloader function:
-# IDK why this isnt working --> from DeepClean_3D.DataLoader_Functions_V2 import train_loader2d, test_loader2d
-# so ill import the functions manually:
 def train_loader2d(path):
-
     sample = (np.load(path))
-    #print(np.shape(sample), type(sample))             
     return (sample)
+
 def test_loader2d(path):
-    sample = (np.load(path))
-    # print(np.shape(sample))                  
+    sample = (np.load(path))             
     return (sample)
-
-# our testing data is 28x28 for flattened simple cross. Were checking if this works here:
-# train_dataset = torchvision.datasets.DatasetFolder(data_directory, train_loader2d, extensions='.npy')
-# test_dataset  = torchvision.datasets.DatasetFolder(data_directory, test_loader2d, extensions='.npy')
-
 
 # the train_epoch_den and test both add noise themselves?? so i will have to call all of the clean versions:
 train_dir = data_path + dataset_title
@@ -427,9 +356,8 @@ test_dir = data_path + dataset_title
 test_dataset = torchvision.datasets.DatasetFolder(test_dir, train_loader2d, extensions='.npy')
 
 
-#%% - Data Preparation  #!!!Perhaps these should be passed ino the loader as user inputs, that allows for ease of changing between differnt tranforms in testing without having to flip to the data loader code
+#%% - Data Preparation
 
-####SECTION MODIFIED#####
 train_transform = transforms.Compose([                                         #train_transform variable holds the tensor tranformations to be performed on the training data.  transforms.Compose([ ,  , ]) allows multiple transforms to be chained together (in serial?) (#!!! does it do more than this??)
                                        #transforms.RandomRotation(30),         #transforms.RandomRotation(angle (degrees?) ) rotates the tensor randomly up to max value of angle argument
                                        #transforms.RandomResizedCrop(224),     #transforms.RandomResizedCrop(pixels) crops the data to 'pixels' in height and width (#!!! and (maybe) chooses a random centre point????)
@@ -449,15 +377,12 @@ test_transform = transforms.Compose([                                          #
 train_dataset.transform = train_transform       #!!! train_dataset is the class? object 'dataset' it has a subclass called transforms which is the list of transofrms to perform on the dataset when loading it. train_tranforms is the set of chained transofrms we created, this is set to the dataset transforms subclass 
 test_dataset.transform = test_transform         #!!! similar to the above but for the test(eval) dataset, check into this for the exact reason for using it, have seen it deone in other ways i.e as in the dataloader.py it is performed differntly. this way seems to be easier to follow
 #####For info on all transforms check out: https://pytorch.org/vision/0.9/transforms.html
-####SECTION MODIFIED END#####
 
-
-
+train_test_split_ratio = 0.8
 ###Following section splits the training dataset into two, train_data (to be noised) and valid data (to use in eval)
 m=len(train_dataset) #Just calculates length of train dataset, m is only used in the next line to decide the values of the split, (4/5 m) and (1/5 m)
-# 80% 20% is the absolute classic split
-train_data, val_data = random_split(train_dataset, [int(m-m*0.2), int(m*0.2)])    #random_split(data_to_split, [size of output1, size of output2]) just splits the train_dataset into two parts, 4/5 goes to train_data and 1/5 goes to val_data , validation?
-
+train_split=int(m*train_test_split_ratio)
+train_data, val_data = random_split(train_dataset, [train_split, m-train_split])    #random_split(data_to_split, [size of output1, size of output2]) just splits the train_dataset into two parts, 4/5 goes to train_data and 1/5 goes to val_data , validation?
 
 ###Following section for Dataloaders, they just pull a random sample of images from each of the datasets we now have, train_data, valid_data, and test_data. the batch size defines how many are taken from each set, shuffle argument shuffles them each time?? #!!!
 batch_size=10                                                                                #User controll to set batch size for the dataloaders (Hyperparameter)?? #!!!
@@ -468,9 +393,7 @@ valid_loader = torch.utils.data.DataLoader(val_data, batch_size=batch_size)     
 test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size,shuffle=True)   #Testing data loader, can be run to pull training data as configured. Also is shuffled using parameter shuffle #!!! why is it shuffled?
 
 
-
 #%% - Setup model, loss criteria and optimiser    
-    
 ### Define the loss function (mean square error)
 loss_fn = torch.nn.MSELoss()
 
@@ -506,7 +429,6 @@ print(f'Selected device: {device}')  #Informs user if running on CPU or GPU
 #Following section moves both the encoder and the decoder to the selected device i.e detected CUDA enabled GPU or to CPU
 encoder.to(device)   #Moves encoder to selected device, CPU/GPU
 decoder.to(device)   #Moves decoder to selected device, CPU/GPU
-
 
 #%% - Compute
 noise_factor = 0.4                                           #User controll to set the noise factor, a multiplier for the magnitude of noise added. 0 means no noise added, 1 is defualt level of noise added, 10 is 10x default level added (Hyperparameter)

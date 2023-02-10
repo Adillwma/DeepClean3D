@@ -448,11 +448,12 @@ test_dataset.transform = test_transform         #!!! similar to the above but fo
 
 
 
+
+train_test_split_ratio = 0.8
 ###Following section splits the training dataset into two, train_data (to be noised) and valid data (to use in eval)
 m=len(train_dataset) #Just calculates length of train dataset, m is only used in the next line to decide the values of the split, (4/5 m) and (1/5 m)
-# 80% 20% is the absolute classic split
-train_data, val_data = random_split(train_dataset, [int(m-m*0.2), int(m*0.2)])    #random_split(data_to_split, [size of output1, size of output2]) just splits the train_dataset into two parts, 4/5 goes to train_data and 1/5 goes to val_data , validation?
-
+train_split=int(m*train_test_split_ratio)
+train_data, val_data = random_split(train_dataset, [train_split, m-train_split])    #random_split(data_to_split, [size of output1, size of output2]) just splits the train_dataset into two parts, 4/5 goes to train_data and 1/5 goes to val_data , validation?
 
 ###Following section for Dataloaders, they just pull a random sample of images from each of the datasets we now have, train_data, valid_data, and test_data. the batch size defines how many are taken from each set, shuffle argument shuffles them each time?? #!!!
 batch_size=10                                                                                #User controll to set batch size for the dataloaders (Hyperparameter)?? #!!!

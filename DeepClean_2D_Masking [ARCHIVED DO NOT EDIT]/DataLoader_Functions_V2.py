@@ -100,7 +100,21 @@ def initialise_data_loader (dataset_title, data_path, batch_size, train_transfor
 
     m=len(train_data) #Just calculates length of train dataset, m is only used in the next line to decide the values of the split, (4/5 m) and (1/5 m)
     train_data, val_data = random_split(train_data, [int(round((m-m*0.2))), int(round((m*0.2)))])    #random_split(data_to_split, [size of output1, size of output2]) just splits the train_dataset into two parts, 4/5 goes to train_data and 1/5 goes to val_data , validation?
-    
+
+    #!!!
+    """
+    ###NEW IMPORVED DATA SPLITTER - MORE ROBUST TO ERROR
+    train_test_split_ratio = 0.8
+    ###Following section splits the training dataset into two, train_data (to be noised) and valid data (to use in eval)
+    m=len(train_dataset) #Just calculates length of train dataset, m is only used in the next line to decide the values of the split, (4/5 m) and (1/5 m)
+    train_split=int(m*train_test_split_ratio)
+    train_data, val_data = random_split(train_dataset, [train_split, m-train_split])    #random_split(data_to_split, [size of output1, size of output2]) just splits the train_dataset into two parts, 4/5 goes to train_data and 1/5 goes to val_data , validation?
+    """
+
+
+
+
+
     # utils.data.dataloader - Combines dataset and sampler? and provides iterable over the given dataset: 
     # (hence why you see iter after) Iters are used as they only load one at a time. Saves much compute.
     # inputs: (dataset(dataset from which to load data), batchsize(No samples per batch to load), shuffle(shuffle every epoch))
