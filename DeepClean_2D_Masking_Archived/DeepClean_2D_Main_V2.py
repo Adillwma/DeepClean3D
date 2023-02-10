@@ -38,6 +38,10 @@ plot_or_save = 0                            #[default = 0] 0 is normal behavior,
 outputfig_title = "Test"                    #Must be string, value is used in the titling of the output plots if plot_or_save is selected above
 telemetry_on = 1                            #[default = 1]
 
+model_save_name = "first_test"
+model_save_path = r"C:\Users\Student\Documents\UNI\Onedrive - University of Bristol\Git Hub Repos\DeepClean Repo\DeepClean-Noise-Suppression-for-LHC-B-Torch-Detector\Models"
+
+modal_save = model_save_path + model_save_name + ".pth"
 #%% Dataloading
 # - Data Loader User Inputs
 dataset_title = "Dataset 1_Realistic"
@@ -468,6 +472,7 @@ for epoch in range(num_epochs):                              #For loop that iter
     print('\nEND OF EPOCH {}/{} \t train loss {:.3f} \t val loss {:.3f}\n'.format(epoch + 1, num_epochs,train_loss,val_loss))     #epoch +1 is to make up for the fact the range spans 0 to epoch-1 but we want to numerate things from 1 upwards for sanity
     number_of_true_signal_points, number_of_recovered_signal_points = plot_ae_outputs_den(encoder, decoder, epoch, outputfig_title,time_dimension, reconstruction_threshold, plot_or_save, n=10, noise_factor=noise_factor)
 
+torch.save((encoder, decoder), modal_save)
 
 ###Loss function plots
 epochs_range = range(1,num_epochs+1)
