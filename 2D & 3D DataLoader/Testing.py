@@ -22,8 +22,6 @@ import random
 # print(min(a))
 
 # print(np.linspace(0,7,4))
-
-a = 12
-
-b = a + np.random.randint(-10, 10)
-print(b)
+array = np.array([[1, 2], [3, 4], [5, 6]])
+first_column = array[:, 0]
+print(first_column)

@@ -134,7 +134,20 @@ def realistic_data_generator(signal_points, detector_pixel_dimensions=(88,128), 
     z_pixel = np.array(z_pixel)
 
     # shift them all:
-    # x_shift = x_pixel + np.random.randint()
+    x_shift = x_pixel + np.random.randint(-np.max(x_pixel),np.max(x_pixel))
+    y_shift = x_pixel + np.random.randint(-np.max(y_pixel),np.max(y_pixel))
+    z_shift = x_pixel + np.random.randint(-np.max(z_pixel),np.max(z_pixel))
+    # print(len(x_shift))
+
+    # join together coordinates:
+    coords = np.column_stack((x_shift, y_shift, z_shift))
+
+    # select those that would fall within the bounds of the thing:
+    # coords = np.array([coord for coord in coords if
+    # (np.min(x_pixel) <= coord[0] <= np.max(x_pixel)) and
+    # (np.min(y_pixel) <= coord[1] <= np.max(y_pixel)) and
+    # (np.min(z_pixel) <= coord[2] <= np.max(z_pixel))])
+    # print([coord for coord in coords])
 
 
     #Generates the random noise points (tmax//resolution sets the max pixels in the z axis)
@@ -151,7 +164,9 @@ def realistic_data_generator(signal_points, detector_pixel_dimensions=(88,128), 
         fig = plt.figure()
         ax = fig.add_subplot(projection='3d')
 
-        ax.scatter(x_pixel, y_pixel, z_pixel)
+        # ax.scatter(x_pixel, y_pixel, z_pixel)
+        ax.scatter(coords[:0], coords[:1], coords[:2])
+
         # ax.scatter(x_noise, y_noise, z_noise)
         ax.set_xlabel('X')
         ax.set_ylabel('Y')
@@ -167,5 +182,4 @@ def realistic_data_generator(signal_points, detector_pixel_dimensions=(88,128), 
 
 #%% - Testing Driver
 #Uncomment line below for testing, make sure to comment out when done to stop it creating plots when dataset generator is running
-a = realistic_data_generator(signal_points=100, detector_pixel_dimensions=(88,128), hit_point=0.3, ideal=1, debug_image_generator=1)
-print(np.shape(a))
+realistic_data_generator(signal_points=100, detector_pixel_dimensions=(88,128), hit_point=0.3, ideal=1, debug_image_generator=1)
