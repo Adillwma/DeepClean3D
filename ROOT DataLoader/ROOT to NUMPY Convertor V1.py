@@ -17,11 +17,8 @@ import uproot
 
 
 
-path = #Path for root file
+path = "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/data/tuple_1.root" #Path for root file
 with uproot.open(path) as file:
     for data_item in file:
-        #np_data_item = ???? #Turn data_item into numpy array if it is not already    
-        
-        savepath = path + '/processed'
-        np.save(np_data_item, savepath)
-
+        np.save(data_item, path)
+print("Conversion Successfull")
