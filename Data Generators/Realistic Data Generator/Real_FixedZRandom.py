@@ -92,7 +92,8 @@ def realistic_data_generator(signal_points, detector_pixel_dimensions=(88,128), 
     
     # max time particle could take. This allows us to set the max z axis for the noise to take.
     t_max = (((2*quartz_length) / np.cos((np.pi/2)-q_crit)) / particle_speed) + std * 20     # This last adds well in excess of std to make sure likelihood of points below is minimal
-    # the resolution in the time axis is 35ps. then assign from there (this is probs better)
+    # in pixels, this will be:
+    t_pix_max = t_max // resolution
 
     time = []
     # for each of the allowed cherenkov particles
@@ -115,39 +116,48 @@ def realistic_data_generator(signal_points, detector_pixel_dimensions=(88,128), 
     # x axis is between the reflectors, and the pixels of the x axis are the first dim of the input dim
     x_idxs = np.digitize([i[0][0] for i in final],np.linspace(-reflect_x, reflect_x, detector_pixel_dimensions[0])) #takes x points, then bins, returns indices
 
+    # y axis is currently between 1 and -1 from cosine function (which has angle embedded by nature)
+    # splits this into pixels in y:
     y_idxs = np.digitize([i[0][1] for i in final],np.linspace(-1, 1, detector_pixel_dimensions[1]))
 
-    # z needs std dev in time added. This is added after the pattern is set:
-    z_idxs = [np.random.normal(i[1], std)//resolution for i in final] # i[1] add std to time then give z pixel with //resolution
-    z_orig = [i[1]//resolution for i in final]          # This is here for z_pixel
+    # z needs std dev in time added. This is added after the pattern is set.
+    # This is put into bins without the digitize for now:
+    z_idxs = np.array([np.random.normal(i[1], std)//resolution for i in final]) # i[1] add std to time then give z pixel with //resolution
 
-    # the z indeces above can in rare cases have values below 0. This is added onto z_pixel to negate this
-    # all of the above are 1 too few as they go from 0 to 87 index. We want 1 to 88 so.
+    # all of the above are 1 too few as they go from 0 to 87 index. We want 1 to 88 so:
     x_pixel = [i+1 for i in x_idxs]
+    # same for y
     y_pixel = [i+1 for i in y_idxs]
-    z_pixel = [i+1 - min(z_idxs) + min(z_orig) for i in z_idxs]
+    # same for z
+    z_pixel = [i+1 for i in z_idxs]
 
     # Changing position:
     # Convert all to numpy arrays to make more maleable and also to flatten later:
     x_pixel = np.array(x_pixel)
     y_pixel = np.array(y_pixel)
     z_pixel = np.array(z_pixel)
+    # print(np.max(x_pixel))
+    # print(np.max(y_pixel))
+    # print(np.max(z_pixel))
+
+    # combine them:
+    coords = np.column_stack((x_pixel, y_pixel, z_pixel))
+
+    # remove potential z points outside plot:
+    coords = np.array([coord for coord in coords if 1 <= coord[2] <= t_pix_max])
 
     # shift them all:
-    x_shift = x_pixel + np.random.randint(-np.max(x_pixel),np.max(x_pixel))
-    y_shift = x_pixel + np.random.randint(-np.max(y_pixel),np.max(y_pixel))
-    z_shift = x_pixel + np.random.randint(-np.max(z_pixel),np.max(z_pixel))
-    # print(len(x_shift))
+    coords[:,0] += np.random.randint(-np.max(x_pixel),np.max(x_pixel))
+    coords[:,1] += np.random.randint(-np.max(y_pixel),np.max(y_pixel))
+    coords[:,2] += np.random.randint(-np.max(t_pix_max),np.max(t_pix_max))
 
-    # join together coordinates:
-    coords = np.column_stack((x_shift, y_shift, z_shift))
-
-    # select those that would fall within the bounds of the thing:
-    # coords = np.array([coord for coord in coords if
-    # (np.min(x_pixel) <= coord[0] <= np.max(x_pixel)) and
-    # (np.min(y_pixel) <= coord[1] <= np.max(y_pixel)) and
-    # (np.min(z_pixel) <= coord[2] <= np.max(z_pixel))])
-    # print([coord for coord in coords])
+    # select those that would fall within the bounds of the thing after shifting:
+    filtered = np.array([coord for coord in coords if
+    (1 <= coord[0] <= detector_pixel_dimensions[0]) and
+    (1 <= coord[1] <= detector_pixel_dimensions[1]) and
+    (1 <= coord[2] <= np.max(t_pix_max))])
+    print(filtered[:10])
+    print(np.shape(filtered))
 
 
     #Generates the random noise points (tmax//resolution sets the max pixels in the z axis)
@@ -164,8 +174,14 @@ def realistic_data_generator(signal_points, detector_pixel_dimensions=(88,128), 
         fig = plt.figure()
         ax = fig.add_subplot(projection='3d')
 
-        # ax.scatter(x_pixel, y_pixel, z_pixel)
-        ax.scatter(coords[:0], coords[:1], coords[:2])
+        ax.scatter(x_pixel, y_pixel, z_pixel)
+        ax.scatter(filtered[:,0], filtered[:,1], filtered[:,2])
+
+        # setting limits:
+        ax.set_xlim((1, detector_pixel_dimensions[0]))
+        ax.set_ylim((1, detector_pixel_dimensions[1]))
+        ax.set_zlim((1, t_pix_max))
+
 
         # ax.scatter(x_noise, y_noise, z_noise)
         ax.set_xlabel('X')
@@ -182,4 +198,4 @@ def realistic_data_generator(signal_points, detector_pixel_dimensions=(88,128), 
 
 #%% - Testing Driver
 #Uncomment line below for testing, make sure to comment out when done to stop it creating plots when dataset generator is running
-realistic_data_generator(signal_points=100, detector_pixel_dimensions=(88,128), hit_point=0.3, ideal=1, debug_image_generator=1)
+realistic_data_generator(signal_points=1000, detector_pixel_dimensions=(88,128), hit_point=0.8, ideal=1, debug_image_generator=1)
