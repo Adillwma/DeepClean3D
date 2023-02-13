@@ -21,4 +21,9 @@ import random
 
 # print(min(a))
 
-print(np.linspace(0,7,4))
+# print(np.linspace(0,7,4))
+
+a = 12
+
+b = a + np.random.randint(-10, 10)
+print(b)

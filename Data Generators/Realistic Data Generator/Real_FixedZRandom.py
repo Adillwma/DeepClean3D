@@ -6,7 +6,7 @@ Created on Thurs Jan 26 2023
 """
 # N.B. This is the same function as V2, however the time axis is now defined in set 35ps blocks (time res of TORCH)
 # The detector also has a standard deviation of 70ps on the time axis.
-# It is noted that this generator produces sets of data with a differing number of pixels on the z axis.
+# 
 # THIS PRODUCES A SET TIME DIMENSION that can PRODUCE ERROR (very low prob)
 
 #%% - Dependencies
@@ -18,7 +18,7 @@ resolution = 35E-12
 std = 70E-12
 
 #%% - Function
-def realistic_data_generator(signal_points, noise_points, detector_pixel_dimensions=(88,128), hit_point=1.5, ideal=1, debug_image_generator=0):
+def realistic_data_generator(signal_points, detector_pixel_dimensions=(88,128), hit_point=1.5, ideal=1, debug_image_generator=0):
     '''
     Inputs:
     signal_points = number of points the hit produces (average 30 for realistic photon), N.B. these may not be at critical angle to 60 is maximum number
@@ -128,12 +128,19 @@ def realistic_data_generator(signal_points, noise_points, detector_pixel_dimensi
     z_pixel = [i+1 - min(z_idxs) + min(z_orig) for i in z_idxs]
 
     # Changing position:
+    # Convert all to numpy arrays to make more maleable and also to flatten later:
+    x_pixel = np.array(x_pixel)
+    y_pixel = np.array(y_pixel)
+    z_pixel = np.array(z_pixel)
+
+    # shift them all:
+    # x_shift = x_pixel + np.random.randint()
 
 
     #Generates the random noise points (tmax//resolution sets the max pixels in the z axis)
-    x_noise = [random.randint(1, detector_pixel_dimensions[0]) for _ in range(noise_points)]
-    y_noise = [random.randint(1, detector_pixel_dimensions[1]) for _ in range(noise_points)]
-    z_noise = [random.randint(0, t_max//resolution) for _ in range(noise_points)]
+    # x_noise = [random.randint(1, detector_pixel_dimensions[0]) for _ in range(noise_points)]
+    # y_noise = [random.randint(1, detector_pixel_dimensions[1]) for _ in range(noise_points)]
+    # z_noise = [random.randint(0, t_max//resolution) for _ in range(noise_points)]
 
 
     
@@ -145,7 +152,7 @@ def realistic_data_generator(signal_points, noise_points, detector_pixel_dimensi
         ax = fig.add_subplot(projection='3d')
 
         ax.scatter(x_pixel, y_pixel, z_pixel)
-        ax.scatter(x_noise, y_noise, z_noise)
+        # ax.scatter(x_noise, y_noise, z_noise)
         ax.set_xlabel('X')
         ax.set_ylabel('Y')
         ax.set_zlabel('Time')
@@ -156,9 +163,9 @@ def realistic_data_generator(signal_points, noise_points, detector_pixel_dimensi
     num_of_signal_points = int(np.shape(x_pixel)[0])
     
     #Outputs to return to main dataset generator script
-    return(x_pixel, x_noise, y_pixel, y_noise, z_pixel, z_noise, num_of_signal_points)
+    return(x_pixel, y_pixel, z_pixel, num_of_signal_points)
 
 #%% - Testing Driver
 #Uncomment line below for testing, make sure to comment out when done to stop it creating plots when dataset generator is running
-a = realistic_data_generator(signal_points=100, noise_points=1000, detector_pixel_dimensions=(88,128), hit_point=0.3, ideal=1, debug_image_generator=1)
+a = realistic_data_generator(signal_points=100, detector_pixel_dimensions=(88,128), hit_point=0.3, ideal=1, debug_image_generator=1)
 print(np.shape(a))
