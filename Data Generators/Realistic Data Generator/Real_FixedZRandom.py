@@ -165,6 +165,14 @@ def realistic_data_generator(signal_points, detector_pixel_dimensions=(88,128), 
     # y_noise = [random.randint(1, detector_pixel_dimensions[1]) for _ in range(noise_points)]
     # z_noise = [random.randint(0, t_max//resolution) for _ in range(noise_points)]
 
+    # flattening:
+    flattened_data = np.zeros((detector_pixel_dimensions[0], detector_pixel_dimensions[1]))
+
+    for point in filtered:
+        # TOF is the z axis
+        TOF = point[2]-1
+        # index is the x and y axis
+        flattened_data[int(point[0])-1][int(point[1])-1] = TOF
 
     
     #Plots the figure if user requests debugging
@@ -188,6 +196,9 @@ def realistic_data_generator(signal_points, detector_pixel_dimensions=(88,128), 
         ax.set_ylabel('Y')
         ax.set_zlabel('Time')
 
+        plt.show()
+
+        plt.imshow(flattened_data)
         plt.show()
 
     #Determines number of signal points in the output, as some photons will have left due to passing the critical angle and exiting the block
