@@ -6,8 +6,8 @@ Created on Thurs Jan 26 2023
 """
 # N.B. This is the same function as V2, however the time axis is now defined in set 35ps blocks (time res of TORCH)
 # The detector also has a standard deviation of 70ps on the time axis.
-# 
 # THIS PRODUCES A SET TIME DIMENSION that can PRODUCE ERROR (very low prob)
+# Error arises as there is a standard deviation imposed on it. There is a small chance that standard deviation could be massive.
 
 #%% - Dependencies
 import numpy as np
@@ -18,25 +18,22 @@ resolution = 35E-12
 std = 70E-12
 
 #%% - Function
-def realistic_data_generator(signal_points, detector_pixel_dimensions=(88,128), hit_point=1.5, ideal=1, debug_image_generator=0):
+def realistic_data_sim(signal_points=1000, detector_pixel_dimensions=(88,128), hit_point=1.5, ideal=1, debug_image_generator=0, shift=1):
     '''
     Inputs:
     signal_points = number of points the hit produces (average 30 for realistic photon), N.B. these may not be at critical angle to 60 is maximum number
-    noise_points = number of noise points
     detector_pixel_dimensions = pixel dimensions of the detector, x,y in a tuple (88x128)
-    time_resoloution = number of discrete points the time dimension is sampled in
-    hit_point = The point on the detector the particle makes impact. May be able to make this 2D later (x,y)
-    ideal = [default=1] XXXXXXXXXXXXXXXXXXXXX
+    hit_point = The point on the detector the particle makes impact. This can be varied to change the shape of the graph.
+    ideal = [default=1] produces either perfect circular photon ejection from impact (1) or random (0)
     debug_image_generator = [default=0] set to 1 to plot the output of this simulator (for debugging purposes)
+    shift = [default=1] produces ribbon patterns that are shifted by half the axis maximum in either the +ve or -ve direction.
     
+    The produced ribbon pattern is then shifted so that the model is not overfit, and flattened to a 2D image to run
+    through the AE.
+
     Returns:
-    x_pixel = list of signal x coordinates 
-    x_noise = list of noise x coordinates  
-    y_pixel = list of signal y coordinates  
-    y_noise = list of noise y coordinates  
-    z_pixel = list of signal z coordinates  
-    z_noise = list of noise z coordinates  
-    num_of_signal_points = True number of signal points in the output (as some photons will have left due to passing the critical angle and exiting the block). Could be used to measure error or for the loss function
+    flattened_data = The produced ribbon pattern is flattened and returned to prepare for the AE.
+    The maximum of this flattened data (in flattened z) is given by t_pix_max 
     '''
     #Width of Quartz Block in meters (x dimension)
     Quartz_width = 0.4
@@ -136,38 +133,38 @@ def realistic_data_generator(signal_points, detector_pixel_dimensions=(88,128), 
     x_pixel = np.array(x_pixel)
     y_pixel = np.array(y_pixel)
     z_pixel = np.array(z_pixel)
-    # print(np.max(x_pixel))
-    # print(np.max(y_pixel))
-    # print(np.max(z_pixel))
 
     # combine them:
     coords = np.column_stack((x_pixel, y_pixel, z_pixel))
 
-    # remove potential z points outside plot:
+    # # remove potential z points outside plot (from 1 to max time):
     coords = np.array([coord for coord in coords if 1 <= coord[2] <= t_pix_max])
 
-    # shift them all:
-    coords[:,0] += np.random.randint(-np.max(x_pixel),np.max(x_pixel))
-    coords[:,1] += np.random.randint(-np.max(y_pixel),np.max(y_pixel))
-    coords[:,2] += np.random.randint(-np.max(t_pix_max),np.max(t_pix_max))
+    # shift them all a maximum of half the max size if shift = 1:
+    if shift == 1:
+        coords[:,0] += np.random.randint(-np.round(np.max(x_pixel)/2),np.round(np.max(x_pixel)/2))
+        coords[:,1] += np.random.randint(-np.round(np.max(y_pixel)/2),np.round(np.max(y_pixel)/2))
+        coords[:,2] += np.random.randint(-np.round(t_pix_max/2),np.round(t_pix_max/2))
 
     # select those that would fall within the bounds of the thing after shifting:
     filtered = np.array([coord for coord in coords if
     (1 <= coord[0] <= detector_pixel_dimensions[0]) and
     (1 <= coord[1] <= detector_pixel_dimensions[1]) and
-    (1 <= coord[2] <= np.max(t_pix_max))])
-    print(filtered[:10])
-    print(np.shape(filtered))
-
+    (1 <= coord[2] <= t_pix_max)])
 
     #Generates the random noise points (tmax//resolution sets the max pixels in the z axis)
     # x_noise = [random.randint(1, detector_pixel_dimensions[0]) for _ in range(noise_points)]
     # y_noise = [random.randint(1, detector_pixel_dimensions[1]) for _ in range(noise_points)]
     # z_noise = [random.randint(0, t_max//resolution) for _ in range(noise_points)]
-
     # flattening:
     flattened_data = np.zeros((detector_pixel_dimensions[0], detector_pixel_dimensions[1]))
 
+    # check for if any remaining data is in range:
+    if np.size(filtered) == 0:
+        print('All data outside range. Empty array returned.')
+        return flattened_data
+    
+    # this continues if there is data
     for point in filtered:
         # TOF is the z axis
         TOF = point[2]-1
@@ -181,8 +178,10 @@ def realistic_data_generator(signal_points, detector_pixel_dimensions=(88,128), 
         
         fig = plt.figure()
         ax = fig.add_subplot(projection='3d')
-
+        
+        # the origional ribbon graph
         ax.scatter(x_pixel, y_pixel, z_pixel)
+        # the shifted ribbon graph
         ax.scatter(filtered[:,0], filtered[:,1], filtered[:,2])
 
         # setting limits:
@@ -205,8 +204,8 @@ def realistic_data_generator(signal_points, detector_pixel_dimensions=(88,128), 
     num_of_signal_points = int(np.shape(x_pixel)[0])
     
     #Outputs to return to main dataset generator script
-    return(x_pixel, y_pixel, z_pixel, num_of_signal_points)
+    return flattened_data
 
 #%% - Testing Driver
 #Uncomment line below for testing, make sure to comment out when done to stop it creating plots when dataset generator is running
-realistic_data_generator(signal_points=1000, detector_pixel_dimensions=(88,128), hit_point=0.8, ideal=1, debug_image_generator=1)
+# realistic_data_sim(signal_points=1000, detector_pixel_dimensions=(88,128), hit_point=0.8, ideal=1, debug_image_generator=1)
