@@ -7,8 +7,8 @@ def simp_simulator(sig_pts = 28, n_pts = 0, x_dim = 28, y_dim = 28, z_dim = 28):
     """
     This generator function generates crosses across the dimensions of the volume. (seeds to be generalised for non-perfect 28x28).
     It returns an array consisting of two joined arrays:
-    1st is the cross with no noise, to calculate loss etc.
-    2nd is the cross with noise, thats to be cleaned.
+    1st, idx [0], is the cross with no noise, to calculate loss etc.
+    2nd, idx [1] is the cross with noise, thats to be cleaned.
     (The noise is random ever time its called)
 
     sig_pts - number of signal points
