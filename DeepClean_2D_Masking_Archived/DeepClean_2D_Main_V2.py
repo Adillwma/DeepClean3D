@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 """
 Created on Sat Oct 8 2022
-DeepClean 2D 2 v0.0.1   #USes masking to retrive TOF rather then directly through network
+DeepMask3D v1.0.1
+#Uses masking to retrive TOF rather then directly through network
 @author: Adill Al-Ashgar
 """
 #%% - Dependencies
@@ -38,10 +39,10 @@ plot_or_save = 0                            #[default = 0] 0 is normal behavior,
 outputfig_title = "Test"                    #Must be string, value is used in the titling of the output plots if plot_or_save is selected above
 telemetry_on = 1                            #[default = 1]
 
-model_save_name = "first_test"
-model_save_path = r"C:\Users\Student\Documents\UNI\Onedrive - University of Bristol\Git Hub Repos\DeepClean Repo\DeepClean-Noise-Suppression-for-LHC-B-Torch-Detector\Models"
-
+model_save_name = "AE2_test"
+model_save_path = "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Git Hub Repos/DeepClean Repo/DeepClean-Noise-Suppression-for-LHC-B-Torch-Detector/Models/"
 modal_save = model_save_path + model_save_name + ".pth"
+
 #%% Dataloading
 # - Data Loader User Inputs
 dataset_title = "Dataset 1_Realistic"

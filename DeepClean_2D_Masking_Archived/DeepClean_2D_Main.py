@@ -479,6 +479,7 @@ for epoch in range(num_epochs):                              #For loop that iter
     number_of_true_signal_points, number_of_recovered_signal_points = plot_ae_outputs_den(encoder, decoder, epoch, outputfig_title,time_dimension, reconstruction_threshold, plot_or_save, n=10, noise_factor=noise_factor)
 
 
+
 ###Loss function plots
 epochs_range = range(1,num_epochs+1)
 plt.plot(epochs_range, history_da['train_loss']) 

@@ -14,7 +14,7 @@ import random
 from Custom_Normalisation_V1 import scale_Ndata as custom_normalisation
 #from Custom_Normalisation_V1 import custom_normalisation
 from DataLoader_Functions_V2 import initialise_data_loader
-from autoencoders.autoencoder_2D_V5 import Encoder, Decoder
+from autoencoders.autoencoder_2D_V3 import Encoder, Decoder
 
 
 
@@ -56,8 +56,8 @@ optim_w_decay = 1e-05                       #User controll to set optimiser weig
 loss_function = torch.nn.MSELoss()          #User controll to set loss function (Hyperparameter)
 latent_space_nodes = 4                      #User controll to set number of nodes in the latent space, the bottleneck layer (Hyperparameter)
 noise_factor = 0                            #User controll to set the noise factor, a multiplier for the magnitude of noise added. 0 means no noise added, 1 is defualt level of noise added, 10 is 10x default level added (Hyperparameter)
-num_epochs = 4                            #User controll to set number of epochs (Hyperparameter)
-batch_size = 10                             #Data Loader, number of Images to pull per batch (add a check to make sure the batch size is smaller than the total number of images in the path selected)
+num_epochs = 12                           #User controll to set number of epochs (Hyperparameter)
+batch_size = 100                             #Data Loader, number of Images to pull per batch (add a check to make sure the batch size is smaller than the total number of images in the path selected)
 reconstruction_threshold = 0.2              #Threshold for 3d reconstruction, values below this confidence level are discounted
 seed = 0                                    #0 is default which gives no seeeding to RNG, if the value is not zero then this is used for the RNG seeding for numpy, random, and torch libraries
 
@@ -71,9 +71,9 @@ plot_or_save = 0                            #[default = 0] 0 is normal behavior,
 outputfig_title = "Test"                    #Must be string, value is used in the titling of the output plots if plot_or_save is selected above
 telemetry_on = 1                            #[default = 1]
 
-#%% Dataloading
+#%% Dataloading``
 # - Data Loader User Inputs
-dataset_title = "Dataset 1_Realistic"
+dataset_title = "Dataset 7_FlatN"
 data_path = "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Yr 3 Project/Circular and Spherical Dummy Datasets/" #"C:/Users/Student/Desktop/fake im data/"  #"/local/path/to/the/images/"
 time_dimension = 100
 

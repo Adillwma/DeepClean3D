@@ -19,10 +19,7 @@ import random
 #from Calc import conv_calculator
 
 def custom_normalisation(input):
-    print("SHAPE",np.shape(input))
     input = (input / (2 * np.max(input))) + 0.5
-    #print(input)
-    # print(' Shapep' + str(np.shape(input)))
     for row in input:
         for i, ipt in enumerate(row):
             if ipt == 0.5:
@@ -33,15 +30,27 @@ def custom_normalisation(input):
 
 
 #%% - User Inputs
+noise_factor = 0.0                                           #User controll to set the noise factor, a multiplier for the magnitude of noise added. 0 means no noise added, 1 is defualt level of noise added, 10 is 10x default level added (Hyperparameter)
+num_epochs = 6                                               #User controll to set number of epochs (Hyperparameter)
+batch_size=10        
+d = 4 #!!!d is passed to the encoder & decoder in the lines below and represents the encoded space dimension. This is the number of layers the linear stages will shrink to? #!!!
+
+
 learning_rate = 0.001  #User controll to set optimiser learning rate(Hyperparameter)
 optim_w_decay = 1e-05  #User controll to set optimiser weight decay (Hyperparameter)
-
+time_dimension = 100
 #%% - Program Settings
-seed = 10              #0 is default which gives no seeeding to RNG, if the value is not zero then this is used for the RNG seeding for numpy, random, and torch libraries
+seed = 0#10              #0 is default which gives no seeeding to RNG, if the value is not zero then this is used for the RNG seeding for numpy, random, and torch libraries
 #path = "C:/Users/Student/Desktop/fake im data/"  #"/path/to/your/images/"
 
-dataset_title = "Simple Cross Test"
-data_path = "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Git Hub Repos/DeepClean Repo/DeepClean-Noise-Suppression-for-LHC-B-Torch-Detector/Datasets/"
+dataset_title = "Dataset 7_FlatN"
+data_path = "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Yr 3 Project/Circular and Spherical Dummy Datasets/"
+#"C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Git Hub Repos/DeepClean Repo/DeepClean-Noise-Suppression-for-LHC-B-Torch-Detector/Datasets/"
+
+model_save_name = "AE28x28"
+model_save_path = "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Git Hub Repos/DeepClean Repo/DeepClean-Noise-Suppression-for-LHC-B-Torch-Detector/Models/"
+modal_save = model_save_path + model_save_name + ".pth"
+
 
 #%% - Classes
 
@@ -285,17 +294,17 @@ def plot_ae_outputs_den(encoder,decoder,n=10,noise_factor=0.3):       #Defines a
     # 3D Reconstruction
     data = rec_img.cpu().squeeze().numpy()
     #print(np.shape(data))
-    def rev_norm(data):
+    def rev_norm(data, time_dimension):
         data_output = []
         for cdx, row in enumerate(data):
             for idx, num in enumerate(row):
                 if num > 0.5:
                     num -= 0.5
-                    num = num * (27*2)
+                    num = num * (time_dimension-1*2)
                     data_output.append([cdx,idx,num])
         return np.array(data_output)
     
-    rec_data = rev_norm(data)
+    rec_data = rev_norm(data, time_dimension)
     if rec_data.ndim != 1:
         # print(np.shape(rec_data))
         fig = plt.figure()
@@ -337,11 +346,11 @@ others that arent so relevant....
 
 def train_loader2d(path):
     sample = (np.load(path))
-    return (sample)
+    return (sample[0])
 
 def test_loader2d(path):
     sample = (np.load(path))             
-    return (sample)
+    return (sample[0])
 
 # the train_epoch_den and test both add noise themselves?? so i will have to call all of the clean versions:
 train_dir = data_path + dataset_title
@@ -385,7 +394,7 @@ train_split=int(m*train_test_split_ratio)
 train_data, val_data = random_split(train_dataset, [train_split, m-train_split])    #random_split(data_to_split, [size of output1, size of output2]) just splits the train_dataset into two parts, 4/5 goes to train_data and 1/5 goes to val_data , validation?
 
 ###Following section for Dataloaders, they just pull a random sample of images from each of the datasets we now have, train_data, valid_data, and test_data. the batch size defines how many are taken from each set, shuffle argument shuffles them each time?? #!!!
-batch_size=10                                                                                #User controll to set batch size for the dataloaders (Hyperparameter)?? #!!!
+                                                                        #User controll to set batch size for the dataloaders (Hyperparameter)?? #!!!
 
 # required to load the data into the endoder/decoder. Combines a dataset and a sampler, and provides an iterable over the given dataset.
 train_loader = torch.utils.data.DataLoader(train_data, batch_size=batch_size)                 #Training data loader, can be run to pull training data as configured
@@ -405,14 +414,13 @@ lr = learning_rate                                     #Just sets the learing ra
 torch.manual_seed(seed)              
 
 ### Initialize the two networks
-d = 4 #!!!d is passed to the encoder & decoder in the lines below and represents the encoded space dimension. This is the number of layers the linear stages will shrink to? #!!!
 
 # model = Autoencoder(encoded_space_dim=encoded_space_dim)
 # use encoder and decoder classes, providing dimensions for your dataset. FC2_INPUT_DIM IS NOT USED!! This would be extremely useful.
 encoder = Encoder(encoded_space_dim=d,fc2_input_dim=128)
 decoder = Decoder(encoded_space_dim=d,fc2_input_dim=128)
-encoder.double()
-decoder.double()
+#encoder.double()   #!!!!!!!!!!!!!!!!!!! PUT BACK IN!!!!!
+#decoder.double()
 params_to_optimize = [{'params': encoder.parameters()} ,{'params': decoder.parameters()}] #Selects what to optimise, 
 
 
@@ -431,8 +439,6 @@ encoder.to(device)   #Moves encoder to selected device, CPU/GPU
 decoder.to(device)   #Moves decoder to selected device, CPU/GPU
 
 #%% - Compute
-noise_factor = 0.4                                           #User controll to set the noise factor, a multiplier for the magnitude of noise added. 0 means no noise added, 1 is defualt level of noise added, 10 is 10x default level added (Hyperparameter)
-num_epochs = 20                                               #User controll to set number of epochs (Hyperparameter)
 
 # this is a dictionary ledger of train val loss history
 history_da={'train_loss':[],'val_loss':[]}                   #Just creates a variable called history_da which contains two lists, 'train_loss' and 'val_loss' which are both empty to start with. value are latter appeneded to the two lists by way of history_da['val_loss'].append(x)
@@ -471,6 +477,7 @@ for epoch in range(num_epochs):                              #For loop that iter
     # finally plot the figure with all images on it.
     plot_ae_outputs_den(encoder,decoder,noise_factor=noise_factor)
 
+torch.save((encoder, decoder), modal_save)
     
     
     
