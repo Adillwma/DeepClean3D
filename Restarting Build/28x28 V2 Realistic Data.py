@@ -2,6 +2,11 @@
 """
 Created on Sat Oct 8 2022
 
+
+????
+dtype (torch.dtype, optional) – the desired data type of returned tensor. 
+Default: if None, uses a global default (see torch.set_default_tensor_type()).!!! possibly set all to double?
+
 """
 #%% - Dependencies
 import numpy as np 
@@ -18,6 +23,10 @@ import time
 #import torch.optim as optim
 #import os
 #from Calc import conv_calculator
+from tqdm import tqdm
+from torchviz import make_dot
+import pandas as pd
+import plotly.express as px
 
 def custom_normalisation(input, time_dimension=100):
     input = (input / (2 * time_dimension)) + 0.5
@@ -29,7 +38,7 @@ def custom_normalisation(input, time_dimension=100):
 
 #%% - User Inputs
 noise_factor = 0.0                                           #User controll to set the noise factor, a multiplier for the magnitude of noise added. 0 means no noise added, 1 is defualt level of noise added, 10 is 10x default level added (Hyperparameter)
-num_epochs = 2                                              #User controll to set number of epochs (Hyperparameter)
+num_epochs = 1                                              #User controll to set number of epochs (Hyperparameter)
 batch_size = 10        
 d = 10                                  #!!!d is passed to the encoder & decoder in the lines below and represents the encoded space dimension. This is the number of layers the linear stages will shrink to? #!!!
 print_every_other = 5
@@ -41,7 +50,7 @@ time_dimension = 100
 seed = 0#10              #0 is default which gives no seeeding to RNG, if the value is not zero then this is used for the RNG seeding for numpy, random, and torch libraries
 #path = "C:/Users/Student/Desktop/fake im data/"  #"/path/to/your/images/"
 
-dataset_title = "Dataset 11_X5K"
+dataset_title = "Dataset 10_X"
 data_path = "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Yr 3 Project/Circular and Spherical Dummy Datasets/"
 #"C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Git Hub Repos/DeepClean Repo/DeepClean-Noise-Suppression-for-LHC-B-Torch-Detector/Datasets/"
 
@@ -417,7 +426,7 @@ torch.manual_seed(seed)
 # use encoder and decoder classes, providing dimensions for your dataset. FC2_INPUT_DIM IS NOT USED!! This would be extremely useful.
 encoder = Encoder(encoded_space_dim=d,fc2_input_dim=128)
 decoder = Decoder(encoded_space_dim=d,fc2_input_dim=128)
-encoder.double()   #!!!!!!!!!!!!!!!!!!! PUT BACK IN!!!!!
+encoder.double()   
 decoder.double()
 params_to_optimize = [{'params': encoder.parameters()} ,{'params': decoder.parameters()}] #Selects what to optimise, 
 
@@ -476,7 +485,7 @@ for epoch in range(num_epochs):                              #For loop that iter
     print('\n EPOCH {}/{} \t train loss {:.3f} \t val loss {:.3f}'.format(epoch + 1, num_epochs,train_loss,val_loss))     #epoch +1 is to make up for the fact the range spans 0 to epoch-1 but we want to numerate things from 1 upwards for sanity
     
     if epoch % print_every_other == 0 and epoch != 0:
-        print("\n ## {}th EPOCH PLOTS ##".format(print_every_other))
+        print("\n ## EPOCH {} PLOTS ##".format(epoch))
         # finally plot the figure with all images on it.
         plot_ae_outputs_den(encoder,decoder,noise_factor=noise_factor)
 
@@ -490,17 +499,17 @@ print(f'\nTotal Training Cycle Took {training_time:.2f} seconds\n')
 # Save and export trained model to user  
 torch.save((encoder, decoder), modal_save)
 
-image = test_loader()
-noised_image = np.array([[1,1,1],[1,1,1],[1,1,1]])
-cleaned_image = np.array([[1,1,1],[1,1,1],[1,1,1]])
+image = test_dataset[0][0].unsqueeze(0)                      
+noised_image = add_noise(image,noise_factor) 
+cleaned_image = image
 encoder_model = encoder
 decoder_model = decoder
 latent_dim = d
 
 from AE_Visulisations import AE_visulisation
-AE_visulisation(image, noised_image, cleaned_image, encoder_model, decoder_model, latent_dim, device, test_loader, test_dataset)
+AE_visulisation(image, noised_image, cleaned_image, encoder_model, decoder_model, latent_dim, device, test_loader, test_dataset, batch_size)
     
-    
+
     
     
     
