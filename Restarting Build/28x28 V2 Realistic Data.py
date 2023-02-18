@@ -31,10 +31,10 @@ def custom_normalisation(input, time_dimension=100):
 
 #%% - User Inputs
 noise_factor = 0.0                                           #User controll to set the noise factor, a multiplier for the magnitude of noise added. 0 means no noise added, 1 is defualt level of noise added, 10 is 10x default level added (Hyperparameter)
-num_epochs = 60                                               #User controll to set number of epochs (Hyperparameter)
+num_epochs = 201                                              #User controll to set number of epochs (Hyperparameter)
 batch_size = 10        
 d = 10 #!!!d is passed to the encoder & decoder in the lines below and represents the encoded space dimension. This is the number of layers the linear stages will shrink to? #!!!
-print_every_other = 10
+print_every_other = 50
 
 learning_rate = 0.001  #User controll to set optimiser learning rate(Hyperparameter)
 optim_w_decay = 1e-05  #User controll to set optimiser weight decay (Hyperparameter)
