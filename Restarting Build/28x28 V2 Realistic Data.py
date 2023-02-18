@@ -12,6 +12,7 @@ from torchvision import transforms
 from torch.utils.data import DataLoader,random_split
 from torch import nn
 import random 
+import time
 #import pandas as pd 
 #import torch.nn.functional as F
 #import torch.optim as optim
@@ -26,15 +27,12 @@ def custom_normalisation(input, time_dimension=100):
                 row[i] = 0
     return input
 
-
-
-
 #%% - User Inputs
 noise_factor = 0.0                                           #User controll to set the noise factor, a multiplier for the magnitude of noise added. 0 means no noise added, 1 is defualt level of noise added, 10 is 10x default level added (Hyperparameter)
-num_epochs = 201                                              #User controll to set number of epochs (Hyperparameter)
+num_epochs = 2                                              #User controll to set number of epochs (Hyperparameter)
 batch_size = 10        
-d = 10 #!!!d is passed to the encoder & decoder in the lines below and represents the encoded space dimension. This is the number of layers the linear stages will shrink to? #!!!
-print_every_other = 50
+d = 10                                  #!!!d is passed to the encoder & decoder in the lines below and represents the encoded space dimension. This is the number of layers the linear stages will shrink to? #!!!
+print_every_other = 5
 
 learning_rate = 0.001  #User controll to set optimiser learning rate(Hyperparameter)
 optim_w_decay = 1e-05  #User controll to set optimiser weight decay (Hyperparameter)
@@ -43,11 +41,11 @@ time_dimension = 100
 seed = 0#10              #0 is default which gives no seeeding to RNG, if the value is not zero then this is used for the RNG seeding for numpy, random, and torch libraries
 #path = "C:/Users/Student/Desktop/fake im data/"  #"/path/to/your/images/"
 
-dataset_title = "Dataset 10_X"
+dataset_title = "Dataset 11_X5K"
 data_path = "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Yr 3 Project/Circular and Spherical Dummy Datasets/"
 #"C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Git Hub Repos/DeepClean Repo/DeepClean-Noise-Suppression-for-LHC-B-Torch-Detector/Datasets/"
 
-model_save_name = "AE28x28"
+model_save_name = "AE_X5K"
 model_save_path = "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Git Hub Repos/DeepClean Repo/DeepClean-Noise-Suppression-for-LHC-B-Torch-Detector/Models/"
 modal_save = model_save_path + model_save_name + ".pth"
 
@@ -443,6 +441,9 @@ decoder.to(device)   #Moves decoder to selected device, CPU/GPU
 # this is a dictionary ledger of train val loss history
 history_da={'train_loss':[],'val_loss':[]}                   #Just creates a variable called history_da which contains two lists, 'train_loss' and 'val_loss' which are both empty to start with. value are latter appeneded to the two lists by way of history_da['val_loss'].append(x)
 
+# Begin the training timer
+start_time = time.time()
+
 # bringing everything together to train model
 for epoch in range(num_epochs):                              #For loop that iterates over the number of epochs where 'epoch' takes the values (0) to (num_epochs - 1)
     print('EPOCH %d/%d' % (epoch + 1, num_epochs))
@@ -479,7 +480,25 @@ for epoch in range(num_epochs):                              #For loop that iter
         # finally plot the figure with all images on it.
         plot_ae_outputs_den(encoder,decoder,noise_factor=noise_factor)
 
+# Stop timing the training process and calculate the total training time
+end_time = time.time()
+training_time = end_time - start_time
+
+# Report the training time
+print(f'\nTotal Training Cycle Took {training_time:.2f} seconds\n')
+
+# Save and export trained model to user  
 torch.save((encoder, decoder), modal_save)
+
+image = test_loader()
+noised_image = np.array([[1,1,1],[1,1,1],[1,1,1]])
+cleaned_image = np.array([[1,1,1],[1,1,1],[1,1,1]])
+encoder_model = encoder
+decoder_model = decoder
+latent_dim = d
+
+from AE_Visulisations import AE_visulisation
+AE_visulisation(image, noised_image, cleaned_image, encoder_model, decoder_model, latent_dim, device, test_loader, test_dataset)
     
     
     
