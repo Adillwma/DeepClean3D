@@ -3,9 +3,9 @@ import matplotlib.pyplot as plt
 import random
 from Real_FixedZ_sim import realistic_data_sim
 
-directory = r'C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\FlatShiftRealistic Train\Data'
+directory = r'C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Realistic Stuff\ShiftedReal Random H_Point\Data'
 
-def realistic_data_gen(dataset_size=10, signal_points=1000, detector_pixel_dimensions=(88,128), hit_point='random', ideal=1, debug_image_generator=0, shift=1):
+def realistic_data_gen(dataset_size=10000, signal_points=1000, detector_pixel_dimensions=(88,128), hit_point='random', ideal=1, debug_image_generator=0, shift=1):
     """
     This is a generator function that produces, and saves to a specified directory, a number of flattened realistic data images.
     This takes the following inputs:
@@ -20,6 +20,9 @@ def realistic_data_gen(dataset_size=10, signal_points=1000, detector_pixel_dimen
     (these can both be done at the same time)
     """
 
+    # define count for number of empty arrays:
+    count = 0
+
     for idx in range(dataset_size):
         
         if hit_point == 'random':
@@ -29,7 +32,13 @@ def realistic_data_gen(dataset_size=10, signal_points=1000, detector_pixel_dimen
 
         flattened_data = realistic_data_sim(signal_points, detector_pixel_dimensions, hit_point, ideal, debug_image_generator, shift)
         
+        # count for how many are empty:
+        if np.sum(flattened_data) == 0:
+            count += 1
+
         np.save(directory + 'Realistic (flat pixel block data) ' + str(idx), flattened_data)
+    
+    print('There are ', count, ' empty arrays in the dataset')
     
     print(str(dataset_size) + ' images saved to: ' + directory)
 
