@@ -18,8 +18,8 @@ import random
 #import os
 #from Calc import conv_calculator
 
-def custom_normalisation(input):
-    input = (input / (2 * np.max(input))) + 0.5
+def custom_normalisation(input, time_dimension=100):
+    input = (input / (2 * time_dimension)) + 0.5
     for row in input:
         for i, ipt in enumerate(row):
             if ipt == 0.5:
@@ -31,10 +31,10 @@ def custom_normalisation(input):
 
 #%% - User Inputs
 noise_factor = 0.0                                           #User controll to set the noise factor, a multiplier for the magnitude of noise added. 0 means no noise added, 1 is defualt level of noise added, 10 is 10x default level added (Hyperparameter)
-num_epochs = 6                                               #User controll to set number of epochs (Hyperparameter)
-batch_size=10        
-d = 4 #!!!d is passed to the encoder & decoder in the lines below and represents the encoded space dimension. This is the number of layers the linear stages will shrink to? #!!!
-
+num_epochs = 60                                               #User controll to set number of epochs (Hyperparameter)
+batch_size = 10        
+d = 6 #!!!d is passed to the encoder & decoder in the lines below and represents the encoded space dimension. This is the number of layers the linear stages will shrink to? #!!!
+print_every_other = 10
 
 learning_rate = 0.001  #User controll to set optimiser learning rate(Hyperparameter)
 optim_w_decay = 1e-05  #User controll to set optimiser weight decay (Hyperparameter)
@@ -43,7 +43,7 @@ time_dimension = 100
 seed = 0#10              #0 is default which gives no seeeding to RNG, if the value is not zero then this is used for the RNG seeding for numpy, random, and torch libraries
 #path = "C:/Users/Student/Desktop/fake im data/"  #"/path/to/your/images/"
 
-dataset_title = "Dataset 7_FlatN"
+dataset_title = "Dataset 10_X"
 data_path = "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Yr 3 Project/Circular and Spherical Dummy Datasets/"
 #"C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Git Hub Repos/DeepClean Repo/DeepClean-Noise-Suppression-for-LHC-B-Torch-Detector/Datasets/"
 
@@ -247,7 +247,7 @@ def plot_ae_outputs_den(encoder,decoder,n=10,noise_factor=0.3):       #Defines a
       #Following section creates the noised image data drom the original clean labels (images)   
       ax = plt.subplot(3,n,i+1)                                       #Creates a number of subplots for the 'Original images??????' i.e the labels. the position of the subplot is i+1 as it falls in the first row
       img = test_dataset[i][0].unsqueeze(0) # [t_idx[i]][0].unsqueeze(0)                    #!!! ????
-      if epoch <= 0:                                                  #CHECKS TO SEE IF THE EPOCH IS LESS THAN ZERO , I ADDED THIS TO GET THE SAME NOISED IMAGES EACH EPOCH THOUGH THIS COULD BE WRONG TO DO?
+      if epoch <= print_every_other:                                                  #CHECKS TO SEE IF THE EPOCH IS LESS THAN ZERO , I ADDED THIS TO GET THE SAME NOISED IMAGES EACH EPOCH THOUGH THIS COULD BE WRONG TO DO?
           global image_noisy                                          #'global' means the variable (image_noisy) set inside a function is globally defined, i.e defined also outside the function
           image_noisy = add_noise(img,noise_factor)                   #Runs the function 'add_noise' (in this code) the function adds noise to a set of data, the function takes two arguments, img is the data to add noise to, noise factor is a multiplier for the noise values added, i.e if multiplier is 0 no noise is added, if it is 1 default amount is added, if it is 10 then the values are raised 10x 
           image_noisy_list.append(image_noisy)                        #Adds the just generated noise image to the list of all the noisy images
@@ -346,11 +346,11 @@ others that arent so relevant....
 
 def train_loader2d(path):
     sample = (np.load(path))
-    return (sample[0])
+    return (sample) #[0]
 
 def test_loader2d(path):
-    sample = (np.load(path))             
-    return (sample[0])
+    sample = (np.load(path))            
+    return (sample) #[0]
 
 # the train_epoch_den and test both add noise themselves?? so i will have to call all of the clean versions:
 train_dir = data_path + dataset_title
@@ -419,8 +419,8 @@ torch.manual_seed(seed)
 # use encoder and decoder classes, providing dimensions for your dataset. FC2_INPUT_DIM IS NOT USED!! This would be extremely useful.
 encoder = Encoder(encoded_space_dim=d,fc2_input_dim=128)
 decoder = Decoder(encoded_space_dim=d,fc2_input_dim=128)
-#encoder.double()   #!!!!!!!!!!!!!!!!!!! PUT BACK IN!!!!!
-#decoder.double()
+encoder.double()   #!!!!!!!!!!!!!!!!!!! PUT BACK IN!!!!!
+decoder.double()
 params_to_optimize = [{'params': encoder.parameters()} ,{'params': decoder.parameters()}] #Selects what to optimise, 
 
 
@@ -474,8 +474,10 @@ for epoch in range(num_epochs):                              #For loop that iter
     history_da['val_loss'].append(val_loss)
     print('\n EPOCH {}/{} \t train loss {:.3f} \t val loss {:.3f}'.format(epoch + 1, num_epochs,train_loss,val_loss))     #epoch +1 is to make up for the fact the range spans 0 to epoch-1 but we want to numerate things from 1 upwards for sanity
     
-    # finally plot the figure with all images on it.
-    plot_ae_outputs_den(encoder,decoder,noise_factor=noise_factor)
+    if epoch % print_every_other == 0 and epoch != 0:
+        print("\n ## {}th EPOCH PLOTS ##".format(print_every_other))
+        # finally plot the figure with all images on it.
+        plot_ae_outputs_den(encoder,decoder,noise_factor=noise_factor)
 
 torch.save((encoder, decoder), modal_save)
     
