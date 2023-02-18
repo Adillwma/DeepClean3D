@@ -208,4 +208,4 @@ def realistic_data_sim(signal_points=1000, detector_pixel_dimensions=(88,128), h
 
 #%% - Testing Driver
 #Uncomment line below for testing, make sure to comment out when done to stop it creating plots when dataset generator is running
-# realistic_data_sim(signal_points=1000, detector_pixel_dimensions=(88,128), hit_point=0.8, ideal=1, debug_image_generator=1)
+realistic_data_sim(signal_points=1000, detector_pixel_dimensions=(88,128), hit_point=0.8, ideal=1, debug_image_generator=1)
