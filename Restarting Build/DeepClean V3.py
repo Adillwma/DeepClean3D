@@ -33,6 +33,10 @@ Default: if None, uses a global default (see torch.set_default_tensor_type()).!!
 ### ~~~~~ sort out val, test and train properly
 
 ### ~~~~~ FC2_INPUT_DIM IS NOT USED!! This would be extremely useful. ?? is this for dynamic layer sizing?
+
+### ~~~~~ Update all layer activation tracking from lists and numpy to torch tensors throughout pipeline for speed
+
+### ~~~~~ Add in automatic Enc/Dec layer size calulations
 """
 #%% - Dependencies
 import numpy as np 
@@ -59,7 +63,7 @@ import json
 #%% - User Inputs
 mode = 0 ### 0=Data_Gathering, 1=Testing, 2=Speed_Test, 3=Debugging
 
-num_epochs = 51                                              #User controll to set number of epochs (Hyperparameter)
+num_epochs = 11                                              #User controll to set number of epochs (Hyperparameter)
 batch_size = 1                                  #User controll to set batch size (Hyperparameter) - #Data Loader, number of Images to pull per batch 
 latent_dim = 10                      #User controll to set number of nodes in the latent space, the bottleneck layer (Hyperparameter)
 
@@ -87,9 +91,9 @@ seed = 0              #0 is default which gives no seeeding to RNG, if the value
 print_every_other = 10
 plot_or_save = 0                            #[default = 0] 0 is normal behavior, If set to 1 then saves all end of epoch printouts to disk, if set to 2 then saves outputs whilst also printing for user
 
-dataset_title = "Dataset 12_X10K"
-outputfig_title = "X10K V1"                    #Must be string, value is used in the titling of the output plots if plot_or_save is selected above
-model_save_name = "X10K V1"
+dataset_title = "Dataset 10_X" #"Dataset 12_X10K"
+model_save_name = "10X_Activation_V1"
+outputfig_title = model_save_name                   #Must be string, value is used in the titling of the output plots if plot_or_save is selected above
 
 #%% - Advanced Visulisation Settings
 
@@ -194,7 +198,23 @@ image_noisy_list = []
 if seed != 0: 
     Determinism_Seeding(seed)
 
-# Create record of all user input settings, to add to output data for testing and keeping track of settings
+# Creates lists for tracking network activation for further analysis
+enc_input = list()
+enc_conv = list()
+enc_flatten = list()
+enc_lin = list()
+
+dec_input = list()
+dec_lin = list()
+dec_flatten = list()
+dec_conv = list()
+dec_out = list()
+
+
+
+
+
+#%% - Create record of all user input settings, to add to output data for testing and keeping track of settings
 settings = {} #"Settings = [ep {}][bs {}][lr {}][od {}][ls {}][nf {}][ds {}][sd {}]".format(num_epochs, batch_size, learning_rate, optim_w_decay, latent_dim, noise_factor, dataset_title, seed)
 settings["Epochs"] = num_epochs
 settings["Batch Size"] = batch_size
@@ -212,10 +232,14 @@ settings["Reconstruction Threshold"] = reconstruction_threshold
 ###Encoder
 class Encoder(nn.Module):
     
-    def __init__(self, encoded_space_dim,fc2_input_dim, encoder_debug):
+    def __init__(self, encoded_space_dim,fc2_input_dim, encoder_debug, record_activity):
         super().__init__()
         
-        self.encoder_debug=encoder_debug
+        # Enables encoder layer shape debug printouts
+        self.encoder_debug = encoder_debug
+
+        # Enables layer activation rcording
+        self.record_activity = record_activity
 
         ###Convolutional Encoder Layers
         
@@ -257,28 +281,44 @@ class Encoder(nn.Module):
         )
         
     def forward(self, x):
+        if self.record_activity:
+            enc_input.append(np.abs(x[0].detach().numpy()))
         if self.encoder_debug == 1:
             print("ENCODER LAYER SIZE DEBUG")
-            print("x in", x.size())
+            print("Encoder in", x.size())
+
         x = self.encoder_cnn(x)                           #Runs convoloutional encoder on x #!!! input data???
+        if self.record_activity:
+            enc_conv.append(np.abs(x[0].detach().numpy()))
         if self.encoder_debug == 1:
-            print("x CNN out", x.size())
+            print("Encoder CNN out", x.size())
+    
         x = self.flatten(x)                               #Runs flatten  on output of conv encoder #!!! what is flatten?
+        if self.record_activity:
+            enc_flatten.append(np.abs(x[0].detach().numpy()))
         if self.encoder_debug == 1:
-            print("x Flatten out", x.size())
+            print("Encoder Flatten out", x.size())
+        
         x = self.encoder_lin(x)                           #Runs linear encoder on flattened output 
+        if self.record_activity:
+            enc_lin.append(np.abs(x[0].detach().numpy()))
         if self.encoder_debug == 1:
-            print("x Lin out", x.size(),"\n")
-            self.encoder_debug = 0         
+            print("Encoder Lin out", x.size(),"\n")
+            self.encoder_debug = 0    #????? what is this line for     
+        
         return x                                          #Return final result
 
 ###Decoder
 class Decoder(nn.Module):
     
-    def __init__(self, encoded_space_dim,fc2_input_dim, decoder_debug):
+    def __init__(self, encoded_space_dim,fc2_input_dim, decoder_debug, record_activity):
         super().__init__()
         
+        # Enables decoder layer shape debug printouts
         self.decoder_debug = decoder_debug
+
+        # Enables layer activation rcording
+        self.record_activity = record_activity
 
         ###Linear Decoder Layers
         self.decoder_lin = nn.Sequential(
@@ -307,20 +347,35 @@ class Decoder(nn.Module):
         )
         
     def forward(self, x):
+        if self.record_activity:
+            dec_input.append(np.abs(x[0].detach().numpy()))
         if self.decoder_debug == 1:            
             print("DECODER LAYER SIZE DEBUG")
-            print("x in", x.size())        
+            print("Decoder in", x.size())   
+
         x = self.decoder_lin(x)       #Runs linear decoder on x #!!! is x input data? where does it come from??
+        if self.record_activity:
+            dec_lin.append(np.abs(x[0].detach().numpy()))
         if self.decoder_debug == 1:
-            print("x Lin out", x.size()) 
+            print("Decoder Lin out", x.size()) 
+        
         x = self.unflatten(x)         #Runs unflatten on output of linear decoder #!!! what is unflatten?
+        if self.record_activity:
+            dec_flatten.append(np.abs(x[0].detach().numpy()))
         if self.decoder_debug == 1:
-            print("x Unflatten out", x.size())  
+            print("Decoder Unflatten out", x.size())  
+        
         x = self.decoder_conv(x)      #Runs convoloutional decoder on output of unflatten
+        if self.record_activity:
+            dec_conv.append(np.abs(x[0].detach().numpy()))
         if self.decoder_debug == 1:
-            print("x CNN out", x.size(),"\n")            
+            print("Decoder CNN out", x.size(),"\n")            
             self.decoder_debug = 0         
+        
         x = torch.sigmoid(x)          #THIS IS IMPORTANT PART OF FINAL OUTPUT!: Runs sigmoid function which turns the output data values to range (0-1)#!!! ????    Also can use tanh fucntion if wanting outputs from -1 to 1
+        if self.record_activity:
+            dec_out.append(np.abs(x[0].detach().numpy()))
+        
         return x                      #Retuns the final output
     
     
@@ -794,6 +849,20 @@ if data_gathering:
     # Save and export trained model to user  
     torch.save((encoder, decoder), modal_save)
 
+    # Save network activity for 
+    enc_input = np.array(enc_input)
+    enc_conv = np.array(enc_conv)
+    enc_flatten = np.array(enc_flatten)
+    enc_lin = np.array(enc_lin)
+
+    dec_input = np.array(dec_input)
+    dec_lin = np.array(dec_lin)
+    dec_flatten = np.array(dec_flatten)
+    dec_conv = np.array(dec_conv)
+    dec_out = np.array(dec_out)
+
+    np.savez((model_save_path + model_save_name + 'activity.npz'), enc_input=enc_input, enc_conv=enc_conv, enc_flatten=enc_flatten, enc_lin=enc_lin, dec_input=dec_input, dec_lin=dec_lin, dec_flatten=dec_flatten, dec_conv=dec_conv, dec_out=dec_out)
+
     # Save .txt Encoder/Decoder Network Summary
     with open(model_save_path + model_save_name + ' - Network Summary.txt', 'w', encoding='utf-8') as output_file:    #utf_8 encoding needed as default (cp1252) unable to write special charecters present in the summary
         output_file.write(("Model ID: " + model_save_name + f"\nTrained on device: {device}"))
@@ -810,7 +879,9 @@ if data_gathering:
         #output_file.write(str(full_data_output))
         for key, value in full_data_output.items():
             output_file.write(f"{key}: {value}\n")
-            
+
+
+
 print("\nProgram Complete - Shutting down...")    
     
     
