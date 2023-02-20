@@ -15,10 +15,11 @@ import uproot
 # parallel reading, and caches (object_cache and array_cache). The defaults attempt to optimize parallel processing, 
 # caching, and batching of remote requests, but better performance can often be obtained by tuning these parameters.
 
-
-
 path = "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/data/tuple_1.root" #Path for root file
+
+output_path = "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/data/root2numpy/" #Path for processed file output
+
 with uproot.open(path) as file:
     for data_item in file:
-        np.save(data_item, path)
+        np.save(data_item, output_path)
 print("Conversion Successfull")
