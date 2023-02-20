@@ -5,24 +5,21 @@ Created: 20:56 18 Feb 2023
 Author: Adill Al-Ashgar
 University of Bristol
 
-To import:
+# To import:
 from Dataset_Integrity_Check_V1 import dataset_integrity_check
 
-To then run, call function with: 
+# To then run, call function with: 
 dataset_integrity_check(folder_path, full_test=True/False, print_output=True/False)
 
 #### Improvements to be made
 # Fix integrity check conditions especially for single test case (maybe make the one random plot have to match at least one other random one?)
 # Simplify code for the single vs full test cases
-# Imporve plots and add descriptions
+# Improve plots and add descriptions
 """
-import torch
 import numpy as np
 import matplotlib.pyplot as plt
-import glob
 import os
 import numpy as np
-from SNR_Test.DragRace import drag_race
 
 ##V2 moved from glob to os scan dir - is now faster
 def dataset_integrity_check(folder_path, full_test=False, print_output=True):
