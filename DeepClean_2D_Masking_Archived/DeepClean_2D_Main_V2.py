@@ -246,7 +246,7 @@ def Determinism_Seeding(seed):
     np.random.seed(seed)
 
 ### Training Function
-def train_epoch_den(encoder, decoder, device, dataloader, loss_fn, optimizer,noise_factor=0.3, print_partial_training_losses=print_partial_training_losses):
+def train_epoch_den(encoder, decoder, device, dataloader, loss_fn, optimizer, noise_factor=0.3, print_partial_training_losses=print_partial_training_losses):
     # Set train mode for both the encoder and the decoder
     encoder.train()
     decoder.train()
@@ -434,8 +434,6 @@ print(f'Selected device: {device}')  #Informs user if running on CPU or GPU - (N
 #Following section moves both the encoder and the decoder to the selected device i.e detected CUDA enabled GPU or to CPU
 encoder.to(device)   #Moves encoder to selected device, CPU/GPU
 decoder.to(device)   #Moves decoder to selected device, CPU/GPU
-
-
 
 print(summary(encoder, input_size=((batch_size,1,128,88))))
 
