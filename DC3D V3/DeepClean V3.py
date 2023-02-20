@@ -62,6 +62,7 @@ import json
 
 #%% - User Inputs
 mode = 0 ### 0=Data_Gathering, 1=Testing, 2=Speed_Test, 3=Debugging
+print_partial_training_losses = False            #[default = True]
 
 num_epochs = 11                                              #User controll to set number of epochs (Hyperparameter)
 batch_size = 1                                  #User controll to set batch size (Hyperparameter) - #Data Loader, number of Images to pull per batch 
@@ -83,8 +84,6 @@ debug_noise_function = False                    #[default = False]
 debug_loader_batch = False     #(Default = False) //INPUT 0 or 1//   #Setting debug loader batch will print to user the images taken in by the dataoader in this current batch and print the corresponding labels
 
 print_network_summary = False     #deault = False
-print_partial_training_losses = False            #[default = True]
-telemetry_on = False                            #[default = False]
 seed = 0              #0 is default which gives no seeeding to RNG, if the value is not zero then this is used for the RNG seeding for numpy, random, and torch libraries
 
 #%% - Plotting Control Settings
@@ -107,6 +106,8 @@ plot_TSNE_dim = False
 plot_train_loss = False
 plot_validation_loss = False
 
+telemetry_on = False          #[default = False] # Update name to pixel_cuttoff_telemetry    #Very slow, reduces net performance by XXXXXX%
+record_activity = True #False  ##Be carefull, the activity file recorded is ~ 2.5Gb  #Very slow, reduces net performance by XXXXXX%
 
 #%% - Program Settings
 speed_test = False      # [speed_test=False]Defualt    true sets number of epocs to print to larger than number of epochs to run so no plotting time wasted etc
@@ -688,8 +689,8 @@ lr = learning_rate                                     #Just sets the learing ra
 ### Initialize the two networks
 
 # use encoder and decoder classes, providing dimensions for your dataset. FC2_INPUT_DIM IS NOT USED!! This would be extremely useful.
-encoder = Encoder(encoded_space_dim=latent_dim,fc2_input_dim=128, encoder_debug=print_encoder_debug)
-decoder = Decoder(encoded_space_dim=latent_dim,fc2_input_dim=128, decoder_debug=print_decoder_debug)
+encoder = Encoder(encoded_space_dim=latent_dim,fc2_input_dim=128, encoder_debug=print_encoder_debug, record_activity=record_activity)
+decoder = Decoder(encoded_space_dim=latent_dim,fc2_input_dim=128, decoder_debug=print_decoder_debug, record_activity=record_activity)
 encoder.double()   
 decoder.double()
 params_to_optimize = [{'params': encoder.parameters()} ,{'params': decoder.parameters()}] #Selects what to optimise, 
@@ -728,6 +729,8 @@ if print_network_summary:
 # this is a dictionary ledger of train val loss history
 history_da={'train_loss':[],'val_loss':[]}                   #Just creates a variable called history_da which contains two lists, 'train_loss' and 'val_loss' which are both empty to start with. value are latter appeneded to the two lists by way of history_da['val_loss'].append(x)
 
+print("\nTraining Initiated")
+
 # Begin the training timer
 start_time = time.time()
 
@@ -739,7 +742,6 @@ else:                              # No print partial train losses per batch, in
 
 
 # bringing everything together to train model
-print("\nTraining Initiated")
 for epoch in loop_range:                              #For loop that iterates over the number of epochs where 'epoch' takes the values (0) to (num_epochs - 1)
     if print_partial_training_losses:
         print('\nStart of EPOCH %d/%d' % (epoch + 1, num_epochs))
@@ -846,10 +848,11 @@ if plot_higher_dim:
     AE_visulisation(encoder, decoder, latent_dim, device, test_loader, test_dataset, batch_size)
     
 if data_gathering:
+
     # Save and export trained model to user  
     torch.save((encoder, decoder), modal_save)
 
-    # Save network activity for 
+    # Save network activity for analysis
     enc_input = np.array(enc_input)
     enc_conv = np.array(enc_conv)
     enc_flatten = np.array(enc_flatten)
