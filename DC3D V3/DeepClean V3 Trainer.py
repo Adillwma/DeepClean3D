@@ -59,6 +59,8 @@ import pandas as pd
 import plotly.express as px
 import json
 
+#from DC3D_Autoencoder_V1 import Encoder, Decoder
+from Dataset_Integrity_Check_V1 import dataset_integrity_check
 
 #%% - User Inputs
 mode = 0 ### 0=Data_Gathering, 1=Testing, 2=Speed_Test, 3=Debugging
@@ -83,6 +85,8 @@ print_decoder_debug = False                     #[default = False]
 debug_noise_function = False                    #[default = False]
 debug_loader_batch = False     #(Default = False) //INPUT 0 or 1//   #Setting debug loader batch will print to user the images taken in by the dataoader in this current batch and print the corresponding labels
 
+
+full_dataset_integrity_check = False   #V slow
 print_network_summary = False     #deault = False
 seed = 0              #0 is default which gives no seeeding to RNG, if the value is not zero then this is used for the RNG seeding for numpy, random, and torch libraries
 
@@ -595,28 +599,13 @@ def plot_ae_outputs_den(encoder, decoder, epoch, outputfig_title, time_dimension
 
     
 
-#%% - Data Importer
-data_dir = 'dataset'
-
-# # mnist data is 28x28, and black and white (so 1x28x28)
-# train_dataset = torchvision.datasets.MNIST(data_dir, train=True, download=True)
-# # train= true
-# # train argument selects folder. download argument decides whether to download from internet.
-# test_dataset  = torchvision.datasets.MNIST(data_dir, train=False, download=True)
-# print(type(test_dataset)) # a dataset
-# print(type(test_dataset[0][0])) # PIL image
-
-# in this, were now going to try to work the data generator for a super simple 28x28 cross. This will be
-# generated in the 'supersimp' then added here through the data_directory function:
-
+#%% - Data Loader
 """
 The DatasetFolder is a generic DATALOADER. It takes arguments:
 root - Root directory path
 loader - a function to load a sample given its path
 others that arent so relevant....
 """
-# root to files
-# data_directory = r'C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Simple Cross\\'
 
 def train_loader2d(path):
     sample = (np.load(path))
@@ -633,11 +622,14 @@ def val_loader2d(path):
 # the train_epoch_den and test both add noise themselves?? so i will have to call all of the clean versions:
 train_dir = data_path + dataset_title
 
+# N.B. We will use the train loader for this as it takes the clean data, and thats what we want as theres a built in nois adder here already:
+test_dir = data_path + dataset_title   #??????????????????????????????????????????
+
+# Dataset Integrity Check    #???????? aslso perform on train data dir if ther is one?????? 
+dataset_integrity_check(train_dir, full_test=full_dataset_integrity_check, print_output=True)
+
 #train_dir = r'C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\New big simp\Rectangle\\'
 train_dataset = torchvision.datasets.DatasetFolder(train_dir, train_loader2d, extensions='.npy')
-
-# N.B. We will use the train loader for this as it takes the clean data, and thats what we want as theres a built in nois adder here already:
-test_dir = data_path + dataset_title
 
 #test_dir = r'C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\New big simp test\Rectangle\\'
 test_dataset = torchvision.datasets.DatasetFolder(test_dir, train_loader2d, extensions='.npy')
