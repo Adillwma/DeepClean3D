@@ -7,9 +7,9 @@
 """
 import torch
 
-model = torch.load("Models/10X_Activation_V1.pth")
+encoder, decoder = torch.load("Models/10X_Activation_V1.pth")
 
-print(model)
+print(encoder, decoder)
 
 
 
