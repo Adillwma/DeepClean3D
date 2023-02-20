@@ -2,10 +2,16 @@
 """
 Created on Sat Oct 8 2022
 
-
-????
+Possible improvements:
+### ~~~~~ Possibly set all to double?
 dtype (torch.dtype, optional) – the desired data type of returned tensor. 
-Default: if None, uses a global default (see torch.set_default_tensor_type()).!!! possibly set all to double?
+Default: if None, uses a global default (see torch.set_default_tensor_type()).!!! 
+
+### ~~~~~ Possibly set all to double?
+Add in all old visulisations
+
+
+
 
 """
 #%% - Dependencies
@@ -37,11 +43,11 @@ def custom_normalisation(input, time_dimension=100):
     return input
 
 #%% - User Inputs
-noise_factor = 0.0                                           #User controll to set the noise factor, a multiplier for the magnitude of noise added. 0 means no noise added, 1 is defualt level of noise added, 10 is 10x default level added (Hyperparameter)
-num_epochs = 1                                              #User controll to set number of epochs (Hyperparameter)
+noise_factor = 0.3                                           #User controll to set the noise factor, a multiplier for the magnitude of noise added. 0 means no noise added, 1 is defualt level of noise added, 10 is 10x default level added (Hyperparameter)
+num_epochs = 51                                              #User controll to set number of epochs (Hyperparameter)
 batch_size = 10        
 d = 10                                  #!!!d is passed to the encoder & decoder in the lines below and represents the encoded space dimension. This is the number of layers the linear stages will shrink to? #!!!
-print_every_other = 5
+print_every_other = 10
 
 learning_rate = 0.001  #User controll to set optimiser learning rate(Hyperparameter)
 optim_w_decay = 1e-05  #User controll to set optimiser weight decay (Hyperparameter)
@@ -50,11 +56,11 @@ time_dimension = 100
 seed = 0#10              #0 is default which gives no seeeding to RNG, if the value is not zero then this is used for the RNG seeding for numpy, random, and torch libraries
 #path = "C:/Users/Student/Desktop/fake im data/"  #"/path/to/your/images/"
 
-dataset_title = "Dataset 10_X"
+dataset_title = "Dataset 11_X5K"
 data_path = "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Yr 3 Project/Circular and Spherical Dummy Datasets/"
 #"C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Git Hub Repos/DeepClean Repo/DeepClean-Noise-Suppression-for-LHC-B-Torch-Detector/Datasets/"
 
-model_save_name = "AE_X5K"
+model_save_name = "AE_X5K2"
 model_save_path = "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Git Hub Repos/DeepClean Repo/DeepClean-Noise-Suppression-for-LHC-B-Torch-Detector/Models/"
 modal_save = model_save_path + model_save_name + ".pth"
 
@@ -488,13 +494,20 @@ for epoch in range(num_epochs):                              #For loop that iter
         print("\n ## EPOCH {} PLOTS ##".format(epoch))
         # finally plot the figure with all images on it.
         plot_ae_outputs_den(encoder,decoder,noise_factor=noise_factor)
+        
+        # Allow user to exit training loop
+        user_input = input("Press q to quit, or any other key to continue: ")
+        if user_input == 'q':
+            break
 
+
+#%% - After Training
 # Stop timing the training process and calculate the total training time
 end_time = time.time()
 training_time = end_time - start_time
 
 # Report the training time
-print(f'\nTotal Training Cycle Took {training_time:.2f} seconds\n')
+print(f'\nTotal Training Cycle Took {training_time:.2f} seconds\n(This timer includes time takes to close plots and respond to inputs, for testing time, set num_epochs_to print to larger than the number of epochs to run for so that no plots are created)')
 
 # Save and export trained model to user  
 torch.save((encoder, decoder), modal_save)
