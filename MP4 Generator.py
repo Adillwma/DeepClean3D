@@ -1,4 +1,11 @@
-#Author: Adill Al-Ashgar
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Feb 20 2022
+PNG2MP4 V1.0.0
+Author: Adill Al-Ashgar
+University of Bristol
+"""
+#%% - Dependancies
 import os
 import cv2
 from tqdm import tqdm
@@ -7,6 +14,7 @@ from pathlib import Path
 import numpy as np 
 from PIL import Image
 
+#%% - Function
 def create_video_from_pngs(folder_path, frame_rate, output_path):
     # Get a list of all .png files in the directory
     png_files = sorted([os.path.join(folder_path, f) for f in os.listdir(folder_path) if f.endswith('.png')])
@@ -51,17 +59,15 @@ def create_video_from_pngs(folder_path, frame_rate, output_path):
     else:
         print('Video successfully created at', output_path)
 
-#%% - Driver
-path = "Frames\AE"                       # ('/path/to/raw/pngs')
-path2 = "Frames\CNN"                       # ('/path/to/raw/pngs')
-frame_rate = 30                          # Frames per second
-output_path = "MP4_Renders"             # ('/path/to/save/MP4')
+#%% - Test Driver
+frame_rate = 30                           # Frames per second to render the animation in (how many PNG's to display per second)
+
+PNG_path = "Frames\AE"                    # ('/path/to/raw/pngs')
+output_path = "MP4_Renders"               # ('/path/to/save/MP4')
 output_filename = "\AE"                   # Filename for output video
-output_filename2 = "\CNN"                   # Filename for output video
 
-#%% - Compute
+# Construct the full output path 
 output = output_path + output_filename + ".MP4"
-output2 = output_path + output_filename2 + ".MP4"
-create_video_from_pngs(path, frame_rate, output) # Creates the MP4 video
 
-create_video_from_pngs(path2, frame_rate, output2)
+# Creates the MP4 video
+create_video_from_pngs(PNG_path, frame_rate, output) 
