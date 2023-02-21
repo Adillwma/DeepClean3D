@@ -14,8 +14,21 @@ University of Bristol
 """
 
 #%% - Dependancies
+import numpy as np
 import torch
 from torch import nn
+
+# Creates lists for tracking network activation for further analysis
+enc_input = list()
+enc_conv = list()
+enc_flatten = list()
+enc_lin = list()
+
+dec_input = list()
+dec_lin = list()
+dec_flatten = list()
+dec_conv = list()
+dec_out = list()
 
 #%% - Encoder
 class Encoder(nn.Module):

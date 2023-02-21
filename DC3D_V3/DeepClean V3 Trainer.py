@@ -7,11 +7,14 @@ DeepClean v0.3.1
 # University of Bristol
 
 Possible improvements:
+### ~~~~~ MAke sure that autoecoder Encoder and Decoder are saved along with model in the models folder 
+
 ### ~~~~~ Possibly set all to double?
 dtype (torch.dtype, optional) – the desired data type of returned tensor. 
 Default: if None, uses a global default (see torch.set_default_tensor_type()).!!! 
 
 ### ~~~~~ Update the model and data paths to folders inside the root dir so that they do not need be defined, and so that people can doanload the git repo and just press run without setting new paths etc 
+
 ### ~~~~~ fix epoch numbering printouts? they seem to report 1 epoch greater than they should
 
 ### ~~~~~ clear up visulisations
@@ -707,7 +710,7 @@ enc_input_size = (batch_size, 1, 128, 88)
 enc_input_tensor = torch.randn(enc_input_size).double()  # Cast input tensor to double precision
 
 # Join the encoder and decoder models
-full_network_model = torch.nn.Sequential(encoder, decoder)
+full_network_model = torch.nn.Sequential(encoder, decoder)   #should this be done with no_grad?
 
 # Generate network summary and then convert to string
 model_stats = summary(full_network_model, input_data=enc_input_tensor, device=device, verbose=0)
@@ -843,6 +846,9 @@ if data_gathering:
 
     # Save and export trained model to user  
     torch.save((encoder, decoder), modal_save)
+
+    # Save Encoder and Decoder Objects due to model save issues !!!!!!!!!!!!!!
+    #DC3D_Autoencoder_V1 save this file along with the model !!!!!!!! work out how to programatically sAVE IT FROM THE IMPORT LINE
 
     # Save network activity for analysis
     enc_input = np.array(enc_input)
