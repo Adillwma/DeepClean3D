@@ -13,6 +13,10 @@ does not save the model class itself. Rather, it saves a path to the file contai
 is used during load time. Because of this, your code can break in various ways when used in other 
 projects or after refactors.
 
+
+### Possible Improvements:
+# {model.__repr__().replace('    ','').replace('\n','')} Needs fixing!!!
+
 """
 
 import torch
@@ -39,7 +43,7 @@ def save_pytorch_model(model, input_shape, output_shape, filename):
         class {model.__class__.__name__}(nn.Module):
             def __init__(self):
                 super({model.__class__.__name__}, self).__init__()
-                {model.__repr__().replace('    ','').replace('\n','')}     # Cant fix it 
+                {model.__repr__().replace('    ','').replace('\n','')}     # Broken
             
             def forward(self, input_tensor):
                 return self.__call__(input_tensor)
