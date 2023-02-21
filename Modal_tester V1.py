@@ -6,7 +6,7 @@
 # that the "Encoder" attribute is included.
 """
 import torch
-
+from DC3D_V3.DC3D_Autoencoder_V1 import Encoder, Decoder
 encoder, decoder = torch.load("Models/10X_Activation_V1.pth")
 
 print(encoder, decoder)
