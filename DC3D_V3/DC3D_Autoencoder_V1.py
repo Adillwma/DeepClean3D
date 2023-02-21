@@ -2,7 +2,7 @@
 """
 DC3D Autoencoder V1   
 Created on Mon Feb 20 2022
-author: Adill Al-Ashgar
+authors: Adill Al-Ashgar & Max Carter
 University of Bristol   
 
 # Convoloution + Linear Autoencoder

@@ -1,4 +1,10 @@
-
+# -*- coding: utf-8 -*-
+"""
+AE_Visulisations V1.0.0
+Created: 20:56 13 Feb 2023
+Author: Adill Al-Ashgar
+University of Bristol
+"""
 #image = 
 #noised_image = 
 #cleaned_image = 
