@@ -6,3 +6,4 @@ SNR_Test/
 Datasets/
 Models/
 *.npz
+*.mp4
