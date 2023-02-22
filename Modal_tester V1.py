@@ -14,7 +14,6 @@ that the "Encoder" attribute is included.
 ### Posible improvements
 # 
 """
-
 #%% - Dependancies
 import torch
 
