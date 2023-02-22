@@ -110,6 +110,8 @@ def realistic_data_generator(signal_points, noise_points, detector_pixel_dimensi
             # goes down and back up
             time.append(((2 * quartz_length - hit_point) / abs(i[1])) / particle_speed)
 
+    
+    # this is list of x at idx [0][0], y at [0][1] and z (time) at [1]
     final = list(zip(angle_filter, time))     # This is list of ((x,y), time) - dont ask me why, its annoying
 
     # create bins
@@ -118,6 +120,7 @@ def realistic_data_generator(signal_points, noise_points, detector_pixel_dimensi
 
     y_idxs = np.digitize([i[0][1] for i in final],np.linspace(-1, 1, detector_pixel_dimensions[1]))
 
+    # z needs std dev in time added. This is added after the pattern is set:
     z_idxs = [np.random.normal(i[1], std)//resolution for i in final] # i[1] add std to time then give z pixel with //resolution
     z_orig = [i[1]//resolution for i in final]          # This is here for z_pixel
 
