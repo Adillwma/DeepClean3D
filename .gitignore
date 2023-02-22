@@ -5,3 +5,4 @@ Execution Speed Tester/
 SNR_Test/
 Datasets/
 Models/
+*.npz
