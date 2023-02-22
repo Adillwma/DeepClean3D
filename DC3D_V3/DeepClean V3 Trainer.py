@@ -2,7 +2,6 @@
 """
 Created on Sat Feb 1 2022
 DeepClean v0.3.1
-
 @authors: Adill Al-Ashgar & Max Carter
 # University of Bristol
 
