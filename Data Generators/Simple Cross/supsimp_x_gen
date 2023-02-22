@@ -14,7 +14,7 @@ directory = r"C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\P
 
 # ----------------------------------------------------------------------------------
 # you can change all the arguments in the function below:
-def simp_generator(dataset_size = 10000, sig_pts = 200, x_dim = 128, y_dim = 88, z_dim = 28, shift=1):
+def simp_generator(dataset_size = 10000, sig_pts = 200, x_dim = 128, y_dim = 88, z_dim = 100, shift=1):
     """
     This function simply calls the simulator function, and creates and saves the number of simulations with the defined imputs,
     to the directory specified above.

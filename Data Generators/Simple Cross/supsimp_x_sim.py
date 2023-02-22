@@ -23,8 +23,10 @@ def simp_simulator(sig_pts = 28, x_dim = 28, y_dim = 28, z_dim = 28, shift=1):
     y_min = 0
     y_max = y_dim - 1
 
-    z_min = 0
-    z_max = z_dim - 1
+    # since 0 is how we encode non-hits, and the z axis is the intensity of the hits,
+    # the minimum is 1 and the maximum is the maximum.
+    z_min = 1
+    z_max = z_dim
 
     # coords of min/max of line 1
     # x1 = (x_min, y_min, z_min)
@@ -82,9 +84,9 @@ def simp_simulator(sig_pts = 28, x_dim = 28, y_dim = 28, z_dim = 28, shift=1):
 
         # select those that would fall within the bounds of the array after shifting:
         hits_comb = np.array([hit for hit in hits_comb if
-        (1 <= hit[0] <= x_max) and
-        (1 <= hit[1] <= y_max) and
-        (1 <= hit[2] <= z_max)])
+        (x_min <= hit[0] <= x_max) and
+        (y_min <= hit[1] <= y_max) and
+        (z_min <= hit[2] <= z_max)])
 
     #-------------------------------------------------------------------
 
@@ -110,7 +112,7 @@ def simp_simulator(sig_pts = 28, x_dim = 28, y_dim = 28, z_dim = 28, shift=1):
 
     for point in hits_comb:
         # TOF is the z axis
-        TOF = point[2]
+        TOF = int(point[2])
         # index is the x and y axis
         flattened_data[int(point[0])][int(point[1])] = TOF
     
