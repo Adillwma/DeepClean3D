@@ -1,4 +1,12 @@
-# File not found error already returns well defined error message so not including reporting for it
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Feb 22 2022
+Time_Scraper V1.0.0
+Author: Adill Al-Ashgar
+University of Bristol
+
+# File not found error already returns well defined error message so not including reporting for it?
+"""
 
 # Scrape Training Time
 def get_training_time(file_path):
