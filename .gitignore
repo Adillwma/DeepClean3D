@@ -2,8 +2,9 @@ __pycache__
 Output_Graphics/
 Results Presentations/
 Execution Speed Tester/
-SNR_Test/
+Testing/
 Datasets/
 Models/
 *.npz
 *.mp4
+10X_Activation_V1 - Network Summary.txt
