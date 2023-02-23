@@ -60,6 +60,7 @@ from torchviz import make_dot
 import pandas as pd
 import plotly.express as px
 import json
+import os
 
 #from DC3D_Autoencoder_V1 import Encoder, Decoder
 from Dataset_Integrity_Check_V1 import dataset_integrity_check
@@ -68,8 +69,8 @@ from Dataset_Integrity_Check_V1 import dataset_integrity_check
 mode = 0 ### 0=Data_Gathering, 1=Testing, 2=Speed_Test, 3=Debugging
 print_partial_training_losses = False            #[default = True]
 
-num_epochs = 11                                              #User controll to set number of epochs (Hyperparameter)
-batch_size = 1                                  #User controll to set batch size (Hyperparameter) - #Data Loader, number of Images to pull per batch 
+num_epochs = 51                                             #User controll to set number of epochs (Hyperparameter)
+batch_size = 10                                  #User controll to set batch size (Hyperparameter) - #Data Loader, number of Images to pull per batch 
 latent_dim = 10                      #User controll to set number of nodes in the latent space, the bottleneck layer (Hyperparameter)
 
 learning_rate = 0.001  #User controll to set optimiser learning rate(Hyperparameter)
@@ -96,18 +97,18 @@ seed = 0              #0 is default which gives no seeeding to RNG, if the value
 print_every_other = 10
 plot_or_save = 0                            #[default = 0] 0 is normal behavior, If set to 1 then saves all end of epoch printouts to disk, if set to 2 then saves outputs whilst also printing for user
 
-dataset_title = "Dataset 10_X" #"Dataset 12_X10K"
-model_save_name = "10X_Activation_V1"
+dataset_title = "Dataset 15_X_10K_Blanks" #"Dataset 12_X10K"
+model_save_name = "7KX_3Kblanks_V1"
 outputfig_title = model_save_name                   #Must be string, value is used in the titling of the output plots if plot_or_save is selected above
 
 #%% - Advanced Visulisation Settings
 
 plot_pixel_difference = True #False
-plot_im_stats = False
+plot_im_stats = False  #?????????????????????????????????
 
-plot_latent_information = False
-plot_higher_dim = False
-plot_TSNE_dim = False
+plot_latent_information = True
+plot_higher_dim = True
+plot_TSNE_dim = True
 
 plot_train_loss = False
 plot_validation_loss = False
@@ -188,8 +189,14 @@ class AddGaussianNoise(object):                   #Class generates noise based o
         return self.__class__.__name__ + '(mean={0}, std={1})'.format(self.mean, self.std)
 
 #%% - Parameters Initialisation
+
+# Create output directory if it doesn't exist
+os.makedirs(model_save_path + model_save_name + " - Training Results", exist_ok=True)
+
+
+
 # Joins up the parts of the model save path
-modal_save = model_save_path + model_save_name + ".pth"
+modal_save = model_save_path + model_save_name + "/" + model_save_name + ".pth"
 
 # Sets program into speed test mode
 if speed_test:
@@ -861,10 +868,10 @@ if data_gathering:
     dec_conv = np.array(dec_conv)
     dec_out = np.array(dec_out)
 
-    np.savez((model_save_path + model_save_name + 'activity.npz'), enc_input=enc_input, enc_conv=enc_conv, enc_flatten=enc_flatten, enc_lin=enc_lin, dec_input=dec_input, dec_lin=dec_lin, dec_flatten=dec_flatten, dec_conv=dec_conv, dec_out=dec_out)
+    np.savez((model_save_path + model_save_name + "/" + model_save_name + 'activity.npz'), enc_input=enc_input, enc_conv=enc_conv, enc_flatten=enc_flatten, enc_lin=enc_lin, dec_input=dec_input, dec_lin=dec_lin, dec_flatten=dec_flatten, dec_conv=dec_conv, dec_out=dec_out)
 
     # Save .txt Encoder/Decoder Network Summary
-    with open(model_save_path + model_save_name + ' - Network Summary.txt', 'w', encoding='utf-8') as output_file:    #utf_8 encoding needed as default (cp1252) unable to write special charecters present in the summary
+    with open(model_save_path + model_save_name + "/" + model_save_name + ' - Network Summary.txt', 'w', encoding='utf-8') as output_file:    #utf_8 encoding needed as default (cp1252) unable to write special charecters present in the summary
         output_file.write(("Model ID: " + model_save_name + f"\nTrained on device: {device}"))
         output_file.write((f"\nMax Epoch Reached: {max_epoch_reached}\n"))
         timer_warning = "(Not accurate - not recorded in speed_test mode)\n"
