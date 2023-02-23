@@ -6,11 +6,12 @@ Author: Adill Al-Ashgar
 University of Bristol
 """
 #%% - User Inputs
-n = 127
-m = 87
-number = 4
-output_dir = "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Yr 3 Project/Circular and Spherical Dummy Datasets/Dataset 12_X_10K_M - Copy/Data/"
-
+n = 128
+m = 88
+number = 3000
+output_dir = "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Yr 3 Project/Circular and Spherical Dummy Datasets/Dataset 15_X_10K_Blanks/Data/"
+# Ada: "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Yr 3 Project/Circular and Spherical Dummy Datasets/Dataset 15_X_10K_Blanks/Data/"
+# Max:
 
 
 #%% - Dependencies
