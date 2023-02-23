@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def simp_simulator(sig_pts = 28, x_dim = 28, y_dim = 28, z_dim = 28, shift=1):
+def simp_simulator(sig_pts = 28, x_dim = 28, y_dim = 28, z_dim = 28, shift=1, rotate = 1):
     """
     This generator function generates crosses across the dimensions of the volume. (seeds to be generalised for non-perfect 28x28).
     It returns a numpy array of only signal points
@@ -72,6 +72,17 @@ def simp_simulator(sig_pts = 28, x_dim = 28, y_dim = 28, z_dim = 28, shift=1):
 
     # make final combined np array
     hits_comb = np.concatenate((L1_comb, L2_comb))
+
+    # --------------------------------------------------------------------
+    # adding rotation:
+
+    if rotate == 1:
+        # rotation in x
+        angle = np.random.randint(0, 180)
+
+        # applying rotation matrix to cross:
+        
+
 
     #-------------------------------------------------------------------
     # adding shift:
