@@ -69,7 +69,7 @@ from Dataset_Integrity_Check_V1 import dataset_integrity_check
 mode = 0 ### 0=Data_Gathering, 1=Testing, 2=Speed_Test, 3=Debugging
 print_partial_training_losses = False            #[default = True]
 
-num_epochs = 51                                             #User controll to set number of epochs (Hyperparameter)
+num_epochs = 3                                            #User controll to set number of epochs (Hyperparameter)
 batch_size = 10                                  #User controll to set batch size (Hyperparameter) - #Data Loader, number of Images to pull per batch 
 latent_dim = 10                      #User controll to set number of nodes in the latent space, the bottleneck layer (Hyperparameter)
 
@@ -94,12 +94,12 @@ print_network_summary = False     #deault = False
 seed = 0              #0 is default which gives no seeeding to RNG, if the value is not zero then this is used for the RNG seeding for numpy, random, and torch libraries
 
 #%% - Plotting Control Settings
-print_every_other = 10
+print_every_other = 1
 plot_or_save = 0                            #[default = 0] 0 is normal behavior, If set to 1 then saves all end of epoch printouts to disk, if set to 2 then saves outputs whilst also printing for user
 
 dataset_title = "Dataset 10_X" #"Dataset 12_X10K"
 model_save_name = "10_X"
-outputfig_title = model_save_name                   #Must be string, value is used in the titling of the output plots if plot_or_save is selected above
+#outputfig_title = model_save_name                   #Must be string, value is used in the titling of the output plots if plot_or_save is selected above
 
 #%% - Advanced Visulisation Settings
 
@@ -125,7 +125,7 @@ data_path = "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Yr 
 #ADILL - "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Yr 3 Project/Circular and Spherical Dummy Datasets/"
 #MAX - 
 
-model_save_path = "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Git Hub Repos/DeepClean Repo/DeepClean-Noise-Suppression-for-LHC-B-Torch-Detector/Models/"
+results_output_path = "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Git Hub Repos/DeepClean Repo/DeepClean-Noise-Suppression-for-LHC-B-Torch-Detector/Models/"
 #ADILL - "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Git Hub Repos/DeepClean Repo/DeepClean-Noise-Suppression-for-LHC-B-Torch-Detector/Models/"
 #MAX - 
 
@@ -150,7 +150,7 @@ def belief_telemetry(data, reconstruction_threshold, epoch, settings, plot_or_sa
     if plot_or_save == 0:
         plt.show()
     else:
-        Out_Label = 'Output_Graphics/{}, Confidence Histogram, Epoch {}, {} .png'.format(outputfig_title, epoch, settings) #!!!
+        Out_Label = dir + 'Output_Graphics/{}, Confidence Histogram, Epoch {}, {} .png'.format(model_save_name, epoch, settings) #!!!
         plt.savefig(Out_Label, format='png')        
         plt.close()
 
@@ -191,19 +191,25 @@ class AddGaussianNoise(object):                   #Class generates noise based o
 #%% - Parameters Initialisation
 
 # Create output directory if it doesn't exist
-os.makedirs(model_save_path + model_save_name + " - Training Results", exist_ok=True)
-
-
+dir = results_output_path + model_save_name 
+os.makedirs(dir + " - Training Results", exist_ok=True)
 
 # Joins up the parts of the model save path
-modal_save = model_save_path + model_save_name + "/" + model_save_name + ".pth"
+full_model_path = dir + model_save_name + "- Model.pth"
+full_activity_filepath = dir + model_save_name + '- Activity.npz'
+full_netsum_filepath = dir + model_save_name + ' - Network Summary.txt'
+
+
+
+
+
 
 # Sets program into speed test mode
 if speed_test:
-    print_every_other = num_epochs + 5
+    print_every_other = num_epochs + 5   # Makes sure print is larger than total num of epochs to avoid delays in execution for testing
 
 # Initialises pixel belief telemetry
-telemetry = [[0,0.5,0.5]]  #Initalises the telemetry memory, starting values are 0, 0.5, 0.5 which corrspond to epoch(0), above_threshold(0.5), below_threshold(0.5)
+telemetry = [[0,0.5,0.5]]                # Initalises the telemetry memory, starting values are 0, 0.5, 0.5 which corrspond to epoch(0), above_threshold(0.5), below_threshold(0.5)
 
 # Initialises list for noised image storage
 image_noisy_list = []
@@ -474,7 +480,7 @@ def test_epoch_den(encoder, decoder, device, dataloader, loss_fn,noise_factor=0.
     return float(val_loss.data)
 
 ###Plotting Function
-def plot_ae_outputs_den(encoder, decoder, epoch, outputfig_title, time_dimension, reconstruction_threshold, n=10, noise_factor=0.3):       #Defines a function for plotting the output of the autoencoder. And also the input + clean training data? Function takes inputs, 'encoder' and 'decoder' which are expected to be classes (defining the encode and decode nets), 'n' which is the number of ?????Images in the batch????, and 'noise_factor' which is a multiplier for the magnitude of the added noise allowing it to be scaled in intensity.  
+def plot_ae_outputs_den(encoder, decoder, epoch, model_save_name, time_dimension, reconstruction_threshold, n=10, noise_factor=0.3):       #Defines a function for plotting the output of the autoencoder. And also the input + clean training data? Function takes inputs, 'encoder' and 'decoder' which are expected to be classes (defining the encode and decode nets), 'n' which is the number of ?????Images in the batch????, and 'noise_factor' which is a multiplier for the magnitude of the added noise allowing it to be scaled in intensity.  
     """
     n is the number of images to plot i think?
     """
@@ -584,7 +590,7 @@ def plot_ae_outputs_den(encoder, decoder, epoch, outputfig_title, time_dimension
 
 
     elif plot_or_save == 1:
-        Out_Label = 'Output_Graphics/{}, Epoch {}, {} .png'.format(outputfig_title, epoch+1, settings) #!!!
+        Out_Label =  dir + 'Output_Graphics/{}, Epoch {}, {} .png'.format(model_save_name, epoch+1, settings) #!!!
         plt.savefig(Out_Label, format='png')
         plt.close()
         print("\n# SAVED OUTPUT TEST IMAGE TO DISK #\n")    
@@ -780,7 +786,7 @@ for epoch in loop_range:                              #For loop that iterates ov
         print("\n \n## EPOCH {} PLOTS DRAWN ##".format(epoch))
         
         # finally plot the figure with all images on it.
-        number_of_true_signal_points, number_of_recovered_signal_points = plot_ae_outputs_den(encoder, decoder, epoch, outputfig_title, time_dimension, reconstruction_threshold, noise_factor=noise_factor)
+        number_of_true_signal_points, number_of_recovered_signal_points = plot_ae_outputs_den(encoder, decoder, epoch, model_save_name, time_dimension, reconstruction_threshold, noise_factor=noise_factor)
         
         # Allow user to exit training loop    
         max_epoch_reached = epoch    #Updates the epoch reached counter
@@ -851,7 +857,7 @@ if plot_higher_dim:
 if data_gathering:
 
     # Save and export trained model to user  
-    torch.save((encoder, decoder), modal_save)
+    torch.save((encoder, decoder), full_model_path)
 
     # Save Encoder and Decoder Objects due to model save issues !!!!!!!!!!!!!!
     #DC3D_Autoencoder_V1 save this file along with the model !!!!!!!! work out how to programatically sAVE IT FROM THE IMPORT LINE
@@ -868,10 +874,10 @@ if data_gathering:
     dec_conv = np.array(dec_conv)
     dec_out = np.array(dec_out)
 
-    np.savez((model_save_path + model_save_name + "/" + model_save_name + 'activity.npz'), enc_input=enc_input, enc_conv=enc_conv, enc_flatten=enc_flatten, enc_lin=enc_lin, dec_input=dec_input, dec_lin=dec_lin, dec_flatten=dec_flatten, dec_conv=dec_conv, dec_out=dec_out)
+    np.savez((full_activity_filepath), enc_input=enc_input, enc_conv=enc_conv, enc_flatten=enc_flatten, enc_lin=enc_lin, dec_input=dec_input, dec_lin=dec_lin, dec_flatten=dec_flatten, dec_conv=dec_conv, dec_out=dec_out)
 
     # Save .txt Encoder/Decoder Network Summary
-    with open(model_save_path + model_save_name + "/" + model_save_name + ' - Network Summary.txt', 'w', encoding='utf-8') as output_file:    #utf_8 encoding needed as default (cp1252) unable to write special charecters present in the summary
+    with open(full_netsum_filepath, 'w', encoding='utf-8') as output_file:    #utf_8 encoding needed as default (cp1252) unable to write special charecters present in the summary
         output_file.write(("Model ID: " + model_save_name + f"\nTrained on device: {device}"))
         output_file.write((f"\nMax Epoch Reached: {max_epoch_reached}\n"))
         timer_warning = "(Not accurate - not recorded in speed_test mode)\n"
