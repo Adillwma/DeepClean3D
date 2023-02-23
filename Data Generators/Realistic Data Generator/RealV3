@@ -2,6 +2,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 import random
 
+"""
+This is a follow on from the version two, and not only specifies the angle
+in the x-y plane but also the angle in the y-z plane. This will eventually allow us
+to decifer the velocity of the impact photon by using this y-z plane angle.
+"""
 # N.B numpy gives angles in degrees
 # particle track depends upon - point on quartz hit, angle ejected.
 # ill start with creating an ideal version.

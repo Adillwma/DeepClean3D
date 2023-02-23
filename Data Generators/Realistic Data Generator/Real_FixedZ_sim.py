@@ -6,8 +6,7 @@ Created on Thurs Jan 26 2023
 """
 # N.B. This is the same function as V2, however the time axis is now defined in set 35ps blocks (time res of TORCH)
 # The detector also has a standard deviation of 70ps on the time axis.
-# THIS PRODUCES A SET TIME DIMENSION that can PRODUCE ERROR (very low prob)
-# Error arises as there is a standard deviation imposed on it. There is a small chance that standard deviation could be massive.
+# THIS PRODUCES A SET TIME DIMENSION
 
 #%% - Dependencies
 import numpy as np
@@ -33,7 +32,8 @@ def realistic_data_sim(signal_points=1000, detector_pixel_dimensions=(88,128), h
 
     Returns:
     flattened_data = The produced ribbon pattern is flattened and returned to prepare for the AE.
-    The maximum of this flattened data (in flattened z) is given by t_pix_max 
+    The maximum of this flattened data (in flattened z) is given by t_pix_max and this MAX IS CURRENTLY SET AT 509
+    However, N.B. The max signal point in the produced dataset (unnoised) is almost always NOT 509.
     '''
     #Width of Quartz Block in meters (x dimension)
     Quartz_width = 0.4
@@ -150,7 +150,7 @@ def realistic_data_sim(signal_points=1000, detector_pixel_dimensions=(88,128), h
     filtered = np.array([coord for coord in coords if
     (1 <= coord[0] <= detector_pixel_dimensions[0]) and
     (1 <= coord[1] <= detector_pixel_dimensions[1]) and
-    (1 <= coord[2] <= t_pix_max)])
+    (1 <= coord[2] <= t_pix_max)])  
 
     #Generates the random noise points (tmax//resolution sets the max pixels in the z axis)
     # x_noise = [random.randint(1, detector_pixel_dimensions[0]) for _ in range(noise_points)]
@@ -180,9 +180,10 @@ def realistic_data_sim(signal_points=1000, detector_pixel_dimensions=(88,128), h
         ax = fig.add_subplot(projection='3d')
         
         # the origional ribbon graph
-        ax.scatter(x_pixel, y_pixel, z_pixel)
+        ax.scatter(x_pixel, y_pixel, z_pixel, label='Unshifted Data')
         # the shifted ribbon graph
-        ax.scatter(filtered[:,0], filtered[:,1], filtered[:,2])
+        ax.scatter(filtered[:,0], filtered[:,1], filtered[:,2], label='Shifted Data')
+        ax.legend()
 
         # setting limits:
         ax.set_xlim((1, detector_pixel_dimensions[0]))
@@ -199,9 +200,6 @@ def realistic_data_sim(signal_points=1000, detector_pixel_dimensions=(88,128), h
 
         plt.imshow(flattened_data)
         plt.show()
-
-    #Determines number of signal points in the output, as some photons will have left due to passing the critical angle and exiting the block
-    num_of_signal_points = int(np.shape(x_pixel)[0])
     
     #Outputs to return to main dataset generator script
     return flattened_data

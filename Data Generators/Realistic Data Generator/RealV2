@@ -2,11 +2,16 @@ import numpy as np
 import matplotlib.pyplot as plt
 import random
 
+"""
+This version simulates the particle hit differently to all V1 simulators.
+This allows it to have an impact point in the x and y dimension.
+The impact is created and manipulated by first specifying the impact point and the 
+angle of all the outgoing photons (in the x-y plane only).
+"""
+
 # N.B numpy gives angles in degrees
 # particle track depends upon - point on quartz hit, angle ejected.
 # ill start with creating an ideal version.
-
-# This version 2 has the proper dimensions the det
 
 # set number of signal points from an impact you want:
 signal_points = 1000
