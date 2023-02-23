@@ -98,9 +98,10 @@ def dataset_integrity_check(folder_path, full_test=False, print_output=True):
         plt.show()
 
 #%% - Demo Driver
-
+"""
 dataset_title = "Dataset 12_X10K"
 data_path = "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Yr 3 Project/Circular and Spherical Dummy Datasets/"
 dir = (data_path + dataset_title + "/Data/")
 
 dataset_integrity_check(dir)
+"""
