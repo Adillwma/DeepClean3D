@@ -97,8 +97,8 @@ seed = 0              #0 is default which gives no seeeding to RNG, if the value
 print_every_other = 10
 plot_or_save = 0                            #[default = 0] 0 is normal behavior, If set to 1 then saves all end of epoch printouts to disk, if set to 2 then saves outputs whilst also printing for user
 
-dataset_title = "Dataset 15_X_10K_Blanks" #"Dataset 12_X10K"
-model_save_name = "7KX_3Kblanks_V1"
+dataset_title = "Dataset 10_X" #"Dataset 12_X10K"
+model_save_name = "10_X"
 outputfig_title = model_save_name                   #Must be string, value is used in the titling of the output plots if plot_or_save is selected above
 
 #%% - Advanced Visulisation Settings
