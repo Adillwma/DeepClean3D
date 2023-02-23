@@ -14,6 +14,17 @@ from pathlib import Path
 import numpy as np 
 from PIL import Image
 
+#%% - Test Driver
+frame_rate = 30                           # Frames per second to render the animation in (how many PNG's to display per second)
+
+PNG_path = "Frames\AE"                    # ('/path/to/raw/pngs')
+output_path = "MP4_Renders"               # ('/path/to/save/MP4')
+output_filename = "\AE"                   # Filename for output video
+
+# Construct the full output path 
+output = output_path + output_filename + ".MP4"
+
+
 #%% - Function
 def create_video_from_pngs(folder_path, frame_rate, output_path):
     # Get a list of all .png files in the directory
@@ -59,15 +70,6 @@ def create_video_from_pngs(folder_path, frame_rate, output_path):
     else:
         print('Video successfully created at', output_path)
 
-#%% - Test Driver
-frame_rate = 30                           # Frames per second to render the animation in (how many PNG's to display per second)
-
-PNG_path = "Frames\AE"                    # ('/path/to/raw/pngs')
-output_path = "MP4_Renders"               # ('/path/to/save/MP4')
-output_filename = "\AE"                   # Filename for output video
-
-# Construct the full output path 
-output = output_path + output_filename + ".MP4"
 
 # Creates the MP4 video
 create_video_from_pngs(PNG_path, frame_rate, output) 

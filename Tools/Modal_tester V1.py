@@ -14,6 +14,12 @@ that the "Encoder" attribute is included.
 ### Posible improvements
 # 
 """
+
+# User Paths for Saved Model
+model_filename = "10X_Activation_V1"                # NOTE Do not add file extension, it is automaticalaly added. 
+model_filepath = "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Git Hub Repos/DeepClean Repo/DeepClean-Noise-Suppression-for-LHC-B-Torch-Detector/Models/"                          # NOTE If in root dir then leave this as "" with nothing contained in the speech marks, otherise input dir here
+
+
 #%% - Dependancies
 import torch
 
@@ -39,9 +45,6 @@ def modal_tester(model_filename, model_filepath):
     return(testpass)       # Return boolean variable incase external code caling this function may need to be aware of the test status to enact its own conditional response
 
 #%% - Test Driver
-# User Paths for Saved Model
-model_filename = "10X_Activation_V1"                # NOTE Do not add file extension, it is automaticalaly added. 
-model_filepath = "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Git Hub Repos/DeepClean Repo/DeepClean-Noise-Suppression-for-LHC-B-Torch-Detector/Models/"                          # NOTE If in root dir then leave this as "" with nothing contained in the speech marks, otherise input dir here
 
 if modal_tester(model_filename, model_filepath):
     print("continuing")
