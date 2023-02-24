@@ -40,36 +40,18 @@ Default: if None, uses a global default (see torch.set_default_tensor_type()).!!
 
 ### ~~~~~ Add in automatic Enc/Dec layer size calulations
 """
-#%% - Dependencies
-import numpy as np 
-import matplotlib.pyplot as plt
 import torch
-import torchvision
-from torchvision import transforms
-from torch.utils.data import DataLoader,random_split
-from torch import nn
-import random 
-import time
-from torchinfo import summary
-from tqdm import tqdm
-from torchviz import make_dot
-import os
-
-#from DC3D_Autoencoder_V1 import Encoder, Decoder
-from Dataset_Integrity_Check_V1 import dataset_integrity_check
 
 #%% - User Inputs
 mode = 0 ### 0=Data_Gathering, 1=Testing, 2=Speed_Test, 3=Debugging
-print_partial_training_losses = False            #[default = True]
-allow_escape = False # Deafult = True
 
-num_epochs = 51                                            #User controll to set number of epochs (Hyperparameter)
+num_epochs = 1                                            #User controll to set number of epochs (Hyperparameter)
 batch_size = 10                                  #User controll to set batch size (Hyperparameter) - #Data Loader, number of Images to pull per batch 
 latent_dim = 10                      #User controll to set number of nodes in the latent space, the bottleneck layer (Hyperparameter)
 
 learning_rate = 0.001  #User controll to set optimiser learning rate(Hyperparameter)
 optim_w_decay = 1e-05  #User controll to set optimiser weight decay (Hyperparameter)
-loss_fn = torch.nn.L1Loss()      #MSELoss()          #(mean square error) User controll to set loss function (Hyperparameter)
+loss_fn = torch.nn.MSELoss()   #!!!!!!   #MSELoss()          #(mean square error) User controll to set loss function (Hyperparameter)
 
 time_dimension = 100
 noise_factor = 0                                          #User controll to set the noise factor, a multiplier for the magnitude of noise added. 0 means no noise added, 1 is defualt level of noise added, 10 is 10x default level added (Hyperparameter)
@@ -82,37 +64,38 @@ print_decoder_debug = False                     #[default = False]
 debug_noise_function = False                    #[default = False]
 debug_loader_batch = False     #(Default = False) //INPUT 0 or 1//   #Setting debug loader batch will print to user the images taken in by the dataoader in this current batch and print the corresponding labels
 
-
 full_dataset_integrity_check = False   #V slow
 print_network_summary = False     #deault = False
 seed = 0              #0 is default which gives no seeeding to RNG, if the value is not zero then this is used for the RNG seeding for numpy, random, and torch libraries
 
 #%% - Plotting Control Settings
-print_every_other = 10
+print_every_other = 2
 plot_or_save = 1                            #[default = 0] 0 is normal behavior, If set to 1 then saves all end of epoch printouts to disk, if set to 2 then saves outputs whilst also printing for user
 
-dataset_title = "Dataset 12_X_10K_M" #"Dataset 12_X10K"
-model_save_name = "12_X_10K_M"
-#outputfig_title = model_save_name                   #Must be string, value is used in the titling of the output plots if plot_or_save is selected above
+dataset_title = "Dataset 10_X" #"Dataset 12_X10K"
+model_save_name = "10_X_TESTING"
 
 #%% - Advanced Visulisation Settings
-
-plot_pixel_difference = True #False
-plot_im_stats = False  #?????????????????????????????????
-
-plot_latent_information = True
-plot_higher_dim = True
-plot_TSNE_dim = True
-
 plot_train_loss = False
 plot_validation_loss = False
 
-telemetry_on = False          #[default = False] # Update name to pixel_cuttoff_telemetry    #Very slow, reduces net performance by XXXXXX%
+plot_pixel_difference = True #False
+plot_latent_generations = True
+plot_higher_dim = True
+plot_Graphwiz = True
+
+plot_cutoff_telemetry = True          #[default = False] # Update name to pixel_cuttoff_telemetry    #Very slow, reduces net performance by XXXXXX%
 record_activity = True #False  ##Be carefull, the activity file recorded is ~ 2.5Gb  #Very slow, reduces net performance by XXXXXX%
 
 #%% - Program Settings
 speed_test = False      # [speed_test=False]Defualt    true sets number of epocs to print to larger than number of epochs to run so no plotting time wasted etc
 data_gathering = True
+
+print_partial_training_losses = False            #[default = True]
+
+allow_escape = False # Default = True
+#response_timeout = 120 # in seconds
+
 
 #%% - Data Path Settings
 data_path = "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Yr 3 Project/Circular and Spherical Dummy Datasets/"
@@ -122,6 +105,29 @@ data_path = "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Yr 
 results_output_path = "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Git Hub Repos/DeepClean Repo/DeepClean-Noise-Suppression-for-LHC-B-Torch-Detector/Models/"
 #ADILL - "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Git Hub Repos/DeepClean Repo/DeepClean-Noise-Suppression-for-LHC-B-Torch-Detector/Models/"
 #MAX - 
+
+
+#%% - Dependencies
+# External Dependencies
+import numpy as np 
+import matplotlib.pyplot as plt
+import torchvision
+from torchvision import transforms
+from torch.utils.data import DataLoader,random_split
+from torch import nn
+import random 
+import time
+from torchinfo import summary
+from tqdm import tqdm
+from torchviz import make_dot
+import os
+import plotly.express as px
+
+# Imports from our other custom scripts
+#from Autoencoders.DC3D_Autoencoder_V1 import Encoder, Decoder
+from Dataset_Integrity_Check_V1 import dataset_integrity_check
+from AE_Visulisations import Generative_Latent_information_Visulisation, Reduced_Dimension_Data_Representations, Graphwiz_visulisation, AE_visual_difference
+
 
 #%% - Helper functions
 def custom_normalisation(input, time_dimension=100):
@@ -137,7 +143,7 @@ def belief_telemetry(data, reconstruction_threshold, epoch, settings, plot_or_sa
     data2 = data.flatten()
 
     #Plots histogram showing the confidence level of each pixel being a signal point
-    values, bins, bars = plt.hist(data2, 10, histtype='bar')
+    _, _, bars = plt.hist(data2, 10, histtype='bar')
     plt.axvline(x= reconstruction_threshold, color='red', marker='|', linestyle='dashed', linewidth=2, markersize=12)
     plt.title("Epoch %s" %epoch)
     plt.bar_label(bars, fontsize=10, color='navy') 
@@ -193,7 +199,7 @@ class AddGaussianNoise(object):                   #Class generates noise based o
     def __repr__(self):
         return self.__class__.__name__ + '(mean={0}, std={1})'.format(self.mean, self.std)
 
-#%% - Parameters Initialisation
+#%% - Output Path Initialisation
 
 # Create output directory if it doesn't exist
 dir = results_output_path + model_save_name + " - Training Results/"
@@ -208,11 +214,7 @@ full_model_path = dir + model_save_name + "- Model.pth"
 full_activity_filepath = dir + model_save_name + '- Activity.npz'
 full_netsum_filepath = dir + model_save_name + ' - Network Summary.txt'
 
-
-
-
-
-
+#%% - Parameters Initialisation
 # Sets program into speed test mode
 if speed_test:
     print_every_other = num_epochs + 5   # Makes sure print is larger than total num of epochs to avoid delays in execution for testing
@@ -244,7 +246,7 @@ dec_out = list()
 
 
 #%% - Create record of all user input settings, to add to output data for testing and keeping track of settings
-settings = {} #"Settings = [ep {}][bs {}][lr {}][od {}][ls {}][nf {}][ds {}][sd {}]".format(num_epochs, batch_size, learning_rate, optim_w_decay, latent_dim, noise_factor, dataset_title, seed)
+settings = {} 
 settings["Epochs"] = num_epochs
 settings["Batch Size"] = batch_size
 settings["Learning Rate"] = learning_rate
@@ -629,7 +631,7 @@ def plot_ae_outputs_den(encoder, decoder, epoch, model_save_name, time_dimension
         rec_data = rec_img.cpu().squeeze().numpy()
         
         #Telemetry plots
-        if telemetry_on == 1:       #needs ttitles and labels etc added
+        if plot_cutoff_telemetry == 1:       #needs ttitles and labels etc added
             above_threshold, below_threshold = belief_telemetry(rec_data, reconstruction_threshold, epoch+1, settings, plot_or_save)   
             telemetry.append([epoch, above_threshold, below_threshold])
 
@@ -805,6 +807,10 @@ for epoch in loop_range:                              #For loop that iterates ov
     # Print Validation_loss and plots at end of each epoch
     history_da['train_loss'].append(train_loss)
     history_da['val_loss'].append(val_loss)
+    
+    #Updates the epoch reached counter  
+    max_epoch_reached = epoch    
+
     if print_partial_training_losses:
         print('\n End of EPOCH {}/{} \t train loss {:.3f} \t val loss {:.3f}'.format(epoch + 1, num_epochs,train_loss,val_loss))     #epoch +1 is to make up for the fact the range spans 0 to epoch-1 but we want to numerate things from 1 upwards for sanity
     
@@ -816,12 +822,14 @@ for epoch in loop_range:                              #For loop that iterates ov
         number_of_true_signal_points, number_of_recovered_signal_points = plot_ae_outputs_den(encoder, decoder, epoch, model_save_name, time_dimension, reconstruction_threshold, noise_factor=noise_factor)
         
         # Allow user to exit training loop    
-        max_epoch_reached = epoch    #Updates the epoch reached counter
-        
+
         if allow_escape:
             user_input = input("Press q to end training, or any other key to continue: \n")
             if user_input == 'q' or user_input == 'Q':
                 break
+
+
+
 
 
 #%% - After Training
@@ -841,69 +849,140 @@ full_data_output = {}
 full_data_output["Train Loss"] = round(history_da['train_loss'][-1], 3)
 full_data_output["Val Loss"] = round(history_da['val_loss'][-1], 3)   #Val loss calulaton is broken? check it above
 
-#%% - Old Visulisations
+#%% - Output Visulisations
 ###Loss function plots
 epochs_range = range(1,max_epoch_reached+2)
-plt.plot(epochs_range, history_da['train_loss']) 
-plt.title("Training loss")   
-plt.xlabel("Epoch number")
-plt.ylabel("Train loss (MSE)")
-if plot_or_save == 0:
-    plt.show()                            
-else:
-    Out_Label =  graphics_dir + f'{model_save_name} - Train loss - Epoch {epoch}.png'
-    plt.savefig(Out_Label, format='png')
-    if plot_or_save == 2:
-        plt.show()
+if plot_train_loss:
+    plt.plot(epochs_range, history_da['train_loss']) 
+    plt.title("Training loss")   
+    plt.xlabel("Epoch number")
+    plt.ylabel("Train loss (MSE)")
+    if plot_or_save == 0:
+        plt.show()                            
     else:
-        plt.close()
-    print("\n# SAVED OUTPUT TEST IMAGE TO DISK #\n")    
+        Out_Label =  graphics_dir + f'{model_save_name} - Train loss - Epoch {epoch}.png'
+        plt.savefig(Out_Label, format='png')
+        if plot_or_save == 2:
+            plt.show()
+        else:
+            plt.close()
+        print("\n# SAVED OUTPUT TEST IMAGE TO DISK #\n")    
 
-
-
-
-plt.plot(epochs_range, history_da['train_loss'])   #ERROR SHOULD BE VAL LOSS!
-plt.title("Validation loss") 
-plt.xlabel("Epoch number")
-plt.ylabel("Val loss (MSE)")
-if plot_or_save == 0:
-    plt.show()                            
-else:
-    Out_Label =  graphics_dir + f'{model_save_name} - Val loss - Epoch {epoch}.png'
-    plt.savefig(Out_Label, format='png')
-    if plot_or_save == 2:
-        plt.show()
+if plot_validation_loss:
+    plt.plot(epochs_range, history_da['train_loss'])   #ERROR SHOULD BE VAL LOSS!
+    plt.title("Validation loss") 
+    plt.xlabel("Epoch number")
+    plt.ylabel("Val loss (MSE)")
+    if plot_or_save == 0:
+        plt.show()                            
     else:
-        plt.close()
-    print("\n# SAVED OUTPUT TEST IMAGE TO DISK #\n")    
+        Out_Label =  graphics_dir + f'{model_save_name} - Val loss - Epoch {epoch}.png'
+        plt.savefig(Out_Label, format='png')
+        if plot_or_save == 2:
+            plt.show()
+        else:
+            plt.close()
+        print("\n# SAVED OUTPUT TEST IMAGE TO DISK #\n")    
 
-if telemetry_on:
+if plot_cutoff_telemetry:
     plot_telemetry(telemetry, plot_or_save=plot_or_save)
 
-#Comparison of true signal points to recovered signal points
-print("True signal points",number_of_true_signal_points)
-print("Recovered signal points: ",number_of_recovered_signal_points, "\n")
-full_data_output["true_signal_points"] = number_of_true_signal_points
-full_data_output["recovered_signal_points"] = number_of_recovered_signal_points
-
-#%% - New Visulisations
 image = test_dataset[0][0].unsqueeze(0)                      
-noised_image = add_noise(image, noise_factor, debug_noise_function) 
-cleaned_image = image
-
-from AE_Visulisations import AE_visulisation
-from AE_Visulisations import AE_visual_difference
+noised_image = add_noise(image, noise_factor, debug_noise_function)    #CHANGE TO NOISE SELECTOR FUNC
+cleaned_image = image  ###FIX!!!!!
 
 if plot_pixel_difference:
-    num_diff_noised, num_same_noised, num_diff_cleaned, num_same_cleaned = AE_visual_difference(image, noised_image, cleaned_image, plot_or_save=plot_or_save)
+    num_diff_noised, num_same_noised, num_diff_cleaned, num_same_cleaned, im_diff_noised, im_diff_cleaned = AE_visual_difference(image, noised_image, cleaned_image)
     full_data_output["num_diff_noised"] = num_diff_noised
     full_data_output["num_same_noised"] = num_same_noised
     full_data_output["num_diff_cleaned"] = num_diff_cleaned
     full_data_output["num_same_cleaned"] = num_same_cleaned
 
-if plot_higher_dim:
-    AE_visulisation(encoder, decoder, latent_dim, device, test_loader, test_dataset, batch_size, plot_or_save=plot_or_save)
+    # Create a new figure
+    fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2, figsize=(8, 4))
+
+    # Plot the im_diff_noised subplot
+    ax1.imshow(im_diff_noised, cmap='gray')
+    ax1.set_title('Original -> Noised Img')
+
+    # Plot the im_diff_cleaned subplot
+    ax2.imshow(im_diff_cleaned, cmap='gray')
+    ax2.set_title('Original -> Cleaned Img')
+
+    # Add title for the whole figure
+    fig.suptitle('Pixel-wise Difference Comparisons')
     
+    if plot_or_save == 0:
+        plt.show()                            
+    else:
+        Out_Label = graphics_dir + f'{model_save_name} - Pixel Difference Epoch {epoch}.png'
+        plt.savefig(Out_Label, format='png')
+        if plot_or_save == 2:
+            plt.show()
+        else:
+            plt.close()
+        print("\n# SAVED OUTPUT TEST IMAGE TO DISK #\n")   
+
+if plot_latent_generations:
+    def show_image(img):
+        npimg = img.numpy()
+        plt.imshow(np.transpose(npimg, (1, 2, 0)))
+
+    img_recon = Generative_Latent_information_Visulisation(encoder, decoder, latent_dim, device, test_loader)
+    
+    fig, ax = plt.subplots(figsize=(20, 8.5))
+    show_image(torchvision.utils.make_grid(img_recon[:100],10,10, pad_value=100))
+    if plot_or_save == 0:
+        plt.show()                            
+    else:
+        Out_Label = graphics_dir + f'{model_save_name} - Latent Generation Epoch {epoch}.png'
+        plt.savefig(Out_Label, format='png')
+        if plot_or_save == 2:
+            plt.show()
+        else:
+            plt.close()
+        print("\n# SAVED OUTPUT TEST IMAGE TO DISK #\n")   
+
+if plot_higher_dim:
+    encoded_samples, tsne_results = Reduced_Dimension_Data_Representations(encoder, device, test_dataset, plot_or_save=plot_or_save)
+    
+    
+    # Higher dim
+    plt.scatter(encoded_samples['Enc. Variable 0'], encoded_samples['Enc. Variable 1'],
+            c=encoded_samples['label'], alpha=0.7)
+    plt.grid()
+    if plot_or_save == 0:
+        plt.show()                            
+    else:
+        Out_Label = graphics_dir + f'{model_save_name} - Higher Dimensisions Epoch {epoch}.png'
+        plt.savefig(Out_Label, format='png')
+        if plot_or_save == 2:
+            plt.show()
+        else:
+            plt.close()
+        print("\n# SAVED OUTPUT TEST IMAGE TO DISK #\n") 
+
+    # TSNE of Higher dim
+    plt.scatter(tsne_results[:, 0], tsne_results[:, 1], c=encoded_samples['label'])
+    plt.xlabel('tsne-2d-one')
+    plt.ylabel('tsne-2d-two')
+    plt.grid()
+    if plot_or_save == 0:
+        plt.show()                            
+    else:
+        Out_Label = graphics_dir + f'{model_save_name} - TSNE Epoch {epoch}.png'
+        plt.savefig(Out_Label, format='png')
+        if plot_or_save == 2:
+            plt.show()
+        else:
+            plt.close()
+        print("\n# SAVED OUTPUT TEST IMAGE TO DISK #\n") 
+    
+    
+if plot_Graphwiz:
+    print("Currently Unavailable")
+
+#%% - Export all data logged to disk in form of .txt file in the output dir
 if data_gathering:
 
     # Save and export trained model to user  
@@ -926,6 +1005,15 @@ if data_gathering:
 
     np.savez((full_activity_filepath), enc_input=enc_input, enc_conv=enc_conv, enc_flatten=enc_flatten, enc_lin=enc_lin, dec_input=dec_input, dec_lin=dec_lin, dec_flatten=dec_flatten, dec_conv=dec_conv, dec_out=dec_out)
 
+    try: 
+        #Comparison of true signal points to recovered signal points
+        #print("True signal points",number_of_true_signal_points)
+        #print("Recovered signal points: ",number_of_recovered_signal_points, "\n")
+        full_data_output["true_signal_points"] = number_of_true_signal_points
+        full_data_output["recovered_signal_points"] = number_of_recovered_signal_points
+    except:
+        pass
+
     # Save .txt Encoder/Decoder Network Summary
     with open(full_netsum_filepath, 'w', encoding='utf-8') as output_file:    #utf_8 encoding needed as default (cp1252) unable to write special charecters present in the summary
         output_file.write(("Model ID: " + model_save_name + f"\nTrained on device: {device}"))
@@ -943,8 +1031,7 @@ if data_gathering:
         for key, value in full_data_output.items():
             output_file.write(f"{key}: {value}\n")
 
-
-
+#%% - End of Program - Printing message to notify user!
 print("\nProgram Complete - Shutting down...")    
     
     
