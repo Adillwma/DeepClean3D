@@ -111,7 +111,7 @@ def conv_calculator(conv_type, K, P, S, D, H_in, W_in, D_in=0, O=1):
 
 
 #%% - Outputs
-conv_calculator(conv_type, K, P, S, D, H_in, W_in, D_in, O)
+# conv_calculator(conv_type, K, P, S, D, H_in, W_in, D_in, O)
 
 
 #%% - Automated Testing    
