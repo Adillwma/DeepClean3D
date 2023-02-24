@@ -121,23 +121,17 @@ def realistic_data_sim(signal_points=1000, detector_pixel_dimensions=(88,128), h
     # This is put into bins without the digitize for now:
     z_idxs = np.array([np.random.normal(i[1], std)//resolution for i in final]) # i[1] add std to time then give z pixel with //resolution
 
-    # all of the above are 1 too few as they go from 0 to 87 index. We want 1 to 88 so:
-    x_pixel = [i+1 for i in x_idxs]
-    # same for y
-    y_pixel = [i+1 for i in y_idxs]
-    # same for z
-    z_pixel = [i+1 for i in z_idxs]
-
+    # x, y go from 0 to dim - 1 respectively here. z has TOF pixel.
     # Changing position:
     # Convert all to numpy arrays to make more maleable and also to flatten later:
-    x_pixel = np.array(x_pixel)
-    y_pixel = np.array(y_pixel)
-    z_pixel = np.array(z_pixel)
+    x_pixel = np.array(x_idxs)
+    y_pixel = np.array(y_idxs)
+    z_pixel = np.array(z_idxs)
 
     # combine them:
     coords = np.column_stack((x_pixel, y_pixel, z_pixel))
 
-    # # remove potential z points outside plot (from 1 to max time):
+    # remove potential z points outside plot, from 1 to max time (this is from 1 as 0 counts as no hit):
     coords = np.array([coord for coord in coords if 1 <= coord[2] <= t_pix_max])
 
     # shift them all a maximum of half the max size if shift = 1:
@@ -148,8 +142,8 @@ def realistic_data_sim(signal_points=1000, detector_pixel_dimensions=(88,128), h
 
     # select those that would fall within the bounds of the thing after shifting:
     filtered = np.array([coord for coord in coords if
-    (1 <= coord[0] <= detector_pixel_dimensions[0]) and
-    (1 <= coord[1] <= detector_pixel_dimensions[1]) and
+    (0 <= coord[0] <= detector_pixel_dimensions[0] - 1) and
+    (0 <= coord[1] <= detector_pixel_dimensions[1] - 1) and
     (1 <= coord[2] <= t_pix_max)])  
 
     #Generates the random noise points (tmax//resolution sets the max pixels in the z axis)
@@ -167,9 +161,9 @@ def realistic_data_sim(signal_points=1000, detector_pixel_dimensions=(88,128), h
     # this continues if there is data
     for point in filtered:
         # TOF is the z axis
-        TOF = point[2]-1
+        TOF = int(point[2])
         # index is the x and y axis
-        flattened_data[int(point[0])-1][int(point[1])-1] = TOF
+        flattened_data[int(point[0])][int(point[1])] = TOF
 
     
     #Plots the figure if user requests debugging
@@ -186,9 +180,9 @@ def realistic_data_sim(signal_points=1000, detector_pixel_dimensions=(88,128), h
         ax.legend()
 
         # setting limits:
-        ax.set_xlim((1, detector_pixel_dimensions[0]))
-        ax.set_ylim((1, detector_pixel_dimensions[1]))
-        ax.set_zlim((1, t_pix_max))
+        ax.set_xlim((0, detector_pixel_dimensions[0]))
+        ax.set_ylim((0, detector_pixel_dimensions[1]))
+        ax.set_zlim((0, t_pix_max))
 
 
         # ax.scatter(x_noise, y_noise, z_noise)
