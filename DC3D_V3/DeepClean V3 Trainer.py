@@ -45,7 +45,7 @@ import torch
 #%% - User Inputs
 mode = 0 ### 0=Data_Gathering, 1=Testing, 2=Speed_Test, 3=Debugging
 
-num_epochs = 1                                            #User controll to set number of epochs (Hyperparameter)
+num_epochs = 3                                            #User controll to set number of epochs (Hyperparameter)
 batch_size = 10                                  #User controll to set batch size (Hyperparameter) - #Data Loader, number of Images to pull per batch 
 latent_dim = 10                      #User controll to set number of nodes in the latent space, the bottleneck layer (Hyperparameter)
 
@@ -69,7 +69,7 @@ print_network_summary = False     #deault = False
 seed = 0              #0 is default which gives no seeeding to RNG, if the value is not zero then this is used for the RNG seeding for numpy, random, and torch libraries
 
 #%% - Plotting Control Settings
-print_every_other = 2
+print_every_other = 1
 plot_or_save = 1                            #[default = 0] 0 is normal behavior, If set to 1 then saves all end of epoch printouts to disk, if set to 2 then saves outputs whilst also printing for user
 
 dataset_title = "Dataset 10_X" #"Dataset 12_X10K"
@@ -125,9 +125,9 @@ import plotly.express as px
 
 # Imports from our other custom scripts
 #from Autoencoders.DC3D_Autoencoder_V1 import Encoder, Decoder
-from Dataset_Integrity_Check_V1 import dataset_integrity_check
-from AE_Visulisations import Generative_Latent_information_Visulisation, Reduced_Dimension_Data_Representations, Graphwiz_visulisation, AE_visual_difference
-
+from Helper_files.Dataset_Integrity_Check_V1 import dataset_integrity_check
+from Helper_files.AE_Visulisations import Generative_Latent_information_Visulisation, Reduced_Dimension_Data_Representations, Graphwiz_visulisation, AE_visual_difference
+from Helper_files.Robust_model_exporter_V1 import Robust_model_export
 
 #%% - Helper functions
 def custom_normalisation(input, time_dimension=100):
@@ -988,8 +988,8 @@ if data_gathering:
     # Save and export trained model to user  
     torch.save((encoder, decoder), full_model_path)
 
-    # Save Encoder and Decoder Objects due to model save issues !!!!!!!!!!!!!!
-    #DC3D_Autoencoder_V1 save this file along with the model !!!!!!!! work out how to programatically sAVE IT FROM THE IMPORT LINE
+    # Locate .py file that defines the Encoder and Decoder and copies it to the model save dir, due to torch.save model save issues
+    Robust_model_export(Encoder, full_model_path) #Only need to run on encoder as encoder and decoder are both in the same file so both get saved this way
 
     # Save network activity for analysis
     enc_input = np.array(enc_input)
