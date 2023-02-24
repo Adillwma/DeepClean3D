@@ -16,7 +16,7 @@ import random
 #import torch.nn.functional as F
 #import torch.optim as optim
 #import os
-#from Calc import conv_calculator
+from Calc import conv_calculator, conv_outputs_2d, conv_outputs_3d
 
 def custom_normalisation(input):
     input = (input / (2 * np.max(input))) + 0.5
@@ -107,12 +107,15 @@ class Encoder(nn.Module):
 
         # # for first 2 conv layers:
         # H_in, W_in and D_in would be given in fc2_input_dim
-        # L1 = conv_calculator(conv_type, K, P, S, D, H_in, W_in, D_in, O)
-        # L2 = conv_calculator(conv_type, K, P, S, D, L1[0], L1[2], D_in, O)
+        L1 = conv_calculator(conv_type, K, P, S, D, H_in, W_in, D_in, O)
+        print(L1)
+        L2 = conv_calculator(conv_type, K, P, S, D, L1[0], L1[2], D_in, O)
+        print(L2)
         
         # # for 3rd and final layer: (padding changed)
         # P = 0
-        # L3 = conv_calculator(conv_type, K, P, S, D, L2[0], L2[2], D_in, O)
+        L3 = conv_calculator(conv_type, K, P, S, D, L2[0], L2[2], D_in, O)
+        print(L3)
         
         ###Flatten layer
         self.flatten = nn.Flatten(start_dim=1)
@@ -393,11 +396,8 @@ others that arent so relevant....
 # root to files
 # data_directory = r'C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Simple Cross\\'
 
-# need to import dataloader function:
-# IDK why this isnt working --> from DeepClean_3D.DataLoader_Functions_V2 import train_loader2d, test_loader2d
-# so ill import the functions manually:
+# need to import dataloader function so ill import the functions manually:
 def train_loader2d(path):
-
     sample = (np.load(path))
     #print(np.shape(sample), type(sample))             
     return (sample)
@@ -412,13 +412,12 @@ def test_loader2d(path):
 
 
 # the train_epoch_den and test both add noise themselves?? so i will have to call all of the clean versions:
-#train_dir = 
-train_dir = r'C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\New big simp\Rectangle\\'
+train_dir = r"C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Cross Stuff\RectangleX 128x88"
 train_dataset = torchvision.datasets.DatasetFolder(train_dir, train_loader2d, extensions='.npy')
 
-# N.B. We will use the train loader for this as it takes the clean data, and thats what we want as theres a built in nois adder here already:
-#test_dir = 
-test_dir = r'C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\New big simp test\Rectangle\\'
+# N.B. We will use the train loader for this as it takes the clean data, and thats what
+# we want as theres a built in noise adder here already:
+test_dir = r"C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Cross Stuff\RectangleX Test 128x88"
 test_dataset = torchvision.datasets.DatasetFolder(test_dir, train_loader2d, extensions='.npy')
 
 

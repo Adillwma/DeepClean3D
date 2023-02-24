@@ -131,7 +131,7 @@ def simp_simulator(num_X = 1, sig_pts = 28, x_dim = 28, y_dim = 28, z_dim = 28, 
 
                 # break the loop as the coordinates will just be overwritten (as shift=0):
                 break
-
+        
     #-------------------------------------------------------------------
 
 
