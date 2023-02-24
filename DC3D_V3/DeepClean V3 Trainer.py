@@ -51,15 +51,8 @@ from torch import nn
 import random 
 import time
 from torchinfo import summary
-#import torch.nn.functional as F
-#import torch.optim as optim
-#import os
-#from Calc import conv_calculator
 from tqdm import tqdm
 from torchviz import make_dot
-import pandas as pd
-import plotly.express as px
-import json
 import os
 
 #from DC3D_Autoencoder_V1 import Encoder, Decoder
@@ -68,8 +61,9 @@ from Dataset_Integrity_Check_V1 import dataset_integrity_check
 #%% - User Inputs
 mode = 0 ### 0=Data_Gathering, 1=Testing, 2=Speed_Test, 3=Debugging
 print_partial_training_losses = False            #[default = True]
+allow_escape = False # Deafult = True
 
-num_epochs = 3                                            #User controll to set number of epochs (Hyperparameter)
+num_epochs = 51                                            #User controll to set number of epochs (Hyperparameter)
 batch_size = 10                                  #User controll to set batch size (Hyperparameter) - #Data Loader, number of Images to pull per batch 
 latent_dim = 10                      #User controll to set number of nodes in the latent space, the bottleneck layer (Hyperparameter)
 
@@ -94,11 +88,11 @@ print_network_summary = False     #deault = False
 seed = 0              #0 is default which gives no seeeding to RNG, if the value is not zero then this is used for the RNG seeding for numpy, random, and torch libraries
 
 #%% - Plotting Control Settings
-print_every_other = 1
-plot_or_save = 0                            #[default = 0] 0 is normal behavior, If set to 1 then saves all end of epoch printouts to disk, if set to 2 then saves outputs whilst also printing for user
+print_every_other = 10
+plot_or_save = 1                            #[default = 0] 0 is normal behavior, If set to 1 then saves all end of epoch printouts to disk, if set to 2 then saves outputs whilst also printing for user
 
-dataset_title = "Dataset 10_X" #"Dataset 12_X10K"
-model_save_name = "10_X"
+dataset_title = "Dataset 12_X_10K_M" #"Dataset 12_X10K"
+model_save_name = "12_X_10K_M"
 #outputfig_title = model_save_name                   #Must be string, value is used in the titling of the output plots if plot_or_save is selected above
 
 #%% - Advanced Visulisation Settings
@@ -150,15 +144,18 @@ def belief_telemetry(data, reconstruction_threshold, epoch, settings, plot_or_sa
     if plot_or_save == 0:
         plt.show()
     else:
-        Out_Label = dir + 'Output_Graphics/{}, Confidence Histogram, Epoch {}, {} .png'.format(model_save_name, epoch, settings) #!!!
-        plt.savefig(Out_Label, format='png')        
-        plt.close()
+        Out_Label = graphics_dir + f'{model_save_name} - Reconstruction Telemetry Histogram - Epoch {epoch}.png'
+        plt.savefig(Out_Label, format='png')    
+        if plot_or_save == 1:    
+            plt.close()
+        else:
+            plt.show()
 
     above_threshold = (data2 >= reconstruction_threshold).sum()
     below_threshold = (data2 < reconstruction_threshold).sum()
     return (above_threshold, below_threshold)
 
-def plot_telemetry(telemetry):
+def plot_telemetry(telemetry, plot_or_save=0):
     tele = np.array(telemetry)
     #!!! Add labels to lines
     plt.plot(tele[:,0],tele[:,1], color='r', label="Points above threshold") #red = num of points above threshold
@@ -167,7 +164,15 @@ def plot_telemetry(telemetry):
     plt.xlabel("Epoch number")
     plt.ylabel("Number of Signal Points")
     plt.legend()
-    plt.show()    
+    if plot_or_save == 0:
+        plt.show()
+    else:
+        Out_Label = graphics_dir + f'{model_save_name} - Reconstruction Telemetry Histogram - Epoch {epoch}.png'
+        plt.savefig(Out_Label, format='png')    
+        if plot_or_save == 1:    
+            plt.close()
+        else:
+            plt.show() 
 
 ###RNG Seeding for Determinism Function
 def Determinism_Seeding(seed):
@@ -191,8 +196,12 @@ class AddGaussianNoise(object):                   #Class generates noise based o
 #%% - Parameters Initialisation
 
 # Create output directory if it doesn't exist
-dir = results_output_path + model_save_name 
-os.makedirs(dir + " - Training Results", exist_ok=True)
+dir = results_output_path + model_save_name + " - Training Results/"
+os.makedirs(dir, exist_ok=True)
+
+# Create output directory for images if it doesn't exist
+graphics_dir = results_output_path + model_save_name + " - Training Results/Output_Graphics/"
+os.makedirs(graphics_dir, exist_ok=True)
 
 # Joins up the parts of the model save path
 full_model_path = dir + model_save_name + "- Model.pth"
@@ -556,7 +565,22 @@ def plot_ae_outputs_den(encoder, decoder, epoch, model_save_name, time_dimension
                     top=0.9, 
                     wspace=0.3, 
                     hspace=0.3)     
-    plt.show()                                 #After entire loop is finished, the generated plot is printed to screen
+    ### - PLOT SAVING, CLEAN UP!!! TURN INTO A FUCNTION FOR USE ON ALL PLOTS?????
+    if plot_or_save == 0:    # If user has chosen to just plot the output graphs to terminal not save them
+        if (epoch+1) % print_every_other == 0:
+            plt.show()                                 #After entire loop is finished, the generated plot is printed to screen
+        else:
+            plt.close()
+
+
+    else:
+        Out_Label = graphics_dir + f'{model_save_name} - Epoch {epoch}.png'
+        plt.savefig(Out_Label, format='png')
+        if plot_or_save == 2:
+            plt.show()
+        else:
+            plt.close()
+        print("\n# SAVED OUTPUT TEST IMAGE TO DISK #\n")                                 #After entire loop is finished, the generated plot is printed to screen
     
     # 3D Reconstruction
     data = rec_img.cpu().squeeze().numpy()
@@ -577,23 +601,26 @@ def plot_ae_outputs_den(encoder, decoder, epoch, model_save_name, time_dimension
         fig = plt.figure()
         ax = plt.axes(projection='3d')
         ax.scatter(rec_data[:,0], rec_data[:,1], rec_data[:,2])
-        ax.set_zlim(0,28)
-        plt.show()
+        ax.set_zlim(0, time_dimension)
+        ### - PLOT SAVING, CLEAN UP!!! TURN INTO A FUCNTION FOR USE ON ALL PLOTS?????
+        if plot_or_save == 0:    # If user has chosen to just plot the output graphs to terminal not save them
+            if (epoch+1) % print_every_other == 0:
+                plt.show()                                 #After entire loop is finished, the generated plot is printed to screen
+            else:
+                plt.close()
+
+
+        else:
+            Out_Label = graphics_dir + f'{model_save_name} 3D Reconstruction - Epoch {epoch}.png'
+            plt.savefig(Out_Label, format='png')
+            if plot_or_save == 2:
+                plt.show()
+            else:
+                plt.close()
+            print("\n# SAVED OUTPUT TEST IMAGE TO DISK #\n")  
 
     
-    ### - PLOT SAVING, CLEAN UP!!! TURN INTO A FUCNTION FOR USE ON ALL PLOTS?????
-    if plot_or_save == 0:
-        if (epoch+1) % print_every_other == 0:
-            plt.show()                                 #After entire loop is finished, the generated plot is printed to screen
-        else:
-            plt.close()
-
-
-    elif plot_or_save == 1:
-        Out_Label =  dir + 'Output_Graphics/{}, Epoch {}, {} .png'.format(model_save_name, epoch+1, settings) #!!!
-        plt.savefig(Out_Label, format='png')
-        plt.close()
-        print("\n# SAVED OUTPUT TEST IMAGE TO DISK #\n")    
+  
 
     if (epoch+1) % print_every_other == 0:        
         ###3D Reconstruction
@@ -790,9 +817,11 @@ for epoch in loop_range:                              #For loop that iterates ov
         
         # Allow user to exit training loop    
         max_epoch_reached = epoch    #Updates the epoch reached counter
-        user_input = input("Press q to end training, or any other key to continue: \n")
-        if user_input == 'q' or user_input == 'Q':
-            break
+        
+        if allow_escape:
+            user_input = input("Press q to end training, or any other key to continue: \n")
+            if user_input == 'q' or user_input == 'Q':
+                break
 
 
 #%% - After Training
@@ -819,16 +848,37 @@ plt.plot(epochs_range, history_da['train_loss'])
 plt.title("Training loss")   
 plt.xlabel("Epoch number")
 plt.ylabel("Train loss (MSE)")
-plt.show()
+if plot_or_save == 0:
+    plt.show()                            
+else:
+    Out_Label =  graphics_dir + f'{model_save_name} - Train loss - Epoch {epoch}.png'
+    plt.savefig(Out_Label, format='png')
+    if plot_or_save == 2:
+        plt.show()
+    else:
+        plt.close()
+    print("\n# SAVED OUTPUT TEST IMAGE TO DISK #\n")    
+
+
+
 
 plt.plot(epochs_range, history_da['train_loss'])   #ERROR SHOULD BE VAL LOSS!
 plt.title("Validation loss") 
 plt.xlabel("Epoch number")
 plt.ylabel("Val loss (MSE)")
-plt.show()
+if plot_or_save == 0:
+    plt.show()                            
+else:
+    Out_Label =  graphics_dir + f'{model_save_name} - Val loss - Epoch {epoch}.png'
+    plt.savefig(Out_Label, format='png')
+    if plot_or_save == 2:
+        plt.show()
+    else:
+        plt.close()
+    print("\n# SAVED OUTPUT TEST IMAGE TO DISK #\n")    
 
 if telemetry_on:
-    plot_telemetry(telemetry)
+    plot_telemetry(telemetry, plot_or_save=plot_or_save)
 
 #Comparison of true signal points to recovered signal points
 print("True signal points",number_of_true_signal_points)
@@ -845,14 +895,14 @@ from AE_Visulisations import AE_visulisation
 from AE_Visulisations import AE_visual_difference
 
 if plot_pixel_difference:
-    num_diff_noised, num_same_noised, num_diff_cleaned, num_same_cleaned = AE_visual_difference(image, noised_image, cleaned_image)
+    num_diff_noised, num_same_noised, num_diff_cleaned, num_same_cleaned = AE_visual_difference(image, noised_image, cleaned_image, plot_or_save=plot_or_save)
     full_data_output["num_diff_noised"] = num_diff_noised
     full_data_output["num_same_noised"] = num_same_noised
     full_data_output["num_diff_cleaned"] = num_diff_cleaned
     full_data_output["num_same_cleaned"] = num_same_cleaned
 
 if plot_higher_dim:
-    AE_visulisation(encoder, decoder, latent_dim, device, test_loader, test_dataset, batch_size)
+    AE_visulisation(encoder, decoder, latent_dim, device, test_loader, test_dataset, batch_size, plot_or_save=plot_or_save)
     
 if data_gathering:
 
