@@ -69,7 +69,7 @@ latent_dim = 10                      #User controll to set number of nodes in th
 
 learning_rate = 0.001  #User controll to set optimiser learning rate(Hyperparameter)
 optim_w_decay = 1e-05  #User controll to set optimiser weight decay (Hyperparameter)
-loss_fn = torch.nn.MSELoss()          #(mean square error) User controll to set loss function (Hyperparameter)
+loss_fn = torch.nn.L1Loss()      #MSELoss()          #(mean square error) User controll to set loss function (Hyperparameter)
 
 time_dimension = 100
 noise_factor = 0                                          #User controll to set the noise factor, a multiplier for the magnitude of noise added. 0 means no noise added, 1 is defualt level of noise added, 10 is 10x default level added (Hyperparameter)
