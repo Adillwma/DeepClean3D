@@ -1,10 +1,6 @@
 __pycache__
-Output_Graphics/
 Results Presentations/
-Execution Speed Tester/
 Testing/
 Datasets/
 *.npz
 *.mp4
-10X_Activation_V1 - Network Summary.txt
-Git Tree.txt
