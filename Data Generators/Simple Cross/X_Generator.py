@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from supsimp_x_sim import simp_simulator
+from X_Sim import simp_simulator
 
 """
 This will return float64 array numbers.

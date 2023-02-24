@@ -2,6 +2,11 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
+"""
+This is currently the exact same as the first version.
+If changes are made, please spefify below:
+
+"""
 
 def simp_simulator(sig_pts = 28, x_dim = 28, y_dim = 28, z_dim = 28, shift=1):
     """
