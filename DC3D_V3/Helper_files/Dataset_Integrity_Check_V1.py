@@ -43,7 +43,16 @@ def dataset_integrity_check(folder_path, full_test=False, print_output=True):
         print(folder_path)
 
     # Get a list of all .npy files in the folder using os.scandir
-    npy_files = [entry.path for entry in os.scandir(folder_path) if entry.name.endswith('.npy')]
+    #npy_files = [entry.path for entry in os.scandir(folder_path) if entry.name.endswith('.npy')]
+    
+    # Updated above to now get a list of all .npy files in the folder and its subfolders using os.walk
+    npy_files = []
+    for dirpath, dirnames, filenames in os.walk(folder_path):
+        for filename in filenames:
+            if filename.endswith('.npy'):
+                npy_files.append(os.path.join(dirpath, filename))
+    
+    
     number_of_files = len(npy_files)
 
     # If no .npy files were found, return None
