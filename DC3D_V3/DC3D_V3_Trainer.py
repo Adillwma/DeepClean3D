@@ -123,7 +123,7 @@ import os
 import plotly.express as px
 
 # Imports from our other custom scripts
-from Autoencoders.DC3D_Autoencoder_V1 import Encoder, Decoder
+#from Autoencoders.DC3D_Autoencoder_V1 import Encoder, Decoder
 from Helper_files.Dataset_Integrity_Check_V1 import dataset_integrity_check
 from Helper_files.AE_Visulisations import Generative_Latent_information_Visulisation, Reduced_Dimension_Data_Representations, Graphwiz_visulisation, AE_visual_difference
 from Helper_files.Robust_model_exporter_V1 import Robust_model_export
@@ -260,7 +260,7 @@ settings["Seed Val"] = seed
 settings["Reconstruction Threshold"] = reconstruction_threshold
 
 #%% - Convoloution + Linear Autoencoder
-"""
+
 
 ###Encoder
 class Encoder(nn.Module):
@@ -410,7 +410,7 @@ class Decoder(nn.Module):
             dec_out.append(np.abs(x[0].detach().numpy()))
         
         return x                      #Retuns the final output
-    """
+
     
 #%% - Functions
 ### Random Noise Generator Function
