@@ -8,7 +8,7 @@ University of Bristol
 #%% - User Inputs
 n = 128
 m = 88
-number = 3000
+number = 8000
 output_dir = "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Yr 3 Project/Circular and Spherical Dummy Datasets/Dataset 15_X_10K_Blanks/Data/"
 # Ada: "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Yr 3 Project/Circular and Spherical Dummy Datasets/Dataset 15_X_10K_Blanks/Data/"
 # Max:
