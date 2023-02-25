@@ -54,7 +54,7 @@ def AE_visual_difference(image, noised_image, cleaned_image, print_text=False):
             raise ValueError("The two images must have the same shape.")
         
         # Calculate the pixel-wise difference between the two images
-        diff = np.abs(img1.numpy().squeeze().squeeze() - img2.numpy().squeeze().squeeze())  #takes from input of [batchsize, channels, x, y] to [x, y]
+        diff = np.abs(img1- img2)  #if input is torch tensors then need to add .numpy().squeeze().squeeze() which takes from input of [batchsize, channels, x, y] to [x, y]
 
         # Count the total number of elements
         num_total = diff.size
