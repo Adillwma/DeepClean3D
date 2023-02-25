@@ -44,6 +44,9 @@ import torch
 
 #%% - User Inputs
 mode = 0 ### 0=Data_Gathering, 1=Testing, 2=Speed_Test, 3=Debugging
+dataset_title = "Dataset 16_X_15K_Blanks" #"Dataset 12_X10K"
+model_save_name = "16_X_15K_Blanks"
+
 
 num_epochs = 6                                            #User controll to set number of epochs (Hyperparameter)
 batch_size = 10                                  #User controll to set batch size (Hyperparameter) - #Data Loader, number of Images to pull per batch 
@@ -72,8 +75,7 @@ seed = 0                            #0 is default which gives no seeeding to RNG
 print_every_other = 1
 plot_or_save = 1                            #[default = 0] 0 is normal behavior, If set to 1 then saves all end of epoch printouts to disk, if set to 2 then saves outputs whilst also printing for user
 
-dataset_title = "Dataset 11_X_5K_M" #"Dataset 12_X10K"
-model_save_name = "11_X_TESTING"
+
 
 #%% - Advanced Visulisation Settings
 plot_train_loss = False
