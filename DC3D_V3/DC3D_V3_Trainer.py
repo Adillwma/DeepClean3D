@@ -96,7 +96,6 @@ print_partial_training_losses = False            #[default = True]
 allow_escape = False # Default = True
 #response_timeout = 120 # in seconds
 
-
 #%% - Data Path Settings
 data_path = "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Yr 3 Project/Circular and Spherical Dummy Datasets/"
 #ADILL - "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Yr 3 Project/Circular and Spherical Dummy Datasets/"
@@ -548,7 +547,7 @@ def plot_ae_outputs_den(encoder, decoder, epoch, model_save_name, time_dimension
       ax.get_xaxis().set_visible(False)                                   #Hides the x axis from showing in the plot as we are plotting images not graphs (we may want to retain axis?)
       ax.get_yaxis().set_visible(False)                                   #Hides the y axis from showing in the plot as we are plotting images not graphs (we may want to retain axis?)
       if i == n//2:                                                       #n//2 divides n by 2 without any remainder, i.e 6//2=3 and 7//2=3. So this line checks to see if i is equal to half of n without remainder. it will be yes once in the loop. not sure of its use
-        ax.set_title('EPOCH %s \nOriginal images' %(epoch+1))               #When above condition is reached, the plots title is set                                   #When above condition is reached, the plots title is set
+        ax.set_title('EPOCH %s \nOriginal images' %(epoch))               #When above condition is reached, the plots title is set                                   #When above condition is reached, the plots title is set
 
       ax = plt.subplot(3, n, i + 1 + n)                                   #Creates a number of subplots for the 'Corrupted images??????' i.e the labels. the position of the subplot is i+1+n as it falls in the second row
       plt.imshow(image_noisy.cpu().squeeze().numpy(), cmap='gist_gray')   #plt.imshow plots an image. The arguments for imshow are, 'image data array' and cmap= which is the colour map. #.squeeze() acts on a tensor and returns a tensor, it removes all dimensions of the tensor that are of length 1, (A×1×B) becomes (AxB) where A and B are greater than 1 #.numpy() creates a numpy array from a tensor #!!! is the .cpu part becuase the code was not made to accept the gpu/cpu check i made????
@@ -861,7 +860,7 @@ full_data_output = {}
 full_data_output["Train Loss"] = round(history_da['train_loss'][-1], 3)
 full_data_output["Val Loss"] = round(history_da['val_loss'][-1], 3)   #Val loss calulaton is broken? check it above
 
-#%%
+#%% NOTE FIX ME!!! 
 #!!! NOTE HERE BEFORE THE VISULISATIONS WE SHOULD RUN THE RENORAMLISATION TO RETURN THE CORRECT VALUES FOR VISUALS:
 
 #THEN RECONSTRUCTION CAN HAPPEN LATER???
@@ -992,7 +991,7 @@ if plot_higher_dim:
         print("\n# SAVED OUTPUT TEST IMAGE TO DISK #\n") 
         
 if plot_Graphwiz:
-    print("Currently Unavailable\n")
+    print("Graphwiz Plot Currently Unavailable\n")
 
 #%% - Export all data logged to disk in form of .txt file in the output dir
 if data_gathering:
