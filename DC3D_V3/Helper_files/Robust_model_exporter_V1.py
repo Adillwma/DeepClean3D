@@ -12,19 +12,25 @@ and the exact directory structure used when the model is saved. The reason for t
 does not save the model class itself. Rather, it saves a path to the file containing the class, which 
 is used during load time. Because of this, your code can break in various ways when used in other 
 projects or after refactors.
+
+
+
+# Imporvement to be added 
+# make sure it ifnds the file, if not foun in dir its in then just scan the whole working dir to make sure not missing it 
+
 """
 
 import os
 import shutil
 
 
-def Robust_model_export(function_name, output_dir):
+def Robust_model_export(function_name, search_dir, output_dir):
 
     def parse_module_name(string):
         # Protection from module being in subfolder so _get_module retuns subfolder.module_name we want just module name, so following lines check for any dots in the module name and if so find the right most dot and returns the string following it, otheriwse just retunrs it's input 
         dot_index = string.rfind('.')
         if dot_index != -1:
-            left_string = string[:dot_index].replace('.', '/')     # Text to left of right most dot (this is the subfolder(s) names if there is) the replace replaces any dots with / for proper folder naming
+            left_string = string[:dot_index].replace('.', '\\')     # Text to left of right most dot (this is the subfolder(s) names if there is) the replace replaces any dots with / for proper folder naming
             right_string = string[dot_index+1:]  # Text to right of right most dot (this is module name)
             return right_string, left_string # Module name, subfolder
         else:
@@ -37,9 +43,11 @@ def Robust_model_export(function_name, output_dir):
     # Define the filename to search for ()
     filename = module_name + '.py'
 
-    search_dir = os.getcwd()  # current working directory
+    #cahnged from working dir to current file dir as the file is not in top level wdir
+    #search_dir = os.getcwd()  # current working directory
+    
     if subfolder != None:
-        search_dir = search_dir + "/" + subfolder
+        search_dir = search_dir + "\\" + subfolder
         print("subfolder")
     print("search loc", search_dir)
     # Traverse the directory tree to find the file
@@ -53,8 +61,9 @@ def Robust_model_export(function_name, output_dir):
     if file_path is None:
         print(f"File '{filename}' not found in '{search_dir}' or its subdirectories")
     else:
-        new_filename = os.path.splitext(filename)[0] + "-TEST" + os.path.splitext(filename)[1]
+        new_filename = os.path.splitext(filename)[0] + os.path.splitext(filename)[1]
         os.makedirs(output_dir, exist_ok=True)
         new_file_path = os.path.join(output_dir, new_filename)
         shutil.copyfile(file_path, new_file_path)
         print(f"File '{filename}' copied to '{new_file_path}'")
+
