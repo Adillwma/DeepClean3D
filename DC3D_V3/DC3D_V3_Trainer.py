@@ -45,7 +45,7 @@ import torch
 #%% - User Inputs
 mode = 0 ### 0=Data_Gathering, 1=Testing, 2=Speed_Test, 3=Debugging
 
-num_epochs = 3                                            #User controll to set number of epochs (Hyperparameter)
+num_epochs = 6                                            #User controll to set number of epochs (Hyperparameter)
 batch_size = 10                                  #User controll to set batch size (Hyperparameter) - #Data Loader, number of Images to pull per batch 
 latent_dim = 10                      #User controll to set number of nodes in the latent space, the bottleneck layer (Hyperparameter)
 
@@ -65,15 +65,15 @@ debug_noise_function = False                    #[default = False]
 debug_loader_batch = False     #(Default = False) //INPUT 0 or 1//   #Setting debug loader batch will print to user the images taken in by the dataoader in this current batch and print the corresponding labels
 
 full_dataset_integrity_check = False   #V slow
-print_network_summary = False     #deault = False
-seed = 0              #0 is default which gives no seeeding to RNG, if the value is not zero then this is used for the RNG seeding for numpy, random, and torch libraries
+print_network_summary = False     #default = False
+seed = 0                            #0 is default which gives no seeeding to RNG, if the value is not zero then this is used for the RNG seeding for numpy, random, and torch libraries
 
 #%% - Plotting Control Settings
 print_every_other = 1
 plot_or_save = 1                            #[default = 0] 0 is normal behavior, If set to 1 then saves all end of epoch printouts to disk, if set to 2 then saves outputs whilst also printing for user
 
-dataset_title = "Dataset 10_X" #"Dataset 12_X10K"
-model_save_name = "10_X_TESTING"
+dataset_title = "Dataset 11_X_5K_M" #"Dataset 12_X10K"
+model_save_name = "11_X_TESTING"
 
 #%% - Advanced Visulisation Settings
 plot_train_loss = False
@@ -124,7 +124,7 @@ import os
 import plotly.express as px
 
 # Imports from our other custom scripts
-#from Autoencoders.DC3D_Autoencoder_V1 import Encoder, Decoder
+from Autoencoders.DC3D_Autoencoder_V1 import Encoder, Decoder
 from Helper_files.Dataset_Integrity_Check_V1 import dataset_integrity_check
 from Helper_files.AE_Visulisations import Generative_Latent_information_Visulisation, Reduced_Dimension_Data_Representations, Graphwiz_visulisation, AE_visual_difference
 from Helper_files.Robust_model_exporter_V1 import Robust_model_export
@@ -209,10 +209,11 @@ os.makedirs(dir, exist_ok=True)
 graphics_dir = results_output_path + model_save_name + " - Training Results/Output_Graphics/"
 os.makedirs(graphics_dir, exist_ok=True)
 
-# Joins up the parts of the model save path
+# Joins up the parts of the differnt output files save paths
 full_model_path = dir + model_save_name + "- Model.pth"
-full_activity_filepath = dir + model_save_name + '- Activity.npz'
-full_netsum_filepath = dir + model_save_name + ' - Network Summary.txt'
+full_activity_filepath = dir + model_save_name + "- Activity.npz"
+full_netsum_filepath = dir + model_save_name + " - Network Summary.txt"
+full_statedict_path = dir + model_save_name + " - Model + Optimiser State Dicts.pth"
 
 #%% - Parameters Initialisation
 # Sets program into speed test mode
@@ -260,6 +261,8 @@ settings["Seed Val"] = seed
 settings["Reconstruction Threshold"] = reconstruction_threshold
 
 #%% - Convoloution + Linear Autoencoder
+"""
+
 ###Encoder
 class Encoder(nn.Module):
     
@@ -408,7 +411,7 @@ class Decoder(nn.Module):
             dec_out.append(np.abs(x[0].detach().numpy()))
         
         return x                      #Retuns the final output
-    
+    """
     
 #%% - Functions
 ### Random Noise Generator Function
@@ -545,7 +548,7 @@ def plot_ae_outputs_den(encoder, decoder, epoch, model_save_name, time_dimension
       ax.get_xaxis().set_visible(False)                                   #Hides the x axis from showing in the plot as we are plotting images not graphs (we may want to retain axis?)
       ax.get_yaxis().set_visible(False)                                   #Hides the y axis from showing in the plot as we are plotting images not graphs (we may want to retain axis?)
       if i == n//2:                                                       #n//2 divides n by 2 without any remainder, i.e 6//2=3 and 7//2=3. So this line checks to see if i is equal to half of n without remainder. it will be yes once in the loop. not sure of its use
-        ax.set_title('Original images')                                   #When above condition is reached, the plots title is set
+        ax.set_title('EPOCH %s \nOriginal images' %(epoch+1))               #When above condition is reached, the plots title is set                                   #When above condition is reached, the plots title is set
 
       ax = plt.subplot(3, n, i + 1 + n)                                   #Creates a number of subplots for the 'Corrupted images??????' i.e the labels. the position of the subplot is i+1+n as it falls in the second row
       plt.imshow(image_noisy.cpu().squeeze().numpy(), cmap='gist_gray')   #plt.imshow plots an image. The arguments for imshow are, 'image data array' and cmap= which is the colour map. #.squeeze() acts on a tensor and returns a tensor, it removes all dimensions of the tensor that are of length 1, (A×1×B) becomes (AxB) where A and B are greater than 1 #.numpy() creates a numpy array from a tensor #!!! is the .cpu part becuase the code was not made to accept the gpu/cpu check i made????
@@ -563,9 +566,9 @@ def plot_ae_outputs_den(encoder, decoder, epoch, model_save_name, time_dimension
     
     plt.subplots_adjust(left=0.1,              #Adjusts the exact layout of the plots including whwite space round edges
                     bottom=0.1, 
-                    right=0.7, 
+                    right=0.9, 
                     top=0.9, 
-                    wspace=0.3, 
+                    wspace=0.1, 
                     hspace=0.3)     
     ### - PLOT SAVING, CLEAN UP!!! TURN INTO A FUCNTION FOR USE ON ALL PLOTS?????
     if plot_or_save == 0:    # If user has chosen to just plot the output graphs to terminal not save them
@@ -583,10 +586,14 @@ def plot_ae_outputs_den(encoder, decoder, epoch, model_save_name, time_dimension
         else:
             plt.close()
         print("\n# SAVED OUTPUT TEST IMAGE TO DISK #\n")                                 #After entire loop is finished, the generated plot is printed to screen
-    
+
+
+    ###################??????????????????????????????????????????
     # 3D Reconstruction
-    data = rec_img.cpu().squeeze().numpy()
-    #print(np.shape(data))
+    inp_data = img.cpu().squeeze().numpy()
+    noise_data = image_noisy.cpu().squeeze().numpy()
+    rec_data = rec_img.cpu().squeeze().numpy()
+  
     def rev_norm(data, time_dimension):
         data_output = []
         for cdx, row in enumerate(data):
@@ -597,21 +604,27 @@ def plot_ae_outputs_den(encoder, decoder, epoch, model_save_name, time_dimension
                     data_output.append([cdx,idx,num])
         return np.array(data_output)
     
-    rec_data = rev_norm(data, time_dimension)
-    if rec_data.ndim != 1:
-        # print(np.shape(rec_data))
-        fig = plt.figure()
-        ax = plt.axes(projection='3d')
-        ax.scatter(rec_data[:,0], rec_data[:,1], rec_data[:,2])
-        ax.set_zlim(0, time_dimension)
+    in_im = rev_norm(inp_data, time_dimension)
+    noise_im = rev_norm(noise_data, time_dimension)
+    rec_im = rev_norm(rec_data, time_dimension)
+    
+    if rec_im.ndim != 1:                       # Checks if there are actually values in the reconstructed image, if not no image is aseved/plotted
+        fig, (ax1, ax2, ax3) = plt.subplots(1, 3, subplot_kw={'projection': '3d'})
+        #ax1 = plt.axes(projection='3d')
+        ax1.scatter(in_im[:,0], in_im[:,1], in_im[:,2])
+        ax1.set_zlim(0, time_dimension)
+        ax2.scatter(noise_im[:,0], noise_im[:,1], noise_im[:,2])
+        ax2.set_zlim(0, time_dimension)
+        ax3.scatter(rec_im[:,0], rec_im[:,1], rec_im[:,2])
+        ax3.set_zlim(0, time_dimension)
+        fig.suptitle(f"3D Reconstruction - Epoch {epoch}")
+
         ### - PLOT SAVING, CLEAN UP!!! TURN INTO A FUCNTION FOR USE ON ALL PLOTS?????
         if plot_or_save == 0:    # If user has chosen to just plot the output graphs to terminal not save them
             if (epoch+1) % print_every_other == 0:
                 plt.show()                                 #After entire loop is finished, the generated plot is printed to screen
             else:
                 plt.close()
-
-
         else:
             Out_Label = graphics_dir + f'{model_save_name} 3D Reconstruction - Epoch {epoch}.png'
             plt.savefig(Out_Label, format='png')
@@ -620,12 +633,12 @@ def plot_ae_outputs_den(encoder, decoder, epoch, model_save_name, time_dimension
             else:
                 plt.close()
             print("\n# SAVED OUTPUT TEST IMAGE TO DISK #\n")  
-
+###################??????????????????????????????????????????
     
   
 
     if (epoch+1) % print_every_other == 0:        
-        ###3D Reconstruction
+        # Passed out of func for 3D Reconstruction?????????????????????????????????????
         in_data = img.cpu().squeeze().numpy()
         noisy_data = image_noisy.cpu().squeeze().numpy()
         rec_data = rec_img.cpu().squeeze().numpy()
@@ -636,7 +649,7 @@ def plot_ae_outputs_den(encoder, decoder, epoch, model_save_name, time_dimension
             telemetry.append([epoch, above_threshold, below_threshold])
 
 
-    return(number_of_true_signal_points, number_of_recovered_signal_points)    
+    return(number_of_true_signal_points, number_of_recovered_signal_points, in_data, noisy_data, rec_data)    
     
 
 
@@ -723,7 +736,6 @@ test_loader = torch.utils.data.DataLoader(test_data, batch_size=batch_size, shuf
 lr = learning_rate                                     #Just sets the learing rate value from the user inputs pannel at the top           
 
 ### Initialize the two networks
-
 # use encoder and decoder classes, providing dimensions for your dataset. FC2_INPUT_DIM IS NOT USED!! This would be extremely useful.
 encoder = Encoder(encoded_space_dim=latent_dim,fc2_input_dim=128, encoder_debug=print_encoder_debug, record_activity=record_activity)
 decoder = Decoder(encoded_space_dim=latent_dim,fc2_input_dim=128, decoder_debug=print_decoder_debug, record_activity=record_activity)
@@ -819,7 +831,7 @@ for epoch in loop_range:                              #For loop that iterates ov
         print("\n \n## EPOCH {} PLOTS DRAWN ##".format(epoch))
         
         # finally plot the figure with all images on it.
-        number_of_true_signal_points, number_of_recovered_signal_points = plot_ae_outputs_den(encoder, decoder, epoch, model_save_name, time_dimension, reconstruction_threshold, noise_factor=noise_factor)
+        number_of_true_signal_points, number_of_recovered_signal_points, in_data, noisy_data, rec_data = plot_ae_outputs_den(encoder, decoder, epoch, model_save_name, time_dimension, reconstruction_threshold, noise_factor=noise_factor)
         
         # Allow user to exit training loop    
 
@@ -848,6 +860,11 @@ if speed_test is False:
 full_data_output = {}
 full_data_output["Train Loss"] = round(history_da['train_loss'][-1], 3)
 full_data_output["Val Loss"] = round(history_da['val_loss'][-1], 3)   #Val loss calulaton is broken? check it above
+
+#%%
+#!!! NOTE HERE BEFORE THE VISULISATIONS WE SHOULD RUN THE RENORAMLISATION TO RETURN THE CORRECT VALUES FOR VISUALS:
+
+#THEN RECONSTRUCTION CAN HAPPEN LATER???
 
 #%% - Output Visulisations
 ###Loss function plots
@@ -887,12 +904,8 @@ if plot_validation_loss:
 if plot_cutoff_telemetry:
     plot_telemetry(telemetry, plot_or_save=plot_or_save)
 
-image = test_dataset[0][0].unsqueeze(0)                      
-noised_image = add_noise(image, noise_factor, debug_noise_function)    #CHANGE TO NOISE SELECTOR FUNC
-cleaned_image = image  ###FIX!!!!!
-
 if plot_pixel_difference:
-    num_diff_noised, num_same_noised, num_diff_cleaned, num_same_cleaned, im_diff_noised, im_diff_cleaned = AE_visual_difference(image, noised_image, cleaned_image)
+    num_diff_noised, num_same_noised, num_diff_cleaned, num_same_cleaned, im_diff_noised, im_diff_cleaned = AE_visual_difference(in_data, noisy_data, rec_data)
     full_data_output["num_diff_noised"] = num_diff_noised
     full_data_output["num_same_noised"] = num_same_noised
     full_data_output["num_diff_cleaned"] = num_diff_cleaned
@@ -977,21 +990,30 @@ if plot_higher_dim:
         else:
             plt.close()
         print("\n# SAVED OUTPUT TEST IMAGE TO DISK #\n") 
-    
-    
+        
 if plot_Graphwiz:
-    print("Currently Unavailable")
+    print("Currently Unavailable\n")
 
 #%% - Export all data logged to disk in form of .txt file in the output dir
 if data_gathering:
 
-    # Save and export trained model to user  
+    # Save and export trained model to user output dir
     torch.save((encoder, decoder), full_model_path)
 
+    # Get the directory name of the current Python file for the autoencoder export
+    search_dir = os.path.abspath(__file__)
+    search_dir = os.path.dirname(search_dir)
+    
     # Locate .py file that defines the Encoder and Decoder and copies it to the model save dir, due to torch.save model save issues
-    Robust_model_export(Encoder, full_model_path) #Only need to run on encoder as encoder and decoder are both in the same file so both get saved this way
+    Robust_model_export(Encoder, search_dir, dir) #Only need to run on encoder as encoder and decoder are both in the same file so both get saved this way
 
-    # Save network activity for analysis
+    # Save the state dictionary
+    torch.save({'encoder_state_dict': encoder.state_dict(),
+                'decoder_state_dict': decoder.state_dict(),
+                'optimizer_state_dict': optim.state_dict()},
+                full_statedict_path)
+
+    # Convert network activity to numpy from torch tensors
     enc_input = np.array(enc_input)
     enc_conv = np.array(enc_conv)
     enc_flatten = np.array(enc_flatten)
@@ -1003,10 +1025,11 @@ if data_gathering:
     dec_conv = np.array(dec_conv)
     dec_out = np.array(dec_out)
 
+    # Save network activity for analysis
     np.savez((full_activity_filepath), enc_input=enc_input, enc_conv=enc_conv, enc_flatten=enc_flatten, enc_lin=enc_lin, dec_input=dec_input, dec_lin=dec_lin, dec_flatten=dec_flatten, dec_conv=dec_conv, dec_out=dec_out)
 
+    #Comparison of true signal points to recovered signal points
     try: 
-        #Comparison of true signal points to recovered signal points
         #print("True signal points",number_of_true_signal_points)
         #print("Recovered signal points: ",number_of_recovered_signal_points, "\n")
         full_data_output["true_signal_points"] = number_of_true_signal_points
