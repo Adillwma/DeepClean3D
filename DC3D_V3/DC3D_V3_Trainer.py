@@ -44,12 +44,11 @@ import torch
 
 #%% - User Inputs
 mode = 0 ### 0=Data_Gathering, 1=Testing, 2=Speed_Test, 3=Debugging
-dataset_title = "Dataset 16_X_15K_Blanks" #"Dataset 12_X10K"
-model_save_name = "16_X_15K_Blanks"
+dataset_title = "Dataset 15_X_10K_Blanks" #"Dataset 12_X10K"
+model_save_name = "15_X_10K_Blanks"
 
-
-num_epochs = 6                                            #User controll to set number of epochs (Hyperparameter)
-batch_size = 10                                  #User controll to set batch size (Hyperparameter) - #Data Loader, number of Images to pull per batch 
+num_epochs = 21                                            #User controll to set number of epochs (Hyperparameter)
+batch_size = 10                                 #User controll to set batch size (Hyperparameter) - #Data Loader, number of Images to pull per batch 
 latent_dim = 10                      #User controll to set number of nodes in the latent space, the bottleneck layer (Hyperparameter)
 
 learning_rate = 0.001  #User controll to set optimiser learning rate(Hyperparameter)
@@ -72,7 +71,7 @@ print_network_summary = False     #default = False
 seed = 0                            #0 is default which gives no seeeding to RNG, if the value is not zero then this is used for the RNG seeding for numpy, random, and torch libraries
 
 #%% - Plotting Control Settings
-print_every_other = 1
+print_every_other = 2
 plot_or_save = 1                            #[default = 0] 0 is normal behavior, If set to 1 then saves all end of epoch printouts to disk, if set to 2 then saves outputs whilst also printing for user
 
 
@@ -211,8 +210,8 @@ graphics_dir = results_output_path + model_save_name + " - Training Results/Outp
 os.makedirs(graphics_dir, exist_ok=True)
 
 # Joins up the parts of the differnt output files save paths
-full_model_path = dir + model_save_name + "- Model.pth"
-full_activity_filepath = dir + model_save_name + "- Activity.npz"
+full_model_path = dir + model_save_name + " - Model.pth"
+full_activity_filepath = dir + model_save_name + " - Activity.npz"
 full_netsum_filepath = dir + model_save_name + " - Network Summary.txt"
 full_statedict_path = dir + model_save_name + " - Model + Optimiser State Dicts.pth"
 
@@ -638,7 +637,7 @@ def plot_ae_outputs_den(encoder, decoder, epoch, model_save_name, time_dimension
     
   
 
-    if (epoch+1) % print_every_other == 0:        
+    if (epoch) % print_every_other == 0:        
         # Passed out of func for 3D Reconstruction?????????????????????????????????????
         in_data = img.cpu().squeeze().numpy()
         noisy_data = image_noisy.cpu().squeeze().numpy()
