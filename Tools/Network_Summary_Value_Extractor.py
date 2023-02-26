@@ -19,11 +19,6 @@ def get_training_time(file_path):
     print('Training Time not found in file')               # If the function reaches the end of the file without finding the training time string, it warns user but does not break for error, the function will return a flag so main body program can implement its own conditions if neded.
     return ("Error")
 
-# Test Driver
-training_time = get_training_time('path/to/file.txt')
-print(training_time)
-
-
 # Val Loss
 def get_valloss_time(file_path):
     "Val_Loss_Scraper V1.0.0"
