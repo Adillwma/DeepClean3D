@@ -56,10 +56,10 @@ import torch
 
 #%% - User Inputs
 mode = 0 ### 0=Data_Gathering, 1=Testing, 2=Speed_Test, 3=Debugging
-dataset_title = "Dataset 10_X" #"Dataset 12_X10K"
-model_save_name = "Dataset 10_X_Testing_updates"
+dataset_title = "Dataset 11_X_5K_M" #"Dataset 12_X10K"
+model_save_name = "Dataset 11_X_5K_M_Testing_updates"
 
-num_epochs = 11                                            #User controll to set number of epochs (Hyperparameter)
+num_epochs = 21                                            #User controll to set number of epochs (Hyperparameter)
 batch_size = 10                                 #User controll to set batch size (Hyperparameter) - #Data Loader, number of Images to pull per batch 
 latent_dim = 10                      #User controll to set number of nodes in the latent space, the bottleneck layer (Hyperparameter)
 
@@ -83,7 +83,7 @@ print_network_summary = False     #default = False
 seed = 0                            #0 is default which gives no seeeding to RNG, if the value is not zero then this is used for the RNG seeding for numpy, random, and torch libraries
 
 #%% - Plotting Control Settings
-print_every_other = 1
+print_every_other = 2
 plot_or_save = 1                            #[default = 0] 0 is normal behavior, If set to 1 then saves all end of epoch printouts to disk, if set to 2 then saves outputs whilst also printing for user
 
 
@@ -594,7 +594,7 @@ def plot_ae_outputs_den(encoder, decoder, epoch, model_save_name, time_dimension
                     hspace=0.3)     
     
     ### NEW PLOT SAVING SIMPLIFIED (TESTING CURRENTLY)
-    if (epoch+1) % print_every_other == 0:
+    if (epoch) % print_every_other == 0:
         Out_Label = graphics_dir + f'{model_save_name} - Epoch {epoch}.png'
         plot_save_choice(plot_or_save, Out_Label)
     else:
@@ -642,7 +642,7 @@ def plot_ae_outputs_den(encoder, decoder, epoch, model_save_name, time_dimension
         ax3.set_zlim(0, time_dimension)
         fig.suptitle(f"3D Reconstruction - Epoch {epoch}")
         
-        if (epoch+1) % print_every_other == 0:
+        if (epoch) % print_every_other == 0:
             Out_Label = graphics_dir + f'{model_save_name} 3D Reconstruction - Epoch {epoch}.png'
             plot_save_choice(plot_or_save, Out_Label)
         else:
