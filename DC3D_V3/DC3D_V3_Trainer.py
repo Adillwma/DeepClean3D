@@ -2,17 +2,20 @@
 """
 Created on Sat Feb 1 2022
 DeepClean v0.3.1
-@authors: Adill Al-Ashgar & Max Carter
+Authors: Adill Al-Ashgar & Max Carter
+@Adill: adillwmaa@gmail.co.uk - ex18871@bristol.ac.uk
+@Max: qa19105@bristol.ac.uk
+
 # University of Bristol
 
 Possible improvements:
-### ~~~~~ MAke sure that autoecoder Encoder and Decoder are saved along with model in the models folder 
+### ~~~~~ [DONE!] Make sure that autoecoder Encoder and Decoder are saved along with model in the models folder 
 
 ### ~~~~~ Possibly set all to double?
 dtype (torch.dtype, optional) – the desired data type of returned tensor. 
 Default: if None, uses a global default (see torch.set_default_tensor_type()).!!! 
 
-### ~~~~~ MUST SEPERATE 3D recon and flattening from the normalisation and renormalisation
+### ~~~~~ [DONE!] MUST SEPERATE 3D recon and flattening from the normalisation and renormalisation
 
 ### ~~~~~ #Noticed we need to update and cleanup all the terminal printing during the visulisations, clean up the weird line spaces and make sure to print what plot is currntly generating as some take a while and the progress bar doesn’t let user know what plot we are currently on
 
@@ -24,17 +27,17 @@ Default: if None, uses a global default (see torch.set_default_tensor_type()).!!
 
 ### ~~~~~ Functionalise things
 
-### ~~~~~ Move things to other files (AE, Helper funcs, Visulisations etc)
+### ~~~~~ [DONE!] Move things to other files (AE, Helper funcs, Visulisations etc)
 
-### ~~~~~ Fix reconstruction threshold, use recon threshold to set bottom limit in custom normalisation
+### ~~~~~ [DONE!] Fix reconstruction threshold, use recon threshold to set bottom limit in custom normalisation
 
-### ~~~~~ Turn plot or save into a function 
+### ~~~~~ [DONE!] Turn plot or save into a function 
 
 ### ~~~~~ Add arg to plot or save function that passes a test string to print for the plot generating user notice ratehr than the generic one used each time atm 
 
 ### ~~~~~ change telemetry variable name to output_pixel_telemetry
 
-### ~~~~~ Fix this " if plot_higher_dim: AE_visulisation(en...)" break out all seperate plotting functions
+### ~~~~~ [DONE!] Fix this " if plot_higher_dim: AE_visulisation(en...)" break out all seperate plotting functions
     
 ### ~~~~~ adapt new version for masking - DeepMask3D 
 
@@ -46,9 +49,9 @@ Default: if None, uses a global default (see torch.set_default_tensor_type()).!!
 
 ### ~~~~~ Add in automatic Enc/Dec layer size calulations
 
-### ~~~~~ Search for and fix errors in custom norm an renorm
+### ~~~~~ [DONE!] Search for and fix errors in custom norm an renorm
 
-### ~~~~~ Seperate and moularise renorm and 3D reconstruction
+### ~~~~~ [DONE!] Seperate and moularise renorm and 3D reconstruction
 
 ### ~~~~~ Create flatten module in main body so noise can be added to the 3D cube rather than slicewise
 """
@@ -85,8 +88,6 @@ seed = 0                            #0 is default which gives no seeeding to RNG
 #%% - Plotting Control Settings
 print_every_other = 2
 plot_or_save = 1                            #[default = 0] 0 is normal behavior, If set to 1 then saves all end of epoch printouts to disk, if set to 2 then saves outputs whilst also printing for user
-
-
 
 #%% - Advanced Visulisation Settings
 plot_train_loss = False
