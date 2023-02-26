@@ -134,6 +134,7 @@ from tqdm import tqdm
 from torchviz import make_dot
 import os
 import plotly.express as px
+from functools import partial
 
 # Imports from our other custom scripts
 #from Autoencoders.DC3D_Autoencoder_V1 import Encoder, Decoder
@@ -724,19 +725,21 @@ test_dataset = torchvision.datasets.DatasetFolder(test_dir, train_loader2d, exte
 
 #%% - Data Preparation
 
+custom_normalisation_with_args = partial(custom_normalisation, reconstruction_threshold=reconstruction_threshold, time_dimension=time_dimension)   #using functools partial to bundle the args into custom norm to use in custom torch transform using lambda function
+
 train_transform = transforms.Compose([                                         #train_transform variable holds the tensor tranformations to be performed on the training data.  transforms.Compose([ ,  , ]) allows multiple transforms to be chained together (in serial?) (#!!! does it do more than this??)
                                        #transforms.RandomRotation(30),         #transforms.RandomRotation(angle (degrees?) ) rotates the tensor randomly up to max value of angle argument
                                        #transforms.RandomResizedCrop(224),     #transforms.RandomResizedCrop(pixels) crops the data to 'pixels' in height and width (#!!! and (maybe) chooses a random centre point????)
                                        #transforms.RandomHorizontalFlip(),     #transforms.RandomHorizontalFlip() flips the image data horizontally 
                                        #transforms.Normalize((0.5), (0.5)),    #transforms.Normalize can be used to normalise the values in the array
-                                       transforms.Lambda(custom_normalisation),
+                                       transforms.Lambda(custom_normalisation_with_args),
                                        transforms.ToTensor()])                 #other transforms can be dissabled but to tensor must be left enabled ! it creates a tensor from a numpy array #!!! ?
 
 test_transform = transforms.Compose([                                          #test_transform variable holds the tensor tranformations to be performed on the evaluation data.  transforms.Compose([ ,  , ]) allows multiple transforms to be chained together (in serial?) (#!!! does it do more than this??)
                                       #transforms.Resize(255),                 #transforms.Resize(pixels? #!!!) ??
                                       #transforms.CenterCrop(224),             #transforms.CenterCrop(pixels? #!!!) ?? Crops the given image at the center. If the image is torch Tensor, it is expected to have […, H, W] shape, where … means an arbitrary number of leading dimensions. If image size is smaller than output size along any edge, image is padded with 0 and then center cropp
                                       #transforms.Normalize((0.5), (0.5)),     #transforms.Normalize can be used to normalise the values in the array
-                                      transforms.Lambda(custom_normalisation),
+                                      transforms.Lambda(custom_normalisation_with_args),
                                       transforms.ToTensor()])                  #other transforms can be dissabled but to tensor must be left enabled ! it creates a tensor from a numpy array #!!! ?
 
 # this applies above transforms to dataset (dataset transform = transform above)
