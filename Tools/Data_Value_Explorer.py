@@ -12,7 +12,7 @@ normalisation and reconstructions.
 
 ### Improvemnts to be made
 # for statistics fucntion add a check for if input is 1D and if not then flatten it 
-#
+# must find faster way of loading in the numpy files and then flattening them all into one long np array
 #
 
 """
@@ -79,7 +79,7 @@ def file_loader(folder_path, load_full_set=False, print_output=True):
         for file_number in tqdm(range(1, number_of_files), desc='Loading files'):
             test_file = npy_file_loader(npy_files[file_number])
             test_file = test_file.flatten()
-            test_files = np.concatenate((test_files, test_file))  # append each numpy file to the array
+            test_files = np.append(test_files, test_file)  # append each numpy file to the array
         output = test_files
 
     else:  # Test 1 file only - loads random npy file from dir
@@ -187,7 +187,7 @@ print(type(single_file))
 
 print(np.shape(full_set))
 print(type(full_set))
-"""
+
 single_file_stats = calculate_statistics(single_file)
 full_set_stats = calculate_statistics(full_set)
 
@@ -218,5 +218,3 @@ for i, (key, value) in enumerate(full_set_stats.items()):
 # Show the plot
 plt.show()
 
-
-"""
