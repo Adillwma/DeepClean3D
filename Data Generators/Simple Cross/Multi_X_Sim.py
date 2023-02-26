@@ -165,15 +165,15 @@ def simp_simulator(num_X = 1, sig_pts = 28, x_dim = 28, y_dim = 28, z_dim = 28, 
 #------------------------------------------------------------------
 # calling function and plotting results for clean and noisy:
 
-flattened_data = simp_simulator(num_X = 3, sig_pts = 200, x_dim = 128, y_dim = 88, z_dim = 28, shift=1)
+# flattened_data = simp_simulator(num_X = 3, sig_pts = 200, x_dim = 128, y_dim = 88, z_dim = 28, shift=1)
 
 # for degubbing perposes:
 
-print(np.shape(flattened_data))
+# print(np.shape(flattened_data))
 
 # plot 2d clean data
-plt.imshow(flattened_data)
-plt.show()
+# plt.imshow(flattened_data)
+# plt.show()
 # # plot 2d noisy data
 # plt.imshow(flattened_data[1])
 # plt.show()

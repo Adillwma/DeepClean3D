@@ -11,6 +11,10 @@ import numpy as np
 #print(np.shape(array2))
 #print(np.shape(array3))
 
-a = [1]
-for b in a:
-    print(b)
+# a = [1]
+# for b in a:
+#     print(b)
+
+Proportions = [0,1,0,0,0]
+for crosses, proportion in enumerate(Proportions):
+    print(crosses, proportion)
