@@ -1,15 +1,3 @@
-
-
-#NOTE Needs updating so that generates multiple patterns (sometimes)!
-#Would be nice if we can specify how many of each number of pattern as arguments to the func, i.e 
-#oneX=8000, twoX=1000, threeX=1000 
-#or somthing like that ? 
-
-
-
-
-
-
 import matplotlib.pyplot as plt
 import numpy as np
 
