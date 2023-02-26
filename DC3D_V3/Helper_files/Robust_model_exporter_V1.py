@@ -52,10 +52,14 @@ def Robust_model_export(function_name, search_dir, output_dir):
     print("search loc", search_dir)
     # Traverse the directory tree to find the file
     file_path = None
-    for root, dirs, files in os.walk(search_dir):
-        if filename in files:
-            file_path = os.path.join(root, filename)
-            break
+    try:
+        for root, dirs, files in os.walk(search_dir):
+            if filename in files:
+                file_path = os.path.join(root, filename)
+                break
+    except:
+        print("Error! Autoencoder File Not Found for Copy")   #just to stop this not working from holding up the rest of the main program 
+        pass
 
     # Copy the file to a new location with modified filename
     if file_path is None:
