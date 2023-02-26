@@ -12,6 +12,8 @@ Possible improvements:
 dtype (torch.dtype, optional) – the desired data type of returned tensor. 
 Default: if None, uses a global default (see torch.set_default_tensor_type()).!!! 
 
+### ~~~~~ #Noticed we need to update and cleanup all the terminal printing during the visulisations, clean up the weird line spaces and make sure to print what plot is currntly generating as some take a while and the progress bar doesn’t let user know what plot we are currently on
+
 ### ~~~~~ Update the model and data paths to folders inside the root dir so that they do not need be defined, and so that people can doanload the git repo and just press run without setting new paths etc 
 
 ### ~~~~~ fix epoch numbering printouts? they seem to report 1 epoch greater than they should
@@ -25,6 +27,8 @@ Default: if None, uses a global default (see torch.set_default_tensor_type()).!!
 ### ~~~~~ Fix reconstruction threshold, use recon threshold to set bottom limit in custom normalisation
 
 ### ~~~~~ Turn plot or save into a function 
+
+### ~~~~~ Add arg to plot or save function that passes a test string to print for the plot generating user notice ratehr than the generic one used each time atm 
 
 ### ~~~~~ change telemetry variable name to output_pixel_telemetry
 
@@ -138,6 +142,17 @@ def custom_normalisation(input, time_dimension=100):
                 row[i] = 0
     return input
 
+def plot_save_choice(plot_or_save, output_file_path):
+    if plot_or_save == 0:
+        plt.show()
+    else:
+        plt.savefig(Out_Label, format='png')    
+        if plot_or_save == 1:    
+            plt.close()
+        else:
+            plt.show()
+
+
 ###Ploting confidence of each pixel as histogram per epoch with line showing the detection threshold
 def belief_telemetry(data, reconstruction_threshold, epoch, settings, plot_or_save=0):
     data2 = data.flatten()
@@ -147,15 +162,9 @@ def belief_telemetry(data, reconstruction_threshold, epoch, settings, plot_or_sa
     plt.axvline(x= reconstruction_threshold, color='red', marker='|', linestyle='dashed', linewidth=2, markersize=12)
     plt.title("Epoch %s" %epoch)
     plt.bar_label(bars, fontsize=10, color='navy') 
-    if plot_or_save == 0:
-        plt.show()
-    else:
-        Out_Label = graphics_dir + f'{model_save_name} - Reconstruction Telemetry Histogram - Epoch {epoch}.png'
-        plt.savefig(Out_Label, format='png')    
-        if plot_or_save == 1:    
-            plt.close()
-        else:
-            plt.show()
+
+    Out_Label = graphics_dir + f'{model_save_name} - Reconstruction Telemetry Histogram - Epoch {epoch}.png'
+    plot_save_choice(plot_or_save, Out_Label)
 
     above_threshold = (data2 >= reconstruction_threshold).sum()
     below_threshold = (data2 < reconstruction_threshold).sum()
@@ -170,15 +179,8 @@ def plot_telemetry(telemetry, plot_or_save=0):
     plt.xlabel("Epoch number")
     plt.ylabel("Number of Signal Points")
     plt.legend()
-    if plot_or_save == 0:
-        plt.show()
-    else:
-        Out_Label = graphics_dir + f'{model_save_name} - Reconstruction Telemetry Histogram - Epoch {epoch}.png'
-        plt.savefig(Out_Label, format='png')    
-        if plot_or_save == 1:    
-            plt.close()
-        else:
-            plt.show() 
+    Out_Label = graphics_dir + f'{model_save_name} - Reconstruction Telemetry Histogram - Epoch {epoch}.png'
+    plot_save_choice(plot_or_save, Out_Label)
 
 ###RNG Seeding for Determinism Function
 def Determinism_Seeding(seed):
@@ -570,14 +572,20 @@ def plot_ae_outputs_den(encoder, decoder, epoch, model_save_name, time_dimension
                     top=0.9, 
                     wspace=0.1, 
                     hspace=0.3)     
-    ### - PLOT SAVING, CLEAN UP!!! TURN INTO A FUCNTION FOR USE ON ALL PLOTS?????
+    
+    ### NEW PLOT SAVING SIMPLIFIED (TESTING CURRENTLY)
+    if (epoch+1) % print_every_other == 0:
+        Out_Label = graphics_dir + f'{model_save_name} - Epoch {epoch}.png'
+        plot_save_choice(plot_or_save, Out_Label)
+    else:
+        plt.close()
+    """
+    ### OLD !!! - PLOT SAVING, CLEAN UP!!! TURN INTO A FUCNTION FOR USE ON ALL PLOTS?????
     if plot_or_save == 0:    # If user has chosen to just plot the output graphs to terminal not save them
         if (epoch+1) % print_every_other == 0:
             plt.show()                                 #After entire loop is finished, the generated plot is printed to screen
         else:
             plt.close()
-
-
     else:
         Out_Label = graphics_dir + f'{model_save_name} - Epoch {epoch}.png'
         plt.savefig(Out_Label, format='png')
@@ -585,9 +593,10 @@ def plot_ae_outputs_den(encoder, decoder, epoch, model_save_name, time_dimension
             plt.show()
         else:
             plt.close()
+
         print("\n# SAVED OUTPUT TEST IMAGE TO DISK #\n")                                 #After entire loop is finished, the generated plot is printed to screen
 
-
+    """
     ###################??????????????????????????????????????????
     # 3D Reconstruction
     inp_data = img.cpu().squeeze().numpy()
@@ -618,10 +627,16 @@ def plot_ae_outputs_den(encoder, decoder, epoch, model_save_name, time_dimension
         ax3.scatter(rec_im[:,0], rec_im[:,1], rec_im[:,2])
         ax3.set_zlim(0, time_dimension)
         fig.suptitle(f"3D Reconstruction - Epoch {epoch}")
-
-        ### - PLOT SAVING, CLEAN UP!!! TURN INTO A FUCNTION FOR USE ON ALL PLOTS?????
+        
+        if (epoch+1) % print_every_other == 0:
+            Out_Label = graphics_dir + f'{model_save_name} 3D Reconstruction - Epoch {epoch}.png'
+            plot_save_choice(plot_or_save, Out_Label)
+        else:
+            plt.close()
+        """
+        ### - OLD !!!! PLOT SAVING, CLEAN UP!!! TURN INTO A FUCNTION FOR USE ON ALL PLOTS?????
         if plot_or_save == 0:    # If user has chosen to just plot the output graphs to terminal not save them
-            if (epoch+1) % print_every_other == 0:
+            if (epoch+1) % print_every_other == 0:   #should this just be epoch now??
                 plt.show()                                 #After entire loop is finished, the generated plot is printed to screen
             else:
                 plt.close()
@@ -634,8 +649,8 @@ def plot_ae_outputs_den(encoder, decoder, epoch, model_save_name, time_dimension
                 plt.close()
             print("\n# SAVED OUTPUT TEST IMAGE TO DISK #\n")  
 ###################??????????????????????????????????????????
-    
-  
+
+        """
 
     if (epoch) % print_every_other == 0:        
         # Passed out of func for 3D Reconstruction?????????????????????????????????????
@@ -786,7 +801,7 @@ start_time = time.time()
 if print_partial_training_losses:  # Prints partial train losses per batch
     loop_range = range(num_epochs)
 else:                              # No print partial train losses per batch, instead create progress bar
-    loop_range = tqdm(range(num_epochs), desc='Epochs')
+    loop_range = tqdm(range(num_epochs), desc='Epochs', colour='red')
 
 
 # bringing everything together to train model
@@ -874,33 +889,17 @@ if plot_train_loss:
     plt.title("Training loss")   
     plt.xlabel("Epoch number")
     plt.ylabel("Train loss (MSE)")
-    if plot_or_save == 0:
-        plt.show()                            
-    else:
-        Out_Label =  graphics_dir + f'{model_save_name} - Train loss - Epoch {epoch}.png'
-        plt.savefig(Out_Label, format='png')
-        if plot_or_save == 2:
-            plt.show()
-        else:
-            plt.close()
-        print("\n# SAVED OUTPUT TEST IMAGE TO DISK #\n")    
+    Out_Label =  graphics_dir + f'{model_save_name} - Train loss - Epoch {epoch}.png'
+    plot_save_choice(plot_or_save, Out_Label)  
 
 if plot_validation_loss:
     plt.plot(epochs_range, history_da['train_loss'])   #ERROR SHOULD BE VAL LOSS!
     plt.title("Validation loss") 
     plt.xlabel("Epoch number")
     plt.ylabel("Val loss (MSE)")
-    if plot_or_save == 0:
-        plt.show()                            
-    else:
-        Out_Label =  graphics_dir + f'{model_save_name} - Val loss - Epoch {epoch}.png'
-        plt.savefig(Out_Label, format='png')
-        if plot_or_save == 2:
-            plt.show()
-        else:
-            plt.close()
-        print("\n# SAVED OUTPUT TEST IMAGE TO DISK #\n")    
-
+    plot_save_choice(plot_or_save, Out_Label)  
+    Out_Label =  graphics_dir + f'{model_save_name} - Val loss - Epoch {epoch}.png'
+   
 if plot_cutoff_telemetry:
     plot_telemetry(telemetry, plot_or_save=plot_or_save)
 
@@ -925,16 +924,8 @@ if plot_pixel_difference:
     # Add title for the whole figure
     fig.suptitle('Pixel-wise Difference Comparisons')
     
-    if plot_or_save == 0:
-        plt.show()                            
-    else:
-        Out_Label = graphics_dir + f'{model_save_name} - Pixel Difference Epoch {epoch}.png'
-        plt.savefig(Out_Label, format='png')
-        if plot_or_save == 2:
-            plt.show()
-        else:
-            plt.close()
-        print("\n# SAVED OUTPUT TEST IMAGE TO DISK #\n")   
+    Out_Label = graphics_dir + f'{model_save_name} - Pixel Difference Epoch {epoch}.png'
+    plot_save_choice(plot_or_save, Out_Label)  
 
 if plot_latent_generations:
     def show_image(img):
@@ -945,16 +936,9 @@ if plot_latent_generations:
     
     fig, ax = plt.subplots(figsize=(20, 8.5))
     show_image(torchvision.utils.make_grid(img_recon[:100],10,10, pad_value=100))
-    if plot_or_save == 0:
-        plt.show()                            
-    else:
-        Out_Label = graphics_dir + f'{model_save_name} - Latent Generation Epoch {epoch}.png'
-        plt.savefig(Out_Label, format='png')
-        if plot_or_save == 2:
-            plt.show()
-        else:
-            plt.close()
-        print("\n# SAVED OUTPUT TEST IMAGE TO DISK #\n")   
+
+    Out_Label = graphics_dir + f'{model_save_name} - Latent Generation Epoch {epoch}.png'
+    plot_save_choice(plot_or_save, Out_Label)  
 
 if plot_higher_dim:
     encoded_samples, tsne_results = Reduced_Dimension_Data_Representations(encoder, device, test_dataset, plot_or_save=plot_or_save)
@@ -964,36 +948,21 @@ if plot_higher_dim:
     plt.scatter(encoded_samples['Enc. Variable 0'], encoded_samples['Enc. Variable 1'],
             c=encoded_samples['label'], alpha=0.7)
     plt.grid()
-    if plot_or_save == 0:
-        plt.show()                            
-    else:
-        Out_Label = graphics_dir + f'{model_save_name} - Higher Dimensisions Epoch {epoch}.png'
-        plt.savefig(Out_Label, format='png')
-        if plot_or_save == 2:
-            plt.show()
-        else:
-            plt.close()
-        print("\n# SAVED OUTPUT TEST IMAGE TO DISK #\n") 
+    Out_Label = graphics_dir + f'{model_save_name} - Higher Dimensisions Epoch {epoch}.png'
+    plot_save_choice(plot_or_save, Out_Label)  
 
     # TSNE of Higher dim
     plt.scatter(tsne_results[:, 0], tsne_results[:, 1], c=encoded_samples['label'])
     plt.xlabel('tsne-2d-one')
     plt.ylabel('tsne-2d-two')
     plt.grid()
-    if plot_or_save == 0:
-        plt.show()                            
-    else:
-        Out_Label = graphics_dir + f'{model_save_name} - TSNE Epoch {epoch}.png'
-        plt.savefig(Out_Label, format='png')
-        if plot_or_save == 2:
-            plt.show()
-        else:
-            plt.close()
-        print("\n# SAVED OUTPUT TEST IMAGE TO DISK #\n") 
+    Out_Label = graphics_dir + f'{model_save_name} - TSNE Epoch {epoch}.png'
+    plot_save_choice(plot_or_save, Out_Label)  
         
 if plot_Graphwiz:
     print("Graphwiz Plot Currently Unavailable\n")
-
+    #Out_Label = graphics_dir + f'{model_save_name} - Graphwiz Epoch {epoch}.png'    
+    #plot_save_choice(plot_or_save, Out_Label)  
 #%% - Export all data logged to disk in form of .txt file in the output dir
 if data_gathering:
 
