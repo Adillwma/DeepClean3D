@@ -12,6 +12,8 @@ Possible improvements:
 dtype (torch.dtype, optional) – the desired data type of returned tensor. 
 Default: if None, uses a global default (see torch.set_default_tensor_type()).!!! 
 
+### ~~~~~ MUST SEPERATE 3D recon and flattening from the normalisation and renormalisation
+
 ### ~~~~~ #Noticed we need to update and cleanup all the terminal printing during the visulisations, clean up the weird line spaces and make sure to print what plot is currntly generating as some take a while and the progress bar doesn’t let user know what plot we are currently on
 
 ### ~~~~~ Update the model and data paths to folders inside the root dir so that they do not need be defined, and so that people can doanload the git repo and just press run without setting new paths etc 
@@ -43,15 +45,21 @@ Default: if None, uses a global default (see torch.set_default_tensor_type()).!!
 ### ~~~~~ Update all layer activation tracking from lists and numpy to torch tensors throughout pipeline for speed
 
 ### ~~~~~ Add in automatic Enc/Dec layer size calulations
+
+### ~~~~~ Search for and fix errors in custom norm an renorm
+
+### ~~~~~ Seperate and moularise renorm and 3D reconstruction
+
+### ~~~~~ Create flatten module in main body so noise can be added to the 3D cube rather than slicewise
 """
 import torch
 
 #%% - User Inputs
 mode = 0 ### 0=Data_Gathering, 1=Testing, 2=Speed_Test, 3=Debugging
-dataset_title = "Dataset 15_X_10K_Blanks" #"Dataset 12_X10K"
-model_save_name = "15_X_10K_Blanks"
+dataset_title = "Dataset 10_X" #"Dataset 12_X10K"
+model_save_name = "Dataset 10_X_Testing_updates"
 
-num_epochs = 21                                            #User controll to set number of epochs (Hyperparameter)
+num_epochs = 11                                            #User controll to set number of epochs (Hyperparameter)
 batch_size = 10                                 #User controll to set batch size (Hyperparameter) - #Data Loader, number of Images to pull per batch 
 latent_dim = 10                      #User controll to set number of nodes in the latent space, the bottleneck layer (Hyperparameter)
 
@@ -75,7 +83,7 @@ print_network_summary = False     #default = False
 seed = 0                            #0 is default which gives no seeeding to RNG, if the value is not zero then this is used for the RNG seeding for numpy, random, and torch libraries
 
 #%% - Plotting Control Settings
-print_every_other = 2
+print_every_other = 1
 plot_or_save = 1                            #[default = 0] 0 is normal behavior, If set to 1 then saves all end of epoch printouts to disk, if set to 2 then saves outputs whilst also printing for user
 
 
@@ -134,24 +142,35 @@ from Helper_files.AE_Visulisations import Generative_Latent_information_Visulisa
 from Helper_files.Robust_model_exporter_V1 import Robust_model_export
 
 #%% - Helper functions
-def custom_normalisation(input, time_dimension=100):
-    input = (input / (2 * time_dimension)) + reconstruction_threshold
-    for row in input:
+def custom_normalisation(data, reconstruction_threshold, time_dimension=100):
+    data = ((data / time_dimension) / (1/(1-reconstruction_threshold))) + reconstruction_threshold
+    for row in data:
         for i, ipt in enumerate(row):
             if ipt == reconstruction_threshold:
                 row[i] = 0
-    return input
+    return data
+
+def custom_renormalisation(data, reconstruction_threshold, time_dimension=100):
+    data = np.where(data > reconstruction_threshold, ((data - reconstruction_threshold)*(1/(1-reconstruction_threshold)))*(time_dimension), data)
+    return data
+
+def reconstruct_3D(data, reconstruction_threshold):
+    data_output = []
+    for cdx, row in enumerate(data):
+        for idx, num in enumerate(row):
+            if num > reconstruction_threshold:  #should this be larger than or equal to??? depends how we deal with the 0 slice problem
+                data_output.append([cdx,idx,num])
+    return np.array(data_output)
 
 def plot_save_choice(plot_or_save, output_file_path):
     if plot_or_save == 0:
         plt.show()
     else:
-        plt.savefig(Out_Label, format='png')    
+        plt.savefig(output_file_path, format='png')    
         if plot_or_save == 1:    
             plt.close()
         else:
             plt.show()
-
 
 ###Ploting confidence of each pixel as histogram per epoch with line showing the detection threshold
 def belief_telemetry(data, reconstruction_threshold, epoch, settings, plot_or_save=0):
@@ -603,19 +622,13 @@ def plot_ae_outputs_den(encoder, decoder, epoch, model_save_name, time_dimension
     noise_data = image_noisy.cpu().squeeze().numpy()
     rec_data = rec_img.cpu().squeeze().numpy()
   
-    def rev_norm(data, time_dimension):
-        data_output = []
-        for cdx, row in enumerate(data):
-            for idx, num in enumerate(row):
-                if num > 0.5:
-                    num -= 0.5
-                    num = num * (time_dimension-1*2)
-                    data_output.append([cdx,idx,num])
-        return np.array(data_output)
+    in_im = custom_renormalisation(inp_data, reconstruction_threshold, time_dimension)
+    noise_im = custom_renormalisation(noise_data, reconstruction_threshold, time_dimension)
+    rec_im = custom_renormalisation(rec_data, reconstruction_threshold, time_dimension)
     
-    in_im = rev_norm(inp_data, time_dimension)
-    noise_im = rev_norm(noise_data, time_dimension)
-    rec_im = rev_norm(rec_data, time_dimension)
+    in_im = reconstruct_3D(in_im, reconstruction_threshold)
+    noise_im = reconstruct_3D(noise_im, reconstruction_threshold)
+    rec_im = reconstruct_3D(rec_im, reconstruction_threshold)
     
     if rec_im.ndim != 1:                       # Checks if there are actually values in the reconstructed image, if not no image is aseved/plotted
         fig, (ax1, ax2, ax3) = plt.subplots(1, 3, subplot_kw={'projection': '3d'})
@@ -658,6 +671,8 @@ def plot_ae_outputs_den(encoder, decoder, epoch, model_save_name, time_dimension
         noisy_data = image_noisy.cpu().squeeze().numpy()
         rec_data = rec_img.cpu().squeeze().numpy()
         
+        ####Should the above be renormalised? or even just deleted???
+
         #Telemetry plots
         if plot_cutoff_telemetry == 1:       #needs ttitles and labels etc added
             above_threshold, below_threshold = belief_telemetry(rec_data, reconstruction_threshold, epoch+1, settings, plot_or_save)   
