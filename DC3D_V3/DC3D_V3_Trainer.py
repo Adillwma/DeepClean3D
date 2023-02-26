@@ -57,7 +57,7 @@ import torch
 #%% - User Inputs
 mode = 0 ### 0=Data_Gathering, 1=Testing, 2=Speed_Test, 3=Debugging
 dataset_title = "Dataset 11_X_5K_M" #"Dataset 12_X10K"
-model_save_name = "Dataset 11_X_5K_M_Testing_updates"
+model_save_name = "11_X_5K_M_Testing_updates2"
 
 num_epochs = 21                                            #User controll to set number of epochs (Hyperparameter)
 batch_size = 10                                 #User controll to set batch size (Hyperparameter) - #Data Loader, number of Images to pull per batch 
