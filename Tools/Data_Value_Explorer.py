@@ -16,13 +16,13 @@ normalisation and reconstructions.
 #
 
 """
-
+from scipy.stats import kurtosis, skew
 from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
 import numpy as np
 import pywt
 import os
-
+from tqdm import tqdm
 ###Ploting confidence of each pixel as histogram per epoch with line showing the detection threshold
 def data_histogram(data, time_dimension, ax=None):
     """
@@ -65,7 +65,7 @@ def file_loader(folder_path, load_full_set=False, print_output=True):
 
     # If no .npy files were found, return None
     if number_of_files == 0:
-        print("Error: No files found in dataset dir! \n(files must be inside a folder that is inside the dataset dir specified)\n")
+        print("Error: Either specified dir does not exist or no files found! \n(files must be inside a folder that is inside the dataset dir specified)\n")
         return None
 
     def npy_file_loader(chosen_file):
@@ -75,14 +75,16 @@ def file_loader(folder_path, load_full_set=False, print_output=True):
         return arr
     
     if load_full_set:   # Test all files in directory sequentially by index
-        test_files=[]
-        for file_number in range(1, number_of_files):
+        test_files = np.empty((0,))  # initialize an empty numpy array
+        for file_number in tqdm(range(1, number_of_files), desc='Loading files'):
             test_file = npy_file_loader(npy_files[file_number])
-        test_files.append(test_file)
+            test_file = test_file.flatten()
+            test_files = np.concatenate((test_files, test_file))  # append each numpy file to the array
         output = test_files
 
     else:  # Test 1 file only - loads random npy file from dir
         test_file = npy_file_loader(np.random.choice(npy_files))
+        test_file = test_file.flatten()
         output = test_file
 
     return output
@@ -133,8 +135,8 @@ def calculate_statistics(data):   #Need to improve this by adding a check at beg
     q3 = np.percentile(data, 75)
 
     # Calculate skewness and kurtosis using numpy function
-    skewness = np.skew(data)
-    kurt = np.kurtosis(data)
+    skewness = skew(data)
+    kurt = kurtosis(data)
     
     # Compute the Fourier transform
     fourier_transform = np.fft.fft(data)
@@ -172,14 +174,20 @@ def calculate_statistics(data):   #Need to improve this by adding a check at beg
 
 #%% - User Inputs
 time_dimension = 100
-dataset_title = "Dataset 12_X10K"
+dataset_title = "Dataset 15_X_10K_Blanks"
 data_path = "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Yr 3 Project/Circular and Spherical Dummy Datasets/"
-dir = (data_path + dataset_title + "/Data/")
+dir = (data_path + dataset_title)
 
 #%% - Load Files
 single_file = file_loader(dir)
 full_set = file_loader(dir, load_full_set=True)
 
+print(np.shape(single_file))
+print(type(single_file))
+
+print(np.shape(full_set))
+print(type(full_set))
+"""
 single_file_stats = calculate_statistics(single_file)
 full_set_stats = calculate_statistics(full_set)
 
@@ -211,3 +219,4 @@ for i, (key, value) in enumerate(full_set_stats.items()):
 plt.show()
 
 
+"""
