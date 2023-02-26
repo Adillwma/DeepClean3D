@@ -43,10 +43,10 @@ def data_histogram(data, time_dimension, ax=None):
     matplotlib.axes.Axes
         The subplot on which the histogram was plotted.
     """
-    data2 = data.flatten()  # Flatten the input data
+    #data2 = data.flatten()  # Flatten the input data   only perform this fater check if inp is 1D
     if ax is None:
         fig, ax = plt.subplots()  # Create a new subplot if none is provided
-    _, _, bars = ax.hist(data2, time_dimension, histtype='bar')  # Create the histogram
+    _, _, bars = ax.hist(data, time_dimension, histtype='bar')  # Create the histogram
     ax.bar_label(bars, fontsize=10, color='navy')  # Add labels to the bars
     return ax  # Return the subplot object
 
@@ -73,14 +73,20 @@ def file_loader(folder_path, load_full_set=False, print_output=True):
         file_path = os.path.join(folder_path, chosen_file)
         arr = np.load(file_path)
         return arr
-    
+
+
+
+
+
+
+
     if load_full_set:   # Test all files in directory sequentially by index
-        test_files = np.empty((0,))  # initialize an empty numpy array
+        test_files = [] # initialize an empty list
         for file_number in tqdm(range(1, number_of_files), desc='Loading files'):
             test_file = npy_file_loader(npy_files[file_number])
-            test_file = test_file.flatten()
-            test_files = np.append(test_files, test_file)  # append each numpy file to the array
-        output = test_files
+            test_file = test_file.flatten().tolist()
+            test_files.append(test_file)  # append each numpy file to the array
+        output = np.array(test_files).flatten()
 
     else:  # Test 1 file only - loads random npy file from dir
         test_file = npy_file_loader(np.random.choice(npy_files))
