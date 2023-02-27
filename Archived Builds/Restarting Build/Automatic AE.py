@@ -44,17 +44,22 @@ seed = 10              #0 is default which gives no seeeding to RNG, if the valu
 path = "C:/Users/Student/Desktop/fake im data/"  #"/path/to/your/images/"
 
 """
-All you need to do here is set the H_in and D_in from the images you have loaded in.
-This could also be set to automatic if you set the path above instead of below and read the size of the first array.
+All you need to do here is link the first array in the dataset find its size.
 """
+# the test and train directories used later:
+train_dir = r"C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Cross Stuff\BigX 200x200/"
+test_dir = r"C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Cross Stuff\BigX Test 200x200/"
+
+# load a single array in order to find its dimensions:
+single_array = np.load(r"C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Cross Stuff\BigX 200x200\Data\Simple Cross (flat pixel block data) 0.npy")
 # for conv converter:
 conv_type = 0
 K = [3,3]
 P = [1,1] # (changed later)
 S = [2,2]
 D = [1,1]
-H_in = 200 # (change later)
-W_in = 200
+H_in = np.shape(single_array)[0] # (change later)
+W_in = np.shape(single_array)[1]
 D_in = None
 O = None
 
@@ -396,7 +401,6 @@ if seed != 0:
     Determinism_Seeding(seed)
 
 #%% - Data Importer
-data_dir = 'dataset'
 # # mnist data is 28x28, and black and white (so 1x28x28)
 # train_dataset = torchvision.datasets.MNIST(data_dir, train=True, download=True)
 # # train= true
@@ -433,7 +437,6 @@ def test_loader2d(path):
 
 
 # the train_epoch_den and test both add noise themselves?? so i will have to call all of the clean versions:
-train_dir = r"C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Cross Stuff\BigX 200x200/"
 train_dataset = torchvision.datasets.DatasetFolder(train_dir, train_loader2d, extensions='.npy')
 
 # N.B. We will use the train loader for this as it takes the clean data, and thats what
