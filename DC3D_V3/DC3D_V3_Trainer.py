@@ -72,7 +72,9 @@ learning_rate = 0.001  #User controll to set optimiser learning rate(Hyperparame
 optim_w_decay = 1e-05  #User controll to set optimiser weight decay (Hyperparameter)
 loss_fn = torch.nn.MSELoss()   #!!!!!!   #MSELoss()          #(mean square error) User controll to set loss function (Hyperparameter)
 
-
+time_dimension = 100
+noise_factor = 0                                          #User controll to set the noise factor, a multiplier for the magnitude of noise added. 0 means no noise added, 1 is defualt level of noise added, 10 is 10x default level added (Hyperparameter)
+reconstruction_threshold = 0.5      #MUST BE BETWEEN 0-1        #Threshold for 3d reconstruction, values below this confidence level are discounted
 """#### NEW MULTI-LOSS FUCN WITH WEIGHTS
 loss_functions = [torch.nn.L1Loss(), torch.nn.MSELoss()] 
 loss_fn_weightings = [0.5, 0.5, 0]
@@ -88,12 +90,6 @@ for i in range (0, len(loss_fn_weightings)):
     lf_contribution = loss_fn_weightings[i] * loss_functions[i]
     lf_total = lf_total + lf_contribution
 """
-
-
-time_dimension = 100
-noise_factor = 0                                          #User controll to set the noise factor, a multiplier for the magnitude of noise added. 0 means no noise added, 1 is defualt level of noise added, 10 is 10x default level added (Hyperparameter)
-reconstruction_threshold = 0.5      #MUST BE BETWEEN 0-1        #Threshold for 3d reconstruction, values below this confidence level are discounted
-
 
 #%% - Advanced Debugging Settings
 print_encoder_debug = False                     #[default = False]
@@ -241,7 +237,7 @@ class AddGaussianNoise(object):                   #Class generates noise based o
     def __repr__(self):
         return self.__class__.__name__ + '(mean={0}, std={1})'.format(self.mean, self.std)
 
-#%% - Output Path Initialisation
+#%% - # Input / Output Path Initialisation
 
 # Create output directory if it doesn't exist
 dir = results_output_path + model_save_name + " - Training Results/"
@@ -256,6 +252,11 @@ full_model_path = dir + model_save_name + " - Model.pth"
 full_activity_filepath = dir + model_save_name + " - Activity.npz"
 full_netsum_filepath = dir + model_save_name + " - Network Summary.txt"
 full_statedict_path = dir + model_save_name + " - Model + Optimiser State Dicts.pth"
+
+# Joins up the parts of the differnt input dataset load paths
+train_dir = data_path + dataset_title
+test_dir = data_path + dataset_title   #??????????????????????????????????????????
+
 
 #%% - Parameters Initialisation
 # Sets program into speed test mode
@@ -703,8 +704,27 @@ def plot_ae_outputs_den(encoder, decoder, epoch, model_save_name, time_dimension
     return(number_of_true_signal_points, number_of_recovered_signal_points, in_data, noisy_data, rec_data)    
     
 
+#%% - Dataset Pre-tests
+# Dataset Integrity Check    #???????? aslso perform on train data dir if ther is one?????? 
+print("Testing training dataset integrity, with {insert scan type}")
+dataset_integrity_check(train_dir, full_test=full_dataset_integrity_check, print_output=True)
+print("Test completed\n")
 
+if train_dir != test_dir:
+    print("Testing test dataset signal distribution")
+    dataset_integrity_check(test_dir, full_test=full_dataset_integrity_check, print_output=True)
+    print("Test completed\n")
 
+# Dataset Distribution Check
+if full_dataset_distribution_check:
+    print("\nTesting training dataset signal distribution")
+    dataset_distribution_tester(train_dir, time_dimension, ignore_zero_vals_on_plot=True)
+    print("Test completed\n")
+
+    if train_dir != test_dir:
+        print("Testing test dataset signal distribution")
+        dataset_distribution_tester(test_dir, time_dimension, ignore_zero_vals_on_plot=True)
+        print("Test completed\n")
     
 
 #%% - Data Loader
@@ -727,19 +747,6 @@ def val_loader2d(path):
     sample = (np.load(path))            
     return (sample)
 
-# the train_epoch_den and test both add noise themselves?? so i will have to call all of the clean versions:
-train_dir = data_path + dataset_title
-
-# N.B. We will use the train loader for this as it takes the clean data, and thats what we want as theres a built in nois adder here already:
-test_dir = data_path + dataset_title   #??????????????????????????????????????????
-
-# Dataset Integrity Check    #???????? aslso perform on train data dir if ther is one?????? 
-dataset_integrity_check(train_dir, full_test=full_dataset_integrity_check, print_output=True)
-
-
-# Dataset Distribution Check
-if full_dataset_distribution_check:
-    dataset_distribution_tester(train_dir, time_dimension, ignore_zero_vals_on_plot=True)
 
 #train_dir = r'C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\New big simp\Rectangle\\'
 train_dataset = torchvision.datasets.DatasetFolder(train_dir, train_loader2d, extensions='.npy')
