@@ -188,19 +188,19 @@ ax1.legend(['Data'])
 ax2.legend(['Data'])
 
 # Set the text properties
-text_props = dict(horizontalalignment='right', verticalalignment='baseline', fontsize=7)
+text_props = dict(horizontalalignment='right', verticalalignment='baseline', fontsize=9)
 text_x_position = 0.98
 
 # Iterate over the dictionary and print each statistic as a line of text
 for i, (key, value) in enumerate(single_file_stats.items()):
     text = f"{key}: {value}"
-    ax3.text(text_x_position, 1 - (i * 0.05), text, transform=ax3.transAxes, **text_props)
+    ax3.text(text_x_position, 1 - (i * 0.05)-0.2, text, transform=ax3.transAxes, **text_props)
     ax3.set_axis_off()
 
 # Iterate over the dictionary and print each statistic as a line of text
 for i, (key, value) in enumerate(full_set_stats.items()):
     text = f"{key}: {value}"
-    ax4.text(text_x_position, 1 - (i * 0.05), text, transform=ax4.transAxes, **text_props)
+    ax4.text(text_x_position, 1 - (i * 0.05)-0.2, text, transform=ax4.transAxes, **text_props)
     ax4.set_axis_off()
 
 # Save or show the plot
