@@ -59,12 +59,12 @@ import torch
 
 #%% - User Inputs
 mode = 0 ### 0=Data_Gathering, 1=Testing, 2=Speed_Test, 3=Debugging
-dataset_title = "Dataset 11_X_5K_M" #"Dataset 12_X10K"
-model_save_name = "11_X_5K_M_Testing_updates2"
+dataset_title = "Dataset 14_Real_10K_M" #"Dataset 12_X10K"
+model_save_name = "Dataset 14_Real_10K_M"
 
-num_epochs = 21                                            #User controll to set number of epochs (Hyperparameter)
-batch_size = 10                                 #User controll to set batch size (Hyperparameter) - #Data Loader, number of Images to pull per batch 
-latent_dim = 10                      #User controll to set number of nodes in the latent space, the bottleneck layer (Hyperparameter)
+num_epochs = 41                                           #User controll to set number of epochs (Hyperparameter)
+batch_size = 64                                 #User controll to set batch size (Hyperparameter) - #Data Loader, number of Images to pull per batch 
+latent_dim = 8                      #User controll to set number of nodes in the latent space, the bottleneck layer (Hyperparameter)
 
 learning_rate = 0.001  #User controll to set optimiser learning rate(Hyperparameter)
 optim_w_decay = 1e-05  #User controll to set optimiser weight decay (Hyperparameter)
@@ -144,15 +144,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 import torchvision
 from torchvision import transforms
-from torch.utils.data import DataLoader,random_split
+from torch.utils.data import DataLoader, random_split
 from torch import nn
 import random 
 import time
 from torchinfo import summary
 from tqdm import tqdm
-from torchviz import make_dot
 import os
-import plotly.express as px
 from functools import partial
 
 # Imports from our other custom scripts
