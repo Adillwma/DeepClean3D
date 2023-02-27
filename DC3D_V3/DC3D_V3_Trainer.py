@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
 """
-Created on Sat Feb 1 2022
 DeepClean v0.3.1
+Build created on Sat Feb 1 2022
 Authors: Adill Al-Ashgar & Max Carter
+University of Bristol
+
 @Adill: adillwmaa@gmail.co.uk - ex18871@bristol.ac.uk
 @Max: qa19105@bristol.ac.uk
 
-# University of Bristol
+
 
 Possible improvements:
 ### ~~~~~ [DONE!] Make sure that autoecoder Encoder and Decoder are saved along with model in the models folder 
@@ -59,8 +61,8 @@ import torch
 
 #%% - User Inputs
 mode = 0 ### 0=Data_Gathering, 1=Testing, 2=Speed_Test, 3=Debugging
-dataset_title = "Dataset 14_Real_10K_M" #"Dataset 12_X10K"
-model_save_name = "Dataset 14_Real_10K_M"
+dataset_title = "Dataset 15_X_10K_Blanks" #"Dataset 12_X10K"
+model_save_name = "Dataset 15_X_10K_Blanks 64b l8 MAE"
 
 num_epochs = 41                                           #User controll to set number of epochs (Hyperparameter)
 batch_size = 64                                 #User controll to set batch size (Hyperparameter) - #Data Loader, number of Images to pull per batch 
@@ -91,7 +93,7 @@ for i in range (0, len(loss_fn_weightings)):
 time_dimension = 100
 noise_factor = 0                                          #User controll to set the noise factor, a multiplier for the magnitude of noise added. 0 means no noise added, 1 is defualt level of noise added, 10 is 10x default level added (Hyperparameter)
 reconstruction_threshold = 0.5      #MUST BE BETWEEN 0-1        #Threshold for 3d reconstruction, values below this confidence level are discounted
-###FIX RECON!!!
+
 
 #%% - Advanced Debugging Settings
 print_encoder_debug = False                     #[default = False]
@@ -99,7 +101,8 @@ print_decoder_debug = False                     #[default = False]
 debug_noise_function = False                    #[default = False]
 debug_loader_batch = False     #(Default = False) //INPUT 0 or 1//   #Setting debug loader batch will print to user the images taken in by the dataoader in this current batch and print the corresponding labels
 
-full_dataset_integrity_check = False   #V slow
+full_dataset_integrity_check = False   #V slow    #default = False
+full_dataset_distribution_check = False    #default = False
 print_network_summary = False     #default = False
 seed = 0                            #0 is default which gives no seeeding to RNG, if the value is not zero then this is used for the RNG seeding for numpy, random, and torch libraries
 
@@ -158,7 +161,7 @@ from functools import partial
 from Helper_files.Dataset_Integrity_Check_V1 import dataset_integrity_check
 from Helper_files.AE_Visulisations import Generative_Latent_information_Visulisation, Reduced_Dimension_Data_Representations, Graphwiz_visulisation, AE_visual_difference
 from Helper_files.Robust_model_exporter_V1 import Robust_model_export
-
+from Helper_files.Dataset_distribution_tester_V1 import dataset_distribution_tester
 #%% - Helper functions
 def custom_normalisation(data, reconstruction_threshold, time_dimension=100):
     data = ((data / time_dimension) / (1/(1-reconstruction_threshold))) + reconstruction_threshold
@@ -732,6 +735,11 @@ test_dir = data_path + dataset_title   #????????????????????????????????????????
 
 # Dataset Integrity Check    #???????? aslso perform on train data dir if ther is one?????? 
 dataset_integrity_check(train_dir, full_test=full_dataset_integrity_check, print_output=True)
+
+
+# Dataset Distribution Check
+if full_dataset_distribution_check:
+    dataset_distribution_tester(train_dir, time_dimension, ignore_zero_vals_on_plot=True)
 
 #train_dir = r'C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\New big simp\Rectangle\\'
 train_dataset = torchvision.datasets.DatasetFolder(train_dir, train_loader2d, extensions='.npy')
