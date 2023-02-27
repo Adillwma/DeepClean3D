@@ -47,11 +47,11 @@ path = "C:/Users/Student/Desktop/fake im data/"  #"/path/to/your/images/"
 All you need to do here is link the first array in the dataset find its size.
 """
 # the test and train directories used later:
-train_dir = r"C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Cross Stuff\BigX 200x200/"
-test_dir = r"C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Cross Stuff\BigX Test 200x200/"
+train_dir = r"C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Cross Stuff\MultiX - 80%1X - 20%2X - 128x88/"
+test_dir = r"C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Cross Stuff\MultiX - 80%1X - 20%2X - 128x88/"
 
 # load a single array in order to find its dimensions:
-single_array = np.load(r"C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Cross Stuff\BigX 200x200\Data\Simple Cross (flat pixel block data) 0.npy")
+single_array = np.load(r"C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Cross Stuff\MultiX - 80%1X - 20%2X - 128x88\Data\Flat SimpleX-128x88-1 Crosses, No0.npy")
 print(np.shape(single_array))
 # for conv converter:
 conv_type = 0
@@ -442,7 +442,6 @@ train_dataset = torchvision.datasets.DatasetFolder(train_dir, train_loader2d, ex
 
 # N.B. We will use the train loader for this as it takes the clean data, and thats what
 # we want as theres a built in noise adder here already:
-test_dir = r"C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Cross Stuff\BigX Test 200x200/"
 test_dataset = torchvision.datasets.DatasetFolder(test_dir, train_loader2d, extensions='.npy')
 
 

@@ -135,7 +135,7 @@ def simp_simulator(sig_pts = 28, x_dim = 28, y_dim = 28, z_dim = 28, shift=1):
 #------------------------------------------------------------------
 # calling function and plotting results for clean and noisy:
 
-flattened_data = simp_simulator(sig_pts = 200, x_dim = 128, y_dim = 88, z_dim = 28, shift=1)
+flattened_data = simp_simulator(sig_pts = 600, x_dim = 200, y_dim = 200, z_dim = 100, shift=1)
 
 # for degubbing perposes:
 

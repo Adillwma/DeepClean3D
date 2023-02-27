@@ -9,12 +9,12 @@ MNIST dataset uses xxxxxxxxxx different graphs when the data is downloaded. To p
 that matters, i will generate and test the same amount here:
 """
 # specify where to save the flattened data
-directory = r"C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Cross Stuff\Multi Test\Data/"
+directory = r"C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Cross Stuff\80%1X - 20%2X - 128x88\Data/"
 
 
 # ----------------------------------------------------------------------------------
 # you can change all the arguments in the function below:
-def simp_generator(Proportions = [0,0.5,0.5,0,0], dataset_size = 10, sig_pts = 200, x_dim = 128, y_dim = 88, z_dim = 100, shift=1):
+def simp_generator(Proportions = [0,0.8,0.2,0,0], dataset_size = 1000, sig_pts = 200, x_dim = 128, y_dim = 88, z_dim = 100, shift=1):
     """
     This function simply calls the simulator function, and creates and saves the number of simulations with the defined imputs,
     to the directory specified above.
