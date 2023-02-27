@@ -52,6 +52,7 @@ test_dir = r"C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Pr
 
 # load a single array in order to find its dimensions:
 single_array = np.load(r"C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Cross Stuff\BigX 200x200\Data\Simple Cross (flat pixel block data) 0.npy")
+print(np.shape(single_array))
 # for conv converter:
 conv_type = 0
 K = [3,3]
