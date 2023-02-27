@@ -2,6 +2,9 @@
 """
 Created on Sat Oct 8 2022
 
+This is an automatic AE, simply input the dimensions of the images you would like encoded in the H_in and W_in
+currently on line 55 and 56. (N.B if you change the padding added or channels produced you will have to do
+this manually for now)
 """
 #%% - Dependencies
 import numpy as np 
@@ -12,11 +15,12 @@ from torchvision import transforms
 from torch.utils.data import DataLoader,random_split
 from torch import nn
 import random 
+import math
 #import pandas as pd 
 #import torch.nn.functional as F
 #import torch.optim as optim
 #import os
-#from Calc import conv_calculator
+from Calc import conv_calculator, conv_outputs_2d, conv_outputs_3d
 
 def custom_normalisation(input):
     input = (input / (2 * np.max(input))) + 0.5
@@ -39,16 +43,44 @@ optim_w_decay = 1e-05  #User controll to set optimiser weight decay (Hyperparame
 seed = 10              #0 is default which gives no seeeding to RNG, if the value is not zero then this is used for the RNG seeding for numpy, random, and torch libraries
 path = "C:/Users/Student/Desktop/fake im data/"  #"/path/to/your/images/"
 
+"""
+All you need to do here is set the H_in and D_in from the images you have loaded in.
+This could also be set to automatic if you set the path above instead of below and read the size of the first array.
+"""
 # for conv converter:
 conv_type = 0
-K = 3
-P = 1 # (changed later)
-S = 2
-D = 1
-H_in = 28 # (change later)
-W_in = 28
+K = [3,3]
+P = [1,1] # (changed later)
+S = [2,2]
+D = [1,1]
+H_in = 200 # (change later)
+W_in = 200
 D_in = None
 O = None
+
+# Calculator here:
+# # for first 2 conv layers:
+# H_in, W_in and D_in would be given in fc2_input_dim
+# padding is initially 1 on top and 1 on bottom for first two layers
+P = [1,1]
+L1 = conv_calculator(conv_type, K, P, S, D, H_in, W_in, D_in, O)
+print('N.B. the following dimensions dont include the channels: \n')
+print('Dimensions after first layer: ', str(math.floor(L1[0])), 'x', str(math.floor(L1[1])))
+
+# need to use math.floor to make sure to round down from .5 values
+L2 = conv_calculator(conv_type, K, P, S, D, math.floor(L1[0]), math.floor(L1[1]), D_in, O)
+print('Dimensions after second layer: ', str(math.floor(L2[0])), 'x', str(math.floor(L2[1])))
+
+
+# # for 3rd and final layer padding changed to (0,0)
+P = [0,0]
+L3 = conv_calculator(conv_type, K, P, S, D, math.floor(L2[0]), math.floor(L2[1]), D_in, O)
+print('Dimensions after third layer: ', str(math.floor(L3[0])), 'x', str(math.floor(L3[1])))
+
+
+# this is the channels out of the 
+channels_out = 32
+
 
 #%% - Classes
 
@@ -96,6 +128,7 @@ class Encoder(nn.Module):
             nn.Conv2d(16, 32, 3, stride=2, padding=0),     #Input_channels, Output_channels, Kernal_size, Stride, Padding
             nn.ReLU(True)                                  #ReLU activation function - Activation function determinines if a neuron fires, i.e is the output of the node considered usefull. also allows for backprop. the arg 'True' makes the opperation carry out in-place(changes the values in the input array to the output values rather than making a new one), default would be false
         )
+
         #Encoder nodes: 
         #input data format = [batchsize, 1, 28, 28] # [batchsize, channels, pixels_in_x, pixels_in_y]
         #conv layers: input---Conv_L1---> 
@@ -104,15 +137,6 @@ class Encoder(nn.Module):
         # 4 [batchsize, 32, 3, 3]
         
         # im importing the kernel calculator to make the autoencoder more dynamic with its imputs for nn.Linear(3 * 3 * 32, 128)
-
-        # # for first 2 conv layers:
-        # H_in, W_in and D_in would be given in fc2_input_dim
-        # L1 = conv_calculator(conv_type, K, P, S, D, H_in, W_in, D_in, O)
-        # L2 = conv_calculator(conv_type, K, P, S, D, L1[0], L1[2], D_in, O)
-        
-        # # for 3rd and final layer: (padding changed)
-        # P = 0
-        # L3 = conv_calculator(conv_type, K, P, S, D, L2[0], L2[2], D_in, O)
         
         ###Flatten layer
         self.flatten = nn.Flatten(start_dim=1)
@@ -123,7 +147,7 @@ class Encoder(nn.Module):
         #nn.Linear arguments are: in_features – size of each input sample, out_features – size of each output sample, bias – If set to False, the layer will not learn an additive bias. Default: True
         self.encoder_lin = nn.Sequential(
             #Linear encoder layer 1  
-            nn.Linear(4800, 128),                   #!!! linear network layer. arguuments are input dimensions/size, output dimensions/size. Takes in data of dimensions 3* 3 *32 and outputs it in 1 dimension of size 128
+            nn.Linear(math.floor(L3[0]) * math.floor(L3[1]) * channels_out, 128),                   #!!! linear network layer. arguuments are input dimensions/size, output dimensions/size. Takes in data of dimensions 3* 3 *32 and outputs it in 1 dimension of size 128
             # nn.Linear(L3[0] * L3[1] * 32, 128),
             nn.ReLU(True),                                #ReLU activation function - Activation function determinines if a neuron fires, i.e is the output of the node considered usefull. also allows for backprop. the arg 'True' makes the opperation carry out in-place(changes the values in the input array to the output values rather than making a new one), default would be false
             #Linear encoder layer 2
@@ -150,12 +174,12 @@ class Decoder(nn.Module):
             nn.Linear(encoded_space_dim, 128),
             nn.ReLU(True),                                 #ReLU activation function - Activation function determinines if a neuron fires, i.e is the output of the node considered usefull. also allows for backprop. the arg 'True' makes the opperation carry out in-place(changes the values in the input array to the output values rather than making a new one), default would be false
             #Linear decoder layer 2
-            nn.Linear(128, 4800),
+            nn.Linear(128, math.floor(L3[0]) * math.floor(L3[1]) * channels_out),
             nn.ReLU(True)                                  #ReLU activation function - Activation function determinines if a neuron fires, i.e is the output of the node considered usefull. also allows for backprop. the arg 'True' makes the opperation carry out in-place(changes the values in the input array to the output values rather than making a new one), default would be false
         )
         ###Unflatten layer
         self.unflatten = nn.Unflatten(dim=1, 
-        unflattened_size=(32, 15, 10))
+        unflattened_size=(32, math.floor(L3[0]), math.floor(L3[1])))
 
         ###Convolutional Decoder Layers
         #NOTE - as this is the decoder and it must perform the reverse operations to the encoder, instead of using conv2d here ConvTranspose2d is used which is the inverse opperation
@@ -393,11 +417,8 @@ others that arent so relevant....
 # root to files
 # data_directory = r'C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Simple Cross\\'
 
-# need to import dataloader function:
-# IDK why this isnt working --> from DeepClean_3D.DataLoader_Functions_V2 import train_loader2d, test_loader2d
-# so ill import the functions manually:
+# need to import dataloader function so ill import the functions manually:
 def train_loader2d(path):
-
     sample = (np.load(path))
     #print(np.shape(sample), type(sample))             
     return (sample)
@@ -412,13 +433,12 @@ def test_loader2d(path):
 
 
 # the train_epoch_den and test both add noise themselves?? so i will have to call all of the clean versions:
-#train_dir = 
-train_dir = r'C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\New big simp\Rectangle\\'
+train_dir = r"C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Cross Stuff\BigX 200x200/"
 train_dataset = torchvision.datasets.DatasetFolder(train_dir, train_loader2d, extensions='.npy')
 
-# N.B. We will use the train loader for this as it takes the clean data, and thats what we want as theres a built in nois adder here already:
-#test_dir = 
-test_dir = r'C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\New big simp test\Rectangle\\'
+# N.B. We will use the train loader for this as it takes the clean data, and thats what
+# we want as theres a built in noise adder here already:
+test_dir = r"C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Cross Stuff\BigX Test 200x200/"
 test_dataset = torchvision.datasets.DatasetFolder(test_dir, train_loader2d, extensions='.npy')
 
 
