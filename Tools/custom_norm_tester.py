@@ -56,11 +56,7 @@ def custom_normalisation(data, reconstruction_threshold, time_dimension=100):
         data = (data / ( (1/reconstruction_threshold) * time_dimension)) + reconstruction_threshold
    
     """
-    #data = (data / ( (1/reconstruction_threshold) * time_dimension)) + reconstruction_threshold
     data = ((data / time_dimension) / (1/(1-reconstruction_threshold))) + reconstruction_threshold
-
-    
-    
     for row in data:
         for i, ipt in enumerate(row):
             if ipt == reconstruction_threshold:
@@ -79,8 +75,6 @@ def custom_renormalisation(data, reconstruction_threshold, time_dimension=100):
     so to normalise it back to 0-1 we can multiply it by (1/reconstruction_threshold) which gives the number of subspaces that fit in the full 0-1 space
 
     then we mutiply all values by time_dimesnison to gte back to a range of 0-time dim
-
- 
     """
     data = np.where(data > reconstruction_threshold, ((data - reconstruction_threshold)*(1/(1-reconstruction_threshold)))*(time_dimension), data)
     return data
