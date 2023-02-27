@@ -70,6 +70,24 @@ learning_rate = 0.001  #User controll to set optimiser learning rate(Hyperparame
 optim_w_decay = 1e-05  #User controll to set optimiser weight decay (Hyperparameter)
 loss_fn = torch.nn.MSELoss()   #!!!!!!   #MSELoss()          #(mean square error) User controll to set loss function (Hyperparameter)
 
+
+"""#### NEW MULTI-LOSS FUCN WITH WEIGHTS
+loss_functions = [torch.nn.L1Loss(), torch.nn.MSELoss()] 
+loss_fn_weightings = [0.5, 0.5, 0]
+
+# Protection from weights and loss_fns not being same len
+if len(loss_functions) != len(loss_fn_weightings):
+    raise ValueError("Number of Loss Fucntions does not match number of weights for loss functions")
+
+
+#### NEW MULTI-LOSS FUNC CONSTRUCTION - THIS NEEDS TO BE MOVED DOWN TO THE MODEL SETUP ETC SECTION (NEEDS TESTING FIRST)
+lf_total = 0
+for i in range (0, len(loss_fn_weightings)):
+    lf_contribution = loss_fn_weightings[i] * loss_functions[i]
+    lf_total = lf_total + lf_contribution
+"""
+
+
 time_dimension = 100
 noise_factor = 0                                          #User controll to set the noise factor, a multiplier for the magnitude of noise added. 0 means no noise added, 1 is defualt level of noise added, 10 is 10x default level added (Hyperparameter)
 reconstruction_threshold = 0.5      #MUST BE BETWEEN 0-1        #Threshold for 3d reconstruction, values below this confidence level are discounted
