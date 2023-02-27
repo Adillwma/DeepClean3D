@@ -12,6 +12,7 @@ from torchvision import transforms
 from torch.utils.data import DataLoader,random_split
 from torch import nn
 import random 
+import math
 #import pandas as pd 
 #import torch.nn.functional as F
 #import torch.optim as optim
@@ -41,10 +42,10 @@ path = "C:/Users/Student/Desktop/fake im data/"  #"/path/to/your/images/"
 
 # for conv converter:
 conv_type = 0
-K = 3
-P = 1 # (changed later)
-S = 2
-D = 1
+K = [3,3]
+P = [1,1] # (changed later)
+S = [2,2]
+D = [1,1]
 H_in = 28 # (change later)
 W_in = 28
 D_in = None
@@ -107,14 +108,15 @@ class Encoder(nn.Module):
 
         # # for first 2 conv layers:
         # H_in, W_in and D_in would be given in fc2_input_dim
+        P = [1,1]
         L1 = conv_calculator(conv_type, K, P, S, D, H_in, W_in, D_in, O)
         print(L1)
-        L2 = conv_calculator(conv_type, K, P, S, D, L1[0], L1[2], D_in, O)
+        L2 = conv_calculator(conv_type, K, P, S, D, math.floor(L1[0]), math.floor(L1[1]), D_in, O)
         print(L2)
         
         # # for 3rd and final layer: (padding changed)
-        # P = 0
-        L3 = conv_calculator(conv_type, K, P, S, D, L2[0], L2[2], D_in, O)
+        P = [0,0]
+        L3 = conv_calculator(conv_type, K, P, S, D, math.floor(L2[0]), math.floor(L2[1]), D_in, O)
         print(L3)
         
         ###Flatten layer
