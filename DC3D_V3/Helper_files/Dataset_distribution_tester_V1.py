@@ -15,6 +15,11 @@ normalisation and reconstructions.
 # must find faster way of loading in the numpy files and then flattening them all into one long np array
 #
 """
+#%% - User Inputs
+time_dimension = 100
+dataset_title = "Dataset 15_X_10K_Blanks"
+data_path = "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Yr 3 Project/Circular and Spherical Dummy Datasets/"
+ignore_zero_vals_on_plot = True
 
 #%% - Dependencies
 from scipy.stats import kurtosis, skew
@@ -139,14 +144,7 @@ def calculate_statistics(data):   #Need to improve this by adding a check at beg
     }
     return results
 
-#%% - User Inputs
-time_dimension = 100
-dataset_title = "Dataset 15_X_10K_Blanks"
-data_path = "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Yr 3 Project/Circular and Spherical Dummy Datasets/"
 dir = (data_path + dataset_title)
-
-ignore_zero_vals_on_plot = True
-
 #%% - Load Files
 single_file = file_loader(dir)
 full_set = file_loader(dir, load_full_set=True)
@@ -188,20 +186,26 @@ ax1.legend(['Data'])
 ax2.legend(['Data'])
 
 # Set the text properties
-text_props = dict(horizontalalignment='right', verticalalignment='baseline', fontsize=9)
+text_props = dict(horizontalalignment='right', verticalalignment='baseline', fontsize=10)
 text_x_position = 0.98
 
 # Iterate over the dictionary and print each statistic as a line of text
 for i, (key, value) in enumerate(single_file_stats.items()):
     text = f"{key}: {value}"
     ax3.text(text_x_position, 1 - (i * 0.05)-0.2, text, transform=ax3.transAxes, **text_props)
-    ax3.set_axis_off()
+    single_data_print = ax3.set_axis_off()
 
 # Iterate over the dictionary and print each statistic as a line of text
 for i, (key, value) in enumerate(full_set_stats.items()):
     text = f"{key}: {value}"
     ax4.text(text_x_position, 1 - (i * 0.05)-0.2, text, transform=ax4.transAxes, **text_props)
     ax4.set_axis_off()
+
+"""# Create button widget
+ax_button = plt.axes([0.7, 0.05, 0.2, 0.075])
+button = Button(ax_button, 'Load new data')
+button.on_clicked(load_data)
+"""
 
 # Save or show the plot
 plt.show()  #swap for plot_or_Save_function
