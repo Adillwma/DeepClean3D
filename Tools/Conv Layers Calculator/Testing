@@ -1,25 +1,12 @@
 import numpy as np
 
+# train_dir = r"C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Cross Stuff\BigX 200x200/"
+# array = np.load(train_dir)
+# print(np.shape(array)[0])
 
-# array = np.load(r"C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Cross Stuff\ShiftedX\Data\Simple Cross (flat pixel block data) 0.npy")
+a = np.array([[1,2],[1,2]])
+b = np.array([1,2])
 
-#array2 = np.load(r"C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Cross Stuff\BigX\Data\Simple Cross (flat pixel block data) 0.npy")
+a -= [1,1]
 
-#array3 = np.load(r"C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Cross Stuff\RectangleX\Data\Simple Cross (flat pixel block data) 0.npy")
-
-train_dir = r"C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Cross Stuff\BigX 200x200/"
-
-
-array = np.load(train_dir)
-
-print(np.shape(array)[0])
-#print(np.shape(array2))
-#print(np.shape(array3))
-
-# a = [1]
-# for b in a:
-#     print(b)
-
-# Proportions = [0,1,0,0,0]
-# for crosses, proportion in enumerate(Proportions):
-#     print(crosses, proportion)
+print(a)
