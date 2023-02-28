@@ -4,9 +4,11 @@ Realistic Data Simulator v1.0.1
 @author: Max Carter & Adill Al-Ashgar
 Created on Thurs Jan 26 2023
 """
-# N.B. This is the same function as V2, however the time axis is now defined in set 35ps blocks (time res of TORCH)
-# The detector also has a standard deviation of 70ps on the time axis.
-# THIS PRODUCES A SET TIME DIMENSION
+"""
+The time axis is now defined in set 35ps blocks (time res of TORCH)
+The detector also has a standard deviation of 70ps on the time axis.
+THIS PRODUCES A SET TIME DIMENSION of 509. 
+"""
 
 #%% - Dependencies
 import numpy as np
@@ -86,7 +88,7 @@ def realistic_data_sim(signal_points=1000, detector_pixel_dimensions=(128,88), h
     particle_speed = 3E8
     
     # max time particle could take. This allows us to set the max z axis for the noise to take.
-    t_max = (((2*quartz_length) / np.cos((np.pi/2)-q_crit)) / particle_speed) + std * 20     # This last adds well in excess of std to make sure likelihood of points below is minimal
+    t_max = (((2*quartz_length) / np.cos((np.pi/2)-q_crit)) / particle_speed)
     # in pixels, this will be:
     t_pix_max = t_max // resolution
 
@@ -108,29 +110,20 @@ def realistic_data_sim(signal_points=1000, detector_pixel_dimensions=(128,88), h
     final = list(zip(angle_filter, time))     # This is list of ((x,y), time) - dont ask me why, its annoying
 
     # create bins
+    # x, y go from 0 to dim - 1 respectively here. z has TOF pixel.
     # x axis is between the reflectors, and the pixels of the x axis are the first dim of the input dim
-    x_idxs = np.digitize([i[0][0] for i in final],np.linspace(-reflect_x, reflect_x, detector_pixel_dimensions[0])) #takes x points, then bins, returns indices
+    x_pixel = np.digitize([i[0][0] for i in final],np.linspace(-reflect_x, reflect_x, detector_pixel_dimensions[0])) #takes x points, then bins, returns indices
 
     # y axis is currently between 1 and -1 from cosine function (which has angle embedded by nature)
     # splits this into pixels in y:
-    y_idxs = np.digitize([i[0][1] for i in final],np.linspace(-1, 1, detector_pixel_dimensions[1]))
+    y_pixel = np.digitize([i[0][1] for i in final],np.linspace(-1, 1, detector_pixel_dimensions[1]))
 
     # z needs std dev in time added. This is added after the pattern is set.
     # This is put into bins without the digitize for now:
-    z_idxs = np.array([np.random.normal(i[1], std)//resolution for i in final]) # i[1] add std to time then give z pixel with //resolution
-
-    # x, y go from 0 to dim - 1 respectively here. z has TOF pixel.
-    # Changing position:
-    # Convert all to numpy arrays to make more maleable and also to flatten later:
-    x_pixel = np.array(x_idxs)
-    y_pixel = np.array(y_idxs)
-    z_pixel = np.array(z_idxs)
+    z_pixel = np.array([np.random.normal(i[1], std)//resolution for i in final]) # i[1] add std to time then give z pixel with //resolution
 
     # combine them:
     coords = np.column_stack((x_pixel, y_pixel, z_pixel))
-
-    # remove potential z points outside plot, from 1 to max time (this is from 1 as 0 counts as no hit):
-    coords = np.array([coord for coord in coords if 1 <= coord[2] <= t_pix_max])
 
     # shift them all a maximum of half the max size if shift = 1:
     if shift == 1:
@@ -182,8 +175,7 @@ def realistic_data_sim(signal_points=1000, detector_pixel_dimensions=(128,88), h
         ax.set_ylim((0, detector_pixel_dimensions[1]))
         ax.set_zlim((0, t_pix_max))
 
-
-        # ax.scatter(x_noise, y_noise, z_noise)
+        # add axis labels
         ax.set_xlabel('X')
         ax.set_ylabel('Y')
         ax.set_zlabel('Time')
