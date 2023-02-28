@@ -54,7 +54,7 @@ coord_transform_sig_fig = 12    #Setting significant figures for the coordinate 
 import matplotlib.pyplot as plt
 import numpy as np
 import random
-from Realistic_Data_Simulator_V11 import realistic_data_generator
+from Orig_Real_SimV1 import realistic_data_generator
 
 #%% - Helper Functions
 def pol2cart(magnitude, angle, significant_figures = 12):                     
