@@ -9,6 +9,10 @@ Simulates Detector Readings.
 
 To run standalone, just configure the variables in the 'User Settings' section 
 below and then run full code.
+
+This generator produces two sets of data per array:
+[0] holds the signal points in a flattened array.
+[1] holds signal and noise points in a flattened array.
 """
 
 #%% - User settings

@@ -4,10 +4,14 @@ Realistic Data Simulator v1.0.1
 @author: Max Carter & Adill Al-Ashgar
 Created on Thurs Jan 26 2023
 """
-# N.B. This is the same function as V2, however the time axis is now defined in set 35ps blocks (time res of TORCH)
-# The detector also has a standard deviation of 70ps on the time axis.
-# It is noted that this generator produces sets of data with a differing number of pixels on the z axis.
-# THIS PRODUCES A SET TIME DIMENSION
+"""
+N.B. This is the same function as V2, however the time axis is now defined in set 35ps blocks (time res of TORCH)
+The detector also has a standard deviation of 70ps on the time axis.
+It is noted that this generator produces sets of data with a differing number of pixels on the z axis.
+THIS PRODUCES A SET TIME DIMENSION
+
+This returns the signal and noise points as well as the number of signal points.
+"""
 
 #%% - Dependencies
 import numpy as np
