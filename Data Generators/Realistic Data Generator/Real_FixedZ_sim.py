@@ -17,7 +17,7 @@ resolution = 35E-12
 std = 70E-12
 
 #%% - Function
-def realistic_data_sim(signal_points=1000, detector_pixel_dimensions=(88,128), hit_point=1.5, ideal=1, debug_image_generator=0, shift=1):
+def realistic_data_sim(signal_points=1000, detector_pixel_dimensions=(128,88), hit_point=1.5, ideal=0, debug_image_generator=0, shift=1):
     '''
     Inputs:
     signal_points = number of points the hit produces (average 30 for realistic photon), N.B. these may not be at critical angle to 60 is maximum number
@@ -35,24 +35,22 @@ def realistic_data_sim(signal_points=1000, detector_pixel_dimensions=(88,128), h
     The maximum of this flattened data (in flattened z) is given by t_pix_max and this MAX IS CURRENTLY SET AT 509
     However, N.B. The max signal point in the produced dataset (unnoised) is almost always NOT 509.
     '''
-    #Width of Quartz Block in meters (x dimension)
+    # Width of Quartz Block in meters (physical x dimension - not to be confused with pixel x dimensions)
+    # (this is not actual size of quarts, but it forms a good pattern. This is fundamental to the way this
+    # pattern has been built so should not be changed)
     Quartz_width = 0.4
 
     #Half Width of Quartz Block in meters (x dimension) - BEWARE THIS IS HALF WIDTH, TRUE WIDTH GOES FROM -reflect_x to reflect_x
-    reflect_x = Quartz_width/2
-
-    #Creates ideal linearly spaced x data #Uniform points to see the pattern
-    min_num = -np.pi
-    max_num = np.pi
-    linear_x_points = np.linspace(min_num, max_num, signal_points)
-
-    #Creates more realistic randomly spaced x data  #random numbers that are more accurate to data
-    random_x_points = [random.uniform(-2 * np.pi, 2 * np.pi) for _ in range(signal_points)]
+    reflect_x = Quartz_width/2   
 
     #Ideal or random? 1 if want ideal or 0 if want random #Here can set to either random numbers or to linear_x_points depending on what you want
     if ideal == 1:
+        #Creates ideal linearly spaced x data #Uniform points to see the pattern
+        linear_x_points = np.linspace(-np.pi, np.pi, signal_points)
         x = linear_x_points
     elif ideal == 0:
+        #Creates more realistic randomly spaced x data  #random numbers that are more accurate to data
+        random_x_points = [random.uniform(-np.pi, np.pi) for _ in range(signal_points)]
         x = random_x_points
 
     #Takes x range (either uniform (ideal) or random) and creates the reflections
@@ -63,7 +61,7 @@ def realistic_data_sim(signal_points=1000, detector_pixel_dimensions=(88,128), h
                 i = -i - 2 * reflect_x
             elif i > reflect_x:
                 i = -i + 2 * reflect_x
-        x_reflect_points.append(i)              # this has been checked and works
+        x_reflect_points.append(i)
 
 
     #Calulates corresponding y parabola points for each x
@@ -200,4 +198,4 @@ def realistic_data_sim(signal_points=1000, detector_pixel_dimensions=(88,128), h
 
 #%% - Testing Driver
 #Uncomment line below for testing, make sure to comment out when done to stop it creating plots when dataset generator is running
-realistic_data_sim(signal_points=1000, detector_pixel_dimensions=(88,128), hit_point=0.8, ideal=1, debug_image_generator=1)
+realistic_data_sim(signal_points=1000, detector_pixel_dimensions=(128,88), hit_point=0.8, ideal=0, debug_image_generator=1)
