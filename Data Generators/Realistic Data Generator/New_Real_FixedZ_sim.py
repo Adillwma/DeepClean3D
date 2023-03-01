@@ -127,8 +127,8 @@ def realistic_data_sim(signal_points=1000, detector_pixel_dimensions=(128,88), h
 
     # shift them all a maximum of half the max size if shift = 1:
     if shift == 1:
-        coords[:,0] += np.random.randint(-np.round(np.max(x_pixel)/2),np.round(np.max(x_pixel)/2))
-        coords[:,1] += np.random.randint(-np.round(np.max(y_pixel)/2),np.round(np.max(y_pixel)/2))
+        coords[:,0] += np.random.randint(-round(detector_pixel_dimensions[0] / 2),round(detector_pixel_dimensions[0] / 2))
+        coords[:,1] += np.random.randint(-round(detector_pixel_dimensions[1] / 2),round(detector_pixel_dimensions[1] / 2))
         coords[:,2] += np.random.randint(-np.round(t_pix_max/2),np.round(t_pix_max/2))
 
     # select those that would fall within the bounds of the thing after shifting:
