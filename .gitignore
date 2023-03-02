@@ -1,7 +1,8 @@
 __pycache__
 Results Presentations/
-Ada Testing/
+Ada_Testing/
 Datasets/
+Results/
 *.npz
 *.mp4
 Output_Graphics/
