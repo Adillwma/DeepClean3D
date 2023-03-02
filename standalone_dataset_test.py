@@ -10,6 +10,9 @@ be verified for correct dtype, correct image size and correct min-max value rang
 
 ### Improvements to be made
 # Want to add this (or just the raw intergrity and dist test files) into the actual dataset generator so that: 1) it automatically can report if the dataset ccontains an error during creation. 2) it automatically saves the dataset report (the integrity check vals etc and the distribution image) to a folder related to the datsaset.
+# Improve formatting and readbility of termian prints during tests
+# No need to double load the data if running both tests! (even though second time is very fast as data already in ram or cached from first load)
+# Improve dataset dist tester, add red or green test passed/failed to the stats on graph edge, remove uneeded stats, add max and mix
 """
 
 #%% - User Inputs
