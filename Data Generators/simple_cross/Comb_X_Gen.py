@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from Combined_X_Sim import comb_simp_simulator
+from Comb_X_Sim import comb_simp_simulator
 
 """
 This will return float64 array numbers.
@@ -36,7 +36,7 @@ def simp_generator(Proportions = [0,0.8,0.2,0,0], dataset_size = 1000, sig_pts =
 
             # define number of crosses
             num_X = Crosses
-            flattened_data = simp_simulator(num_X, sig_pts, x_dim, y_dim, z_dim, shift)
+            flattened_data = comb_simp_simulator(num_X, sig_pts, x_dim, y_dim, z_dim, shift, rotate)
 
             np.save(directory + 'Flat SimpleX-' + str(x_dim) + 'x' + str(y_dim) + '-' + str(Crosses) + ' Crosses, No' + str(idx), flattened_data)
 
