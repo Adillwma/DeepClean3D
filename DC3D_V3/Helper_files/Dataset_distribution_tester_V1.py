@@ -14,18 +14,8 @@ normalisation and reconstructions.
 # for statistics fucntion add a check for if input is 1D and if not then flatten it 
 # must find faster way of loading in the numpy files and then flattening them all into one long np array
 #
-"""
-
-
-"""
-#%% - User Inputs - if not calling this from external script then can use this section to set inputs
-time_dimension = 100
-dataset_title = "Dataset 10_X"
-data_path = "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Yr 3 Project/Circular and Spherical Dummy Datasets/"
-ignore_zero_vals_on_plot = True
-
-# Program internals setup
-dir = (data_path + dataset_title)
+#Change the uneeded stats on the readout for the much more usefful things like number of 0 hits, number of (0 hits/nonzero hits) ratio, min and max values, etc
+#add the file name of the single file loaded to the pannel of stats so that can find it in folders if needs be
 """
 #%% - Dependencies
 from scipy.stats import kurtosis, skew
@@ -43,7 +33,7 @@ from matplotlib.ticker import MaxNLocator
 #%% - Functionalised Script
 def dataset_distribution_tester(dir, time_dimension, ignore_zero_vals_on_plot):
     #%% - Functions
-    def file_loader(folder_path, load_full_set=False, print_output=True):
+    def file_loader(folder_path, load_full_set=False, print_output=False):
         if print_output:
             print(folder_path)
 
@@ -258,8 +248,15 @@ def dataset_distribution_tester(dir, time_dimension, ignore_zero_vals_on_plot):
     print("\nProgram Completed\n")
 
 
+"""
+#%% - User Inputs - if not calling this from external script then can use this section to set inputs
+time_dimension = 100
+dataset_title = "Dataset 14_Real_10K_M broken"
+data_path = "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Yr 3 Project/Circular and Spherical Dummy Datasets/"
+ignore_zero_vals_on_plot = True
 
-
-
+# Program internals setup
+dir = (data_path + dataset_title)
 
 dataset_distribution_tester(dir, time_dimension, ignore_zero_vals_on_plot)
+"""
