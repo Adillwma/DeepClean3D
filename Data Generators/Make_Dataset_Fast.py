@@ -1,4 +1,4 @@
-from Simple_Cross.Multi_X_Gen import simp_generator
+from simple_cross.Multi_X_Gen import simp_generator
 from Blank_Data_Image_Generator import generate_blanks
 
 #%% - User Inputs
@@ -6,7 +6,9 @@ xdim = 88
 ydim = 128
 time_dimension = 100
 sig_pts = 28
-output_dir = ###
+dats_set_title = "Testing multi data gen"
+data_sets_folder = "C:\Users\Student\Documents\UNI\Onedrive - University of Bristol\Yr 3 Project\Circular and Spherical Dummy Datasets\\"
+output_dir = data_sets_folder + dats_set_title + "\Data\\"
 
 number_of_blanks = 2
 number_single_x = 2
@@ -14,7 +16,7 @@ number_of_two_x = 2
 number_of_three_x = 2
 number_of_four_x = 2
 
-shift_x_positions = True
+shift_x_positions = False
 rotate_x_positions = True
 
 
@@ -36,6 +38,6 @@ if rotate_x_positions:
 else:
     rotate = 0
 
-simp_generator(datasplit_ratios, total_x_images, sig_pts, xdim, ydim, time_dimension, shift, rotate)
+simp_generator(datasplit_ratios, total_x_images, sig_pts, xdim, ydim, time_dimension, shift)
 
 
