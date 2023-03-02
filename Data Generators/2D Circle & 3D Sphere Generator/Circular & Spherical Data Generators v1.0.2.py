@@ -2,7 +2,7 @@
 """
 Circular & Spherical Data Test Generator v1.0.3
 @author: Adill Al-Ashgar
-Created on Wed Nov  9 15:06:59 2022
+Created on Wed Nov 9 2022
 
 USER NOTICE!
 x Simulates Detector Readings of Generated Circular and Spherical Signals.

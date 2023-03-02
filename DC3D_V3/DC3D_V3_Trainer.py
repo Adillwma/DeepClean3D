@@ -1,19 +1,25 @@
 # -*- coding: utf-8 -*-
 """
-Created on Sat Feb 1 2022
 DeepClean v0.3.1
+Build created on Sat Feb 1 2022
 Authors: Adill Al-Ashgar & Max Carter
+University of Bristol
+
 @Adill: adillwmaa@gmail.co.uk - ex18871@bristol.ac.uk
 @Max: qa19105@bristol.ac.uk
 
-# University of Bristol
+
 
 Possible improvements:
 ### ~~~~~ [DONE!] Make sure that autoecoder Encoder and Decoder are saved along with model in the models folder 
 
+### ~~~~~~ [TESTING!] Allow normalisation/renorm to be bypassed, to check how it affects results 
+
 ### ~~~~~ Possibly set all to double?
 dtype (torch.dtype, optional) – the desired data type of returned tensor. 
 Default: if None, uses a global default (see torch.set_default_tensor_type()).!!! 
+
+### ~~~~~ Update the completed prints to terminal after saving things to only say that if the task is actually completeted, atm it will do it regardless, as in the error on .py save 
 
 ### ~~~~~ [DONE!] MUST SEPERATE 3D recon and flattening from the normalisation and renormalisation
 
@@ -26,6 +32,8 @@ Default: if None, uses a global default (see torch.set_default_tensor_type()).!!
 ### ~~~~~ clear up visulisations
 
 ### ~~~~~ Functionalise things
+
+### ~~~~~ [DONE!] Fix Val loss save bug
 
 ### ~~~~~ [DONE!] Move things to other files (AE, Helper funcs, Visulisations etc)
 
@@ -59,16 +67,21 @@ import torch
 
 #%% - User Inputs
 mode = 0 ### 0=Data_Gathering, 1=Testing, 2=Speed_Test, 3=Debugging
-dataset_title = "Dataset 14_Real_10K_M" #"Dataset 12_X10K"
-model_save_name = "Dataset 14_Real_10K_M"
+dataset_title = "Dataset 11_X_5K_M" #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
+model_save_name = "Dataset 11_no_noisegen"
 
-num_epochs = 41                                           #User controll to set number of epochs (Hyperparameter)
-batch_size = 64                                 #User controll to set batch size (Hyperparameter) - #Data Loader, number of Images to pull per batch 
-latent_dim = 8                      #User controll to set number of nodes in the latent space, the bottleneck layer (Hyperparameter)
+num_epochs = 21                                           #User controll to set number of epochs (Hyperparameter)
+batch_size = 10                                 #User controll to set batch size (Hyperparameter) - #Data Loader, number of Images to pull per batch 
+latent_dim = 10                     #User controll to set number of nodes in the latent space, the bottleneck layer (Hyperparameter)
 
 learning_rate = 0.001  #User controll to set optimiser learning rate(Hyperparameter)
 optim_w_decay = 1e-05  #User controll to set optimiser weight decay (Hyperparameter)
 loss_fn = torch.nn.MSELoss()   #!!!!!!   #MSELoss()          #(mean square error) User controll to set loss function (Hyperparameter)
+
+time_dimension = 100
+noise_factor = 0                                          #User controll to set the noise factor, a multiplier for the magnitude of noise added. 0 means no noise added, 1 is defualt level of noise added, 10 is 10x default level added (Hyperparameter)
+
+reconstruction_threshold = 0.5      #MUST BE BETWEEN 0-1        #Threshold for 3d reconstruction, values below this confidence level are discounted
 
 
 """#### NEW MULTI-LOSS FUCN WITH WEIGHTS
@@ -87,29 +100,26 @@ for i in range (0, len(loss_fn_weightings)):
     lf_total = lf_total + lf_contribution
 """
 
-
-time_dimension = 100
-noise_factor = 0                                          #User controll to set the noise factor, a multiplier for the magnitude of noise added. 0 means no noise added, 1 is defualt level of noise added, 10 is 10x default level added (Hyperparameter)
-reconstruction_threshold = 0.5      #MUST BE BETWEEN 0-1        #Threshold for 3d reconstruction, values below this confidence level are discounted
-###FIX RECON!!!
-
 #%% - Advanced Debugging Settings
 print_encoder_debug = False                     #[default = False]
 print_decoder_debug = False                     #[default = False]
 debug_noise_function = False                    #[default = False]
 debug_loader_batch = False     #(Default = False) //INPUT 0 or 1//   #Setting debug loader batch will print to user the images taken in by the dataoader in this current batch and print the corresponding labels
 
-full_dataset_integrity_check = False   #V slow
+full_dataset_integrity_check = False   #V slow    #default = False
+full_dataset_distribution_check = False    #default = False
 print_network_summary = False     #default = False
 seed = 0                            #0 is default which gives no seeeding to RNG, if the value is not zero then this is used for the RNG seeding for numpy, random, and torch libraries
+simple_norm_instead_of_custom = False #default is False
+all_norm_off = False    #default is False
 
 #%% - Plotting Control Settings
 print_every_other = 2
 plot_or_save = 1                            #[default = 0] 0 is normal behavior, If set to 1 then saves all end of epoch printouts to disk, if set to 2 then saves outputs whilst also printing for user
 
 #%% - Advanced Visulisation Settings
-plot_train_loss = False
-plot_validation_loss = False
+plot_train_loss = True
+plot_validation_loss = True
 
 plot_pixel_difference = True #False
 plot_latent_generations = True
@@ -158,7 +168,7 @@ from functools import partial
 from Helper_files.Dataset_Integrity_Check_V1 import dataset_integrity_check
 from Helper_files.AE_Visulisations import Generative_Latent_information_Visulisation, Reduced_Dimension_Data_Representations, Graphwiz_visulisation, AE_visual_difference
 from Helper_files.Robust_model_exporter_V1 import Robust_model_export
-
+from Helper_files.Dataset_distribution_tester_V1 import dataset_distribution_tester
 #%% - Helper functions
 def custom_normalisation(data, reconstruction_threshold, time_dimension=100):
     data = ((data / time_dimension) / (1/(1-reconstruction_threshold))) + reconstruction_threshold
@@ -238,7 +248,7 @@ class AddGaussianNoise(object):                   #Class generates noise based o
     def __repr__(self):
         return self.__class__.__name__ + '(mean={0}, std={1})'.format(self.mean, self.std)
 
-#%% - Output Path Initialisation
+#%% - # Input / Output Path Initialisation
 
 # Create output directory if it doesn't exist
 dir = results_output_path + model_save_name + " - Training Results/"
@@ -253,6 +263,11 @@ full_model_path = dir + model_save_name + " - Model.pth"
 full_activity_filepath = dir + model_save_name + " - Activity.npz"
 full_netsum_filepath = dir + model_save_name + " - Network Summary.txt"
 full_statedict_path = dir + model_save_name + " - Model + Optimiser State Dicts.pth"
+
+# Joins up the parts of the differnt input dataset load paths
+train_dir = data_path + dataset_title
+test_dir = data_path + dataset_title   #??????????????????????????????????????????
+
 
 #%% - Parameters Initialisation
 # Sets program into speed test mode
@@ -485,7 +500,7 @@ def train_epoch_den(encoder, decoder, device, dataloader, loss_fn, optimizer, no
     # Iterate the dataloader (we do not need the label values, this is unsupervised learning)
     for image_batch, _ in image_loop: # with "_" we just ignore the labels (the second element of the dataloader tuple
         # Move tensor to the proper device
-        image_noisy = add_noise(image_batch, noise_factor, debug_noise_function)
+        image_noisy = image_batch###!!!add_noise(image_batch, noise_factor, debug_noise_function)
         image_batch = image_batch.to(device)
         image_noisy = image_noisy.to(device)    
         # Encode data
@@ -516,7 +531,7 @@ def test_epoch_den(encoder, decoder, device, dataloader, loss_fn,noise_factor=0.
         conc_label = []
         for image_batch, _ in dataloader:
             # Move tensor to the proper device
-            image_noisy = add_noise(image_batch, noise_factor, debug_noise_function)
+            image_noisy = image_batch#####!!!add_noise(image_batch, noise_factor, debug_noise_function)
             image_noisy = image_noisy.to(device)
             # Encode data
             encoded_data = encoder(image_noisy)
@@ -564,7 +579,7 @@ def plot_ae_outputs_den(encoder, decoder, epoch, model_save_name, time_dimension
       
       if epoch <= print_every_other:                                                  #CHECKS TO SEE IF THE EPOCH IS LESS THAN ZERO , I ADDED THIS TO GET THE SAME NOISED IMAGES EACH EPOCH THOUGH THIS COULD BE WRONG TO DO?
           global image_noisy                                          #'global' means the variable (image_noisy) set inside a function is globally defined, i.e defined also outside the function
-          image_noisy = add_noise(img, noise_factor, debug_noise_function)                   #Runs the function 'add_noise' (in this code) the function adds noise to a set of data, the function takes two arguments, img is the data to add noise to, noise factor is a multiplier for the noise values added, i.e if multiplier is 0 no noise is added, if it is 1 default amount is added, if it is 10 then the values are raised 10x 
+          image_noisy = img#!!!!add_noise(img, noise_factor, debug_noise_function)                   #Runs the function 'add_noise' (in this code) the function adds noise to a set of data, the function takes two arguments, img is the data to add noise to, noise factor is a multiplier for the noise values added, i.e if multiplier is 0 no noise is added, if it is 1 default amount is added, if it is 10 then the values are raised 10x 
           image_noisy_list.append(image_noisy)                        #Adds the just generated noise image to the list of all the noisy images
       image_noisy = image_noisy_list[i].to(device)                    #moves the list (i think of tensors?) to the device that will process it i.e either cpu or gpu, we have a check elsewhere in the code that detects if gpu is availible and sets the value of 'device' to gpu or cpu depending on availibility (look for the line that says "device = 'cuda' if torch.cuda.is_available() else 'cpu'"). NOTE: this moves the noised images to device, i think that the original images are already moved to device in previous code
 
@@ -640,10 +655,18 @@ def plot_ae_outputs_den(encoder, decoder, epoch, model_save_name, time_dimension
     noise_data = image_noisy.cpu().squeeze().numpy()
     rec_data = rec_img.cpu().squeeze().numpy()
   
-    in_im = custom_renormalisation(inp_data, reconstruction_threshold, time_dimension)
-    noise_im = custom_renormalisation(noise_data, reconstruction_threshold, time_dimension)
-    rec_im = custom_renormalisation(rec_data, reconstruction_threshold, time_dimension)
-    
+  ###################WHY IS NORM HERE IN THE CODE??? shouldent it be directly after output and speed time is saved? (i think this is actually for the plots generated during the testig ratehr than afetr so okay maybe not?)
+    if simple_norm_instead_of_custom or all_norm_off:
+        in_im = inp_data * time_dimension
+        noise_im = noise_data * time_dimension
+        rec_im = rec_data * time_dimension
+    else:
+        in_im = custom_renormalisation(inp_data, reconstruction_threshold, time_dimension)
+        noise_im = custom_renormalisation(noise_data, reconstruction_threshold, time_dimension)
+        rec_im = custom_renormalisation(rec_data, reconstruction_threshold, time_dimension)
+
+
+
     in_im = reconstruct_3D(in_im, reconstruction_threshold)
     noise_im = reconstruct_3D(noise_im, reconstruction_threshold)
     rec_im = reconstruct_3D(rec_im, reconstruction_threshold)
@@ -700,8 +723,27 @@ def plot_ae_outputs_den(encoder, decoder, epoch, model_save_name, time_dimension
     return(number_of_true_signal_points, number_of_recovered_signal_points, in_data, noisy_data, rec_data)    
     
 
+#%% - Dataset Pre-tests
+# Dataset Integrity Check    #???????? aslso perform on train data dir if ther is one?????? 
+print("Testing training dataset integrity, with {insert scan type}")
+dataset_integrity_check(train_dir, full_test=full_dataset_integrity_check, print_output=True)
+print("Test completed\n")
 
+if train_dir != test_dir:
+    print("Testing test dataset signal distribution")
+    dataset_integrity_check(test_dir, full_test=full_dataset_integrity_check, print_output=True)
+    print("Test completed\n")
 
+# Dataset Distribution Check
+if full_dataset_distribution_check:
+    print("\nTesting training dataset signal distribution")
+    dataset_distribution_tester(train_dir, time_dimension, ignore_zero_vals_on_plot=True)
+    print("Test completed\n")
+
+    if train_dir != test_dir:
+        print("Testing test dataset signal distribution")
+        dataset_distribution_tester(test_dir, time_dimension, ignore_zero_vals_on_plot=True)
+        print("Test completed\n")
     
 
 #%% - Data Loader
@@ -724,14 +766,6 @@ def val_loader2d(path):
     sample = (np.load(path))            
     return (sample)
 
-# the train_epoch_den and test both add noise themselves?? so i will have to call all of the clean versions:
-train_dir = data_path + dataset_title
-
-# N.B. We will use the train loader for this as it takes the clean data, and thats what we want as theres a built in nois adder here already:
-test_dir = data_path + dataset_title   #??????????????????????????????????????????
-
-# Dataset Integrity Check    #???????? aslso perform on train data dir if ther is one?????? 
-dataset_integrity_check(train_dir, full_test=full_dataset_integrity_check, print_output=True)
 
 #train_dir = r'C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\New big simp\Rectangle\\'
 train_dataset = torchvision.datasets.DatasetFolder(train_dir, train_loader2d, extensions='.npy')
@@ -742,7 +776,14 @@ test_dataset = torchvision.datasets.DatasetFolder(test_dir, train_loader2d, exte
 
 #%% - Data Preparation
 
-custom_normalisation_with_args = partial(custom_normalisation, reconstruction_threshold=reconstruction_threshold, time_dimension=time_dimension)   #using functools partial to bundle the args into custom norm to use in custom torch transform using lambda function
+if simple_norm_instead_of_custom:
+    custom_normalisation_with_args = lambda x: x/time_dimension
+else:
+    custom_normalisation_with_args = partial(custom_normalisation, reconstruction_threshold=reconstruction_threshold, time_dimension=time_dimension)   #using functools partial to bundle the args into custom norm to use in custom torch transform using lambda function
+
+if all_norm_off:
+    custom_normalisation_with_args = lambda x: x
+
 
 train_transform = transforms.Compose([                                         #train_transform variable holds the tensor tranformations to be performed on the training data.  transforms.Compose([ ,  , ]) allows multiple transforms to be chained together (in serial?) (#!!! does it do more than this??)
                                        #transforms.RandomRotation(30),         #transforms.RandomRotation(angle (degrees?) ) rotates the tensor randomly up to max value of angle argument
@@ -932,9 +973,9 @@ if plot_validation_loss:
     plt.title("Validation loss") 
     plt.xlabel("Epoch number")
     plt.ylabel("Val loss (MSE)")
-    plot_save_choice(plot_or_save, Out_Label)  
     Out_Label =  graphics_dir + f'{model_save_name} - Val loss - Epoch {epoch}.png'
-   
+    plot_save_choice(plot_or_save, Out_Label)    
+
 if plot_cutoff_telemetry:
     plot_telemetry(telemetry, plot_or_save=plot_or_save)
 
@@ -1001,22 +1042,29 @@ if plot_Graphwiz:
 #%% - Export all data logged to disk in form of .txt file in the output dir
 if data_gathering:
 
+    print("\nSaving model to .pth file in output dir...")
     # Save and export trained model to user output dir
     torch.save((encoder, decoder), full_model_path)
+    print("- Completed -")
 
+    print("\nSaving Autoencoder python file to output dir...")
     # Get the directory name of the current Python file for the autoencoder export
     search_dir = os.path.abspath(__file__)
     search_dir = os.path.dirname(search_dir)
-    
+
     # Locate .py file that defines the Encoder and Decoder and copies it to the model save dir, due to torch.save model save issues
     Robust_model_export(Encoder, search_dir, dir) #Only need to run on encoder as encoder and decoder are both in the same file so both get saved this way
+    print("- Completed -")
 
+    print("\nSaving model state dictionary to output dir...")
     # Save the state dictionary
     torch.save({'encoder_state_dict': encoder.state_dict(),
                 'decoder_state_dict': decoder.state_dict(),
                 'optimizer_state_dict': optim.state_dict()},
                 full_statedict_path)
-
+    print("- Completed -")
+    
+    print("\nSaving network activations to .npz file in output dir...")
     # Convert network activity to numpy from torch tensors
     enc_input = np.array(enc_input)
     enc_conv = np.array(enc_conv)
@@ -1031,7 +1079,10 @@ if data_gathering:
 
     # Save network activity for analysis
     np.savez((full_activity_filepath), enc_input=enc_input, enc_conv=enc_conv, enc_flatten=enc_flatten, enc_lin=enc_lin, dec_input=dec_input, dec_lin=dec_lin, dec_flatten=dec_flatten, dec_conv=dec_conv, dec_out=dec_out)
+    print("- Completed -")
 
+
+    print("\nSaving inputs, model stats and results to .txt file in output dir...")
     #Comparison of true signal points to recovered signal points
     try: 
         #print("True signal points",number_of_true_signal_points)
@@ -1040,9 +1091,29 @@ if data_gathering:
         full_data_output["recovered_signal_points"] = number_of_recovered_signal_points
     except:
         pass
+    
+    import datetime
+    """
+    #####move to better position!!!!!!!!!!!!
+    
+    import psutil
 
+    cpu = f"{psutil.cpu_brand()}"
+    cpu_cores = f"{psutil.cpu_count()}"
+    ram = f"{round(psutil.virtual_memory().total / (1024 ** 3))} GB"
+
+    if torch.cuda.is_available():    #COMBINE WITH PREVIOUS TEST
+        device = torch.cuda.get_device_name(0)
+        gpu = f"CUDA enabled GPU found: {device}"
+    else:
+        gpu = "No CUDA enabled GPU found" 
+    """
     # Save .txt Encoder/Decoder Network Summary
     with open(full_netsum_filepath, 'w', encoding='utf-8') as output_file:    #utf_8 encoding needed as default (cp1252) unable to write special charecters present in the summary
+        # Write the local date and time to the file
+        TD_now = datetime.datetime.now()         # Get the current local date and time
+        output_file.write(f"Date data taken: {TD_now.strftime('%Y-%m-%d %H:%M:%S')}\n")    
+
         output_file.write(("Model ID: " + model_save_name + f"\nTrained on device: {device}"))
         output_file.write((f"\nMax Epoch Reached: {max_epoch_reached}\n"))
         timer_warning = "(Not accurate - not recorded in speed_test mode)\n"
@@ -1057,8 +1128,14 @@ if data_gathering:
         #output_file.write(str(full_data_output))
         for key, value in full_data_output.items():
             output_file.write(f"{key}: {value}\n")
-
+     
+        #output_file.write(f"CPU Type: {cpu}\n")
+        #output_file.write(f"CPU Cores: {cpu_cores}\n")
+        #output_file.write(f"{gpu}\n")
+        #output_file.write(f"RAM: {ram}\n \N")
+        
+    print("- Completed -")
 #%% - End of Program - Printing message to notify user!
-print("\nProgram Complete - Shutting down...")    
+print("\nProgram Complete - Shutting down...\n")    
     
     
