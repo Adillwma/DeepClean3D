@@ -1,7 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-
-from Multi_X_Sim import simp_simulator
+from Combined_X_Sim import comb_simp_simulator
 
 """
 This will return float64 array numbers.
@@ -14,7 +13,7 @@ directory = r"C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\P
 
 # ----------------------------------------------------------------------------------
 # you can change all the arguments in the function below:
-def simp_generator(Proportions = [0,0.8,0.2,0,0], dataset_size = 1000, sig_pts = 200, x_dim = 128, y_dim = 88, z_dim = 100, shift=1):
+def simp_generator(Proportions = [0,0.8,0.2,0,0], dataset_size = 1000, sig_pts = 200, x_dim = 128, y_dim = 88, z_dim = 100, shift = 1, rotate = 0):
     """
     This function simply calls the simulator function, and creates and saves the number of simulations with the defined imputs,
     to the directory specified above.

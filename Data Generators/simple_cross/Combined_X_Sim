@@ -102,8 +102,7 @@ def comb_simp_simulator(sig_pts = 100, x_dim = 200, y_dim = 200, z_dim = 100, sh
         for _ in range(num_X):
 
             # make a copy of hits_comb to alter:
-            new_hits_comb = hits_comb
-            print(np.max(hits_comb[:,0]))
+            new_hits_comb = hits_comb.copy()
 
             # if == 0 pass without rotating:
             if rotate == 0:
@@ -138,16 +137,16 @@ def comb_simp_simulator(sig_pts = 100, x_dim = 200, y_dim = 200, z_dim = 100, sh
             # shift individual x by half the max if shift is on
             if shift == 1:
                 
-                new_hits_comb[:,0] = hits_comb[:,0] + np.random.randint(-np.round(x_max/2),np.round(x_max/2))
-                new_hits_comb[:,1] = hits_comb[:,1] + np.random.randint(-np.round(y_max/2),np.round(y_max/2))
-                new_hits_comb[:,2] = hits_comb[:,2] + np.random.randint(-np.round(z_max/2),np.round(z_max/2))
+                new_hits_comb[:,0] = new_hits_comb[:,0] + np.random.randint(-np.round(x_max/2),np.round(x_max/2))
+                new_hits_comb[:,1] = new_hits_comb[:,1] + np.random.randint(-np.round(y_max/2),np.round(y_max/2))
+                new_hits_comb[:,2] = new_hits_comb[:,2] + np.random.randint(-np.round(z_max/2),np.round(z_max/2))
 
             
             # select those that would fall within the bounds of the array after rotating and shifting for each loop:
             new_hits_comb = np.array([hit for hit in new_hits_comb if
-            (x_min <= round(hit[0]) <= x_max) and
-            (y_min <= round(hit[1]) <= y_max) and
-            (z_min <= round(hit[2]) <= z_max)])
+                (x_min <= round(hit[0]) <= x_max) and
+                (y_min <= round(hit[1]) <= y_max) and
+                (z_min <= round(hit[2]) <= z_max)])
 
             # adds this loops cross:
             for point in new_hits_comb:
@@ -170,7 +169,7 @@ def comb_simp_simulator(sig_pts = 100, x_dim = 200, y_dim = 200, z_dim = 100, sh
 #------------------------------------------------------------------
 # calling function and plotting results for clean and noisy:
 
-flattened_data = comb_simp_simulator(sig_pts = 600, x_dim = 200, y_dim = 200, z_dim = 100, shift = 0, rotate = 'seperate', num_X = 2)
+flattened_data = comb_simp_simulator(sig_pts = 600, x_dim = 200, y_dim = 200, z_dim = 100, shift = 1, rotate = 'seperate', num_X = 20)
 
 # for degubbing perposes:
 
