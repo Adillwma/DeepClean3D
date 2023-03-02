@@ -53,18 +53,18 @@ def simp_simulator(num_X = 1, sig_pts = 28, x_dim = 28, y_dim = 28, z_dim = 28, 
     # im origionally had only 14 (every other point) on each axis but this didt give proper rounded numbers.
     # so im going to make my life simpler by just having 28...
     # for line 1:
-    x1_array = np.linspace(x1_data_points[0], x1_data_points[1], sig_pts)
-    y1_array = np.linspace(y1_data_points[0], y1_data_points[1], sig_pts)
-    z1_array = np.linspace(z1_data_points[0], z1_data_points[1], sig_pts)
+    x1_array = np.linspace(x1_data_points[0], x1_data_points[1], round(sig_pts/2))
+    y1_array = np.linspace(y1_data_points[0], y1_data_points[1], round(sig_pts/2))
+    z1_array = np.linspace(z1_data_points[0], z1_data_points[1], round(sig_pts/2))
 
     L1_comb = np.column_stack((x1_array, y1_array, z1_array))      # joins them all together. Should be 28 at each point 0 to 28:
     # print(np.shape(L1_comb))
     # print(L1_comb)
 
     # for line2:
-    x2_array = np.linspace(x2_data_points[0], x2_data_points[1], sig_pts)
-    y2_array = np.linspace(y2_data_points[0], y2_data_points[1], sig_pts)
-    z2_array = np.linspace(z2_data_points[0], z2_data_points[1], sig_pts)
+    x2_array = np.linspace(x2_data_points[0], x2_data_points[1], round(sig_pts/2))
+    y2_array = np.linspace(y2_data_points[0], y2_data_points[1], round(sig_pts/2))
+    z2_array = np.linspace(z2_data_points[0], z2_data_points[1], round(sig_pts/2))
 
     L2_comb = np.column_stack((x2_array, y2_array, z2_array))      # joins them all together. Should be 28 at each point 0 to 28:
     # print(np.shape(L2_comb))
@@ -97,9 +97,9 @@ def simp_simulator(num_X = 1, sig_pts = 28, x_dim = 28, y_dim = 28, z_dim = 28, 
 
                 # select those that would fall within the bounds of the array after shifting:
                 new_hits_comb = np.array([hit for hit in new_hits_comb if
-                (x_min <= hit[0] <= x_max) and
-                (y_min <= hit[1] <= y_max) and
-                (z_min <= hit[2] <= z_max)])
+                (x_min <= round(hit[0]) <= x_max) and
+                (y_min <= round(hit[1]) <= y_max) and
+                (z_min <= round(hit[2]) <= z_max)])
 
                 # add shifted cross to flattened_data
                 for point in new_hits_comb:
@@ -113,9 +113,9 @@ def simp_simulator(num_X = 1, sig_pts = 28, x_dim = 28, y_dim = 28, z_dim = 28, 
             else:
                 for point in hits_comb:
                     # TOF is the z axis
-                    TOF = int(point[2])
+                    TOF = round(point[2])
                     # index is the x and y axis
-                    flattened_data[int(point[0])][int(point[1])] = TOF
+                    flattened_data[round(point[0])][round(point[1])] = TOF
 
                 # break the loop as the coordinates will just be overwritten (as shift=0):
                 break

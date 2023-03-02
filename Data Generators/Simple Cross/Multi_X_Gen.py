@@ -9,7 +9,7 @@ MNIST dataset uses xxxxxxxxxx different graphs when the data is downloaded. To p
 that matters, i will generate and test the same amount here:
 """
 # specify where to save the flattened data
-directory = r"C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Cross Stuff\80%1X - 20%2X - 128x88\Data/"
+directory = r"C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Cross Stuff\MultiX - 80%1X - 20%2X - 128x88\Data/"
 
 
 # ----------------------------------------------------------------------------------

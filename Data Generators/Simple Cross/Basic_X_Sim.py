@@ -8,7 +8,7 @@ If changes are made, please spefify below:
 
 """
 
-def simp_simulator(sig_pts = 28, x_dim = 28, y_dim = 28, z_dim = 28, shift=1):
+def simp_simulator(sig_pts = 100, x_dim = 200, y_dim = 200, z_dim = 100, shift=1):
     """
     This generator function generates crosses across the dimensions of the volume. (seeds to be generalised for non-perfect 28x28).
     It returns a numpy array of only signal points
@@ -89,9 +89,9 @@ def simp_simulator(sig_pts = 28, x_dim = 28, y_dim = 28, z_dim = 28, shift=1):
 
         # select those that would fall within the bounds of the array after shifting:
         hits_comb = np.array([hit for hit in hits_comb if
-        (x_min <= hit[0] <= x_max) and
-        (y_min <= hit[1] <= y_max) and
-        (z_min <= hit[2] <= z_max)])
+        (x_min <= round(hit[0]) <= x_max) and
+        (y_min <= round(hit[1]) <= y_max) and
+        (z_min <= round(hit[2]) <= z_max)])
 
     #-------------------------------------------------------------------
 
@@ -117,9 +117,9 @@ def simp_simulator(sig_pts = 28, x_dim = 28, y_dim = 28, z_dim = 28, shift=1):
 
     for point in hits_comb:
         # TOF is the z axis
-        TOF = int(point[2])
+        TOF = round(point[2])
         # index is the x and y axis
-        flattened_data[int(point[0])][int(point[1])] = TOF
+        flattened_data[round(point[0])][round(point[1])] = TOF
     
     # for point in SN_pts:
     #     # TOF is the z axis
@@ -140,6 +140,7 @@ flattened_data = simp_simulator(sig_pts = 600, x_dim = 200, y_dim = 200, z_dim =
 # for degubbing perposes:
 
 print(np.shape(flattened_data))
+print(np.max(flattened_data))
 
 # plot 2d clean data
 plt.imshow(flattened_data)

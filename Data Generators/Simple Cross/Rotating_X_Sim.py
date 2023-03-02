@@ -116,9 +116,9 @@ def simp_simulator(sig_pts = 28, x_dim = 28, y_dim = 28, z_dim = 28, shift=1, ro
     
     # discard those that fall outside of array:
     hits_comb = np.array([hit for hit in hits_comb if
-        (x_min <= hit[0] <= x_max) and
-        (y_min <= hit[1] <= y_max) and
-        (z_min <= hit[2] <= z_max)])
+        (x_min <= round(hit[0]) <= x_max) and
+        (y_min <= round(hit[1]) <= y_max) and
+        (z_min <= round(hit[2]) <= z_max)])
 
     #-------------------------------------------------------------------
 
@@ -144,9 +144,9 @@ def simp_simulator(sig_pts = 28, x_dim = 28, y_dim = 28, z_dim = 28, shift=1, ro
 
     for point in hits_comb:
         # TOF is the z axis
-        TOF = int(point[2])
+        TOF = round(point[2])
         # index is the x and y axis
-        flattened_data[int(point[0])][int(point[1])] = TOF
+        flattened_data[round(point[0])][round(point[1])] = TOF
     
     # for point in SN_pts:
     #     # TOF is the z axis
