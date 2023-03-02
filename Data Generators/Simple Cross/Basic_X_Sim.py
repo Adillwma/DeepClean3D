@@ -8,7 +8,7 @@ If changes are made, please spefify below:
 
 """
 
-def simp_simulator(sig_pts = 28, x_dim = 28, y_dim = 28, z_dim = 28, shift=1):
+def simp_simulator(sig_pts = 100, x_dim = 200, y_dim = 200, z_dim = 100, shift=1):
     """
     This generator function generates crosses across the dimensions of the volume. (seeds to be generalised for non-perfect 28x28).
     It returns a numpy array of only signal points
@@ -58,18 +58,18 @@ def simp_simulator(sig_pts = 28, x_dim = 28, y_dim = 28, z_dim = 28, shift=1):
     # im origionally had only 14 (every other point) on each axis but this didt give proper rounded numbers.
     # so im going to make my life simpler by just having 28...
     # for line 1:
-    x1_array = np.linspace(x1_data_points[0], x1_data_points[1], sig_pts)
-    y1_array = np.linspace(y1_data_points[0], y1_data_points[1], sig_pts)
-    z1_array = np.linspace(z1_data_points[0], z1_data_points[1], sig_pts)
+    x1_array = np.linspace(x1_data_points[0], x1_data_points[1], round(sig_pts/2))
+    y1_array = np.linspace(y1_data_points[0], y1_data_points[1], round(sig_pts/2))
+    z1_array = np.linspace(z1_data_points[0], z1_data_points[1], round(sig_pts/2))
 
     L1_comb = np.column_stack((x1_array, y1_array, z1_array))      # joins them all together. Should be 28 at each point 0 to 28:
     # print(np.shape(L1_comb))
     # print(L1_comb)
 
     # for line2:
-    x2_array = np.linspace(x2_data_points[0], x2_data_points[1], sig_pts)
-    y2_array = np.linspace(y2_data_points[0], y2_data_points[1], sig_pts)
-    z2_array = np.linspace(z2_data_points[0], z2_data_points[1], sig_pts)
+    x2_array = np.linspace(x2_data_points[0], x2_data_points[1], round(sig_pts/2))
+    y2_array = np.linspace(y2_data_points[0], y2_data_points[1], round(sig_pts/2))
+    z2_array = np.linspace(z2_data_points[0], z2_data_points[1], round(sig_pts/2))
 
     L2_comb = np.column_stack((x2_array, y2_array, z2_array))      # joins them all together. Should be 28 at each point 0 to 28:
     # print(np.shape(L2_comb))
@@ -89,9 +89,9 @@ def simp_simulator(sig_pts = 28, x_dim = 28, y_dim = 28, z_dim = 28, shift=1):
 
         # select those that would fall within the bounds of the array after shifting:
         hits_comb = np.array([hit for hit in hits_comb if
-        (x_min <= hit[0] <= x_max) and
-        (y_min <= hit[1] <= y_max) and
-        (z_min <= hit[2] <= z_max)])
+        (x_min <= round(hit[0]) <= x_max) and
+        (y_min <= round(hit[1]) <= y_max) and
+        (z_min <= round(hit[2]) <= z_max)])
 
     #-------------------------------------------------------------------
 
@@ -117,9 +117,9 @@ def simp_simulator(sig_pts = 28, x_dim = 28, y_dim = 28, z_dim = 28, shift=1):
 
     for point in hits_comb:
         # TOF is the z axis
-        TOF = int(point[2])
+        TOF = round(point[2])
         # index is the x and y axis
-        flattened_data[int(point[0])][int(point[1])] = TOF
+        flattened_data[round(point[0])][round(point[1])] = TOF
     
     # for point in SN_pts:
     #     # TOF is the z axis
@@ -135,11 +135,12 @@ def simp_simulator(sig_pts = 28, x_dim = 28, y_dim = 28, z_dim = 28, shift=1):
 #------------------------------------------------------------------
 # calling function and plotting results for clean and noisy:
 
-flattened_data = simp_simulator(sig_pts = 200, x_dim = 128, y_dim = 88, z_dim = 28, shift=1)
+flattened_data = simp_simulator(sig_pts = 600, x_dim = 200, y_dim = 200, z_dim = 100, shift=1)
 
 # for degubbing perposes:
 
 print(np.shape(flattened_data))
+print(np.max(flattened_data))
 
 # plot 2d clean data
 plt.imshow(flattened_data)

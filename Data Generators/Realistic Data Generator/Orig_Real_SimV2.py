@@ -5,13 +5,23 @@ Realistic Data Simulator v1.0.1
 Created on Fri Dec 13 06:50:34 2022
 """
 
+"""
+Origional Simulator.
+This returns hit points and noise points along with the number of signal points.
+It is not yet flattened. This is flattened in the Generator function.
+
+It has NO STD. Max z pixel is the longest a photon could take to get to top.
+The z axis has pixel widths of t_max / time_resolution
+time_resolution is how many z pixels you want.
+"""
+
 #%% - Dependencies
 import numpy as np
 import matplotlib.pyplot as plt
 import random
    
 #%% - Function
-def realistic_data_generator(signal_points, noise_points, detector_pixel_dimensions=(88,128), time_resoloution=100, hit_point=1.5, ideal=1, debug_image_generator=0):
+def realistic_data_sim(signal_points, detector_pixel_dimensions=(128,88), time_resoloution=100, hit_point=1.5, ideal=1, debug_image_generator=0, shift = 0):
     '''
     Inputs:
     signal_points = number of points the hit produces (average 30 for realistic photon), N.B. these may not be at critical angle to 60 is maximum number
@@ -43,7 +53,7 @@ def realistic_data_generator(signal_points, noise_points, detector_pixel_dimensi
     linear_x_points = np.linspace(min_num, max_num, signal_points)
 
     #Creates more realistic randomly spaced x data  #random numbers that are more accurate to data
-    random_x_points = [random.uniform(-2 * np.pi, 2 * np.pi) for _ in range(signal_points)]
+    random_x_points = [random.uniform(-np.pi, np.pi) for _ in range(signal_points)]
 
     #Ideal or random? 1 if want ideal or 0 if want random #Here can set to either random numbers or to linear_x_points depending on what you want
     if ideal == 1:
@@ -63,7 +73,6 @@ def realistic_data_generator(signal_points, noise_points, detector_pixel_dimensi
 
 
     #Calulates corresponding y parabola points for each x
-    y_points = []
     y_points = [np.cos(i) for i in x]
 
     # join these x reflected x and parabola y points into one list
@@ -108,22 +117,36 @@ def realistic_data_generator(signal_points, noise_points, detector_pixel_dimensi
     # x axis is between the reflectors, and the pixels of the x axis are the first dim of the input dim
     x_idxs = np.digitize([i[0][0] for i in final],np.linspace(-reflect_x, reflect_x, detector_pixel_dimensions[0])) #takes x points, then bins, returns indices
 
+    # -1 to 1 as cos(x)
     y_idxs = np.digitize([i[0][1] for i in final],np.linspace(-1, 1, detector_pixel_dimensions[1]))
 
-    z_idxs = np.digitize([i[1] for i in final],np.linspace(0, t_max, time_resoloution))
+    # 0 to t_max as thats the max time a photon can take.
+    z_idxs = np.digitize([i[1] for i in final],np.linspace(0, t_max, time_resoloution))   
+
+    # combine all idxs to a list:
+    coords = np.column_stack((x_idxs,y_idxs,z_idxs))
+
+    # define flattened array
+    flattened_data = np.zeros((detector_pixel_dimensions[0], detector_pixel_dimensions[1]))
     
+    # add shift
+    if shift == 1:
+        coords[:,0] += np.random.randint(-np.round(detector_pixel_dimensions[0] / 2),np.round(detector_pixel_dimensions[0] / 2))
+        coords[:,1] += np.random.randint(-np.round(detector_pixel_dimensions[1] / 2),np.round(detector_pixel_dimensions[1] / 2))
+        coords[:,2] += np.random.randint(-np.round(time_resoloution/2),np.round(time_resoloution/2))
 
-    # easier for it to take the indexes instead of actual pixels. Hence, below has been commented out to change this
-    # and subsequent x_pixel etc is changed to x_idxs
-    # # all of the above are 1 too few as they go from 0 to 87 index. We want 1 to 88 so.
-    # x_pixel = [i+1 for i in x_idxs]
-    # y_pixel = [i+1 for i in y_idxs]
-    # z_pixel = [i+1 for i in z_idxs]
-
-    #Generates the random noise points
-    x_noise = [random.randint(1, detector_pixel_dimensions[0]) for _ in range(noise_points)]
-    y_noise = [random.randint(1, detector_pixel_dimensions[1]) for _ in range(noise_points)]
-    z_noise = [random.randint(1, time_resoloution) for _ in range(noise_points)]
+    # select those that would fall within the bounds of the thing after shifting:
+    filtered = np.array([coord for coord in coords if
+    (0 <= coord[0] <= detector_pixel_dimensions[0] - 1) and
+    (0 <= coord[1] <= detector_pixel_dimensions[1] - 1) and
+    (1 <= coord[2] <= time_resoloution)]) 
+    
+    # add the hits to the zeros array
+    for coord in filtered:
+        # TOF is the z axis
+        TOF = int(coord[2])
+        # index is the x and y axis
+        flattened_data[int(coord[0])][int(coord[1])] = TOF
     
     #Plots the figure if user requests debugging
     if debug_image_generator == 1:
@@ -132,20 +155,19 @@ def realistic_data_generator(signal_points, noise_points, detector_pixel_dimensi
         ax = fig.add_subplot(projection='3d')
 
         ax.scatter(x_idxs, y_idxs, z_idxs)
-        ax.scatter(x_noise, y_noise, z_noise)
         ax.set_xlabel('X')
         ax.set_ylabel('Y')
         ax.set_zlabel('Time')
 
         plt.show()
 
-    #Determines number of signal points in the output, as some photons will have left due to passing the critical angle and exiting the block
-    num_of_signal_points = int(np.shape(x_idxs)[0])
+        plt.imshow(flattened_data)
+        plt.show()
     
     #Outputs to return to main dataset generator script
-    return(x_idxs, x_noise, y_idxs, y_noise, z_idxs, z_noise, num_of_signal_points)
+    return(flattened_data)
 
 #%% - Testing Driver
 #Uncomment line below for testing, make sure to comment out when done to stop it creating plots when dataset generator is running
 
-# realistic_data_generator(signal_points=1000, noise_points=0, detector_pixel_dimensions=(88,128), time_resoloution=100, hit_point=1.3, ideal=1, debug_image_generator=1)
+# realistic_data_sim(signal_points=1000, detector_pixel_dimensions=(128,88), time_resoloution=100, hit_point=1.3, ideal=1, debug_image_generator=1, shift = 1)

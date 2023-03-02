@@ -4,11 +4,14 @@ Realistic Data Simulator v1.0.1
 @author: Max Carter & Adill Al-Ashgar
 Created on Thurs Jan 26 2023
 """
-# This version of the realistic data generator has the same dimensions that the detector has on the powerpoint pres online:
-# from https://www2.physics.ox.ac.uk/sites/default/files/2013-08-15/dirc_2013_talk_forty_pdf_20084.pdf
-# gives x-dim as 660mm (TORCH width)
-# y-dim as angle from the z axis? (says different things on different powerpoints)
-# and assuming t is still time?
+"""
+N.B. This is the same function as V2, however the time axis is now defined in set 35ps blocks (time res of TORCH)
+The detector also has a standard deviation of 70ps on the time axis.
+It is noted that this generator produces sets of data with a differing number of pixels on the z axis.
+THIS PRODUCES A SET TIME DIMENSION
+
+This returns the signal and noise points as well as the number of signal points.
+"""
 
 #%% - Dependencies
 import numpy as np
@@ -109,6 +112,7 @@ def realistic_data_generator(signal_points, noise_points, detector_pixel_dimensi
             # goes down and back up
             time.append(((2 * quartz_length - hit_point) / abs(i[1])) / particle_speed)
 
+    # this is list of x at idx [0][0], y at [0][1] and z (time) at [1]
     final = list(zip(angle_filter, time))     # This is list of ((x,y), time) - dont ask me why, its annoying
 
     # create bins
@@ -117,6 +121,7 @@ def realistic_data_generator(signal_points, noise_points, detector_pixel_dimensi
 
     y_idxs = np.digitize([i[0][1] for i in final],np.linspace(-1, 1, detector_pixel_dimensions[1]))
 
+    # z needs std dev in time added. This is added after the pattern is set:
     z_idxs = [np.random.normal(i[1], std)//resolution for i in final] # i[1] add std to time then give z pixel with //resolution
     z_orig = [i[1]//resolution for i in final]          # This is here for z_pixel
 
@@ -125,6 +130,9 @@ def realistic_data_generator(signal_points, noise_points, detector_pixel_dimensi
     x_pixel = [i+1 for i in x_idxs]
     y_pixel = [i+1 for i in y_idxs]
     z_pixel = [i+1 - min(z_idxs) + min(z_orig) for i in z_idxs]
+
+    # Changing position:
+
 
     #Generates the random noise points (tmax//resolution sets the max pixels in the z axis)
     x_noise = [random.randint(1, detector_pixel_dimensions[0]) for _ in range(noise_points)]
@@ -156,5 +164,5 @@ def realistic_data_generator(signal_points, noise_points, detector_pixel_dimensi
 
 #%% - Testing Driver
 #Uncomment line below for testing, make sure to comment out when done to stop it creating plots when dataset generator is running
-
-realistic_data_generator(signal_points=100, noise_points=1000, detector_pixel_dimensions=(88,128), hit_point=0.3, ideal=1, debug_image_generator=1)
+a = realistic_data_generator(signal_points=100, noise_points=1000, detector_pixel_dimensions=(88,128), hit_point=0.3, ideal=1, debug_image_generator=1)
+print(np.shape(a))

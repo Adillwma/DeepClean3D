@@ -1,11 +1,11 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import random
-from Real_FixedZ_sim import realistic_data_sim
+from Orig_Real_SimV2 import realistic_data_sim
 
 directory = r'C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Realistic Stuff\ShiftedReal Random H_Point\Data'
 
-def realistic_data_gen(dataset_size=10000, signal_points=1000, detector_pixel_dimensions=(88,128), hit_point='random', ideal=1, debug_image_generator=0, shift=1):
+def realistic_data_gen(dataset_size=10000, signal_points=1000, detector_pixel_dimensions=(128,88), hit_point='random', ideal=1, debug_image_generator=0, shift=1):
     """
     This is a generator function that produces, and saves to a specified directory, a number of flattened realistic data images.
     This takes the following inputs:
