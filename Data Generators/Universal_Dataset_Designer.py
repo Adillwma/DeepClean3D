@@ -11,6 +11,41 @@ x To run standalone, just configure the variables in the 'User Settings' section
 below and then run full code.
 """
 
+
+####
+
+#NOTE: 
+#Modular construction
+#Siganl choices (X, realistic, circle2D, sphere, hemisphere, true root data>>???)
+#movement and modulation settings, (movement, rotation, mirroring)
+#ghost signals (add in other similar singals, other dissimilar signals)
+#hidden signal (embed signal in image data)???
+#blank data
+
+#generator mixer(allow user to just set percentages and numbers of the above things and also any settings related to them (probably do function micro settings as user propts in terminal ratehr than code settings ))
+
+#check dataset distribution and integrity here before saving 
+
+#if passes the tests abovet then save the dataset
+
+
+
+#use torch transofrms in the main code body to rotate, zoom etc the test set)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ####TO DO LIST:
 # Add label data to pixel block out
 # Make condition so that 2d and 3d scatter plots dont show if printing black data, use imshow instead?
