@@ -15,12 +15,13 @@ dataset_integrity_check(folder_path, full_test=True/False, print_output=True/Fal
 # Fix integrity check conditions especially for single test case (maybe make the one random plot have to match at least one other random one?)
 # Simplify code for the single vs full test cases
 # Improve plots and add descriptions
+# add progress bar on to full test 
 """
 import numpy as np
 import matplotlib.pyplot as plt
 import os
 import numpy as np
-
+from tqdm import tqdm
 ##V2 moved from glob to os scan dir - is now faster
 def dataset_integrity_check(folder_path, full_test=False, print_output=True):
     """
@@ -78,20 +79,20 @@ def dataset_integrity_check(folder_path, full_test=False, print_output=True):
     if full_test:   # Test all files in directory sequentially by index
         mins.append(np.amin(first_file))
         maxs.append(np.amax(first_file))
-        for file_number in range(1, number_of_files):
+        for file_number in tqdm(range(1, number_of_files)):
             test_file = npy_file_loader(npy_files[file_number])
             if np.shape(test_file) != first_file_shape or type(test_file) != first_file_type:
                 print(f"File {file_number} has a different shape or type than the first file.")
             mins.append(np.amin(test_file))
             maxs.append(np.amax(test_file))
-        integrity_check = "Integrity Check Passed"
+        integrity_check = "Full Integrity Check Passed"
     
     else:  # Test 1 file only - loads random npy file from dir
         test_file = npy_file_loader(np.random.choice(npy_files))
         mins.append(np.amin(test_file))
         maxs.append(np.amax(test_file))
         if np.shape(test_file) == first_file_shape and type(test_file) == first_file_type:
-            integrity_check = "Integrity Check Passed"
+            integrity_check = "Quick Integrity Check Passed"
     
     if print_output:
         print(integrity_check)
@@ -106,11 +107,12 @@ def dataset_integrity_check(folder_path, full_test=False, print_output=True):
         plt.title("Single image from dataset for visual reference")
         plt.show()
 
-#%% - Demo Driver
 """
-dataset_title = "Dataset 12_X10K"
+#%% - Demo Driver
+
+dataset_title = "Dataset 13_Real10K broken"
 data_path = "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Yr 3 Project/Circular and Spherical Dummy Datasets/"
 dir = (data_path + dataset_title + "/Data/")
 
-dataset_integrity_check(dir)
+dataset_integrity_check(dir, full_test=True)
 """
