@@ -1,4 +1,5 @@
 from simple_cross.Multi_X_Gen import simp_generator
+from simple_cross.Multi_X_Sim import simp_simulator
 from Blank_Data_Image_Generator import generate_blanks
 
 #%% - User Inputs
@@ -7,7 +8,7 @@ ydim = 128
 time_dimension = 100
 sig_pts = 28
 dats_set_title = "Testing multi data gen"
-data_sets_folder = "C:\Users\Student\Documents\UNI\Onedrive - University of Bristol\Yr 3 Project\Circular and Spherical Dummy Datasets\\"
+data_sets_folder =r"C:\Users\Student\Documents\UNI\Onedrive - University of Bristol\Yr 3 Project\Circular and Spherical Dummy Datasets\\"
 output_dir = data_sets_folder + dats_set_title + "\Data\\"
 
 number_of_blanks = 2
