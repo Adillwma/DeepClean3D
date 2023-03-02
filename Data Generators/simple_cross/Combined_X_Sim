@@ -103,6 +103,7 @@ def comb_simp_simulator(sig_pts = 100, x_dim = 200, y_dim = 200, z_dim = 100, sh
 
             # make a copy of hits_comb to alter:
             new_hits_comb = hits_comb
+            print(np.max(hits_comb[:,0]))
 
             # if == 0 pass without rotating:
             if rotate == 0:
