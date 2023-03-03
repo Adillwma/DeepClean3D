@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import math
+from tqdm import tqdm
 
 """
 This will return float64 array numbers.
@@ -10,7 +11,7 @@ that matters, i will generate and test the same amount here:
 
 # ----------------------------------------------------------------------------------
 # you can change all the arguments in the function below:
-def simp_generator(output_directory, Proportions=[0,0.8,0.2,0,0], sig_pts=200, x_dim=128, y_dim=88, z_dim=100, shift=True, rotate=False):
+def simp_generator(output_directory, Proportions=[0,0.8,0.2,0,0], sig_pts=200, x_dim=128, y_dim=88, z_dim=100, shift=True, rotate=False, rotate_seperatly=True):
     """
     This function simply calls the simulator function, and creates and saves the number of simulations with the defined imputs,
     to the directory specified above.
@@ -19,41 +20,26 @@ def simp_generator(output_directory, Proportions=[0,0.8,0.2,0,0], sig_pts=200, x
     (First item in list is for 0 Xs, second for 1 X, etx)
     others - defined in the simp_simulator function
     """
-
-    #final_print = 'Saved: \n'
     
     #Converts shit and rotate boolean True/False inputs to 1/0 inputs (could be updated in simp_sim to accept the booleans and remove this line)
-    shift = 0
-    if shift:
-        shift=1    
     
-    rotate = 0
-    if rotate:
-        rotate=1
 
     # seperates into the number of Xs specified and their proportions respectively:
     for Crosses, num_save in enumerate(Proportions):
-
+        print(f"Creating {Crosses+1}X Images...")
         # define array of all flattened d
-        for idx in range(num_save):
+        for idx in tqdm(range(num_save), desc="X Image"):
 
             # define number of crosses
-            num_X = Crosses
-            flattened_data = comb_simp_simulator(num_X, sig_pts, x_dim, y_dim, z_dim, shift, rotate)
+            num_X = Crosses + 1 #(to stop 0 gen)
+            flattened_data = comb_simp_simulator(sig_pts, x_dim, y_dim, z_dim, shift, rotate, rotate_seperatly, num_X)
+            np.save(output_directory + 'Flat SimpleX-' + str(x_dim) + 'x' + str(y_dim) + '-' + str(Crosses+1) + ' Crosses, No' + str(idx), flattened_data)
 
-            np.save(output_directory + 'Flat SimpleX-' + str(x_dim) + 'x' + str(y_dim) + '-' + str(Crosses) + ' Crosses, No' + str(idx), flattened_data)
-
-        #final_print += str(num_save) + ', ' + str(Crosses) + ' Cross Pics\n'
-    """    
-    print(final_print, '\n')
-    print(sum(Proportions),' images saved to: \n' + output_directory)
-    """
-"""
-simp_generator()
-"""
+        print(f"Generation of {num_save} {Crosses+1}X images completed successfully\n")
 
 
-def comb_simp_simulator(sig_pts = 100, x_dim = 200, y_dim = 200, z_dim = 100, shift = 1, rotate = 0, num_X = 1):
+
+def comb_simp_simulator(sig_pts = 100, x_dim = 200, y_dim = 200, z_dim = 100, shift = True, rotate = False, rotate_seperatly=True, num_X = 1):
     """
     This generator function generates crosses across the dimensions of the volume. (seeds to be generalised for non-perfect 28x28).
     It returns a numpy array of only signal points
@@ -127,81 +113,65 @@ def comb_simp_simulator(sig_pts = 100, x_dim = 200, y_dim = 200, z_dim = 100, sh
     # define flattened_data thats eventually returned:
     flattened_data = np.zeros((x_dim, y_dim))
 
-    #-------------------------------------------------------------------
-    # adding shift, roatation and multi X:
+    #%% - adding shift, roatation and multi X:
 
     # assigning this here keeps the rotation angle the same during the loops if rotate == 0 or together:
     angle_rad = math.radians(np.random.randint(0,360))
 
-    # if = 0 its an empty array.
-    if num_X == 0:
-        for point in hits_comb:
+    # loops through num_X:
+    for _ in range(num_X):
+        # make a copy of hits_comb to alter:
+        new_hits_comb = hits_comb.copy()
+
+        # this rotates the cross if specified, before shifting
+        if rotate:
+
+            # sets angle to change every loop only if rotate = seperate:
+            if rotate_seperatly:
+                # rotation angle in x, y plane
+                angle_rad = math.radians(np.random.randint(0,360))
+            
+            # point to rotate around:
+            cent_idx = round(len(L1_comb)/2)
+            cent_pt = L1_comb[cent_idx]
+            
+            # remove TOF info
+            cent_pt[2] = 0
+
+            # move to around (0,0) point, so that we can rotate it.
+            new_hits_comb -= cent_pt
+
+            # add the rotation:
+            x_rot = new_hits_comb[:,0] * math.cos(angle_rad) - new_hits_comb[:,1] * math.sin(angle_rad)
+            y_rot = new_hits_comb[:,0] * math.sin(angle_rad) + new_hits_comb[:,1] * math.cos(angle_rad)
+            z_rot = new_hits_comb[:,2]
+            new_hits_comb = np.column_stack((x_rot, y_rot, z_rot))
+
+            # move it back to the origional position
+            new_hits_comb += cent_pt
+
+        # shift individual x by half the max if shift is on
+        if shift:
+            new_hits_comb[:,0] = new_hits_comb[:,0] + np.random.randint(-np.round(x_max/2),np.round(x_max/2))
+            new_hits_comb[:,1] = new_hits_comb[:,1] + np.random.randint(-np.round(y_max/2),np.round(y_max/2))
+            new_hits_comb[:,2] = new_hits_comb[:,2] + np.random.randint(-np.round(z_max/2),np.round(z_max/2))
+
+        # select those that would fall within the bounds of the array after rotating and shifting for each loop:
+        new_hits_comb = np.array([hit for hit in new_hits_comb if
+            (x_min <= round(hit[0]) <= x_max) and
+            (y_min <= round(hit[1]) <= y_max) and
+            (z_min <= round(hit[2]) <= z_max)])
+
+        # adds this loops cross:
+        for point in new_hits_comb:
             # TOF is the z axis
             TOF = round(point[2])
             # index is the x and y axis
             flattened_data[round(point[0])][round(point[1])] = TOF
 
-    # loops through num_X:
-    else:
-        for _ in range(num_X):
-
-            # make a copy of hits_comb to alter:
-            new_hits_comb = hits_comb.copy()
-
-            # if == 0 pass without rotating:
-            if rotate == 0:
-                pass
-            # this rotates the cross if specified, before shifting
-            else:
-                # sets angle to change every loop only if rotate = seperate:
-                if rotate == 'seperate':
-                    # rotation angle in x, y plane
-                    angle_rad = math.radians(np.random.randint(0,360))
-
-                # point to rotate around:
-                cent_idx = round(len(L1_comb)/2)
-                cent_pt = L1_comb[cent_idx]
-                # remove TOF info
-                cent_pt[2] = 0
-
-                # move to around (0,0) point, so that we can rotate it.
-                new_hits_comb -= cent_pt
-
-                # add the rotation:
-                x_rot = new_hits_comb[:,0] * math.cos(angle_rad) - new_hits_comb[:,1] * math.sin(angle_rad)
-                y_rot = new_hits_comb[:,0] * math.sin(angle_rad) + new_hits_comb[:,1] * math.cos(angle_rad)
-                z_rot = new_hits_comb[:,2]
-
-                new_hits_comb = np.column_stack((x_rot, y_rot, z_rot))
-
-                # move it back to the origional position
-                new_hits_comb += cent_pt
-            
-
-            # shift individual x by half the max if shift is on
-            if shift == 1:
-                
-                new_hits_comb[:,0] = new_hits_comb[:,0] + np.random.randint(-np.round(x_max/2),np.round(x_max/2))
-                new_hits_comb[:,1] = new_hits_comb[:,1] + np.random.randint(-np.round(y_max/2),np.round(y_max/2))
-                new_hits_comb[:,2] = new_hits_comb[:,2] + np.random.randint(-np.round(z_max/2),np.round(z_max/2))
-
-            
-            # select those that would fall within the bounds of the array after rotating and shifting for each loop:
-            new_hits_comb = np.array([hit for hit in new_hits_comb if
-                (x_min <= round(hit[0]) <= x_max) and
-                (y_min <= round(hit[1]) <= y_max) and
-                (z_min <= round(hit[2]) <= z_max)])
-
-            # adds this loops cross:
-            for point in new_hits_comb:
-                # TOF is the z axis
-                TOF = round(point[2])
-                # index is the x and y axis
-                flattened_data[round(point[0])][round(point[1])] = TOF
-
-            # break the loop as the coordinates will just be overwritten if shift = 0 and (rotate = 0 or together):
-            if shift == 0 and (rotate == 0 or rotate == 'together'):
-                break
+        # break the loop as the coordinates will just be overwritten if shift = 0 and (rotate = 0 or together):
+        if shift == False and (rotate == False or rotate_seperatly == False):
+            break
 
     return flattened_data
 
