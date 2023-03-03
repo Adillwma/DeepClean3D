@@ -21,25 +21,18 @@ import matplotlib.pyplot as plt
 import random
    
 #%% - Function
-def realistic_data_sim(signal_points, detector_pixel_dimensions=(128,88), time_resoloution=100, hit_point=1.5, ideal=1, debug_image_generator=0, shift = 0):
+def realistic_data_sim(signal_points, detector_pixel_dimensions=(128,88), time_resoloution=100, hit_point=1.5, shift = 0, ideal = 1):
     '''
     Inputs:
     signal_points = number of points the hit produces (average 30 for realistic photon), N.B. these may not be at critical angle to 60 is maximum number
-    noise_points = number of noise points
     detector_pixel_dimensions = pixel dimensions of the detector, x,y in a tuple (88x128)
     time_resoloution = number of discrete points the time dimension is sampled in
-    hit_point = The point on the detector the particle makes impact. May be able to make this 2D later (x,y)
+    hit_point = The point on the detector the particle makes impact in y axis
     ideal = [default=1] XXXXXXXXXXXXXXXXXXXXX
-    debug_image_generator = [default=0] set to 1 to plot the output of this simulator (for debugging purposes)
     
     Returns:
-    x_pixel = list of signal x coordinates 
-    x_noise = list of noise x coordinates  
-    y_pixel = list of signal y coordinates  
-    y_noise = list of noise y coordinates  
-    z_pixel = list of signal z coordinates  
-    z_noise = list of noise z coordinates  
-    num_of_signal_points = True number of signal points in the output (as some photons will have left due to passing the critical angle and exiting the block). Could be used to measure error or for the loss function
+    A flattened array
+
     '''
     #Width of Quartz Block in meters (x dimension)
     Quartz_width = 0.4
@@ -148,26 +141,13 @@ def realistic_data_sim(signal_points, detector_pixel_dimensions=(128,88), time_r
         # index is the x and y axis
         flattened_data[round(coord[0])][round(coord[1])] = TOF
     
-    #Plots the figure if user requests debugging
-    if debug_image_generator == 1:
-        
-        fig = plt.figure()
-        ax = fig.add_subplot(projection='3d')
-
-        ax.scatter(x_idxs, y_idxs, z_idxs)
-        ax.set_xlabel('X')
-        ax.set_ylabel('Y')
-        ax.set_zlabel('Time')
-
-        plt.show()
-
-        plt.imshow(flattened_data)
-        plt.show()
-    
     #Outputs to return to main dataset generator script
     return(flattened_data)
 
 #%% - Testing Driver
 #Uncomment line below for testing, make sure to comment out when done to stop it creating plots when dataset generator is running
 
-realistic_data_sim(signal_points=1000, detector_pixel_dimensions=(128,88), time_resoloution=100, hit_point=1.3, ideal=1, debug_image_generator=1, shift = 1)
+array = realistic_data_sim(signal_points=1000, detector_pixel_dimensions=(128,88), time_resoloution=100, hit_point=1.3, ideal=1, shift = 0)
+
+plt.imshow(array)
+plt.show()
