@@ -11,14 +11,19 @@ that matters, i will generate and test the same amount here:
 
 # ----------------------------------------------------------------------------------
 # you can change all the arguments in the function below:
-def simp_generator(output_directory, Proportions=[0,0.8,0.2,0,0], sig_pts=200, x_dim=128, y_dim=88, z_dim=100, shift=True, rotate=False, rotate_seperatly=True):
+def simp_generator(output_directory, Proportions=[0,0.8,0.2,0,0], sig_pts=200, x_dim=128, y_dim=88, z_dim=100, shift=True, rotate=False, rotate_seperately=True):
     """
     This function simply calls the simulator function, and creates and saves the number of simulations with the defined imputs,
     to the directory specified above.
     dataset_size - the number of different flattened data instances to create
     Proportions - This is a list of the proportions to produce the dataset in. Set as 0 if dont want any.
+    sig_pts - number of signal points
+    x_dim - x axis dimentions (pixels)
+    y_dim - y axis dimentions (pixels)
+    z_dim - z axis dimentions (pixels)
+    shift - [default = 1] adds shift to the cross to reduce overfitting. when == 0 mean all the same.
     (First item in list is for 0 Xs, second for 1 X, etx)
-    others - defined in the simp_simulator function
+    rotate - rotates Xs (if you want all rotated SEPERATELY call 'seperate', together call 'together', not at all call 0)
     """
     
     #Converts shit and rotate boolean True/False inputs to 1/0 inputs (could be updated in simp_sim to accept the booleans and remove this line)
@@ -32,26 +37,26 @@ def simp_generator(output_directory, Proportions=[0,0.8,0.2,0,0], sig_pts=200, x
 
             # define number of crosses
             num_X = Crosses + 1 #(to stop 0 gen)
-            flattened_data = comb_simp_simulator(sig_pts, x_dim, y_dim, z_dim, shift, rotate, rotate_seperatly, num_X)
+            flattened_data = comb_simp_simulator(sig_pts, x_dim, y_dim, z_dim, shift, rotate, rotate_seperately, num_X)
             np.save(output_directory + 'Flat SimpleX-' + str(x_dim) + 'x' + str(y_dim) + '-' + str(Crosses+1) + ' Crosses, No' + str(idx), flattened_data)
 
         print(f"Generation of {num_save} {Crosses+1}X images completed successfully\n")
 
 
 
-def comb_simp_simulator(sig_pts = 100, x_dim = 200, y_dim = 200, z_dim = 100, shift = True, rotate = False, rotate_seperatly=True, num_X = 1):
+def comb_simp_simulator(sig_pts = 100, x_dim = 200, y_dim = 200, z_dim = 100, shift = True, rotate = False, rotate_seperately=True, num_X = 1):
     """
     This generator function generates crosses across the dimensions of the volume. (seeds to be generalised for non-perfect 28x28).
     It returns a numpy array of only signal points
     (a version that returns the signal, as well as signal and noise in two seperate arrays has been commented
     out as the most basic version of the autoencoder we're trialing adds noise itself)
-
     sig_pts - number of signal points
     x_dim - x axis dimentions (pixels)
     y_dim - y axis dimentions (pixels)
     z_dim - z axis dimentions (pixels)
     shift - [default = 1] adds shift to the cross to reduce overfitting. when == 0 mean all the same.
-    rotate - rotates Xs (if you want all rotated SEPERATELY call 'seperate', together call 'together', not at all call 0)
+    rotate - rotates Xs 
+    rotate_seperately - If you want all rotated SEPERATELY call True, TOGETHER call False
     """
     # define min and max of graph (pixels between 0 and 27)
     x_min = 0
@@ -127,7 +132,7 @@ def comb_simp_simulator(sig_pts = 100, x_dim = 200, y_dim = 200, z_dim = 100, sh
         if rotate:
 
             # sets angle to change every loop only if rotate = seperate:
-            if rotate_seperatly:
+            if rotate_seperately:
                 # rotation angle in x, y plane
                 angle_rad = math.radians(np.random.randint(0,360))
             
@@ -170,7 +175,7 @@ def comb_simp_simulator(sig_pts = 100, x_dim = 200, y_dim = 200, z_dim = 100, sh
             flattened_data[round(point[0])][round(point[1])] = TOF
 
         # break the loop as the coordinates will just be overwritten if shift = 0 and (rotate = 0 or together):
-        if shift == False and (rotate == False or rotate_seperatly == False):
+        if shift == False and (rotate == False or rotate_seperately == False):
             break
 
     return flattened_data
