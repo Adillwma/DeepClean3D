@@ -3,15 +3,12 @@ import matplotlib.pyplot as plt
 import math
 from tqdm import tqdm
 
-"""
-This will return float64 array numbers.
-MNIST dataset uses xxxxxxxxxx different graphs when the data is downloaded. To prove that its also not the size of the data
-that matters, i will generate and test the same amount here:
-"""
+# only need to set the directory (dont need to add slash at the end)
+output_dir = r"C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Cross Stuff\Test\Data"
 
-# ----------------------------------------------------------------------------------
+
 # you can change all the arguments in the function below:
-def simp_generator(output_directory, Num_Images=[0,800,200,0,0], sig_pts=200, x_dim=128, y_dim=88, z_dim=100, shift=True, rotate=False, rotate_seperately=True):
+def simp_generator(output_directory, Num_Images=[0,0,2,0,0], sig_pts=200, x_dim=128, y_dim=88, z_dim=100, shift=True, rotate=True, rotate_seperately=False):
     """
     This function simply calls the simulator function, and creates and saves the number of simulations with the defined imputs,
     to the directory specified above.
@@ -154,24 +151,26 @@ def simp_generator(output_directory, Num_Images=[0,800,200,0,0], sig_pts=200, x_
 
     # seperates into the number of Xs specified and their no images respectively:
     for Crosses, num_save in enumerate(Num_Images):
-        print(f"Creating {Crosses}X Images...")
 
-        # will throw error if num_save == 0 as range(0) is
+
+        # will throw error if num_save == 0 as range(0) is undefined
         if num_save != 0:
+
+            # only print this for the ones you actually save
+            print(f"Creating {Crosses}X Images...")
+
             # loop for each image in each X
             for idx in tqdm(range(num_save), desc="X Image"):
 
                 # define number of crosses
                 num_X = Crosses #(to stop 0 gen)
                 flattened_data = comb_simp_simulator(sig_pts, x_dim, y_dim, z_dim, shift, rotate, rotate_seperately, num_X)
-                np.save(output_directory + '/Flat SimpleX-' + str(x_dim) + 'x' + str(y_dim) + '-' + str(Crosses) + 'Crosses, No' + str(idx), flattened_data)
+                np.save(output_directory + '/Flat SimpleX-' + str(x_dim) + 'x' + str(y_dim) + '-' + str(Crosses) + 'Crosses, No' + str(idx + 1), flattened_data)
 
             print(f"Generation of {num_save} {Crosses}X images completed successfully\n")
 
 
-output_dir = r"C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Cross Stuff\Test\Data"
-
-simp_generator(output_directory = output_dir, Num_Images=[0,800,200,0,0], sig_pts=200, x_dim=128, y_dim=88, z_dim=100, shift=True, rotate=False, rotate_seperately=True)
+simp_generator(output_dir)
 
 
 
