@@ -62,15 +62,17 @@ Default: if None, uses a global default (see torch.set_default_tensor_type()).!!
 ### ~~~~~ [DONE!] Seperate and moularise renorm and 3D reconstruction
 
 ### ~~~~~ Create flatten module in main body so noise can be added to the 3D cube rather than slicewise
+
+### ~~~~~ Add all advanced program settings to end of net summary txt file i.e what typ eof normalisation used etc, also add th enam eof the autoencoder file i.e AE_V1 etc from the module name 
 """
 import torch
 
 #%% - User Inputs
 mode = 0 ### 0=Data_Gathering, 1=Testing, 2=Speed_Test, 3=Debugging
-dataset_title = "Dataset 16_MultiX" #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
-model_save_name = "Dataset 16_MultiX_nonoise"
+dataset_title = "Dataset 17_MultiX" #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
+model_save_name = "Dataset 17_MultiX_nonoise"
 
-num_epochs = 21                                           #User controll to set number of epochs (Hyperparameter)
+num_epochs = 31                                           #User controll to set number of epochs (Hyperparameter)
 batch_size = 10                                 #User controll to set batch size (Hyperparameter) - #Data Loader, number of Images to pull per batch 
 latent_dim = 10                     #User controll to set number of nodes in the latent space, the bottleneck layer (Hyperparameter)
 
