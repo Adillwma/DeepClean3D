@@ -21,14 +21,15 @@ import matplotlib.pyplot as plt
 import random
    
 #%% - Function
-def realistic_data_sim(signal_points, detector_pixel_dimensions=(128,88), time_resoloution=100, hit_point=1.5, shift = 0, ideal = 1):
+def realistic_data_sim(signal_points, detector_pixel_dimensions=(128,88), time_resoloution=100, hit_point=1.5, shift = False, ideal = True, std = True):
     '''
     Inputs:
     signal_points = number of points the hit produces (average 30 for realistic photon), N.B. these may not be at critical angle to 60 is maximum number
     detector_pixel_dimensions = pixel dimensions of the detector, x,y in a tuple (88x128)
     time_resoloution = number of discrete points the time dimension is sampled in
     hit_point = The point on the detector the particle makes impact in y axis
-    ideal = [default=1] XXXXXXXXXXXXXXXXXXXXX
+    ideal = if true makes perfect pattern. if false, random distribution.
+    std = if True adds std to the z axis.
     
     Returns:
     A flattened array
@@ -49,9 +50,9 @@ def realistic_data_sim(signal_points, detector_pixel_dimensions=(128,88), time_r
     random_x_points = [random.uniform(-np.pi, np.pi) for _ in range(signal_points)]
 
     #Ideal or random? 1 if want ideal or 0 if want random #Here can set to either random numbers or to linear_x_points depending on what you want
-    if ideal == 1:
+    if ideal:
         x = linear_x_points
-    elif ideal == 0:
+    else:
         x = random_x_points
 
     #Takes x range (either uniform (ideal) or random) and creates the reflections
@@ -114,7 +115,15 @@ def realistic_data_sim(signal_points, detector_pixel_dimensions=(128,88), time_r
     y_idxs = np.digitize([i[0][1] for i in final],np.linspace(-1, 1, detector_pixel_dimensions[1]))
 
     # 0 to t_max as thats the max time a photon can take.
-    z_idxs = np.digitize([i[1] for i in final],np.linspace(0, t_max, time_resoloution))   
+    if std:
+        # deviation (dev) is usually 70ps in the z axis:
+        dev = 70E-12
+
+        z_idxs = np.digitize([np.random.normal(i[1], dev) for i in final],np.linspace(0, t_max, time_resoloution))
+
+    else: 
+        z_idxs = np.digitize([i[1] for i in final],np.linspace(0, t_max, time_resoloution))
+
 
     # combine all idxs to a list:
     coords = np.column_stack((x_idxs,y_idxs,z_idxs))
@@ -123,16 +132,16 @@ def realistic_data_sim(signal_points, detector_pixel_dimensions=(128,88), time_r
     flattened_data = np.zeros((detector_pixel_dimensions[0], detector_pixel_dimensions[1]))
     
     # add shift
-    if shift == 1:
+    if shift:
         coords[:,0] += np.random.randint(-np.round(detector_pixel_dimensions[0] / 2),np.round(detector_pixel_dimensions[0] / 2))
         coords[:,1] += np.random.randint(-np.round(detector_pixel_dimensions[1] / 2),np.round(detector_pixel_dimensions[1] / 2))
         coords[:,2] += np.random.randint(-np.round(time_resoloution/2),np.round(time_resoloution/2))
 
     # select those that would fall within the bounds of the thing after shifting:
     filtered = np.array([coord for coord in coords if
-    (0 <= round(coord[0]) <= detector_pixel_dimensions[0] - 1) and
-    (0 <= round(coord[1]) <= detector_pixel_dimensions[1] - 1) and
-    (1 <= round(coord[2]) <= time_resoloution)]) 
+        (0 <= round(coord[0]) <= detector_pixel_dimensions[0] - 1) and
+        (0 <= round(coord[1]) <= detector_pixel_dimensions[1] - 1) and
+        (1 <= round(coord[2]) <= time_resoloution)]) 
     
     # add the hits to the zeros array
     for coord in filtered:
