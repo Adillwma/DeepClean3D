@@ -19,9 +19,10 @@ time_resolution is how many z pixels you want.
 import numpy as np
 import matplotlib.pyplot as plt
 import random
+import math
    
 #%% - Function
-def realistic_data_sim(signal_points, detector_pixel_dimensions=(128,88), time_resoloution=100, hit_point=1.5, shift = False, ideal = True, std = True):
+def realistic_data_sim(signal_points = 1000, detector_pixel_dimensions=(128,88), time_resoloution=100, hit_point=1.4, shift = False, ideal = True, std = False, rotate = False, rotate_seperately = False, num_real = 1):
     '''
     Inputs:
     signal_points = number of points the hit produces (average 30 for realistic photon), N.B. these may not be at critical angle to 60 is maximum number
@@ -126,29 +127,102 @@ def realistic_data_sim(signal_points, detector_pixel_dimensions=(128,88), time_r
 
 
     # combine all idxs to a list:
-    coords = np.column_stack((x_idxs,y_idxs,z_idxs))
+    hits_comb = np.column_stack((x_idxs,y_idxs,z_idxs))
 
     # define flattened array
     flattened_data = np.zeros((detector_pixel_dimensions[0], detector_pixel_dimensions[1]))
     
-    # add shift
-    if shift:
-        coords[:,0] += np.random.randint(-np.round(detector_pixel_dimensions[0] / 2),np.round(detector_pixel_dimensions[0] / 2))
-        coords[:,1] += np.random.randint(-np.round(detector_pixel_dimensions[1] / 2),np.round(detector_pixel_dimensions[1] / 2))
-        coords[:,2] += np.random.randint(-np.round(time_resoloution/2),np.round(time_resoloution/2))
+    #-------------------------------------------------------------------
+    # adding shift, roatation and multi real:
 
-    # select those that would fall within the bounds of the thing after shifting:
-    filtered = np.array([coord for coord in coords if
-        (0 <= round(coord[0]) <= detector_pixel_dimensions[0] - 1) and
-        (0 <= round(coord[1]) <= detector_pixel_dimensions[1] - 1) and
-        (1 <= round(coord[2]) <= time_resoloution)]) 
+    # assigning this here keeps the rotation angle the same during the loops if rotate == 0 or together:
+    angle_rad = math.radians(np.random.randint(0,360))
+
+    # if = 0 its an empty array.
+    if num_real == 0:
+        for point in hits_comb:
+            # TOF is the z axis
+            TOF = round(point[2])
+            # index is the x and y axis
+            flattened_data[round(point[0])][round(point[1])] = TOF
+
+    # loops through num_real:
+    else:
+        for _ in range(num_real):
+
+            # make a copy of hits_comb to alter:
+            new_hits_comb = hits_comb.copy()
+
+            # if == 0 pass without rotating:
+            if rotate == False:
+                pass
+            # this rotates the cross if specified, before shifting
+            else:
+                # sets angle to change every loop only if rotate = seperate:
+                if rotate_seperately:
+                    # rotation angle in x, y plane
+                    angle_rad = math.radians(np.random.randint(0,360))
+
+                # rotate around the center, z axis is zero (no TOF data):
+                cent_pt = np.array((round(detector_pixel_dimensions[0]/2),round(detector_pixel_dimensions[1]/2) ,0))
+
+                # move to around (0,0) point, so that we can rotate it.
+                new_hits_comb -= cent_pt
+
+                # add the rotation:
+                x_rot = new_hits_comb[:,0] * math.cos(angle_rad) - new_hits_comb[:,1] * math.sin(angle_rad)
+                y_rot = new_hits_comb[:,0] * math.sin(angle_rad) + new_hits_comb[:,1] * math.cos(angle_rad)
+                z_rot = new_hits_comb[:,2]
+
+                new_hits_comb = np.column_stack((x_rot, y_rot, z_rot))
+
+                # move it back to the origional position
+                new_hits_comb += cent_pt
+            
+
+            # shift individual x by half the max if shift is on
+            if shift == 1:
+                
+                new_hits_comb[:,0] = new_hits_comb[:,0] + np.random.randint(-np.round(detector_pixel_dimensions[0]/2),np.round(detector_pixel_dimensions[0]/2))
+                new_hits_comb[:,1] = new_hits_comb[:,1] + np.random.randint(-np.round(detector_pixel_dimensions[1]/2),np.round(detector_pixel_dimensions[1]/2))
+                new_hits_comb[:,2] = new_hits_comb[:,2] + np.random.randint(-np.round(time_resoloution/2),np.round(time_resoloution/2))
+
+            
+            # select those that would fall within the bounds of the array after rotating and shifting for each loop:
+            new_hits_comb = np.array([hit for hit in new_hits_comb if
+                (detector_pixel_dimensions[0] <= round(hit[0]) <= detector_pixel_dimensions[0]) and
+                (detector_pixel_dimensions[1] <= round(hit[1]) <= detector_pixel_dimensions[1]) and
+                (1 <= round(hit[2]) <= time_resoloution)])
+
+            # adds this loops cross:
+            for point in new_hits_comb:
+                # TOF is the z axis
+                TOF = round(point[2])
+                # index is the x and y axis
+                flattened_data[round(point[0])][round(point[1])] = TOF
+
+            # break the loop as the coordinates will just be overwritten if shift = 0 and (rotate = 0 or together):
+            if shift == False and (rotate == False or rotate_seperately == False):
+                break
+
+    # add shift
+    # if shift:
+    #     coords[:,0] += np.random.randint(-np.round(detector_pixel_dimensions[0] / 2),np.round(detector_pixel_dimensions[0] / 2))
+    #     coords[:,1] += np.random.randint(-np.round(detector_pixel_dimensions[1] / 2),np.round(detector_pixel_dimensions[1] / 2))
+    #     coords[:,2] += np.random.randint(-np.round(time_resoloution/2),np.round(time_resoloution/2))
+
+    # # select those that would fall within the bounds of the thing after shifting:
+    # filtered = np.array([coord for coord in coords if
+    #     (0 <= round(coord[0]) <= detector_pixel_dimensions[0] - 1) and
+    #     (0 <= round(coord[1]) <= detector_pixel_dimensions[1] - 1) and
+    #     (1 <= round(coord[2]) <= time_resoloution)]) 
     
-    # add the hits to the zeros array
-    for coord in filtered:
-        # TOF is the z axis
-        TOF = round(coord[2])
-        # index is the x and y axis
-        flattened_data[round(coord[0])][round(coord[1])] = TOF
+    # # add the hits to the zeros array
+    # for coord in filtered:
+    #     # TOF is the z axis
+    #     TOF = round(coord[2])
+    #     # index is the x and y axis
+    #     flattened_data[round(coord[0])][round(coord[1])] = TOF
     
     #Outputs to return to main dataset generator script
     return(flattened_data)
@@ -156,7 +230,8 @@ def realistic_data_sim(signal_points, detector_pixel_dimensions=(128,88), time_r
 #%% - Testing Driver
 #Uncomment line below for testing, make sure to comment out when done to stop it creating plots when dataset generator is running
 
-array = realistic_data_sim(signal_points=1000, detector_pixel_dimensions=(128,88), time_resoloution=100, hit_point=1.3, ideal=1, shift = 0)
+array = realistic_data_sim(signal_points = 1000, detector_pixel_dimensions=(128,88), time_resoloution=100, hit_point=1.4, ideal = True, std = False, shift = False, rotate = False, rotate_seperately = False, num_real = 1)
 
+print(np.max(array))
 plt.imshow(array)
 plt.show()

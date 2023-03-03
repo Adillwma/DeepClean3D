@@ -164,5 +164,5 @@ def realistic_data_generator(signal_points, noise_points, detector_pixel_dimensi
 
 #%% - Testing Driver
 #Uncomment line below for testing, make sure to comment out when done to stop it creating plots when dataset generator is running
-a = realistic_data_generator(signal_points=100, noise_points=1000, detector_pixel_dimensions=(88,128), hit_point=0.3, ideal=1, debug_image_generator=1)
+a = realistic_data_generator(signal_points=100, noise_points=0, detector_pixel_dimensions=(88,128), hit_point=0.5, ideal=1, debug_image_generator=1)
 print(np.shape(a))
