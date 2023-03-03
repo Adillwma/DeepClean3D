@@ -67,8 +67,8 @@ import torch
 
 #%% - User Inputs
 mode = 0 ### 0=Data_Gathering, 1=Testing, 2=Speed_Test, 3=Debugging
-dataset_title = "Dataset 11_X_5K_M" #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
-model_save_name = "Dataset 11_no_noisegen"
+dataset_title = "Dataset 16_MultiX" #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
+model_save_name = "Dataset 16_MultiX_nonoise"
 
 num_epochs = 21                                           #User controll to set number of epochs (Hyperparameter)
 batch_size = 10                                 #User controll to set batch size (Hyperparameter) - #Data Loader, number of Images to pull per batch 
@@ -162,7 +162,7 @@ from torchinfo import summary
 from tqdm import tqdm
 import os
 from functools import partial
-
+import datetime
 # Imports from our other custom scripts
 #from Autoencoders.DC3D_Autoencoder_V1 import Encoder, Decoder
 from Helper_files.Dataset_Integrity_Check_V1 import dataset_integrity_check
@@ -737,7 +737,7 @@ if train_dir != test_dir:
 # Dataset Distribution Check
 if full_dataset_distribution_check:
     print("\nTesting training dataset signal distribution")
-    dataset_distribution_tester(train_dir, time_dimension, ignore_zero_vals_on_plot=True)
+    dataset_distribution_tester(train_dir, time_dimension, ignore_zero_vals_on_plot=True, output_image_dir=graphics_dir)
     print("Test completed\n")
 
     if train_dir != test_dir:
@@ -1091,8 +1091,7 @@ if data_gathering:
         full_data_output["recovered_signal_points"] = number_of_recovered_signal_points
     except:
         pass
-    
-    import datetime
+
     """
     #####move to better position!!!!!!!!!!!!
     
