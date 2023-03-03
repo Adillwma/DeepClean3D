@@ -1113,25 +1113,28 @@ if data_gathering:
         TD_now = datetime.datetime.now()         # Get the current local date and time
         output_file.write(f"Date data taken: {TD_now.strftime('%Y-%m-%d %H:%M:%S')}\n")    
 
-        output_file.write(("Model ID: " + model_save_name + f"\nTrained on device: {device}"))
+        output_file.write(("Model ID: " + model_save_name + f"\nTrained on device: {device}\n"))
         output_file.write((f"\nMax Epoch Reached: {max_epoch_reached}\n"))
+        
         timer_warning = "(Not accurate - not recorded in speed_test mode)\n"
         if speed_test:
             timer_warning = "\n"
         output_file.write((f"Training Time: {training_time:.2f} seconds\n{timer_warning}\n"))
+        
         output_file.write("Input Settings:\n")
         for key, value in settings.items():
             output_file.write(f"{key}: {value}\n")
+        
         output_file.write("\n" + summary_str)
+        
         output_file.write("\n \nFull Data Readouts:\n")
-        #output_file.write(str(full_data_output))
         for key, value in full_data_output.items():
             output_file.write(f"{key}: {value}\n")
      
-        #output_file.write(f"CPU Type: {cpu}\n")
-        #output_file.write(f"CPU Cores: {cpu_cores}\n")
+        #output_file.write(f"CPU Type: {psutil.cpu_brand()}\n")
+        #output_file.write(f"CPU Cores: {psutil.cpu_count()}\n")
         #output_file.write(f"{gpu}\n")
-        #output_file.write(f"RAM: {ram}\n \N")
+        #output_file.write(f"RAM: {round(psutil.virtual_memory().total / (1024 ** 3))} GB\n \N")
         
     print("- Completed -")
 #%% - End of Program - Printing message to notify user!
