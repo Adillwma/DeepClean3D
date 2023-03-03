@@ -28,8 +28,9 @@ def generate_blanks(xdim, ydim, number_of_files, output_dir):
     # Create output directory if it doesn't exist
     os.makedirs(output_dir, exist_ok=True)
 
+    print("\nCreating Blank Images...")
     # Generate 'number_of_files' arrays of zeros and save them to disk
-    for i in tqdm(range(number_of_files)):                       #Display pregress bar during generation for user feedback
+    for i in tqdm(range(number_of_files), desc="Blank Image"):                       #Display pregress bar during generation for user feedback
 
         # Generate array of zeros
         arr = np.zeros((ydim, xdim))
@@ -41,4 +42,4 @@ def generate_blanks(xdim, ydim, number_of_files, output_dir):
         np.save(os.path.join(output_dir, filename), arr)
 
     # Feedback to user on task completed
-    print(f"\n Generation of {number_of_files} images completed successfully\n")
+    print(f"Generation of {number_of_files} blank images completed successfully\n")
