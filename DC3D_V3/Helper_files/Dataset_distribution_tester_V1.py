@@ -31,7 +31,7 @@ from matplotlib.widgets import Button
 from matplotlib.ticker import MaxNLocator
 
 #%% - Functionalised Script
-def dataset_distribution_tester(dir, time_dimension, ignore_zero_vals_on_plot):
+def dataset_distribution_tester(dir, time_dimension, ignore_zero_vals_on_plot=True, output_image_dir=False):
     #%% - Functions
     def file_loader(folder_path, load_full_set=False, print_output=False):
         if print_output:
@@ -90,56 +90,51 @@ def dataset_distribution_tester(dir, time_dimension, ignore_zero_vals_on_plot):
             "Power Spectrum", "Wavelet Transform", and "PCA".
         """
 
-        # Calculate mean using numpy function
-        if len(data) == 0:
-            mean = 0 
-        else:    
-            mean = np.mean(data)
-
-        # Calculate median using numpy function
-        median = np.median(data)
-
-        # Calculate mode using numpy function
-        mode =  statistics.mode(data) 
+        # Calculate range using numpy function
+        data_range = np.ptp(data)
 
         # Calculate range using numpy function
         data_range = np.ptp(data)
+
+        # Calculate min and max from numpy functions
+        data_min = min(data)
+        data_max = max(data)
 
         # Calculate standard deviation using numpy function
         stdev = np.std(data)
 
         # Calculate Variance
         variance = np.var(data)
-        
-        # Calculate Coefficient of Variation
-        if mean == 0:
-            cv = np.nan
-        else:
-            cv = stdev / mean
-        
-        # Quartiles
-        q1 = np.percentile(data, 25)
-        q2 = np.percentile(data, 50)
-        q3 = np.percentile(data, 75)
 
-        # Calculate skewness and kurtosis using numpy function
-        skewness = skew(data)
-        kurt = kurtosis(data)
+
+        if data_range == time_dimension:
+            range_result = "Pass"
+        else:
+            range_result = "Fail"
+
+        if data_max == time_dimension:
+            max_result = "Pass"
+        else:
+            max_result = "Fail"
+
+        if data_min == 0:
+            min_result = "Pass"
+        else:
+            min_result = "Fail"
 
         # Return the results as a dictionary
         results = {
             "Range": data_range,
-            "Mean": mean,
-            "Median": median,
-            "Mode": mode,
+            "Range_Test": range_result,
+
+            "Max": data_max,
+            "Max_Test": max_result,
+
+            "Min": data_min,
+            "Min_Test": min_result,
+
             "Stdev": stdev,
-            'Variance': variance,
-            'Coefficient of variation': cv,
-            'Quartiles1 (25%)': q1,
-            'Quartile 2 (50%)': q2,
-            'Quartile 3 (75%)': q3,
-            "Skewness": skewness,
-            "Kurtosis": kurt,
+            'Variance': variance
         }
         return results
 
@@ -148,7 +143,7 @@ def dataset_distribution_tester(dir, time_dimension, ignore_zero_vals_on_plot):
     full_set = file_loader(dir, load_full_set=True)
 
     single_file_stats = calculate_statistics(single_file)
-    full_set_stats = calculate_statistics(full_set)
+    results = full_set_stats = calculate_statistics(full_set)
 
     #%% - Output Plots
     fig = plt.figure(figsize=(16,9), constrained_layout=True)
@@ -222,7 +217,7 @@ def dataset_distribution_tester(dir, time_dimension, ignore_zero_vals_on_plot):
         ax1.grid(axis='y', alpha=0.75)
         ax1.set_ylim(bottom=0)
         ax1.legend(['Data'])
-
+        ax1.yaxis.set_major_locator(MaxNLocator(integer=True))
 
         
         # Update text stats readout
@@ -236,17 +231,19 @@ def dataset_distribution_tester(dir, time_dimension, ignore_zero_vals_on_plot):
 
 
     # Create button widget
-    ax_button = plt.axes([0.79, 0.56, 0.2, 0.05])
+    ax_button = plt.axes([0.81, 0.56, 0.17, 0.05])
     button = Button(ax_button, 'Load new random single data', color="white", hovercolor="grey")
     button.on_clicked(load_data)
 
-
+    if output_image_dir != False:
+        plt.savefig(output_image_dir + " Dataset_distribution.png", format='png')
+        
 
     # Save or show the plot
-    plt.show()  #swap for plot_or_Save_function
+    plt.show()  #!!Swap for plot_or_Save_function
 
-    print("\nProgram Completed\n")
-
+    print("Distribution Test Completed\n")
+    return results
 
 """
 #%% - User Inputs - if not calling this from external script then can use this section to set inputs
