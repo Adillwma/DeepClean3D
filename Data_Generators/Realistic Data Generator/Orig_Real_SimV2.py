@@ -10,19 +10,18 @@ Origional Simulator.
 This returns hit points and noise points along with the number of signal points.
 It is not yet flattened. This is flattened in the Generator function.
 
-It has NO STD. Max z pixel is the longest a photon could take to get to top.
+Max z pixel is the longest a photon could take to get to top.
 The z axis has pixel widths of t_max / time_resolution
 time_resolution is how many z pixels you want.
 """
 
-#%% - Dependencies
 import numpy as np
 import matplotlib.pyplot as plt
 import random
 import math
-   
-#%% - Function
-def realistic_data_sim(signal_points = 1000, detector_pixel_dimensions=(128,88), time_resoloution=100, hit_point=1.4, shift = False, ideal = True, std = False, rotate = False, rotate_seperately = False, num_real = 1):
+
+# change the defaults to change whats printed for debugging
+def realistic_data_sim(signal_points = 1000, detector_pixel_dimensions=(128,88), time_resoloution=100, hit_point=1.4, ideal = True, std = False, shift = False, rotate = False, rotate_seperately = False, num_real = 1):
     '''
     Inputs:
     signal_points = number of points the hit produces (average 30 for realistic photon), N.B. these may not be at critical angle to 60 is maximum number
@@ -153,11 +152,8 @@ def realistic_data_sim(signal_points = 1000, detector_pixel_dimensions=(128,88),
             # make a copy of hits_comb to alter:
             new_hits_comb = hits_comb.copy()
 
-            # if == 0 pass without rotating:
-            if rotate == False:
-                pass
             # this rotates the cross if specified, before shifting
-            else:
+            if rotate:
                 # sets angle to change every loop only if rotate = seperate:
                 if rotate_seperately:
                     # rotation angle in x, y plane
@@ -181,7 +177,7 @@ def realistic_data_sim(signal_points = 1000, detector_pixel_dimensions=(128,88),
             
 
             # shift individual x by half the max if shift is on
-            if shift == 1:
+            if shift:
                 
                 new_hits_comb[:,0] = new_hits_comb[:,0] + np.random.randint(-np.round(detector_pixel_dimensions[0]/2),np.round(detector_pixel_dimensions[0]/2))
                 new_hits_comb[:,1] = new_hits_comb[:,1] + np.random.randint(-np.round(detector_pixel_dimensions[1]/2),np.round(detector_pixel_dimensions[1]/2))
@@ -190,8 +186,8 @@ def realistic_data_sim(signal_points = 1000, detector_pixel_dimensions=(128,88),
             
             # select those that would fall within the bounds of the array after rotating and shifting for each loop:
             new_hits_comb = np.array([hit for hit in new_hits_comb if
-                (detector_pixel_dimensions[0] <= round(hit[0]) <= detector_pixel_dimensions[0]) and
-                (detector_pixel_dimensions[1] <= round(hit[1]) <= detector_pixel_dimensions[1]) and
+                (0 <= round(hit[0]) <= detector_pixel_dimensions[0] - 1) and
+                (0 <= round(hit[1]) <= detector_pixel_dimensions[1] - 1) and
                 (1 <= round(hit[2]) <= time_resoloution)])
 
             # adds this loops cross:
@@ -230,7 +226,7 @@ def realistic_data_sim(signal_points = 1000, detector_pixel_dimensions=(128,88),
 #%% - Testing Driver
 #Uncomment line below for testing, make sure to comment out when done to stop it creating plots when dataset generator is running
 
-array = realistic_data_sim(signal_points = 1000, detector_pixel_dimensions=(128,88), time_resoloution=100, hit_point=1.4, ideal = True, std = False, shift = False, rotate = False, rotate_seperately = False, num_real = 1)
+array = realistic_data_sim()
 
 print(np.max(array))
 plt.imshow(array)
