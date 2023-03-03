@@ -137,16 +137,16 @@ def realistic_data_sim(signal_points, detector_pixel_dimensions=(128,88), time_r
 
     # select those that would fall within the bounds of the thing after shifting:
     filtered = np.array([coord for coord in coords if
-    (0 <= coord[0] <= detector_pixel_dimensions[0] - 1) and
-    (0 <= coord[1] <= detector_pixel_dimensions[1] - 1) and
-    (1 <= coord[2] <= time_resoloution)]) 
+    (0 <= round(coord[0]) <= detector_pixel_dimensions[0] - 1) and
+    (0 <= round(coord[1]) <= detector_pixel_dimensions[1] - 1) and
+    (1 <= round(coord[2]) <= time_resoloution)]) 
     
     # add the hits to the zeros array
     for coord in filtered:
         # TOF is the z axis
-        TOF = int(coord[2])
+        TOF = round(coord[2])
         # index is the x and y axis
-        flattened_data[int(coord[0])][int(coord[1])] = TOF
+        flattened_data[round(coord[0])][round(coord[1])] = TOF
     
     #Plots the figure if user requests debugging
     if debug_image_generator == 1:
@@ -170,4 +170,4 @@ def realistic_data_sim(signal_points, detector_pixel_dimensions=(128,88), time_r
 #%% - Testing Driver
 #Uncomment line below for testing, make sure to comment out when done to stop it creating plots when dataset generator is running
 
-# realistic_data_sim(signal_points=1000, detector_pixel_dimensions=(128,88), time_resoloution=100, hit_point=1.3, ideal=1, debug_image_generator=1, shift = 1)
+realistic_data_sim(signal_points=1000, detector_pixel_dimensions=(128,88), time_resoloution=100, hit_point=1.3, ideal=1, debug_image_generator=1, shift = 1)
