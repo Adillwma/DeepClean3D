@@ -13,7 +13,7 @@ def simp_generator(output_directory, Num_Images=[0,0,2,0,0], sig_pts=200, x_dim=
     This function simply calls the simulator function, and creates and saves the number of simulations with the defined imputs,
     to the directory specified above.
     output_directory - the path to save the file
-    Num_Images - This is a list of the number of images to save. INDEX IS THE num_X variable!
+    Num_Images - This is a list of the number of images to save. INDEX + 1 IS THE num_X variable!
     sig_pts - number of signal points for each X (some will be lost in shift/ rotation)
     x_dim - x axis dimentions (pixels)
     y_dim - y axis dimentions (pixels)
@@ -159,15 +159,16 @@ def simp_generator(output_directory, Num_Images=[0,0,2,0,0], sig_pts=200, x_dim=
             # only print this for the ones you actually save
             print(f"Creating {Crosses}X Images...")
 
+            # define num_X (avoid blanks as can add them seperately for all)
+            num_X = Crosses + 1
+
             # loop for each image in each X
             for idx in tqdm(range(num_save), desc="X Image"):
 
-                # define number of crosses
-                num_X = Crosses #(to stop 0 gen)
                 flattened_data = comb_simp_simulator(sig_pts, x_dim, y_dim, z_dim, shift, rotate, rotate_seperately, num_X)
-                np.save(output_directory + '/Flat SimpleX-' + str(x_dim) + 'x' + str(y_dim) + '-' + str(Crosses) + 'Crosses, No' + str(idx + 1), flattened_data)
+                np.save(output_directory + '/Flat SimpleX-' + str(x_dim) + 'x' + str(y_dim) + '-' + str(num_X) + 'Crosses, No' + str(idx + 1), flattened_data)
 
-            print(f"Generation of {num_save} {Crosses}X images completed successfully\n")
+            print(f"Generation of {num_save} {num_X}X images completed successfully\n")
 
 
 simp_generator(output_dir)
