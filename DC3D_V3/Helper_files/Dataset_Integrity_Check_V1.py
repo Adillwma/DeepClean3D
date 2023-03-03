@@ -16,6 +16,7 @@ dataset_integrity_check(folder_path, full_test=True/False, print_output=True/Fal
 # Simplify code for the single vs full test cases
 # Improve plots and add descriptions
 # add progress bar on to full test 
+# Fix the bad test conditons using strings !!!!
 """
 import numpy as np
 import matplotlib.pyplot as plt
@@ -40,8 +41,7 @@ def dataset_integrity_check(folder_path, full_test=False, print_output=True):
         None
     """    
     integrity_check = "Integrity Check Failed"    # Message to be printed at end of test, this is updated if the test passes
-    if print_output:
-        print(folder_path)
+
 
     # Get a list of all .npy files in the folder using os.scandir
     #npy_files = [entry.path for entry in os.scandir(folder_path) if entry.name.endswith('.npy')]
@@ -102,15 +102,34 @@ def dataset_integrity_check(folder_path, full_test=False, print_output=True):
         print("All files are of type:", first_file_type)
         print("Overall Min TOF value in all files scanned:", np.amin(mins))
         print("Overall Max TOF value in all files scanned:", np.amax(maxs))
+        # Return the results as a dictionary
 
         plt.imshow(test_file)
         plt.title("Single image from dataset for visual reference")
         plt.show()
+        return(results)
+    
+    if integrity_check == "Integrity Check Passed" or integrity_check == "Full Integrity Check Passed" or integrity_check == "Quick Integrity Check Passed":
+        results = {
+            "Shape": first_file_shape,
+            "Shape_Test": "Passed",
 
+            "Type": first_file_type,
+            "Type_Test": "Passed",
+        } 
+    else:
+        results = {
+            "Shape": first_file_shape,
+            "Shape_Test": "Failed",
+
+            "Type": first_file_type,
+            "Type_Test": "Failed",
+        } 
+    return(results)
 """
 #%% - Demo Driver
 
-dataset_title = "Dataset 13_Real10K broken"
+dataset_title = "Dataset 10_X"
 data_path = "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Yr 3 Project/Circular and Spherical Dummy Datasets/"
 dir = (data_path + dataset_title + "/Data/")
 
