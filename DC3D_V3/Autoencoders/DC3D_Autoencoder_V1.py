@@ -8,7 +8,7 @@ University of Bristol
 # Convoloution + Linear Autoencoder
 
 ### Possible Improvements
-# Fix activation tracking
+# [TESTING!] Fix activation tracking
 # 
 # 
 """
@@ -18,24 +18,18 @@ import numpy as np
 import torch
 from torch import nn
 
-# Creates lists for tracking network activation for further analysis
-enc_input = list()
-enc_conv = list()
-enc_flatten = list()
-enc_lin = list()
-
-dec_input = list()
-dec_lin = list()
-dec_flatten = list()
-dec_conv = list()
-dec_out = list()
-
 #%% - Encoder
 class Encoder(nn.Module):
     
     def __init__(self, encoded_space_dim,fc2_input_dim, encoder_debug, record_activity):
         super().__init__()
-        
+
+        # Creates lists for tracking network activation for further analysis
+        self.enc_input = list()
+        self.enc_conv = list()
+        self.enc_flatten = list()
+        self.enc_lin = list()
+
         # Enables encoder layer shape debug printouts
         self.encoder_debug = encoder_debug
 
@@ -80,29 +74,32 @@ class Encoder(nn.Module):
             #Linear encoder layer 2
             nn.Linear(128, encoded_space_dim)             #Takes in data of 1 dimension with size 128 and outputs it in one dimension of size defined by encoded_space_dim (this is the latent space? the smalle rit is the more comression but thte worse the final fidelity)
         )
-        
+
+    def get_activation_data(self):        # Returns the per node activation values 
+        return self.enc_input, self.enc_conv, self.enc_flatten, self.enc_lin
+
     def forward(self, x):
         if self.record_activity:
-            enc_input.append(np.abs(x[0].detach().numpy()))
+            self.enc_input.append(np.abs(x[0].detach().numpy()))
         if self.encoder_debug == 1:
             print("ENCODER LAYER SIZE DEBUG")
             print("Encoder in", x.size())
 
         x = self.encoder_cnn(x)                           #Runs convoloutional encoder on x #!!! input data???
         if self.record_activity:
-            enc_conv.append(np.abs(x[0].detach().numpy()))
+            self.enc_conv.append(np.abs(x[0].detach().numpy()))
         if self.encoder_debug == 1:
             print("Encoder CNN out", x.size())
     
         x = self.flatten(x)                               #Runs flatten  on output of conv encoder #!!! what is flatten?
         if self.record_activity:
-            enc_flatten.append(np.abs(x[0].detach().numpy()))
+            self.enc_flatten.append(np.abs(x[0].detach().numpy()))
         if self.encoder_debug == 1:
             print("Encoder Flatten out", x.size())
         
         x = self.encoder_lin(x)                           #Runs linear encoder on flattened output 
         if self.record_activity:
-            enc_lin.append(np.abs(x[0].detach().numpy()))
+            self.enc_lin.append(np.abs(x[0].detach().numpy()))
         if self.encoder_debug == 1:
             print("Encoder Lin out", x.size(),"\n")
             self.encoder_debug = 0    #????? what is this line for     
@@ -114,6 +111,13 @@ class Decoder(nn.Module):
     
     def __init__(self, encoded_space_dim,fc2_input_dim, decoder_debug, record_activity):
         super().__init__()
+
+        # Creates lists for tracking network activation for further analysis
+        self.dec_input = list()
+        self.dec_lin = list()
+        self.dec_flatten = list()
+        self.dec_conv = list()
+        self.dec_out = list()
         
         # Enables decoder layer shape debug printouts
         self.decoder_debug = decoder_debug
@@ -146,36 +150,39 @@ class Decoder(nn.Module):
             #Convolutional decoder layer 3
             nn.ConvTranspose2d(8, 1, 3, stride=2, padding=1, output_padding=1)     #Input_channels, Output_channels, Kernal_size, Stride, padding, Output_padding
         )
-        
+
+    def get_activation_data(self):    # Returns the per node activation values 
+        return self.dec_input, self.dec_lin, self.dec_flatten, self.dec_conv, self.dec_out
+
     def forward(self, x):
         if self.record_activity:
-            dec_input.append(np.abs(x[0].detach().numpy()))
+            self.dec_input.append(np.abs(x[0].detach().numpy()))
         if self.decoder_debug == 1:            
             print("DECODER LAYER SIZE DEBUG")
             print("Decoder in", x.size())   
 
         x = self.decoder_lin(x)       #Runs linear decoder on x #!!! is x input data? where does it come from??
         if self.record_activity:
-            dec_lin.append(np.abs(x[0].detach().numpy()))
+            self.dec_lin.append(np.abs(x[0].detach().numpy()))
         if self.decoder_debug == 1:
             print("Decoder Lin out", x.size()) 
         
         x = self.unflatten(x)         #Runs unflatten on output of linear decoder #!!! what is unflatten?
         if self.record_activity:
-            dec_flatten.append(np.abs(x[0].detach().numpy()))
+            self.dec_flatten.append(np.abs(x[0].detach().numpy()))
         if self.decoder_debug == 1:
             print("Decoder Unflatten out", x.size())  
         
         x = self.decoder_conv(x)      #Runs convoloutional decoder on output of unflatten
         if self.record_activity:
-            dec_conv.append(np.abs(x[0].detach().numpy()))
+            self.dec_conv.append(np.abs(x[0].detach().numpy()))
         if self.decoder_debug == 1:
             print("Decoder CNN out", x.size(),"\n")            
             self.decoder_debug = 0         
         
         x = torch.sigmoid(x)          #THIS IS IMPORTANT PART OF FINAL OUTPUT!: Runs sigmoid function which turns the output data values to range (0-1)#!!! ????    Also can use tanh fucntion if wanting outputs from -1 to 1
         if self.record_activity:
-            dec_out.append(np.abs(x[0].detach().numpy()))
+            self.dec_out.append(np.abs(x[0].detach().numpy()))
         
         return x                      #Retuns the final output
     
