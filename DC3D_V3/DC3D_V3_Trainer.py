@@ -68,11 +68,11 @@ Default: if None, uses a global default (see torch.set_default_tensor_type()).!!
 import torch
 
 #%% - User Inputs
-mode = 0 ### 0=Data_Gathering, 1=Testing, 2=Speed_Test, 3=Debugging
+#mode = 0 ### 0=Data_Gathering, 1=Testing, 2=Speed_Test, 3=Debugging
 dataset_title = "Dataset 17_MultiX" #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
-model_save_name = "Dataset 17_MultiX_nonoise"
+model_save_name = "Dataset 17_MultiX_rthresh0point1"
 
-num_epochs = 31                                           #User controll to set number of epochs (Hyperparameter)
+num_epochs = 21                                          #User controll to set number of epochs (Hyperparameter)
 batch_size = 10                                 #User controll to set batch size (Hyperparameter) - #Data Loader, number of Images to pull per batch 
 latent_dim = 10                     #User controll to set number of nodes in the latent space, the bottleneck layer (Hyperparameter)
 
@@ -83,7 +83,7 @@ loss_fn = torch.nn.MSELoss()   #!!!!!!   #MSELoss()          #(mean square error
 time_dimension = 100
 noise_factor = 0                                          #User controll to set the noise factor, a multiplier for the magnitude of noise added. 0 means no noise added, 1 is defualt level of noise added, 10 is 10x default level added (Hyperparameter)
 
-reconstruction_threshold = 0.5      #MUST BE BETWEEN 0-1        #Threshold for 3d reconstruction, values below this confidence level are discounted
+reconstruction_threshold = 0.1      #MUST BE BETWEEN 0-1        #Threshold for 3d reconstruction, values below this confidence level are discounted
 
 
 """#### NEW MULTI-LOSS FUCN WITH WEIGHTS
@@ -108,16 +108,16 @@ print_decoder_debug = False                     #[default = False]
 debug_noise_function = False                    #[default = False]
 debug_loader_batch = False     #(Default = False) //INPUT 0 or 1//   #Setting debug loader batch will print to user the images taken in by the dataoader in this current batch and print the corresponding labels
 
-full_dataset_integrity_check = False   #V slow    #default = False
-full_dataset_distribution_check = False    #default = False
-print_network_summary = False     #default = False
-seed = 0                            #0 is default which gives no seeeding to RNG, if the value is not zero then this is used for the RNG seeding for numpy, random, and torch libraries
-simple_norm_instead_of_custom = False #default is False
-all_norm_off = False    #default is False
+full_dataset_integrity_check = False       #[Default = False] V slow   
+full_dataset_distribution_check = False    #[Default = False]
+print_network_summary = False              #[Default = False]
+seed = 0                                   #[Default = 0] which gives no seeeding to RNG, if the value is not zero then this is used for the RNG seeding for numpy, random, and torch libraries
+simple_norm_instead_of_custom = False      #[Default is False]
+all_norm_off = False                       #[Default is False]
 
 #%% - Plotting Control Settings
 print_every_other = 2
-plot_or_save = 1                            #[default = 0] 0 is normal behavior, If set to 1 then saves all end of epoch printouts to disk, if set to 2 then saves outputs whilst also printing for user
+plot_or_save = 1                            #[default = 1] 0 is normal behavior, If set to 1 then saves all end of epoch printouts to disk, if set to 2 then saves outputs whilst also printing for user
 
 #%% - Advanced Visulisation Settings
 plot_train_loss = True
