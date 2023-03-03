@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-DeepClean v0.3.1
+DeepClean v0.3.3
 Build created on Sat Feb 1 2022
 Authors: Adill Al-Ashgar & Max Carter
 University of Bristol
