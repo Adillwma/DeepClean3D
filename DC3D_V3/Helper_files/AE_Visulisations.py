@@ -167,31 +167,30 @@ def Reduced_Dimension_Data_Representations(encoder, device, test_dataset, plot_o
     Returns:
 
     """
-    encoded_samples = []
-    for sample in tqdm(test_dataset):
-        img = sample[0].unsqueeze(0).to(device)
-        label = sample[1]
-        # Encode image
-        encoder.eval()
-        with torch.no_grad():
-            encoded_img = encoder(img)
-            # Append to list
-            encoded_img = encoded_img.flatten().cpu().numpy()
-            encoded_sample = {f"Enc. Variable {i}": enc for i, enc in enumerate(encoded_img)}
-            encoded_sample['label'] = label
-            encoded_samples.append(encoded_sample)
-    encoded_samples = pd.DataFrame(encoded_samples)
+    try:
+        encoded_samples = []
+        for sample in tqdm(test_dataset):
+            img = sample[0].unsqueeze(0).to(device)
+            label = sample[1]
+            # Encode image
+            encoder.eval()
+            with torch.no_grad():
+                encoded_img = encoder(img)
+                # Append to list
+                encoded_img = encoded_img.flatten().cpu().numpy()
+                encoded_sample = {f"Enc. Variable {i}": enc for i, enc in enumerate(encoded_img)}
+                encoded_sample['label'] = label
+                encoded_samples.append(encoded_sample)
+        encoded_samples = pd.DataFrame(encoded_samples)
 
-    ### Higher dim
-    encoded_samples
+        ### TSNE of Higher dim
+        tsne = TSNE(n_components=2)
+        tsne_results = tsne.fit_transform(encoded_samples.drop(['label'],axis=1))
 
-    ### TSNE of Higher dim
-    tsne = TSNE(n_components=2)
-    tsne_results = tsne.fit_transform(encoded_samples.drop(['label'],axis=1))
+        return(encoded_samples, tsne_results)
 
-    return(encoded_samples, tsne_results)
-
-
+    except:
+        return(None)
 
 
 
