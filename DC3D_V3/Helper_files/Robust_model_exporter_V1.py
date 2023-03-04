@@ -64,10 +64,13 @@ def Robust_model_export(function_name, search_dir, output_dir):
     # Copy the file to a new location with modified filename
     if file_path is None:
         print(f"File '{filename}' not found in '{search_dir}' or its subdirectories")
+        AE_file_name = "AE run from main code body, not external file!"
     else:
         new_filename = os.path.splitext(filename)[0] + os.path.splitext(filename)[1]
         os.makedirs(output_dir, exist_ok=True)
         new_file_path = os.path.join(output_dir, new_filename)
         shutil.copyfile(file_path, new_file_path)
         print(f"File '{filename}' copied to '{new_file_path}'")
+        AE_file_name = filename
 
+    return (AE_file_name)
