@@ -153,11 +153,6 @@ for f in range(0, dataset_size):
     run_settings = sp + npt + sv + rad + dpd + tr + cox + coy
     
     #Data list initialisation
-    x_circ_data = []
-    y_circ_data = []
-    x_circ_noise_data = []
-    y_circ_noise_data = []
-    
     x_sph_data = []
     y_sph_data = []
     z_sph_data = []
@@ -170,154 +165,83 @@ for f in range(0, dataset_size):
     noise_labels = np.zeros(noise_points)
     labels_output = np.concatenate((signal_labels, noise_labels))
 
-#%% - Circular Signal Simulator
-    if create_circular == 1:     
-        #Circular Data Generator
-        for i in range (0,signal_points):    #Generates points data
-            angle = np.random.uniform(0, 2*np.pi)
-            x, y = pol2cart(radius, angle, coord_transform_sig_fig)
-            x = round(x) # pixel_quantisation
-            y = round(y) # pixel_quantisation
-            x_circ_data.append(x + (detector_pixel_dimensions[0]/2) + centre_ofset_x)   #detector_pixel_dimensions[0]/2) centres circle x axis on centre of detector 
-            y_circ_data.append(y + (detector_pixel_dimensions[1]/2) + centre_ofset_y)   #detector_pixel_dimensions[1]/2) centres circle y axis on centre of detector 
+    #Spherical Data Generator
+    for i in range (0,signal_points):    #Generates points data
+        angle1 = np.random.uniform(0, np.pi/2)
+        angle2 = np.random.uniform(0, 2*np.pi)
+        x, y, z = spherical2cartesian(radius, angle1, angle2, coord_transform_sig_fig)
+        x = round(x)
+        y = round(y)
+        z = round(z)
+        x_sph_data.append(x + (detector_pixel_dimensions[0]/2) + centre_ofset_x)     
+        y_sph_data.append(y + (detector_pixel_dimensions[1]/2) + centre_ofset_y) 
+        z_sph_data.append(z + (time_resoloution/2))    
         
-        if noise_points > 0:              #Generates noise data
-            for i in range (0,noise_points):
-                x_noise = np.random.randint(detector_x_lim_low, detector_x_lim_high)
-                y_noise = np.random.randint(detector_y_lim_low, detector_y_lim_high)
-                x_circ_noise_data.append(x_noise)    
-                y_circ_noise_data.append(y_noise)  
+    if noise_points > 0:              #Generates noise data
+        for i in range (0,noise_points):
+            x_noise = np.random.randint(detector_x_lim_low, detector_x_lim_high)
+            y_noise = np.random.randint(detector_y_lim_low, detector_y_lim_high)
+            z_noise = np.random.randint(detector_z_lim_low, detector_z_lim_high)
+            x_sph_noise_data.append(x_noise)    
+            y_sph_noise_data.append(y_noise)
+            z_sph_noise_data.append(z_noise)
+
+
+    if debug_visulisations_on  == 1:         
+        fig = plt.figure()               #Plots spherical data
+        ax = plt.axes(projection='3d')
+        ax.scatter(x_sph_data,y_sph_data, z_sph_data, s = signal_hit_size, c = "b") #Plots spherical data in blue
+        ax.scatter(x_sph_noise_data,y_sph_noise_data,z_sph_noise_data, s = noise_hit_size, c = noise_colour) #Plots spherical noise in blue or red depending on the user selection of seperate_noise_colour
+        ax.set_xlim(detector_x_lim_low, detector_x_lim_high)
+        ax.set_ylim(detector_y_lim_low, detector_y_lim_high)
+        ax.set_zlim(detector_z_lim_low, detector_z_lim_high)
+        plt.show()
+
+    ###Output Modules
+    #Combines noise and signal data into one array
+    x_sph_output = np.concatenate((x_sph_data, x_sph_noise_data))
+    y_sph_output = np.concatenate((y_sph_data, y_sph_noise_data))
+    z_sph_output = np.concatenate((z_sph_data, z_sph_noise_data))
+
+    #Combines the different dimensions (x, y & z, and labels) into one N x 4 array    
+    sphere_data = np.vstack((x_sph_output, y_sph_output, z_sph_output)).T #, labels_output)).T
+    sphere_data_labels = np.vstack((x_sph_data, y_sph_data, z_sph_data)).T
+    
+    #Randomises the order of the points so that the noise values are not all the last values, just in case the network uses that fact
+    np.random.shuffle(sphere_data)
+
+    #Normalise TOF Data
+    #mean, std = sphere_data.mean(), sphere_data.std()
+    #print(mean, std)
+
+    #Data output to disk
+    if output_type == 0:
+        np.save(directory + filename + ' Sphere (hits data) %s  - Variables = ' % (f+1) + run_settings, sphere_data)
+    
+    else:
+        pixel_block_3d_flattened = np.zeros((2, detector_pixel_dimensions[1], detector_pixel_dimensions[0]), dtype = np.single)
+        for row, _ in enumerate(sphere_data[ :,2]):
+            x_coordinate, y_coordinate, TOF = sphere_data[row]
+            if 0 <= x_coordinate < detector_pixel_dimensions[0] and 0 <= y_coordinate < detector_pixel_dimensions[1]:
+                pixel_block_3d_flattened[0][int(y_coordinate)][int(x_coordinate)] = TOF    #TOF normalisation to 0-1
         
-        if debug_visulisations_on  == 1:  
-            plt.scatter(x_circ_data,y_circ_data, s = signal_hit_size, c = "b") #Plots circular data in blue
-            plt.scatter(x_circ_noise_data,y_circ_noise_data, s = noise_hit_size, c = noise_colour) #Plots circular noise in blue or red depending on the user selection of seperate_noise_colour
-            plt.xlim(detector_x_lim_low, detector_x_lim_high)
-            plt.ylim(detector_y_lim_low, detector_y_lim_high)
-            plt.margins(0)
-            plt.axis('scaled')
+        for row, _ in enumerate(sphere_data_labels[ :,2]):                
+            labels_x_coordinate, labels_y_coordinate, labels_TOF = sphere_data_labels[row]
+            if 0 <= labels_x_coordinate < detector_pixel_dimensions[0] and 0 <= labels_y_coordinate < detector_pixel_dimensions[1]:                
+                pixel_block_3d_flattened[1][int(labels_y_coordinate)][int(labels_x_coordinate)] = TOF
+
+        if debug_block_outputs == 1:
+            if block_output_labeled_data == 1:
+                label_choice = 1
+            else:
+                label_choice = 0                    
+            
+            plt.imshow(pixel_block_3d_flattened[label_choice]) #, origin='lower')  # origin lower flips the order of filling columns to account for the fact numpy arrays are indexed from top left wheras our sensor is indexed from bottom right
+            #plt.axis('off')
             plt.show()
 
-        ###Output Modules
-        #Combines noise and signal data into one array
-        x_circ_output = np.concatenate((x_circ_data, x_circ_noise_data))
-        y_circ_output = np.concatenate((y_circ_data, y_circ_noise_data))
-        
-        #Combines the different dimensions (x & y, and labels) into one N x 3 array
-        circle_data = np.vstack((x_circ_output, y_circ_output, labels_output)).T
-        
-        #Randomises the order of the points so that the noise values are not all the last values, just in case the network uses that fact
-        np.random.shuffle(circle_data)
-
-        #Data output to disk
-        if output_type == 0:
-            np.save(directory + filename + ' Circle (hits data) %s - Variables = ' % (f+1) + run_settings, circle_data)        
-        else:
-            pixel_block = np.zeros((2,detector_pixel_dimensions[1],detector_pixel_dimensions[0]), dtype = np.single)
-            for idr, r in enumerate(circle_data[ :,0]):
-                c = circle_data[idr][1]
-                label_value = int(circle_data[idr][2])
+        np.save(directory + filename + ' Sphere (pixel block data) %s - Variables = ' % (f+1) + run_settings, pixel_block_3d_flattened)
                 
-                pixel_block[0][int(-c)][int(r)] = 1     # -c flips the order of filling columns to account for the fact numpy arrays are indexed from top left wheras our sensor is indexed from bottom right
-                if label_value == 0:
-                    pixel_block[1][int(-c)][int(r)] = 2                     
-                else:
-                    pixel_block[1][int(-c)][int(r)] = 1                
-
-            if debug_block_outputs == 1:                   #Check for is user would like to view plot as labeled or unlabeled (i.e with signal and noise differentiated by colour)
-                if seperate_block_noise_colour == 1:
-                    label_choice = 1
-                else:
-                    label_choice = 0                    
-                
-                plt.imshow(pixel_block[label_choice]) #, origin='lower')  # origin lower flips the order of filling columns to account for the fact numpy arrays are indexed from top left wheras our sensor is indexed from bottom right
-                #plt.axis('off')
-                plt.show()
-                #!!! FINSIH BLOCK OUTPUT by adding label data 
-            np.save(directory + filename + ' Circle (pixel block data) %s - Variables = ' % (f+1) + run_settings, pixel_block)
-    
-#%% - Spherical Signal Simulator
-    if create_spherical == 1:     
-        #Spherical Data Generator
-        for i in range (0,signal_points):    #Generates points data
-            angle1 = np.random.uniform(0, np.pi/2)
-            angle2 = np.random.uniform(0, 2*np.pi)
-            x, y, z = spherical2cartesian(radius, angle1, angle2, coord_transform_sig_fig)
-            x = round(x)
-            y = round(y)
-            z = round(z)
-            x_sph_data.append(x + (detector_pixel_dimensions[0]/2) + centre_ofset_x)     
-            y_sph_data.append(y + (detector_pixel_dimensions[1]/2) + centre_ofset_y) 
-            z_sph_data.append(z + (time_resoloution/2))    
-            
-        if noise_points > 0:              #Generates noise data
-            for i in range (0,noise_points):
-                x_noise = np.random.randint(detector_x_lim_low, detector_x_lim_high)
-                y_noise = np.random.randint(detector_y_lim_low, detector_y_lim_high)
-                z_noise = np.random.randint(detector_z_lim_low, detector_z_lim_high)
-                x_sph_noise_data.append(x_noise)    
-                y_sph_noise_data.append(y_noise)
-                z_sph_noise_data.append(z_noise)
-
-
-        if debug_visulisations_on  == 1:         
-            fig = plt.figure()               #Plots spherical data
-            ax = plt.axes(projection='3d')
-            ax.scatter(x_sph_data,y_sph_data, z_sph_data, s = signal_hit_size, c = "b") #Plots spherical data in blue
-            ax.scatter(x_sph_noise_data,y_sph_noise_data,z_sph_noise_data, s = noise_hit_size, c = noise_colour) #Plots spherical noise in blue or red depending on the user selection of seperate_noise_colour
-            ax.set_xlim(detector_x_lim_low, detector_x_lim_high)
-            ax.set_ylim(detector_y_lim_low, detector_y_lim_high)
-            ax.set_zlim(detector_z_lim_low, detector_z_lim_high)
-            plt.show()
-    
-        ###Output Modules
-        #Combines noise and signal data into one array
-        x_sph_output = np.concatenate((x_sph_data, x_sph_noise_data))
-        y_sph_output = np.concatenate((y_sph_data, y_sph_noise_data))
-        z_sph_output = np.concatenate((z_sph_data, z_sph_noise_data))
-   
-        #Flattening the 3D data to 2D array + TOF data embedded in hit information, ie NxN array with 0 values representing no hit and TOF values representing hits
-
-
-        
-        #Combines the different dimensions (x, y & z, and labels) into one N x 4 array    
-        sphere_data = np.vstack((x_sph_output, y_sph_output, z_sph_output)).T #, labels_output)).T
-        sphere_data_labels = np.vstack((x_sph_data, y_sph_data, z_sph_data)).T
-        
-        #Randomises the order of the points so that the noise values are not all the last values, just in case the network uses that fact
-        np.random.shuffle(sphere_data)
-
-        #Normalise TOF Data
-        #mean, std = sphere_data.mean(), sphere_data.std()
-        #print(mean, std)
-
-        #Data output to disk
-        if output_type == 0:
-            np.save(directory + filename + ' Sphere (hits data) %s  - Variables = ' % (f+1) + run_settings, sphere_data)
-        
-        else:
-            pixel_block_3d_flattened = np.zeros((2, detector_pixel_dimensions[1], detector_pixel_dimensions[0]), dtype = np.single)
-            for row, _ in enumerate(sphere_data[ :,2]):
-                x_coordinate, y_coordinate, TOF = sphere_data[row]
-                if 0 <= x_coordinate < detector_pixel_dimensions[0] and 0 <= y_coordinate < detector_pixel_dimensions[1]:
-                    pixel_block_3d_flattened[0][int(y_coordinate)][int(x_coordinate)] = TOF    #TOF normalisation to 0-1
-            
-            for row, _ in enumerate(sphere_data_labels[ :,2]):                
-                labels_x_coordinate, labels_y_coordinate, labels_TOF = sphere_data_labels[row]
-                if 0 <= labels_x_coordinate < detector_pixel_dimensions[0] and 0 <= labels_y_coordinate < detector_pixel_dimensions[1]:                
-                    pixel_block_3d_flattened[1][int(labels_y_coordinate)][int(labels_x_coordinate)] = TOF
-
-            if debug_block_outputs == 1:
-                if block_output_labeled_data == 1:
-                    label_choice = 1
-                else:
-                    label_choice = 0                    
-                
-                plt.imshow(pixel_block_3d_flattened[label_choice]) #, origin='lower')  # origin lower flips the order of filling columns to account for the fact numpy arrays are indexed from top left wheras our sensor is indexed from bottom right
-                #plt.axis('off')
-                plt.show()
-
-            np.save(directory + filename + ' Sphere (pixel block data) %s - Variables = ' % (f+1) + run_settings, pixel_block_3d_flattened)
-                   
 #%% - End of Program
 #Final success message, also includes data path for easy copy paste to open    
 print("\nDataset generated successfully.\nSaved in path:",directory,"\n \nIMPORTANT - Remember to change the filename setting next time you run OR move this runs files out of the directory to avoid overwriting your data!\n")    
