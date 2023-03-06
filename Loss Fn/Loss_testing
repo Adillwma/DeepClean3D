@@ -47,25 +47,31 @@ def MSE_loss_fn(denoised, original):
 
 # this may take far too long to compute, as it will have to find a distance for each point. There will be 
 # methods to reduce this somehow but can have a look into it later
-# def custom_loss_fn(denoised, original):
+def custom_loss_fn(denoised, original):
+    """
+    This takes two arguments:
+    denoised - the denoised guess that the AE outputs
+    original - the original image that the AW is trying to reconstruct
+    This just calculates error dependent on the closest point, whether it be 0 or the signal
+    point time value.
+    """
 
-#     # each point in denoised needs a distance to the closesest signal point in original
-#     # in order to see how wrong it is.
-#     dist_lst = []
+    # this is massive matrix of the distance between every value:
+    dist = cdist(denoised, original)
 
-#     minimum = 1000
+    # find the minimum distance for each point:
+    min_dist = np.min(dist, axis = 1)
 
-#     # loop through the denoised image
-#     for den_pix in denoised:
-        
-#         # loop through the original pixels to find closest
-#         for orig_pix in original:
-            
-#             dist = ((den_pix[0] - orig_pix[0])**2+(den_pix[1] - orig_pix[1])**2+(den_pix[2] - orig_pix[2])**2)**(1/2)
+    # put back into the shape of the original denoised shape (n.b this can just be summed instead for loss)
+    #min_dist = min_dist.reshape(np.shape(denoised))
 
-#             # change minimum to the closest signal point
-#             if dist < minimum:
-#                 minimum = dist
+    # renormalise losses to be between 0 and 1:
+    losses = min_dist / np.max(min_dist)
+
+    total_loss = np.sum(losses)
+
+    return total_loss
+
 
 # ---------------------------------------------------------------------------------------------------------------------
 
@@ -73,10 +79,8 @@ def MSE_loss_fn(denoised, original):
 # k-nearest neighbour: 
 def custom_loss_fn2(denoised, original, factor):
     """
-    denoised is individual denoised image
-    original is individual original image
-    factor is how tight you want the loss to be around the signal points.
-
+    This will be the same as the previous, but you may be able to add a factor that gives more/less
+    importance to the loss to the signal point.
     """
 
     # use list of values without zeros to find distances:
