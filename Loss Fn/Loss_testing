@@ -65,7 +65,7 @@ def custom_loss_fn(denoised, original):
     # put back into the shape of the original denoised shape (n.b this can just be summed instead for loss)
     #min_dist = min_dist.reshape(np.shape(denoised))
 
-    # renormalise losses to be between 0 and 1:
+    # renormalise losses to be between 0 and 1 (this doesnt work if there is no loss at all, but this wont happen):
     losses = min_dist / np.max(min_dist)
 
     total_loss = np.sum(losses)
@@ -91,7 +91,7 @@ def custom_loss_fn2(denoised, original, factor):
     sig_dist = cdist(denoised, sig_pts)
 
     # this is the dist of the point to 0
-    base_dist = 
+    # base_dist = 
 
     # Find the minimum distance for each pixel in denoised
     # min_distances = np.min(distances, axis=1)
@@ -103,5 +103,5 @@ def custom_loss_fn2(denoised, original, factor):
         
 # testing
 a = np.array([[0,1,1],[0,0,2],[0,0,3]])
-b = np.array([[0,0,0],[0,0,2]])
-print(custom_loss_fn2(a,b))
+b = np.array([[0,0,1],[0,0,2],[0,0,3]])
+print(custom_loss_fn(a,b))
