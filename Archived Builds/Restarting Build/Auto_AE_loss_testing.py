@@ -16,6 +16,7 @@ from torch.utils.data import DataLoader,random_split
 from torch import nn
 import random 
 import math
+from scipy.spatial.distance import cdist
 #import pandas as pd 
 #import torch.nn.functional as F
 #import torch.optim as optim
@@ -494,7 +495,23 @@ test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size,sh
 #loss_fn = torch.nn.MSELoss()
 
 # lets redefine the loss function as using cdist, to give it more information about the model.
-loss_fn = torch.cdist()
+def custom_loss_fn(denoised, original):
+    """
+    This takes two arguments:
+    denoised - the denoised guess that the AE outputs
+    original - the original image that the AW is trying to reconstruct
+    This just calculates error dependent on the closest point, whether it be 0 or the signal
+    point time value.
+    """
+
+    # this is massive matrix of the distance between every value:
+    dists = cdist(denoised.detach().numpy(), original.detach().numpy())
+
+    min_dists = torch.from_numpy(dists.min(axis=1)).float()
+    
+    return min_dists.mean()
+
+loss_fn = custom_loss_fn
 
 ### Define a learning rate for the optimiser. 
 # Its how much to change the model in response to the estimated error each time the model weights are updated.
