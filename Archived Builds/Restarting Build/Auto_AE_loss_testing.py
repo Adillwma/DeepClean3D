@@ -495,23 +495,59 @@ test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size,sh
 #loss_fn = torch.nn.MSELoss()
 
 # lets redefine the loss function as using cdist, to give it more information about the model.
-def custom_loss_fn(denoised, original):
-    """
-    This takes two arguments:
-    denoised - the denoised guess that the AE outputs
-    original - the original image that the AW is trying to reconstruct
-    This just calculates error dependent on the closest point, whether it be 0 or the signal
-    point time value.
-    """
+class SmallestDistanceLoss(torch.nn.Module):
+    def __init__(self, reduction='mean'):
+        super(SmallestDistanceLoss, self).__init__()
+        self.reduction = reduction
 
-    # this is massive matrix of the distance between every value:
-    dists = cdist(denoised.detach().numpy(), original.detach().numpy())
+    def forward(self, input1, input2):
+        dist_matrix = cdist(input1.detach().numpy(), input2.detach().numpy())
+        smallest_dists = torch.min(torch.tensor(dist_matrix), dim=1).values
+        loss = torch.mean(smallest_dists)
+        
+        if self.reduction == 'none':
+            return smallest_dists
+        elif self.reduction == 'sum':
+            return torch.sum(smallest_dists)
+        else:
+            return loss
 
-    min_dists = torch.from_numpy(dists.min(axis=1)).float()
-    
-    return min_dists.mean()
+class DistanceLoss(torch.nn.Module):
+    def __init__(self, p=2, eps=1e-6):
+        super(DistanceLoss, self).__init__()
+        self.p = p
+        self.eps = eps
 
-loss_fn = custom_loss_fn
+    def forward(self, input1, input2):
+        # Flatten 4D inputs to 2D
+        input1_flat = input1.view(input1.size(0), -1)
+        input2_flat = input2.view(input2.size(0), -1)
+        
+        # Compute distance matrix
+        dist_matrix = cdist(input1_flat.detach().numpy(), input2_flat.detach().numpy())
+        
+        # Get smallest distance for each element in input1
+        min_dist = torch.tensor([dist_matrix[i].min() for i in range(dist_matrix.shape[0])], dtype=torch.float32, device=input1.device)
+
+        # Compute mean of smallest distances
+        loss = torch.mean(min_dist)
+        
+        loss.requires_grad = True
+        return loss
+
+class DistanceLoss2(torch.nn.Module):
+    def __init__(self, p=2, eps=1e-6):
+        super().__init__()
+        self.p = p
+        self.eps = eps
+        
+    def forward(self, input1, input2):
+        dist = cdist(input1.detach().cpu().numpy(), input2.detach().cpu().numpy(), metric='euclidean')
+        loss = torch.tensor(dist.min(axis=1)).to(input1.device)
+        loss.requires_grad = True
+        return loss.mean()
+
+loss_fn = DistanceLoss()
 
 ### Define a learning rate for the optimiser. 
 # Its how much to change the model in response to the estimated error each time the model weights are updated.

@@ -5,6 +5,7 @@ from torchvision import transforms
 from torch.utils.data import DataLoader, random_split
 from torch import nn
 from scipy.spatial.distance import cdist
+import torch
 
 """
 This is a test new loss function taking into account what was brought up in the meeting on the 3rd of march.
@@ -99,9 +100,85 @@ def custom_loss_fn2(denoised, original, factor):
     # Reshape the min_distances array to match the shape of denoised
     # min_distances = min_distances.reshape(denoised.shape)
 
-    return distances
+    return sig_dist
         
 # testing
-a = np.array([[0,1,1],[0,0,2],[0,0,3]])
-b = np.array([[0,0,1],[0,0,2],[0,0,3]])
-print(custom_loss_fn(a,b))
+# a = np.array([[0,1,1],[0,0,2],[0,0,3]])
+# b = np.array([[0,0,1],[0,0,2],[0,0,3]])
+# print(custom_loss_fn(a,b))
+
+"""
+Currently the loss functions above are finding errors if defined in a function as above.
+Hence, i will attempt to mimmic the layout of the torch.nn.MSELoss() class while creating a new one
+that uses the new method:
+
+class MSELoss(torch.nn.Module):
+    def __init__(self, size_average=None, reduce=None, reduction='mean'):
+        super(MSELoss, self).__init__()
+        self.size_average = size_average
+        self.reduce = reduce
+        self.reduction = reduction
+
+    def forward(self, input, target):
+        if self.size_average is not None or self.reduce is not None:
+            reduction = _Reduction.legacy_get_string(size_average, reduce)
+        else:
+            reduction = self.reduction
+        return torch.nn.functional.mse_loss(input, target, reduction=reduction)
+        
+"""
+
+class SmallestDistanceLoss(torch.nn.Module):
+    def __init__(self, reduction='mean'):
+        super(SmallestDistanceLoss, self).__init__()
+        self.reduction = reduction
+
+    def forward(self, input1, input2):
+        dist_matrix = cdist(input1.detach().numpy(), input2.detach().numpy())
+        smallest_dists = torch.min(torch.tensor(dist_matrix), dim=1).values
+        loss = torch.mean(smallest_dists)
+        
+        if self.reduction == 'none':
+            return smallest_dists
+        elif self.reduction == 'sum':
+            return torch.sum(smallest_dists)
+        else:
+            return loss
+
+loss_fn = SmallestDistanceLoss()
+
+class DistanceLoss(torch.nn.Module):
+    def __init__(self):
+        super(DistanceLoss, self).__init__()
+
+    def forward(self, input1, input2):
+        # Flatten 4D inputs to 2D
+        input1_flat = input1.view(input1.size(0), -1)
+        input2_flat = input2.view(input2.size(0), -1)
+        
+        # Compute distance matrix
+        dist_matrix = cdist(input1_flat.detach().numpy(), input2_flat.detach().numpy())
+        
+        # Get smallest distance for each element in input1
+        min_dist = torch.tensor([dist_matrix[i].min() for i in range(dist_matrix.shape[0])], dtype=torch.float32, device=input1.device)
+        
+        # Compute mean of smallest distances
+        loss = torch.mean(min_dist)
+        
+        return loss
+
+loss_fn2 = DistanceLoss()
+
+class DistanceLoss2(torch.nn.Module):
+    def __init__(self, p=2, eps=1e-6):
+        super().__init__()
+        self.p = p
+        self.eps = eps
+        
+    def forward(self, input1, input2):
+        dist = cdist(input1.detach().cpu().numpy(), input2.detach().cpu().numpy(), metric='euclidean')
+        loss = torch.tensor(dist.min(axis=1)).to(input1.device)
+        loss.requires_grad = True
+        return loss.mean()
+
+loss_fn3 = DistanceLoss2()
