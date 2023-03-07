@@ -16,6 +16,8 @@ from torch.utils.data import DataLoader,random_split
 from torch import nn
 import random 
 import math
+import torch.nn as nn
+
 #import pandas as pd 
 #import torch.nn.functional as F
 #import torch.optim as optim
@@ -489,8 +491,8 @@ test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size,sh
 
 
 #%% - Setup model, loss criteria and optimiser    
-    
-### Define the loss function (mean square error)
+
+### Define the loss function (mean square error), defaults are size_average=None, reduce=None, reduction='mean'
 loss_fn = torch.nn.MSELoss()
 
 ### Define a learning rate for the optimiser. 

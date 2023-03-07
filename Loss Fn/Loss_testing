@@ -42,9 +42,10 @@ def MSE_loss_fn(denoised, original):
     return MSE
 
 # testing
-# a = [[0,0,0],[0,0,2],[0,0,3]]
+a = [[0,0,0],[0,0,2],[0,0,3]]
 # b = [[0,0,2],[0,0,5],[0,0,3]]
-# print(loss_fn(a,b))
+a_flat = a.view(a.size(0), -1)
+print(a_flat)
 
 # this may take far too long to compute, as it will have to find a distance for each point. There will be 
 # methods to reduce this somehow but can have a look into it later

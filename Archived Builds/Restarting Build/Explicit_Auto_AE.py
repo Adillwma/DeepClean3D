@@ -16,7 +16,8 @@ from torch.utils.data import DataLoader,random_split
 from torch import nn
 import random 
 import math
-from scipy.spatial.distance import cdist
+import torch.nn as nn
+
 #import pandas as pd 
 #import torch.nn.functional as F
 #import torch.optim as optim
@@ -490,36 +491,21 @@ test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size,sh
 
 
 #%% - Setup model, loss criteria and optimiser    
-    
-### Define the loss function (mean square error)
-#loss_fn = torch.nn.MSELoss()
 
-# lets redefine the loss function as using cdist, to give it more information about the model.
-class DistanceLoss(torch.nn.Module):
-    def __init__(self, p=2, eps=1e-6):
-        super(DistanceLoss, self).__init__()
-        self.p = p
-        self.eps = eps
+class MSLoss(torch.nn.Module):
+    def __init__(self, size_average=None, reduce=None, reduction='mean'):
+        super(MSLoss, self).__init__()
+        self.size_average = size_average
+        self.reduce = reduce
+        self.reduction = reduction
 
-    def forward(self, input1, input2):
-        # Flatten 4D inputs to 2D
-        input1_flat = input1.view(input1.size(0), -1)
-        input2_flat = input2.view(input2.size(0), -1)
-        
-        # Compute distance matrix
-        dist_matrix = cdist(input1_flat.detach().numpy(), input2_flat.detach().numpy())
-        
-        # Get smallest distance for each element in input1
-        min_dist = torch.tensor([dist_matrix[i].min() for i in range(dist_matrix.shape[0])], dtype=torch.float32, device=input1.device)
-
-        # Compute mean of smallest distances
-        loss = torch.mean(min_dist)
-
-        loss.requires_grad = True
-        return loss
+    def forward(self, input, target):
+        reduction = self.reduction
+        return torch.nn.functional.mse_loss(input, target, reduction=reduction)
 
 
-loss_fn = DistanceLoss()
+### Define the loss function (mean square error), defaults are size_average=None, reduce=None, reduction='mean'
+loss_fn = MSLoss()
 
 ### Define a learning rate for the optimiser. 
 # Its how much to change the model in response to the estimated error each time the model weights are updated.
