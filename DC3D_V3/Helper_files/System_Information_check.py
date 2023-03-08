@@ -79,7 +79,7 @@ def get_system_information():
     # Add GPU information to the system_information string
     system_information += "="*40 + " GPU Info " + "="*40 + "\n"
     # CUDA GPU found?
-    system_information += "CUDA GPU Availible: " + str(cuda) + "\n"
+    system_information += "CUDA GPU Available: " + str(cuda) + "\n"
     GPU_enumeration = gpu_info()
     for GPU_dev in GPU_enumeration:
         for key, value in GPU_dev.items():
