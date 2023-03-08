@@ -14,6 +14,12 @@ from Restarting_Build.Calc import conv_calculator
 This could simply be an encoder that outputs 2 answers and tries its best to fit to them:
 The velocity
 The coordinate of entry
+
+To do:
+- Learn how to import the root data.
+- Add max pooling layers as data is very far apart/ to decrese computational cost?
+- Figure out what the input dimensions of each layer is.
+- As data is massive, maybe larger kernal sizes needed/ no overlap.
 """
 
 """
