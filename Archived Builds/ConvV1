@@ -1,0 +1,132 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import math
+import torch
+import torchvision
+from torchvision import transforms
+from torch.utils.data import DataLoader,random_split
+from torch import nn
+import random 
+import torch.nn as nn
+from Restarting_Build.Calc import conv_calculator
+
+"""
+This could simply be an encoder that outputs 2 answers and tries its best to fit to them:
+The velocity
+The coordinate of entry
+
+To do:
+- Learn how to import the root data.
+- Add max pooling layers as data is very far apart/ to decrese computational cost?
+- Figure out what the input dimensions of each layer is.
+- As data is massive, maybe larger kernal sizes needed/ no overlap.
+"""
+
+"""
+All you need to do here is link the first array and the datasets to automate the AE.
+"""
+# the test and train directories used later:
+train_dir = r"C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Cross Stuff\MultiX - 80%1X - 20%2X - 128x88/"
+test_dir = r"C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Cross Stuff\MultiX - 80%1X - 20%2X - 128x88/"
+
+# load a single array in order to find its dimensions:
+single_array = np.load(r"C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Cross Stuff\MultiX - 80%1X - 20%2X - 128x88\Data\Flat SimpleX-128x88-1 Crosses, No0.npy")
+print(np.shape(single_array))
+# for conv converter:
+conv_type = 0
+K = [3,3]
+P = [1,1] # (changed later)
+S = [2,2]
+D = [1,1]
+H_in = np.shape(single_array)[0] # (change later)
+W_in = np.shape(single_array)[1]
+D_in = None
+O = None
+
+# Calculator here:
+# # for first 2 conv layers:
+# H_in, W_in and D_in would be given in fc2_input_dim
+# padding is initially 1 on top and 1 on bottom for first two layers
+P = [1,1]
+L1 = conv_calculator(conv_type, K, P, S, D, H_in, W_in, D_in, O)
+print('N.B. the following dimensions dont include the channels: \n')
+print('Dimensions after first layer: ', str(math.floor(L1[0])), 'x', str(math.floor(L1[1])))
+
+# need to use math.floor to make sure to round down from .5 values
+L2 = conv_calculator(conv_type, K, P, S, D, math.floor(L1[0]), math.floor(L1[1]), D_in, O)
+print('Dimensions after second layer: ', str(math.floor(L2[0])), 'x', str(math.floor(L2[1])))
+
+
+# # for 3rd and final layer padding changed to (0,0)
+P = [0,0]
+L3 = conv_calculator(conv_type, K, P, S, D, math.floor(L2[0]), math.floor(L2[1]), D_in, O)
+print('Dimensions after third layer: ', str(math.floor(L3[0])), 'x', str(math.floor(L3[1])))
+
+
+# this is the channels out of the 
+channels_out = 32
+
+# this is the encoder 
+class Encoder(nn.Module):
+    
+    def __init__(self, encoded_space_dim,fc2_input_dim):
+        super().__init__()
+        
+        ###Convolutional Encoder Layers
+        
+        # Arguments: (input channels, output channels, kernel size/receiptive field (), stride and padding. # here for more info on arguments https://uob-my.sharepoint.com/personal/ex18871_bristol_ac_uk/_layouts/15/Doc.aspx?sourcedoc={109841d1-79cb-45c2-ac39-0fd24300c883}&action=edit&wd=target%28Code%20Companion.one%7C%2FUntitled%20Page%7C55b8dfad-d53c-4d8e-a2ef-de1376232896%2F%29&wdorigin=NavigationUrl
+        
+        # Input channels is 1 as the image is black and white so only has luminace values no rgb channels, 
+        # Output channels which is the amount of output tensors. Defines number of seperate kernels that will be run across image, all which produce thier own output arrays
+        # The kernal size, is the size of the convolving layer. Ours is 3 means 3x3 kernel matrix.
+        # Stride is how far the kernal moves across each time, the default is across by one pixel at a time.
+        # Padding adds padding (zeros) to the edges of the data array before convoloution filtering. This is to not neglect edge pixels.
+        # Dilation spreads out kernel
+        
+        self.encoder_cnn = nn.Sequential(
+            # N.B. input channel dimensions are not the same as output channel dimensions:
+            # the images will get smaller into the encoded layer
+            #Convolutional encoder layer 1                 
+            nn.Conv2d(1, 8, 3, stride=2, padding=1),       #Input_channels, Output_channels, Kernal_size, Stride, Padding
+            nn.ReLU(True),                                 #ReLU activation function - Activation function determinines if a neuron fires, i.e is the output of the node considered usefull. also allows for backprop. the arg 'True' makes the opperation carry out in-place(changes the values in the input array to the output values rather than making a new one), default would be false
+            #Convolutional encoder layer 2
+            nn.Conv2d(8, 16, 3, stride=2, padding=1),      #Input_channels, Output_channels, Kernal_size, Stride, Padding
+            nn.BatchNorm2d(16),                            #BatchNorm normalises the outputs as a batch? #!!!. argument is 'num_features' (expected input of size)
+            nn.ReLU(True),                                 #ReLU activation function - Activation function determinines if a neuron fires, i.e is the output of the node considered usefull. also allows for backprop. the arg 'True' makes the opperation carry out in-place(changes the values in the input array to the output values rather than making a new one), default would be false
+            #Convolutional encoder layer 3
+            nn.Conv2d(16, 32, 3, stride=2, padding=0),     #Input_channels, Output_channels, Kernal_size, Stride, Padding
+            nn.ReLU(True)                                  #ReLU activation function - Activation function determinines if a neuron fires, i.e is the output of the node considered usefull. also allows for backprop. the arg 'True' makes the opperation carry out in-place(changes the values in the input array to the output values rather than making a new one), default would be false
+        )
+
+        #Encoder nodes: 
+        #input data format = [batchsize, 1, 28, 28] # [batchsize, channels, pixels_in_x, pixels_in_y]
+        #conv layers: input---Conv_L1---> 
+        # 1 [batchsize, 8, 14, 14]
+        # 2 [batchsize, 16, 7, 7]
+        # 4 [batchsize, 32, 3, 3]
+        
+        # im importing the kernel calculator to make the autoencoder more dynamic with its imputs for nn.Linear(3 * 3 * 32, 128)
+        
+        ###Flatten layer
+        self.flatten = nn.Flatten(start_dim=1)
+        
+
+        ###Linear Encoder Layers
+        
+        #nn.Linear arguments are: in_features – size of each input sample, out_features – size of each output sample, bias – If set to False, the layer will not learn an additive bias. Default: True
+        self.encoder_lin = nn.Sequential(
+            #Linear encoder layer 1  
+            nn.Linear(math.floor(L3[0]) * math.floor(L3[1]) * channels_out, 128),                   #!!! linear network layer. arguuments are input dimensions/size, output dimensions/size. Takes in data of dimensions 3* 3 *32 and outputs it in 1 dimension of size 128
+            # nn.Linear(L3[0] * L3[1] * 32, 128),
+            nn.ReLU(True),                                #ReLU activation function - Activation function determinines if a neuron fires, i.e is the output of the node considered usefull. also allows for backprop. the arg 'True' makes the opperation carry out in-place(changes the values in the input array to the output values rather than making a new one), default would be false
+            #Linear encoder layer 2
+            nn.Linear(128, encoded_space_dim)             #Takes in data of 1 dimension with size 128 and outputs it in one dimension of size defined by encoded_space_dim (this is the latent space? the smalle rit is the more comression but thte worse the final fidelity)
+        )
+        
+    def forward(self, x):
+        x = self.encoder_cnn(x)                           #Runs convoloutional encoder on x #!!! input data???
+        #print(np.shape(x))
+        x = self.flatten(x)                               #Runs flatten  on output of conv encoder #!!! what is flatten?
+        #print(np.shape(x))
+        x = self.encoder_lin(x)                           #Runs linear encoder on flattened output 
+        return x      

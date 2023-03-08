@@ -492,9 +492,9 @@ test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size,sh
 
 #%% - Setup model, loss criteria and optimiser    
 
-class MSLoss(torch.nn.Module):
+class MSELoss(torch.nn.Module):
     def __init__(self, size_average=None, reduce=None, reduction='mean'):
-        super(MSLoss, self).__init__()
+        super(MSELoss, self).__init__()
         self.size_average = size_average
         self.reduce = reduce
         self.reduction = reduction
@@ -505,7 +505,7 @@ class MSLoss(torch.nn.Module):
 
 
 ### Define the loss function (mean square error), defaults are size_average=None, reduce=None, reduction='mean'
-loss_fn = MSLoss()
+loss_fn = MSELoss()
 
 ### Define a learning rate for the optimiser. 
 # Its how much to change the model in response to the estimated error each time the model weights are updated.
