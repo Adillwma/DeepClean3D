@@ -87,7 +87,6 @@ with open(output_dataset_info, 'w', encoding='utf-8') as output_file:    #utf_8 
     output_file.write((f"Y dim: {ydim} pixels\n"))
     output_file.write((f"Time dim: {time_dimension}\n"))
     output_file.write((f"Signal Points: {sig_pts}\n"))
-    output_file.write((f"X dim: {xdim} pixels\n"))
     output_file.write((f"Shift on: {shift_x_positions}\n"))
     output_file.write((f"Rotation on: {rotate_x_positions}\n"))
 
