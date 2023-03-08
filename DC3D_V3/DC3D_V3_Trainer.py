@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-DeepClean v0.3.3
+DeepClean v0.3.4
 Build created on Sat Feb 1 2022
 Authors: Adill Al-Ashgar & Max Carter
 University of Bristol
@@ -63,28 +63,29 @@ Default: if None, uses a global default (see torch.set_default_tensor_type()).!!
 
 ### ~~~~~ Create flatten module in main body so noise can be added to the 3D cube rather than slicewise
 
+### ~~~~~ [TESTING!]Add way to compress the NPZ output as filesize is to large ! ~3Gb+
+
 ### ~~~~~ Add all advanced program settings to end of net summary txt file i.e what typ eof normalisation used etc, also add th enam eof the autoencoder file i.e AE_V1 etc from the module name 
 """
 import torch
 
 #%% - User Inputs
 #mode = 0 ### 0=Data_Gathering, 1=Testing, 2=Speed_Test, 3=Debugging
-dataset_title = "Dataset 17_MultiX" #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
-model_save_name = "Dataset 17_MultiX_new"
+dataset_title = "Dataset 12_X_10K_M" #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
+model_save_name = "Dataset 12 Testingref"#"Dataset 18_X_rotshiftlarge"
 
-num_epochs = 16                                          #User controll to set number of epochs (Hyperparameter)
+num_epochs = 11                                          #User controll to set number of epochs (Hyperparameter)
 batch_size = 10                                 #User controll to set batch size (Hyperparameter) - #Data Loader, number of Images to pull per batch 
 latent_dim = 10                     #User controll to set number of nodes in the latent space, the bottleneck layer (Hyperparameter)
 
 learning_rate = 0.001  #User controll to set optimiser learning rate(Hyperparameter)
 optim_w_decay = 1e-05  #User controll to set optimiser weight decay (Hyperparameter)
-loss_fn = torch.nn.MSELoss()   #!!!!!!   #MSELoss()          #(mean square error) User controll to set loss function (Hyperparameter)
+loss_fn = torch.nn.MSELoss()#torch.nn.BCELoss(reduction='none') #torch.nn.MSELoss()   #!!!!!!   #MSELoss()          #(mean square error) User controll to set loss function (Hyperparameter)
 
 time_dimension = 100
 noise_factor = 0                                          #User controll to set the noise factor, a multiplier for the magnitude of noise added. 0 means no noise added, 1 is defualt level of noise added, 10 is 10x default level added (Hyperparameter)
 
 reconstruction_threshold = 0.5      #MUST BE BETWEEN 0-1        #Threshold for 3d reconstruction, values below this confidence level are discounted
-
 
 """#### NEW MULTI-LOSS FUCN WITH WEIGHTS
 loss_functions = [torch.nn.L1Loss(), torch.nn.MSELoss()] 
@@ -106,14 +107,17 @@ for i in range (0, len(loss_fn_weightings)):
 print_encoder_debug = False                     #[default = False]
 print_decoder_debug = False                     #[default = False]
 debug_noise_function = False                    #[default = False]
-debug_loader_batch = False     #(Default = False) //INPUT 0 or 1//   #Setting debug loader batch will print to user the images taken in by the dataoader in this current batch and print the corresponding labels
+debug_loader_batch = False   #REMOVE THIS PARAM!!!  #(Default = False) //INPUT 0 or 1//   #Setting debug loader batch will print to user the images taken in by the dataoader in this current batch and print the corresponding labels
 
 full_dataset_integrity_check = False       #[Default = False] V slow   
 full_dataset_distribution_check = False    #[Default = False]
+
 print_network_summary = False              #[Default = False]
 seed = 0                                   #[Default = 0] which gives no seeeding to RNG, if the value is not zero then this is used for the RNG seeding for numpy, random, and torch libraries
+
+#Normalisation
 simple_norm_instead_of_custom = False      #[Default is False]
-all_norm_off = False                       #[Default is False]
+all_norm_off = True                       #[Default is False]
 
 #%% - Plotting Control Settings
 print_every_other = 2
@@ -123,20 +127,21 @@ plot_or_save = 1                            #[default = 1] 0 is normal behavior,
 plot_train_loss = True
 plot_validation_loss = True
 
-plot_pixel_difference = True #False
+plot_cutoff_telemetry = True          #[default = False] # Update name to pixel_cuttoff_telemetry    #Very slow, reduces net performance by XXXXXX%
+
+plot_pixel_difference = True 
 plot_latent_generations = True
 plot_higher_dim = True
 plot_Graphwiz = True
 
-plot_cutoff_telemetry = True          #[default = False] # Update name to pixel_cuttoff_telemetry    #Very slow, reduces net performance by XXXXXX%
 record_activity = True #False  ##Be carefull, the activity file recorded is ~ 2.5Gb  #Very slow, reduces net performance by XXXXXX%
+compress_activations_npz_output = False #False   Compresses the activity file above for smaller file size but does increase loading and saving times for the file. (use if low on hdd space)
 
-#%% - Program Settings
+#%% - Program Settings - CLEAN UP THIS SECTION
 speed_test = False      # [speed_test=False]Defualt    true sets number of epocs to print to larger than number of epochs to run so no plotting time wasted etc
 data_gathering = True
 
 print_partial_training_losses = False            #[default = True]
-
 allow_escape = False # Default = True
 #response_timeout = 120 # in seconds
 
@@ -151,7 +156,7 @@ results_output_path = "C:/Users/Student/Documents/UNI/Onedrive - University of B
 
 
 #%% - Dependencies
-# External Dependencies
+# External Libraries
 import numpy as np 
 import matplotlib.pyplot as plt
 import torchvision
@@ -165,12 +170,16 @@ from tqdm import tqdm
 import os
 from functools import partial
 import datetime
+
 # Imports from our other custom scripts
-#from Autoencoders.DC3D_Autoencoder_V1 import Encoder, Decoder
-from Helper_files.Dataset_Integrity_Check_V1 import dataset_integrity_check
-from Helper_files.AE_Visulisations import Generative_Latent_information_Visulisation, Reduced_Dimension_Data_Representations, Graphwiz_visulisation, AE_visual_difference
+from Autoencoders.DC3D_Autoencoder_V1 import Encoder, Decoder
+
 from Helper_files.Robust_model_exporter_V1 import Robust_model_export
+from Helper_files.System_Information_check import get_system_information
+from Helper_files.Dataset_Integrity_Check_V1 import dataset_integrity_check
 from Helper_files.Dataset_distribution_tester_V1 import dataset_distribution_tester
+from Helper_files.AE_Visulisations import Generative_Latent_information_Visulisation, Reduced_Dimension_Data_Representations, Graphwiz_visulisation, AE_visual_difference
+
 #%% - Helper functions
 def custom_normalisation(data, reconstruction_threshold, time_dimension=100):
     data = ((data / time_dimension) / (1/(1-reconstruction_threshold))) + reconstruction_threshold
@@ -192,6 +201,15 @@ def reconstruct_3D(data, reconstruction_threshold):
                 data_output.append([cdx,idx,num])
     return np.array(data_output)
 
+def reconstruct_3D2(data, reconstruction_threshold):
+    data_output = []
+    for cdx, row in enumerate(data):
+        for idx, num in enumerate(row):
+            if num > reconstruction_threshold:  #should this be larger than or equal to??? depends how we deal with the 0 slice problem
+                num_renorm = custom_renormalisation(num)
+                data_output.append([cdx,idx,num_renorm])
+    return np.array(data_output)
+
 def plot_save_choice(plot_or_save, output_file_path):
     if plot_or_save == 0:
         plt.show()
@@ -201,6 +219,15 @@ def plot_save_choice(plot_or_save, output_file_path):
             plt.close()
         else:
             plt.show()
+
+def batch_learning(training_dataset_size, batch_size):
+    if batch_size == 1: 
+        output = "Stochastic Gradient Descent"
+    elif batch_size == training_dataset_size:
+        output = "Batch Gradient Descent"        
+    else:
+        output = "Mini-Batch Gradient Descent"
+    return(output)
 
 ###Ploting confidence of each pixel as histogram per epoch with line showing the detection threshold
 def belief_telemetry(data, reconstruction_threshold, epoch, settings, plot_or_save=0):
@@ -316,9 +343,9 @@ settings["Time Dimension"] = time_dimension
 settings["Seed Val"] = seed
 settings["Reconstruction Threshold"] = reconstruction_threshold
 
-#%% - Convoloution + Linear Autoencoder
+#%% - Convoloution + Linear Autoencoder  #[DEPRECIATED!] MOVED TO SEPERATE FILE
 
-
+"""
 ###Encoder
 class Encoder(nn.Module):
     
@@ -468,7 +495,7 @@ class Decoder(nn.Module):
         
         return x                      #Retuns the final output
 
-    
+"""    
 #%% - Functions
 ### Random Noise Generator Function
 def add_noise(input, noise_factor=0.3, debug_noise_function=False):
@@ -514,6 +541,7 @@ def train_epoch_den(encoder, decoder, device, dataloader, loss_fn, optimizer, no
         # Backward pass
         optimizer.zero_grad()
         loss.backward()
+
         optimizer.step()
         if print_partial_training_losses:
             # Print batch loss
@@ -769,6 +797,21 @@ def val_loader2d(path):
     return (sample)
 
 
+####check for file count in folder####
+files_in_path = os.listdir(data_path + dataset_title + '/Data/') 
+num_of_files_in_path = len(files_in_path)
+
+# Report type of gradient descent
+learning = batch_learning(num_of_files_in_path, batch_size)
+print("%s files in path." %num_of_files_in_path ,"// Batch size =",batch_size, "\nLearning via: " + learning,"\n")
+
+# - Path images, greater than batch choice? CHECK
+if num_of_files_in_path < batch_size:
+    print("Error, the path selected has", num_of_files_in_path, "image files, which is", (batch_size - num_of_files_in_path) , "less than the chosen batch size. Please select a batch size less than the total number of images in the directory")
+    batch_err_message = "Choose new batch size, must be less than total amount of images in directory", (num_of_files_in_path)
+    batch_size = int(input(batch_err_message))  #!!! not sure why input message is printing with wierd brakets and speech marks in the terminal? Investigate
+
+
 #train_dir = r'C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\New big simp\Rectangle\\'
 train_dataset = torchvision.datasets.DatasetFolder(train_dir, train_loader2d, extensions='.npy')
 
@@ -819,8 +862,8 @@ test_data, val_data =  random_split(test2_data, [half_slice, len(test2_data) - h
 
 # required to load the data into the endoder/decoder. Combines a dataset and a sampler, and provides an iterable over the given dataset.
 train_loader = torch.utils.data.DataLoader(train_data, batch_size=batch_size)                 #Training data loader, can be run to pull training data as configured
-valid_loader = torch.utils.data.DataLoader(val_data, batch_size=batch_size)                   #Validation data loader, can be run to pull training data as configured
 test_loader = torch.utils.data.DataLoader(test_data, batch_size=batch_size, shuffle=True)   #Testing data loader, can be run to pull training data as configured. Also is shuffled using parameter shuffle #!!! why is it shuffled?
+valid_loader = torch.utils.data.DataLoader(val_data, batch_size=batch_size)                   #Validation data loader, can be run to pull training data as configured
 
 
 #%% - Setup model, loss criteria and optimiser    
@@ -848,7 +891,6 @@ print(f'Selected device: {device}\n')  #Informs user if running on CPU or GPU
 # Following section moves both the encoder and the decoder to the selected device i.e detected CUDA enabled GPU or to CPU
 encoder.to(device)   #Moves encoder to selected device, CPU/GPU
 decoder.to(device)   #Moves decoder to selected device, CPU/GPU
-
 
 #%% - Prepare Network Summary
 # Create dummy input tensor
@@ -1055,7 +1097,7 @@ if data_gathering:
     search_dir = os.path.dirname(search_dir)
 
     # Locate .py file that defines the Encoder and Decoder and copies it to the model save dir, due to torch.save model save issues
-    Robust_model_export(Encoder, search_dir, dir) #Only need to run on encoder as encoder and decoder are both in the same file so both get saved this way
+    AE_file_name = Robust_model_export(Encoder, search_dir, dir) #Only need to run on encoder as encoder and decoder are both in the same file so both get saved this way
     print("- Completed -")
 
     print("\nSaving model state dictionary to output dir...")
@@ -1067,22 +1109,34 @@ if data_gathering:
     print("- Completed -")
     
     print("\nSaving network activations to .npz file in output dir...")
-    # Convert network activity to numpy from torch tensors
-    enc_input = np.array(enc_input)
-    enc_conv = np.array(enc_conv)
-    enc_flatten = np.array(enc_flatten)
-    enc_lin = np.array(enc_lin)
 
-    dec_input = np.array(dec_input)
-    dec_lin = np.array(dec_lin)
-    dec_flatten = np.array(dec_flatten)
-    dec_conv = np.array(dec_conv)
-    dec_out = np.array(dec_out)
+    try:
+        # Retriveve network activity and convert to numpy from torch tensors !!! # Simplify the conversion code 
+        enc_input, enc_conv, enc_flatten, enc_lin = encoder.get_activation_data()
+        enc_input = np.array(enc_input)
+        enc_conv = np.array(enc_conv)
+        enc_flatten = np.array(enc_flatten)
+        enc_lin = np.array(enc_lin)
 
-    # Save network activity for analysis
-    np.savez((full_activity_filepath), enc_input=enc_input, enc_conv=enc_conv, enc_flatten=enc_flatten, enc_lin=enc_lin, dec_input=dec_input, dec_lin=dec_lin, dec_flatten=dec_flatten, dec_conv=dec_conv, dec_out=dec_out)
-    print("- Completed -")
+        dec_input, dec_lin, dec_flatten, dec_conv, dec_out = decoder.get_activation_data()
+        dec_input = np.array(dec_input)
+        dec_lin = np.array(dec_lin)
+        dec_flatten = np.array(dec_flatten)
+        dec_conv = np.array(dec_conv)
+        dec_out = np.array(dec_out)
 
+
+        # Save network activity for analysis
+        if compress_activations_npz_output:    # Saves as a compressed (Zipped) NPZ file (Smaller file size for activations file but takes longer to save and load due to comp/decomp cycles)
+            np.savez_compressed((full_activity_filepath), enc_input=enc_input, enc_conv=enc_conv, enc_flatten=enc_flatten, enc_lin=enc_lin, dec_input=dec_input, dec_lin=dec_lin, dec_flatten=dec_flatten, dec_conv=dec_conv, dec_out=dec_out)
+        
+        else:                                 # Saves as an uncompressed NPZ file (large file size ~3Gb+ but faster to load and save files, prefered if hdd space no issue)
+            np.savez((full_activity_filepath), enc_input=enc_input, enc_conv=enc_conv, enc_flatten=enc_flatten, enc_lin=enc_lin, dec_input=dec_input, dec_lin=dec_lin, dec_flatten=dec_flatten, dec_conv=dec_conv, dec_out=dec_out)
+        
+        print("- Completed -")
+    
+    except:
+        print("- NPZ save failed (Check output disk has enough free space ~3Gb+) -")
 
     print("\nSaving inputs, model stats and results to .txt file in output dir...")
     #Comparison of true signal points to recovered signal points
@@ -1093,22 +1147,7 @@ if data_gathering:
         full_data_output["recovered_signal_points"] = number_of_recovered_signal_points
     except:
         pass
-
-    """
-    #####move to better position!!!!!!!!!!!!
     
-    import psutil
-
-    cpu = f"{psutil.cpu_brand()}"
-    cpu_cores = f"{psutil.cpu_count()}"
-    ram = f"{round(psutil.virtual_memory().total / (1024 ** 3))} GB"
-
-    if torch.cuda.is_available():    #COMBINE WITH PREVIOUS TEST
-        device = torch.cuda.get_device_name(0)
-        gpu = f"CUDA enabled GPU found: {device}"
-    else:
-        gpu = "No CUDA enabled GPU found" 
-    """
     # Save .txt Encoder/Decoder Network Summary
     with open(full_netsum_filepath, 'w', encoding='utf-8') as output_file:    #utf_8 encoding needed as default (cp1252) unable to write special charecters present in the summary
         # Write the local date and time to the file
@@ -1127,17 +1166,20 @@ if data_gathering:
         for key, value in settings.items():
             output_file.write(f"{key}: {value}\n")
         
+        output_file.write("\nNormalisation:\n")
+        output_file.write(f"simple_norm_instead_of_custom: {simple_norm_instead_of_custom}\n")
+        output_file.write(f"all_norm_off: {all_norm_off}\n")
+      
+        output_file.write("\nAutoencoder Network:\n")
+        output_file.write((f"AE File ID: {AE_file_name}\n"))
         output_file.write("\n" + summary_str)
         
         output_file.write("\n \nFull Data Readouts:\n")
         for key, value in full_data_output.items():
             output_file.write(f"{key}: {value}\n")
      
-        #output_file.write(f"CPU Type: {psutil.cpu_brand()}\n")
-        #output_file.write(f"CPU Cores: {psutil.cpu_count()}\n")
-        #output_file.write(f"{gpu}\n")
-        #output_file.write(f"RAM: {round(psutil.virtual_memory().total / (1024 ** 3))} GB\n \N")
-        
+        system_information = get_system_information()
+        output_file.write("\n" + system_information)
     print("- Completed -")
 #%% - End of Program - Printing message to notify user!
 print("\nProgram Complete - Shutting down...\n")    
