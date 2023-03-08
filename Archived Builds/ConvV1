@@ -8,12 +8,57 @@ from torch.utils.data import DataLoader,random_split
 from torch import nn
 import random 
 import torch.nn as nn
+from Restarting_Build.Calc import conv_calculator
 
 """
 This could simply be an encoder that outputs 2 answers and tries its best to fit to them:
 The velocity
 The coordinate of entry
 """
+
+"""
+All you need to do here is link the first array and the datasets to automate the AE.
+"""
+# the test and train directories used later:
+train_dir = r"C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Cross Stuff\MultiX - 80%1X - 20%2X - 128x88/"
+test_dir = r"C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Cross Stuff\MultiX - 80%1X - 20%2X - 128x88/"
+
+# load a single array in order to find its dimensions:
+single_array = np.load(r"C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Cross Stuff\MultiX - 80%1X - 20%2X - 128x88\Data\Flat SimpleX-128x88-1 Crosses, No0.npy")
+print(np.shape(single_array))
+# for conv converter:
+conv_type = 0
+K = [3,3]
+P = [1,1] # (changed later)
+S = [2,2]
+D = [1,1]
+H_in = np.shape(single_array)[0] # (change later)
+W_in = np.shape(single_array)[1]
+D_in = None
+O = None
+
+# Calculator here:
+# # for first 2 conv layers:
+# H_in, W_in and D_in would be given in fc2_input_dim
+# padding is initially 1 on top and 1 on bottom for first two layers
+P = [1,1]
+L1 = conv_calculator(conv_type, K, P, S, D, H_in, W_in, D_in, O)
+print('N.B. the following dimensions dont include the channels: \n')
+print('Dimensions after first layer: ', str(math.floor(L1[0])), 'x', str(math.floor(L1[1])))
+
+# need to use math.floor to make sure to round down from .5 values
+L2 = conv_calculator(conv_type, K, P, S, D, math.floor(L1[0]), math.floor(L1[1]), D_in, O)
+print('Dimensions after second layer: ', str(math.floor(L2[0])), 'x', str(math.floor(L2[1])))
+
+
+# # for 3rd and final layer padding changed to (0,0)
+P = [0,0]
+L3 = conv_calculator(conv_type, K, P, S, D, math.floor(L2[0]), math.floor(L2[1]), D_in, O)
+print('Dimensions after third layer: ', str(math.floor(L3[0])), 'x', str(math.floor(L3[1])))
+
+
+# this is the channels out of the 
+channels_out = 32
 
 # this is the encoder 
 class Encoder(nn.Module):
