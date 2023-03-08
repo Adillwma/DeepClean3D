@@ -522,7 +522,8 @@ def plot_ae_outputs_den(encoder, decoder, epoch, model_save_name, time_dimension
     return(number_of_true_signal_points, number_of_recovered_signal_points, in_data, noisy_data, rec_data)    
     
 
-
+#%% - Program begins
+print("\n \nProgram Initalised - Welcome to DC3D TRUE3D Trainer\n")
 #%% - Data Loader
 """
 The DatasetFolder is a generic DATALOADER. Ittrain_loader2dtakes arguments:

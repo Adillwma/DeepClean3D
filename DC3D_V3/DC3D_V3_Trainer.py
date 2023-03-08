@@ -752,7 +752,8 @@ def plot_ae_outputs_den(encoder, decoder, epoch, model_save_name, time_dimension
 
     return(number_of_true_signal_points, number_of_recovered_signal_points, in_data, noisy_data, rec_data)    
     
-
+#%% - Program begins
+print("\n \nProgram Initalised - Welcome to DC3D Trainer\n")
 #%% - Dataset Pre-tests
 # Dataset Integrity Check    #???????? aslso perform on train data dir if ther is one?????? 
 print("Testing training dataset integrity, with {insert scan type}")
