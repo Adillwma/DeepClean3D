@@ -493,40 +493,60 @@ test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size,sh
 #%% - Setup model, loss criteria and optimiser    
 
 # need to use operations on tensors not numpy arrays:
-def custom_loss(array1, array2):
+def custom_loss(reconstruction, original):
     loss = 0
     
+    # N.B. images created state they are 128 in x and 88 in y.
+    # because of how they are created, when printed to the screen this is 128 DOWN and 88 ACROSS
+    # this is because there are 128 rows of 88
     # iterate over each image in batch:
-    for img in range(array1.shape[0]):
+    for img in range(reconstruction.shape[0]):
 
-        # Iterate over each x point in array1
-        for i in range(array1.shape[2]):
+        # Iterate over each row in the image (usually 128 rows):
+        # (i represents y points)
+        for i in range(reconstruction.shape[2]):
             
-            # iterate over each y point in array1
-            for j in range(array1.shape[3]):
+            # iterate over each y point in each row (usually 88 y points per row):
+            # (j represents x points)
+            for j in range(reconstruction.shape[3]):
 
                 # Calculate distances in x and y axes
                 # .shape returns the shape of a pytorch array
                 # .arange is the same as range function
-                print(array1.shape)
-                dist_x = torch.abs(torch.arange(array1.shape[3]) - j)
-                print(dist_x.shape)
-                dist_y = torch.abs(torch.arange(array1.shape[2]) - i)
+                # this returns an array of distances in x (dx)
+                dist_x = torch.abs(torch.arange(reconstruction.shape[3]) - j)
+                # this returns an array of distances in y (dy)
+                dist_y = torch.abs(torch.arange(reconstruction.shape[2]) - i)
                 
-                # Calculate distance in intensity value to closest point in array2
-                dist_z = torch.abs(array2 - array1[i,j]).min()
+                # Calculate distance in intensity values (z axis)
+                # this is an i x j size tensor
+                dist_int = torch.abs(original[img, 0] - reconstruction[img, 0, i, j])
                 
-                # Calculate total distance
-                dist = torch.sqrt(dist_x**2 + dist_y**2 + dist_z**2)
-                
-                # Calculate loss for this point
+                # define empty disance matrix:
+                dist = torch.empty([reconstruction.shape[2], reconstruction.shape[3]])
+
+                # Calculate dist matrix, size i x j:
+                # for each dist in x
+                for x_idx, x in enumerate(dist_x):
+                    
+                    # for each dist in y
+                    for y_idx, y in enumerate(dist_y):
+                        
+                        # have done y x here as the axes are confusing
+                        dist[y_idx,x_idx] = torch.sqrt(x**2 + y**2 + dist_int[y_idx,x_idx]**2)
+
+                        if x == 0 and y == 0:
+                            dist[y_idx, x_idx] = 200
+
+                # the smallest distance is the loss:
+                smallest_dist = dist.min()
+
                 # .item() extracts single scalar value from a single value tensor
-                print(dist.shape)
-                point_loss = dist.item()
+                point_loss = smallest_dist.item()
                 loss += point_loss
     
     # Calculate mean loss for the batch
-    mean_loss = loss / (array1.shape[0] * array1.shape[1])
+    mean_loss = loss / (reconstruction.shape[2] * reconstruction.shape[3])
     
     return mean_loss
 
