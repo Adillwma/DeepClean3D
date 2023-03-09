@@ -15,6 +15,7 @@ This is what i think anyway, it takes so long to compute that it never gets the 
 
 Options for speeding up the process.
 - look into reducing the amount of loops through the data
+- identify the actual signal points first in the original and only compute those close to them. otherwise use MSE
 - Could only look at square in x and y around it say 10 x 10 and return smallest distance there?
 """
 def new_custom_loss(reconstruction, original):
@@ -25,7 +26,7 @@ def new_custom_loss(reconstruction, original):
     # need to iterate over each image in batch:
     for img in range(reconstruction.shape[0]):
         
-        dist = torch.empty([reconstruction.shape[2], reconstruction.shape[3]])
+        # first find all the 
 
 
 def custom_loss(reconstruction, original):
