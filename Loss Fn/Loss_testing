@@ -8,6 +8,8 @@ from scipy.spatial.distance import cdist
 import torch
 
 """
+BY THE TIME THE LOSS FUNCTION IS USED, IT IS WORKING ON TENSORS, NOT NUMPY ARRAYS
+
 This is a test new loss function taking into account what was brought up in the meeting on the 3rd of march.
 This loss function below will take in both the denoised image and the original image.
 What was brought up in the meeting was a potential blurring of the image, so that points surrounding the signal points
