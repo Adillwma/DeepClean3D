@@ -26,7 +26,9 @@ def new_custom_loss(reconstruction, original):
     # need to iterate over each image in batch:
     for img in range(reconstruction.shape[0]):
         
-        # first find all the 
+        # first make a list of all the indices of the non-zero original points.
+        non_zero = torch.nonzero(original)
+        print(non_zero.shape)
 
 
 def custom_loss(reconstruction, original):
