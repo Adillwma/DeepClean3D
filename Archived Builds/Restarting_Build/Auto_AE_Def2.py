@@ -508,14 +508,37 @@ def custom_loss(reconstruction, original):
 
         # get all indices that fall within 10 pixels of a hit in the x and y axis:
         nearby = torch.zeros(original[img,0].shape, dtype=torch.bool)
+
+        # non_zero has many hits [0] of shape 2 [1]
+        # the following i accesses each hit:
         for i in range(non_zero.shape[0]):
+            
+            # get x and y coords individually:
             r, c = non_zero[i]
+
+            # set all within 10 to true:
             nearby[r-10:r+11, c-10:c+11] = True
         
         # this records all the indices of pixels within 10 of a hit
         nearby_indices = torch.nonzero(nearby)
 
         print(nearby_indices.shape)
+
+        # to reduce compute - return absolute MSE for every particle:
+        pix_loss = torch.nn.functional.mse_loss(reconstruction, original, reduction='none')
+
+        # get dist loss for each nearby
+        for hit in nearby_indices:
+            
+            dist = nearby_indices - hit
+
+            dist_loss = torch.min((dist[0]**2 + dist[1]**2 + original[nearby_indices]**2)**(1/2))
+            
+            if dist_loss < pix_loss[hit]:
+                pix_loss[hit] = dist_loss
+            
+        # compute average loss and return
+
 
 
 def custom_loss2(reconstruction, original):
