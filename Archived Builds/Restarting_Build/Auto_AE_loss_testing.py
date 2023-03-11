@@ -518,6 +518,70 @@ class DistanceLoss(torch.nn.Module):
         loss.requires_grad = True
         return loss
 
+def custom_loss2(reconstruction, original, furthest = 3):
+    """
+    Using distance loss is actually far too comutationally costly to do on my computer at least.
+    To make this more efficient, we could only use mse in z axis. This would drastically reduce compute,
+    and x, y coords are negligable anyway.
+    """
+    # all losses:
+    num_losses = original.shape[0] * original.shape[2] * original.shape[3]
+    all_losses = torch.empty(num_losses)
+
+    for img in range(original.shape[0]):
+
+        # first make a list of all the indices of the non-zero original points in this image (2 indices per hit):
+        non_zero = torch.nonzero(original[img,0])
+        # print(non_zero.shape) 
+
+        # define nearby as boolean shell of original image
+        nearby = torch.zeros(original[img,0].shape, dtype=torch.bool)
+
+        # set = true if within 10 pixels of signal:
+        for i in range(non_zero.shape[0]):
+            
+            # get x and y coords individually:
+            r, c = non_zero[i]
+
+            # set all within 10 to true:
+            nearby[r-furthest:r+furthest+1, c-furthest:c+furthest+1] = True
+
+        # flatten both the original, reconstructed, and the nearby:
+        flat_orig = original[img,0].view(-1)
+        print('check1')
+        flat_recon = reconstruction[img,0].view(-1)
+        print('check2')
+        flat_bool = nearby.view(-1)
+        print('check3')
+        loss_list = torch.zeros(flat_orig.shape)
+        print('check4')
+
+        # set latest height for signal to be used in loop:
+        # (this is basically used so that the close non-hit points know the height they
+        # should be aiming for)
+        latest_height = 0
+
+        all_losses_id = img * original.shape[2] * original.shape[3]
+
+        for idx, val in enumerate(flat_bool):
+            
+            all_losses_idx = all_losses_id + idx
+            # check if either False or if on a hit point.
+            if (not val) or flat_orig[idx] != 0:
+                all_losses[all_losses_idx] = (flat_recon[idx] - flat_orig[idx])**2
+                
+                if flat_orig[idx] != 0:
+                    latest_height = flat_orig[idx]
+            
+            # this else is for when point is close to signal point (but not on it)
+            else:
+                all_losses[all_losses_idx] = min((latest_height - flat_recon[idx])**2, flat_recon[idx]**2)
+    
+    # find the average loss over all the images:
+    total_avg_loss = torch.sum(all_losses) / num_losses
+    print(total_avg_loss)
+
+    return total_avg_loss
 
 loss_fn = DistanceLoss()
 

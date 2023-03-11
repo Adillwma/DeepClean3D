@@ -567,10 +567,14 @@ def custom_loss2(reconstruction, original, furthest = 3):
     To make this more efficient, we could only use mse in z axis. This would drastically reduce compute,
     and x, y coords are negligable anyway.
     """
+    # all losses:
+    #all_losses = torch.empty()
+
+    # create list for losses:
     img_losses = []
 
     for img in range(original.shape[0]):
-        
+
         # first make a list of all the indices of the non-zero original points in this image (2 indices per hit):
         non_zero = torch.nonzero(original[img,0])
         # print(non_zero.shape) 
@@ -587,11 +591,16 @@ def custom_loss2(reconstruction, original, furthest = 3):
             # set all within 10 to true:
             nearby[r-furthest:r+furthest+1, c-furthest:c+furthest+1] = True
 
-        # flatten both the original, reconstructed, and the nearby_indices:
+        # flatten both the original, reconstructed, and the nearby:
         flat_orig = original[img,0].view(-1)
+        print('check1')
         flat_recon = reconstruction[img,0].view(-1)
+        print('check2')
+        loss_list = []
         flat_bool = nearby.view(-1)
-        loss_list = torch.empty(flat_bool.shape)
+        print('check3')
+        loss_list = torch.zeros(flat_orig.shape)
+        print('check4')
 
         # set latest height for signal to be used in loop:
         # (this is basically used so that the close non-hit points know the height they

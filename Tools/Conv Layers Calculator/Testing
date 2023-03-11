@@ -10,16 +10,6 @@ T2_arr = torch.FloatTensor([0,0.5])
 dist = T_arr - T2_arr
 print(dist)
 
-import torch
-
-# create a boolean 2D tensor
-tensor = torch.tensor([[True, False], [False, True]])
-
-# create two tensors with values to choose from
-true_tensor = torch.tensor([1, 2])
-false_tensor = torch.tensor([3, 4])
-
-# use where() to choose the correct tensor based on the boolean tensor
-result = torch.where(tensor, true_tensor, false_tensor)
-
-print(result)
+print(T2_arr)
+T2_arr = torch.zeros([2])
+print(T2_arr)
