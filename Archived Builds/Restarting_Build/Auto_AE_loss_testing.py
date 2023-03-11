@@ -566,16 +566,21 @@ def custom_loss2(reconstruction, original, furthest = 3):
         for idx, val in enumerate(flat_bool):
             
             all_losses_idx = all_losses_id + idx
-            # check if either False or if on a hit point.
+            # check if either False or if on a hit point, use mse on 0.
             if (not val) or flat_orig[idx] != 0:
                 all_losses[all_losses_idx] = (flat_recon[idx] - flat_orig[idx])**2
                 
                 if flat_orig[idx] != 0:
                     latest_height = flat_orig[idx]
             
-            # this else is for when point is close to signal point (but not on it)
+            # this else is for when point is close to signal point (but not on it), use mse on either 0 or signal height
             else:
                 all_losses[all_losses_idx] = min((latest_height - flat_recon[idx])**2, flat_recon[idx]**2)
+
+        
+        iter_loss = torch.sum(all_losses[all_losses_id:all_losses_id + original.shape[2] * original.shape[3]]) / original.shape[2] * original.shape[3]
+        print('lol')
+        print(iter_loss)
     
     # find the average loss over all the images:
     total_avg_loss = torch.sum(all_losses) / num_losses

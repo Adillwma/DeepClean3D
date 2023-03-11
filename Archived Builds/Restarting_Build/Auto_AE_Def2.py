@@ -596,7 +596,6 @@ def custom_loss2(reconstruction, original, furthest = 3):
         print('check1')
         flat_recon = reconstruction[img,0].view(-1)
         print('check2')
-        loss_list = []
         flat_bool = nearby.view(-1)
         print('check3')
         loss_list = torch.zeros(flat_orig.shape)
