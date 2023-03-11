@@ -1,13 +1,25 @@
 import numpy as np
 import torch
 
-T_arr = torch.FloatTensor([[0,0,1],
-                     [0,0,0],
-                     [1,0,0]])
+T_arr = torch.FloatTensor([[0,1],
+                     [0,1],
+                     [0,1]])
 
-T2_arr = torch.FloatTensor([[0,0,0.5],
-                     [0,0,0],
-                     [1,0,0]])
+T2_arr = torch.FloatTensor([0,0.5])
 
-dist = torch.cdist(T_arr, T2_arr, p=2)
+dist = T_arr - T2_arr
 print(dist)
+
+import torch
+
+# create a boolean 2D tensor
+tensor = torch.tensor([[True, False], [False, True]])
+
+# create two tensors with values to choose from
+true_tensor = torch.tensor([1, 2])
+false_tensor = torch.tensor([3, 4])
+
+# use where() to choose the correct tensor based on the boolean tensor
+result = torch.where(tensor, true_tensor, false_tensor)
+
+print(result)

@@ -494,11 +494,18 @@ test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size,sh
 #%% - Setup model, loss criteria and optimiser    
 
 # need to use operations on tensors not numpy arrays:
-def custom_loss(reconstruction, original):
-    loss = 0
-
+def custom_loss(reconstruction, original, furthest = 3):
+    """
+    This custom loss function can either take the MSE loss to 0, or, if the point is close to a signal point,
+    use the distance to the signal point to define the loss.
+    The the furthest pixel is defined using the furthest argument. (if set to 3, furthsest pixel can be 10 in x away and 10 in y away)
+    """
     # data comes as tensor shape [batch size, 1, 128, 88]
     
+    # define loss for each image in batch:
+    img_losses = torch.empty(original.shape[0])
+    img_idx = 0
+
     # need to iterate over each image in batch:
     for img in range(reconstruction.shape[0]):
         
@@ -506,69 +513,119 @@ def custom_loss(reconstruction, original):
         non_zero = torch.nonzero(original[img,0])
         # print(non_zero.shape) 
 
-        # get all indices that fall within 10 pixels of a hit in the x and y axis:
+        # define nearby as boolean shell of original image
         nearby = torch.zeros(original[img,0].shape, dtype=torch.bool)
 
-        # non_zero has many hits [0] of shape 2 [1]
-        # the following i accesses each hit:
+        # set = true if within 10 pixels of signal:
         for i in range(non_zero.shape[0]):
             
             # get x and y coords individually:
             r, c = non_zero[i]
 
             # set all within 10 to true:
-            nearby[r-10:r+11, c-10:c+11] = True
+            nearby[r-furthest:r+furthest+1, c-furthest:c+furthest+1] = True
         
-        # this records all the indices of pixels within 10 of a hit
+        # all the indices of pixels within 10 of a hit (using nonzero as works for True values)
         nearby_indices = torch.nonzero(nearby)
 
-        print(nearby_indices.shape)
-
-        # to reduce compute - return absolute MSE for every particle:
+        # to reduce compute - return absolute MSE for every pixel:
         pix_loss = torch.nn.functional.mse_loss(reconstruction, original, reduction='none')
 
         # get dist loss for each nearby
         for hit in nearby_indices:
             
-            dist = nearby_indices - hit
+            # continue out of this iteration if its on point to reduce computational load:
+            if hit in non_zero:
+                continue
 
-            dist_loss = torch.min((dist[0]**2 + dist[1]**2 + original[nearby_indices]**2)**(1/2))
+            # difference in coords between nearby indiex and hit points.
+            difference = non_zero - hit
+
+            for point in difference:
+
+                # define distance^2 (use dist^2 as using MSE for others!):
+                dist_sq = point[0]**2 + point[1]**2 + original[point + hit]**2
+
+                # choose either dist or MSE
+                if dist_sq < pix_loss[hit]:
+                    pix_loss[hit] = dist_sq
+                
+        # compute average loss over image and add to list
+        avg_loss = torch.sum(pix_loss) / (original.shape[2] * original.shape[3])
+
+        img_losses[img_idx] = avg_loss
+
+    # average image loss over all images:
+    img_avg_loss = torch.sum(img_losses) / img_losses.size(0)
+
+    return img_avg_loss
+
+
+def custom_loss2(reconstruction, original, furthest = 3):
+    """
+    Using distance loss is actually far too comutationally costly to do on my computer at least.
+    To make this more efficient, we could only use mse in z axis. This would drastically reduce compute,
+    and x, y coords are negligable anyway.
+    """
+    img_losses = []
+
+    for img in range(original.shape[0]):
+        
+        # first make a list of all the indices of the non-zero original points in this image (2 indices per hit):
+        non_zero = torch.nonzero(original[img,0])
+        # print(non_zero.shape) 
+
+        # define nearby as boolean shell of original image
+        nearby = torch.zeros(original[img,0].shape, dtype=torch.bool)
+
+        # set = true if within 10 pixels of signal:
+        for i in range(non_zero.shape[0]):
             
-            if dist_loss < pix_loss[hit]:
-                pix_loss[hit] = dist_loss
+            # get x and y coords individually:
+            r, c = non_zero[i]
+
+            # set all within 10 to true:
+            nearby[r-furthest:r+furthest+1, c-furthest:c+furthest+1] = True
+
+        # flatten both the original, reconstructed, and the nearby_indices:
+        flat_orig = original[img,0].view(-1)
+        flat_recon = reconstruction[img,0].view(-1)
+        flat_bool = nearby.view(-1)
+        loss_list = torch.empty(flat_bool.shape)
+
+        # set latest height for signal to be used in loop:
+        # (this is basically used so that the close non-hit points know the height they
+        # should be aiming for)
+        latest_height = 0
+
+        for idx, val in enumerate(flat_bool):
             
-        # compute average loss and return
+            # check if either False or if on a hit point.
+            if (not val) or flat_orig[idx] != 0:
+                loss_list[idx] = (flat_recon[idx] - flat_orig[idx])**2
+                
+                if flat_orig[idx] != 0:
+                    latest_height = flat_orig[idx]
+            
+            # this else is for when point is close to signal point (but not on it)
+            else:
+                loss_list[idx] = min((latest_height - flat_recon[idx])**2, flat_recon[idx]**2)
+        
+        # calculate the average loss of the loss list as a scalar
+        avg_loss = torch.mean(loss_list).item()
+        print(avg_loss)
 
+        # append this scalar to all the images list
+        img_losses.append(avg_loss)
 
+    # find the average loss over all the images:
+    total_avg_loss = sum(img_losses) / len(img_losses)
+    print(total_avg_loss)
 
-def custom_loss2(reconstruction, original):
-
-    for img in range(reconstruction.shape[0]):
-
-        # create a mask for non-zero elements
-        mask = original[img,0] != 0
-
-        # create a 2D filter of all ones with a size of 21x21
-        filter_size = 21
-        filter_2d = torch.ones(filter_size, filter_size, dtype=torch.float32)
-
-        # perform a 2D convolution between mask and filter_2d
-        conv_output = F.conv2d(mask.float().unsqueeze(0).unsqueeze(0), 
-                            filter_2d.unsqueeze(0).unsqueeze(0), 
-                            padding=filter_size//2)
-
-        # create a boolean tensor of nearby indices
-        nearby_indices = (conv_output > 0)
-
-        # get the indices of all elements within 10 pixels of any non-zero index
-        nearby_indices_indices = torch.nonzero(nearby_indices.squeeze())
-
-        print("Original tensor shape:", original.shape)
-        print("Indices within 10 pixels of non-zero indices:\n", nearby_indices_indices.shape)
-    
+    return total_avg_loss
 
 ### Define the loss function (mean square error), defaults are size_average=None, reduce=None, reduction='mean'
-loss_fn = custom_loss
+loss_fn = custom_loss2
 
 ### Define a learning rate for the optimiser. 
 # Its how much to change the model in response to the estimated error each time the model weights are updated.
