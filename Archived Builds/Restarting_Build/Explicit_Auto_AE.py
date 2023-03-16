@@ -501,6 +501,7 @@ class MSELoss(torch.nn.Module):
 
     def forward(self, input, target):
         reduction = self.reduction
+        
         return torch.nn.functional.mse_loss(input, target, reduction=reduction)
 
 

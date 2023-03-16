@@ -17,6 +17,7 @@ from torch import nn
 import random 
 import math
 import torch.nn as nn
+import torch.nn.functional as F
 
 #import pandas as pd 
 #import torch.nn.functional as F
@@ -492,50 +493,82 @@ test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size,sh
 
 #%% - Setup model, loss criteria and optimiser    
 
-class MSELoss(torch.nn.Module):
+# need to use operations on tensors not numpy arrays:
+class custom(torch.nn.Module):
     def __init__(self, size_average=None, reduce=None, reduction='mean', furthest = 3):
-        super(MSELoss, self).__init__()
+        super(custom, self).__init__()
         self.size_average = size_average
         self.reduce = reduce
         self.reduction = reduction
         self.furthest = furthest
 
-    def forward(self, original, target):
+    def forward(self, reconstruction, original):
         reduction = self.reduction
         furthest = self.furthest
 
-        # create empty tensor:
-        losses = torch.empty(original.shape[0])
-
         for img in range(original.shape[0]):
 
-                # first make a list of all the indices of the non-zero original points in this image (2 indices per hit):
+            # first make a list of all the indices of the non-zero original points in this image (2 indices per hit):
             non_zero = torch.nonzero(original[img,0])
-            # print(non_zero.shape) 
 
-            # define nearby as boolean shell of original image
-            nearby = torch.zeros(original[img,0].shape, dtype=torch.bool)
-
-            # set = true if within 10 pixels of signal:
-            for i in range(non_zero.shape[0]):
+            # set pixels around signal in x to the same as them:
+            for idx, _ in enumerate(non_zero):
                 
                 # get x and y coords individually:
-                r, c = non_zero[i]
+                r, c = non_zero[idx]
 
                 # set all within 10 to true:
-                nearby[r-furthest:r+furthest+1, c-furthest:c+furthest+1] = True
+                original[img, 0, r, c-furthest:c+furthest+1] = original[img,0,r,c]
+            
 
-            mseloss = (original[img,0] - target[img,0])**2
+            
+        # now we just do the origional function:
+        return torch.nn.functional.mse_loss(reconstruction, original, reduction=reduction)
+    
 
-            losses[img] = torch.mean(mseloss)
+class custom2(torch.nn.Module):
+    def __init__(self, size_average=None, reduce=None, reduction='mean', furthest = 1):
+        super(custom2, self).__init__()
+        self.size_average = size_average
+        self.reduce = reduce
+        self.reduction = reduction
+        self.furthest = furthest
 
-        loss = torch.mean(losses)
+    def forward(self, reconstruction, original):
+        reduction = self.reduction
+        furthest = self.furthest
+
+        # mse original:
+        orig_mseloss = (reconstruction - original)**2
+
+        # first make a list of all the indices of the non-zero original points:
+        non_zero = torch.nonzero(original)
+
+        # set pixels around signal in x to the same as them:
+        for img, chan, x, y in non_zero:
+
+            # set all within furthest in x to the signal height:
+            original[img, 0, x, y-furthest:y+furthest+1] = original[img,0,x,y]
+        
+
+        # now we find the minimum of either mse to 0 or to the altered one:
+        # mse for altered:
+        alt_mseloss = (reconstruction - original)**2
+
+        # now find the minimum of the two:
+        mseloss = torch.min(orig_mseloss, alt_mseloss)
+
+        signals = tuple(torch.nonzero(original).t())
+
+        mseloss[signals] *= 100
+        
+        # now we just find the mean of the matrix:
+        loss = torch.mean(mseloss)
 
         return loss
 
-
 ### Define the loss function (mean square error), defaults are size_average=None, reduce=None, reduction='mean'
-loss_fn = MSELoss()
+loss_fn = custom2()
 
 ### Define a learning rate for the optimiser. 
 # Its how much to change the model in response to the estimated error each time the model weights are updated.
