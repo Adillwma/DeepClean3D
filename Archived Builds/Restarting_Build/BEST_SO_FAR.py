@@ -527,16 +527,20 @@ class custom(torch.nn.Module):
     
 
 class custom2(torch.nn.Module):
-    def __init__(self, size_average=None, reduce=None, reduction='mean', furthest = 1):
+    def __init__(self, size_average=None, reduce=None, reduction='mean', furthest = 1, sig_weight = 100, close_min = 0.05):
         super(custom2, self).__init__()
         self.size_average = size_average
         self.reduce = reduce
         self.reduction = reduction
         self.furthest = furthest
+        self.sig_weight = sig_weight
+        self.close_min = close_min
 
     def forward(self, reconstruction, original):
         reduction = self.reduction
         furthest = self.furthest
+        sig_weight = self.sig_weight
+        close_min = self.close_min
 
         # mse original:
         orig_mseloss = (reconstruction - original)**2
@@ -555,12 +559,15 @@ class custom2(torch.nn.Module):
         # mse for altered:
         alt_mseloss = (reconstruction - original)**2
 
+        # this is where we add the minimum loss the alt_mseloss can get to:
+        alt_mseloss += close_min
+
         # now find the minimum of the two:
         mseloss = torch.min(orig_mseloss, alt_mseloss)
 
         signals = tuple(torch.nonzero(original).t())
 
-        mseloss[signals] *= 100
+        mseloss[signals] *= sig_weight
         
         # now we just find the mean of the matrix:
         loss = torch.mean(mseloss)
@@ -568,7 +575,7 @@ class custom2(torch.nn.Module):
         return loss
 
 ### Define the loss function (mean square error), defaults are size_average=None, reduce=None, reduction='mean'
-loss_fn = custom2()
+loss_fn = custom2(furthest = 1, sig_weight = 100, close_min = 0.05)
 
 ### Define a learning rate for the optimiser. 
 # Its how much to change the model in response to the estimated error each time the model weights are updated.
