@@ -1,0 +1,15 @@
+import numpy as np
+import torch
+
+T_arr = torch.FloatTensor([[0,1],
+                     [0,1],
+                     [0,1]])
+
+T2_arr = torch.FloatTensor([0,0.5])
+
+dist = T_arr - T2_arr
+print(dist)
+
+print(T2_arr)
+T2_arr = torch.zeros([2])
+print(T2_arr)

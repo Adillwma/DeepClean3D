@@ -17,6 +17,7 @@ from torch import nn
 import random 
 import math
 import torch.nn as nn
+import torch.nn.functional as F
 
 #import pandas as pd 
 #import torch.nn.functional as F
@@ -492,20 +493,89 @@ test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size,sh
 
 #%% - Setup model, loss criteria and optimiser    
 
-class MSELoss(torch.nn.Module):
-    def __init__(self, size_average=None, reduce=None, reduction='mean'):
-        super(MSELoss, self).__init__()
+# need to use operations on tensors not numpy arrays:
+class custom(torch.nn.Module):
+    def __init__(self, size_average=None, reduce=None, reduction='mean', furthest = 3):
+        super(custom, self).__init__()
         self.size_average = size_average
         self.reduce = reduce
         self.reduction = reduction
+        self.furthest = furthest
 
-    def forward(self, input, target):
+    def forward(self, reconstruction, original):
         reduction = self.reduction
-        return torch.nn.functional.mse_loss(input, target, reduction=reduction)
+        furthest = self.furthest
 
+        for img in range(original.shape[0]):
+
+            # first make a list of all the indices of the non-zero original points in this image (2 indices per hit):
+            non_zero = torch.nonzero(original[img,0])
+
+            # set pixels around signal in x to the same as them:
+            for idx, _ in enumerate(non_zero):
+                
+                # get x and y coords individually:
+                r, c = non_zero[idx]
+
+                # set all within 10 to true:
+                original[img, 0, r, c-furthest:c+furthest+1] = original[img,0,r,c]
+            
+
+            
+        # now we just do the origional function:
+        return torch.nn.functional.mse_loss(reconstruction, original, reduction=reduction)
+    
+
+class custom2(torch.nn.Module):
+    def __init__(self, size_average=None, reduce=None, reduction='mean', furthest = 1, sig_weight = 100, close_min = 0.05):
+        super(custom2, self).__init__()
+        self.size_average = size_average
+        self.reduce = reduce
+        self.reduction = reduction
+        self.furthest = furthest
+        self.sig_weight = sig_weight
+        self.close_min = close_min
+
+    def forward(self, reconstruction, original):
+        reduction = self.reduction
+        furthest = self.furthest
+        sig_weight = self.sig_weight
+        close_min = self.close_min
+
+        # mse original:
+        orig_mseloss = (reconstruction - original)**2
+
+        # first make a list of all the indices of the non-zero original points:
+        non_zero = torch.nonzero(original)
+
+        # set pixels around signal in x to the same as them:
+        for img, chan, x, y in non_zero:
+
+            # set all within furthest in x to the signal height:
+            original[img, 0, x, y-furthest:y+furthest+1] = original[img,0,x,y]
+        
+
+        # now we find the minimum of either mse to 0 or to the altered one:
+        # mse for altered:
+        alt_mseloss = (reconstruction - original)**2
+
+        # this is where we add the minimum loss the alt_mseloss can get to:
+        alt_mseloss += close_min
+
+        # now find the minimum of the two:
+        mseloss = torch.min(orig_mseloss, alt_mseloss)
+
+        signals = tuple(torch.nonzero(original).t())
+
+        mseloss[signals] *= sig_weight
+        
+        # now we just find the mean of the matrix:
+        loss = torch.mean(mseloss)
+
+        return loss
 
 ### Define the loss function (mean square error), defaults are size_average=None, reduce=None, reduction='mean'
-loss_fn = MSELoss()
+loss_fn = custom2(furthest = 1, sig_weight = 100, close_min = 0.05)
 
 ### Define a learning rate for the optimiser. 
 # Its how much to change the model in response to the estimated error each time the model weights are updated.

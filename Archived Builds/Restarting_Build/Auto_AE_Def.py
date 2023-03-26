@@ -16,7 +16,9 @@ from torch.utils.data import DataLoader,random_split
 from torch import nn
 import random 
 import math
-from scipy.spatial.distance import cdist
+import torch.nn as nn
+import torch.nn.functional as F
+
 #import pandas as pd 
 #import torch.nn.functional as F
 #import torch.optim as optim
@@ -490,36 +492,138 @@ test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size,sh
 
 
 #%% - Setup model, loss criteria and optimiser    
+
+# need to use operations on tensors not numpy arrays:
+def custom_loss(reconstruction, original, furthest = 3):
+    """
+    This custom loss function can either take the MSE loss to 0, or, if the point is close to a signal point,
+    use the distance to the signal point to define the loss.
+    The the furthest pixel is defined using the furthest argument. (if set to 3, furthsest pixel can be 10 in x away and 10 in y away)
+    """
+    # data comes as tensor shape [batch size, 1, 128, 88]
     
-### Define the loss function (mean square error)
-#loss_fn = torch.nn.MSELoss()
+    # define loss for each image in batch:
+    img_losses = torch.empty(original.shape[0])
+    img_idx = 0
 
-# lets redefine the loss function as using cdist, to give it more information about the model.
-class DistanceLoss(torch.nn.Module):
-    def __init__(self, p=2, eps=1e-6):
-        super(DistanceLoss, self).__init__()
-        self.p = p
-        self.eps = eps
-
-    def forward(self, input1, input2):
-        # Flatten 4D inputs to 2D
-        input1_flat = input1.view(input1.size(0), -1)
-        input2_flat = input2.view(input2.size(0), -1)
+    # need to iterate over each image in batch:
+    for img in range(reconstruction.shape[0]):
         
-        # Compute distance matrix
-        dist_matrix = cdist(input1_flat.detach().numpy(), input2_flat.detach().numpy())
+        # first make a list of all the indices of the non-zero original points in this image (2 indices per hit):
+        non_zero = torch.nonzero(original[img,0])
+        # print(non_zero.shape) 
+
+        # define nearby as boolean shell of original image
+        nearby = torch.zeros(original[img,0].shape, dtype=torch.bool)
+
+        # set = true if within 10 pixels of signal:
+        for i in range(non_zero.shape[0]):
+            
+            # get x and y coords individually:
+            r, c = non_zero[i]
+
+            # set all within 10 to true:
+            nearby[r-furthest:r+furthest+1, c-furthest:c+furthest+1] = True
         
-        # Get smallest distance for each element in input1
-        min_dist = torch.tensor([dist_matrix[i].min() for i in range(dist_matrix.shape[0])], dtype=torch.float32, device=input1.device)
+        # all the indices of pixels within 10 of a hit (using nonzero as works for True values)
+        nearby_indices = torch.nonzero(nearby)
 
-        # Compute mean of smallest distances
-        loss = torch.mean(min_dist)
+        # to reduce compute - return absolute MSE for every pixel:
+        pix_loss = torch.nn.functional.mse_loss(reconstruction, original, reduction='none')
 
-        loss.requires_grad = True
-        return loss
+        # get dist loss for each nearby
+        for hit in nearby_indices:
+            
+            # continue out of this iteration if its on point to reduce computational load:
+            if hit in non_zero:
+                continue
+
+            # difference in coords between nearby indiex and hit points.
+            difference = non_zero - hit
+
+            for point in difference:
+
+                # define distance^2 (use dist^2 as using MSE for others!):
+                dist_sq = point[0]**2 + point[1]**2 + original[point + hit]**2
+
+                # choose either dist or MSE
+                if dist_sq < pix_loss[hit]:
+                    pix_loss[hit] = dist_sq
+                
+        # compute average loss over image and add to list
+        avg_loss = torch.sum(pix_loss) / (original.shape[2] * original.shape[3])
+
+        img_losses[img_idx] = avg_loss
+
+    # average image loss over all images:
+    img_avg_loss = torch.sum(img_losses) / img_losses.size(0)
+
+    return img_avg_loss
 
 
-loss_fn = DistanceLoss()
+def custom_loss2(reconstruction, original, furthest = 3):
+    """
+    Using distance loss is actually far too comutationally costly to do on my computer at least.
+    To make this more efficient, we could only use mse in z axis. This would drastically reduce compute,
+    and x, y coords are negligable anyway.
+    """
+
+    # define loss list here:
+    loss_list = torch.empty((original.shape[0], original[0,0].view(-1).shape[0]))
+
+    for img in range(original.shape[0]):
+
+        # first make a list of all the indices of the non-zero original points in this image (2 indices per hit):
+        non_zero = torch.nonzero(original[img,0])
+        # print(non_zero.shape) 
+
+        # define nearby as boolean shell of original image
+        nearby = torch.zeros(original[img,0].shape, dtype=torch.bool)
+
+        # set = true if within 10 pixels of signal:
+        for i in range(non_zero.shape[0]):
+            
+            # get x and y coords individually:
+            r, c = non_zero[i]
+
+            # set all within 10 to true:
+            nearby[r-furthest:r+furthest+1, c-furthest:c+furthest+1] = True
+
+        # flatten both the original, reconstructed, and the nearby:
+        flat_orig = original[img,0].view(-1)
+        print('check1')
+        flat_recon = reconstruction[img,0].view(-1)
+        print('check2')
+        flat_bool = nearby.view(-1)
+        print('check3')
+        #loss_list = torch.zeros(flat_orig.shape)
+        print('check4')
+
+        # set latest height for signal to be used in loop:
+        # (this is basically used so that the close non-hit points know the height they
+        # should be aiming for)
+        latest_height = 0
+
+        for idx, val in enumerate(flat_bool):
+            
+            # check if either False or if on a hit point.
+            if  (val == False) or (flat_orig[idx].item() != 0):
+                loss_list[img][idx] = (flat_recon[idx].item() - flat_orig[idx].item())**2
+                
+                if flat_orig[idx].item() != 0:
+                    latest_height = flat_orig[idx].item()
+            
+            # this else is for when point is close to signal point (but not on it)
+            else:
+                loss_list[img][idx] = min((latest_height - flat_recon[idx].item())**2, flat_recon[idx].item()**2)
+        
+        # calculate the average loss of the loss list as a scalar
+        avg_loss = torch.mean(loss_list[img])
+
+    return avg_loss
+
+### Define the loss function (mean square error), defaults are size_average=None, reduce=None, reduction='mean'
+loss_fn = custom_loss2
 
 ### Define a learning rate for the optimiser. 
 # Its how much to change the model in response to the estimated error each time the model weights are updated.
