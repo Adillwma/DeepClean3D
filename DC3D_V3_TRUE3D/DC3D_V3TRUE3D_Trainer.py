@@ -71,16 +71,16 @@ import torch
 
 #%% - User Inputs
 #mode = 0 ### 0=Data_Gathering, 1=Testing, 2=Speed_Test, 3=Debugging
-dataset_title = "S_Dataset 8" #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
-model_save_name = "S_Dataset 4TRUE3Dtest3 cutoff04"#"Dataset 18_X_rotshiftlarge"
+dataset_title = "S_Dataset 4" #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
+model_save_name = "S_Dataset 4TRUE3D 222"#"Dataset 18_X_rotshiftlarge"
 
-num_epochs = 21                   # User controll to set number of epochs (Hyperparameter)
-batch_size = 10                   # User controll to set batch size (Hyperparameter) - #Data Loader, number of Images to pull per batch 
-latent_dim = 10                   # User controll to set number of nodes in the latent space, the bottleneck layer (Hyperparameter)
+num_epochs = 21                                          #User controll to set number of epochs (Hyperparameter)
+batch_size = 10                                 #User controll to set batch size (Hyperparameter) - #Data Loader, number of Images to pull per batch 
+latent_dim = 10                     #User controll to set number of nodes in the latent space, the bottleneck layer (Hyperparameter)
 
-learning_rate = 0.001             # User controll to set optimiser learning rate(Hyperparameter)
-optim_w_decay = 1e-05             # User controll to set optimiser weight decay (Hyperparameter)
-loss_fn =  torch.nn.BCELoss(reduction='none') #reduction = none gives a pixel wise loss ratehr than summed over the entire detector! (BCe only work for classification of pixels on or off) #torch.nn.MSELoss()      #!!!!!!   #MSELoss()          #(mean square error) User controll to set loss function (Hyperparameter)
+learning_rate = 0.001  #User controll to set optimiser learning rate(Hyperparameter)
+optim_w_decay = 1e-05  #User controll to set optimiser weight decay (Hyperparameter)
+loss_fn = torch.nn.MSELoss()   #!!!!!!   #MSELoss()          #(mean square error) User controll to set loss function (Hyperparameter)
 
 time_dimension = 100
 noise_factor = 0                                          #User controll to set the noise factor, a multiplier for the magnitude of noise added. 0 means no noise added, 1 is defualt level of noise added, 10 is 10x default level added (Hyperparameter)
@@ -374,8 +374,7 @@ def train_epoch_den(encoder, decoder, device, dataloader, loss_fn, optimizer, no
         loss = loss_fn(decoded_data, image_batch)
         # Backward pass
         optimizer.zero_grad()
-        #loss.backward()
-        loss.backward(torch.ones_like(loss))  # PRopegates outputs backwards as full gradient ratehr than summed single loss! required for BCE loss
+        loss.backward()
         optimizer.step()
         if print_partial_training_losses:
             # Print batch loss
@@ -522,8 +521,7 @@ def plot_ae_outputs_den(encoder, decoder, epoch, model_save_name, time_dimension
     return(number_of_true_signal_points, number_of_recovered_signal_points, in_data, noisy_data, rec_data)    
     
 
-#%% - Program begins
-print("\n \nProgram Initalised - Welcome to DC3D TRUE3D Trainer\n")
+
 #%% - Data Loader
 """
 The DatasetFolder is a generic DATALOADER. Ittrain_loader2dtakes arguments:
