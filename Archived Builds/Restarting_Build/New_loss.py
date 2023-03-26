@@ -493,38 +493,12 @@ test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size,sh
 
 #%% - Setup model, loss criteria and optimiser    
 
-# need to use operations on tensors not numpy arrays:
-class custom(torch.nn.Module):
-    def __init__(self, size_average=None, reduce=None, reduction='mean', furthest = 3):
-        super(custom, self).__init__()
-        self.size_average = size_average
-        self.reduce = reduce
-        self.reduction = reduction
-        self.furthest = furthest
-
-    def forward(self, reconstruction, original):
-        reduction = self.reduction
-        furthest = self.furthest
-
-        for img in range(original.shape[0]):
-
-            # first make a list of all the indices of the non-zero original points in this image (2 indices per hit):
-            non_zero = torch.nonzero(original[img,0])
-
-            # set pixels around signal in x to the same as them:
-            for idx, _ in enumerate(non_zero):
-                
-                # get x and y coords individually:
-                r, c = non_zero[idx]
-
-                # set all within 10 to true:
-                original[img, 0, r, c-furthest:c+furthest+1] = original[img,0,r,c]
-            
-
-            
-        # now we just do the origional function:
-        return torch.nn.functional.mse_loss(reconstruction, original, reduction=reduction)
-    
+# This loss function has a few additions from the normal:
+# 1. can set the signal weight (sig_weight) to make the loss stronger on the signal points (places more importance on finding them)
+# 2. can set a number of empty points around the true signal points (in x axis) to take their loss from either
+# the level of the signal or 0 (furthest) (i.e. loss is the smaller of either the MSE to 0 or the MSE to the signal level)
+# 3. can set a minimum loss (close_min) if the guesses chose the signal points as the loss definition (i,e. will still
+# punish if it guesses a signal point on the noise point).
 
 class custom2(torch.nn.Module):
     def __init__(self, size_average=None, reduce=None, reduction='mean', furthest = 1, sig_weight = 100, close_min = 0.05):

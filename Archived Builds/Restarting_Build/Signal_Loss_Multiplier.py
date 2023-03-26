@@ -492,6 +492,8 @@ test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size,sh
 
 #%% - Setup model, loss criteria and optimiser    
 
+# This is a loss function but only has multiplier.
+
 class MSELoss(torch.nn.Module):
     def __init__(self, size_average=None, reduce=None, reduction='mean', furthest = 3):
         super(MSELoss, self).__init__()
