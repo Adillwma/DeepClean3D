@@ -1,0 +1,187 @@
+import numpy as np 
+import matplotlib.pyplot as plt
+import torchvision
+from torchvision import transforms
+from torch.utils.data import DataLoader, random_split
+from torch import nn
+from scipy.spatial.distance import cdist
+import torch
+
+"""
+BY THE TIME THE LOSS FUNCTION IS USED, IT IS WORKING ON TENSORS, NOT NUMPY ARRAYS
+
+This is a test new loss function taking into account what was brought up in the meeting on the 3rd of march.
+This loss function below will take in both the denoised image and the original image.
+What was brought up in the meeting was a potential blurring of the image, so that points surrounding the signal points
+in the x and y axis have somewhat something to do with the signal point.
+
+My logic:
+Loss is currently MSE on 0, but we want to incentivize it, or at least penalise it less, for making a guess, as long
+as its within reason. I will make an initial one that has a gaussian error around the signal point and then the usual to 0.
+hence, either choise is ok, but it will still be rewarded by taking the correct guess, and is able to reach a lower
+minimum loss if it does.
+
+Can add later:
+- faster way to do calculation as its likely v slow.
+- adding information transfer in x- y axis (if its actually needed)
+"""
+
+# the MSE loss function, just to help with understanding it:
+def MSE_loss_fn(denoised, original):
+
+    # zip the two together:
+    paired = zip(denoised, original)
+
+    # define list of MSE:
+    MSE = []
+
+    # loop through each pixel in the denoised/ original:
+    for pair in paired:
+
+        # assuming the time value (z-axis) is in the second index:
+        MSE.append((pair[0][2] - pair[1][2])**2)
+    
+    return MSE
+
+# testing
+a = [[0,0,0],[0,0,2],[0,0,3]]
+# b = [[0,0,2],[0,0,5],[0,0,3]]
+a_flat = a.view(a.size(0), -1)
+print(a_flat)
+
+# this may take far too long to compute, as it will have to find a distance for each point. There will be 
+# methods to reduce this somehow but can have a look into it later
+def custom_loss_fn(denoised, original):
+    """
+    This takes two arguments:
+    denoised - the denoised guess that the AE outputs
+    original - the original image that the AW is trying to reconstruct
+    This just calculates error dependent on the closest point, whether it be 0 or the signal
+    point time value.
+    """
+
+    # this is massive matrix of the distance between every value:
+    dist = cdist(denoised, original)
+
+    # find the minimum distance for each point:
+    min_dist = np.min(dist, axis = 1)
+
+    # put back into the shape of the original denoised shape (n.b this can just be summed instead for loss)
+    #min_dist = min_dist.reshape(np.shape(denoised))
+
+    # renormalise losses to be between 0 and 1 (this doesnt work if there is no loss at all, but this wont happen):
+    losses = min_dist / np.max(min_dist)
+
+    total_loss = np.sum(losses)
+
+    return total_loss
+
+
+# ---------------------------------------------------------------------------------------------------------------------
+
+# here i did some research, and apparently the cdist is the best method to use from scipy lib. It is used in 
+# k-nearest neighbour: 
+def custom_loss_fn2(denoised, original, factor):
+    """
+    This will be the same as the previous, but you may be able to add a factor that gives more/less
+    importance to the loss to the signal point.
+    """
+
+    # use list of values without zeros to find distances:
+    sig_pts = np.array([i for i in original if i[2] > 0])
+
+    # Compute pairwise distances
+    # this finds the distance to EVERY point in denoised to signal points in massive matrix.
+    sig_dist = cdist(denoised, sig_pts)
+
+    # this is the dist of the point to 0
+    # base_dist = 
+
+    # Find the minimum distance for each pixel in denoised
+    # min_distances = np.min(distances, axis=1)
+
+    # Reshape the min_distances array to match the shape of denoised
+    # min_distances = min_distances.reshape(denoised.shape)
+
+    return sig_dist
+        
+# testing
+# a = np.array([[0,1,1],[0,0,2],[0,0,3]])
+# b = np.array([[0,0,1],[0,0,2],[0,0,3]])
+# print(custom_loss_fn(a,b))
+
+"""
+Currently the loss functions above are finding errors if defined in a function as above.
+Hence, i will attempt to mimmic the layout of the torch.nn.MSELoss() class while creating a new one
+that uses the new method:
+
+class MSELoss(torch.nn.Module):
+    def __init__(self, size_average=None, reduce=None, reduction='mean'):
+        super(MSELoss, self).__init__()
+        self.size_average = size_average
+        self.reduce = reduce
+        self.reduction = reduction
+
+    def forward(self, input, target):
+        if self.size_average is not None or self.reduce is not None:
+            reduction = _Reduction.legacy_get_string(size_average, reduce)
+        else:
+            reduction = self.reduction
+        return torch.nn.functional.mse_loss(input, target, reduction=reduction)
+        
+"""
+
+class SmallestDistanceLoss(torch.nn.Module):
+    def __init__(self, reduction='mean'):
+        super(SmallestDistanceLoss, self).__init__()
+        self.reduction = reduction
+
+    def forward(self, input1, input2):
+        dist_matrix = cdist(input1.detach().numpy(), input2.detach().numpy())
+        smallest_dists = torch.min(torch.tensor(dist_matrix), dim=1).values
+        loss = torch.mean(smallest_dists)
+        
+        if self.reduction == 'none':
+            return smallest_dists
+        elif self.reduction == 'sum':
+            return torch.sum(smallest_dists)
+        else:
+            return loss
+
+loss_fn = SmallestDistanceLoss()
+
+class DistanceLoss(torch.nn.Module):
+    def __init__(self):
+        super(DistanceLoss, self).__init__()
+
+    def forward(self, input1, input2):
+        # Flatten 4D inputs to 2D
+        input1_flat = input1.view(input1.size(0), -1)
+        input2_flat = input2.view(input2.size(0), -1)
+        
+        # Compute distance matrix
+        dist_matrix = cdist(input1_flat.detach().numpy(), input2_flat.detach().numpy())
+        
+        # Get smallest distance for each element in input1
+        min_dist = torch.tensor([dist_matrix[i].min() for i in range(dist_matrix.shape[0])], dtype=torch.float32, device=input1.device)
+        
+        # Compute mean of smallest distances
+        loss = torch.mean(min_dist)
+        
+        return loss
+
+loss_fn2 = DistanceLoss()
+
+class DistanceLoss2(torch.nn.Module):
+    def __init__(self, p=2, eps=1e-6):
+        super().__init__()
+        self.p = p
+        self.eps = eps
+        
+    def forward(self, input1, input2):
+        dist = cdist(input1.detach().cpu().numpy(), input2.detach().cpu().numpy(), metric='euclidean')
+        loss = torch.tensor(dist.min(axis=1)).to(input1.device)
+        loss.requires_grad = True
+        return loss.mean()
+
+loss_fn3 = DistanceLoss2()
