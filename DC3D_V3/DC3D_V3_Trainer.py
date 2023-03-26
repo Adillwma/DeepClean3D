@@ -71,10 +71,10 @@ import torch
 
 #%% - User Inputs
 #mode = 0 ### 0=Data_Gathering, 1=Testing, 2=Speed_Test, 3=Debugging
-dataset_title = "Dataset 12_X_10K_M" #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
-model_save_name = "111 Dataset 12 Testingref"#"Dataset 18_X_rotshiftlarge"
+dataset_title = "Dataset 20_X500" #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
+model_save_name = "D20 X500"#"Dataset 18_X_rotshiftlarge"
 
-num_epochs = 11                                          #User controll to set number of epochs (Hyperparameter)
+num_epochs = 6                                          #User controll to set number of epochs (Hyperparameter)
 batch_size = 10                                 #User controll to set batch size (Hyperparameter) - #Data Loader, number of Images to pull per batch 
 latent_dim = 10                     #User controll to set number of nodes in the latent space, the bottleneck layer (Hyperparameter)
 
@@ -85,7 +85,7 @@ loss_fn = torch.nn.MSELoss()#torch.nn.BCELoss(reduction='none') #torch.nn.MSELos
 time_dimension = 100
 noise_factor = 0                                          #User controll to set the noise factor, a multiplier for the magnitude of noise added. 0 means no noise added, 1 is defualt level of noise added, 10 is 10x default level added (Hyperparameter)
 
-reconstruction_threshold = 0.3      #MUST BE BETWEEN 0-1        #Threshold for 3d reconstruction, values below this confidence level are discounted
+reconstruction_threshold = 0.5      #MUST BE BETWEEN 0-1        #Threshold for 3d reconstruction, values below this confidence level are discounted
 
 """#### NEW MULTI-LOSS FUCN WITH WEIGHTS
 loss_functions = [torch.nn.L1Loss(), torch.nn.MSELoss()] 
@@ -117,7 +117,7 @@ seed = 0                                   #[Default = 0] which gives no seeedin
 
 #Normalisation
 simple_norm_instead_of_custom = False      #[Default is False]
-all_norm_off = True                       #[Default is False]
+all_norm_off = False                       #[Default is False]
 
 #%% - Plotting Control Settings
 print_every_other = 2
@@ -146,11 +146,11 @@ allow_escape = False # Default = True
 #response_timeout = 120 # in seconds
 
 #%% - Data Path Settings
-data_path = "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Yr 3 Project/Circular and Spherical Dummy Datasets/"
+data_path = "N:\Yr 3 Project Datasets\\"
 #ADILL - "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Yr 3 Project/Circular and Spherical Dummy Datasets/"
 #MAX - 
 
-results_output_path = "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Git Hub Repos/DeepClean Repo/DeepClean-Noise-Suppression-for-LHC-B-Torch-Detector/Models/"
+results_output_path = "N:\Yr 3 Project Results\\"
 #ADILL - "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Git Hub Repos/DeepClean Repo/DeepClean-Noise-Suppression-for-LHC-B-Torch-Detector/Models/"
 #MAX - 
 
