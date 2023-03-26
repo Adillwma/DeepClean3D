@@ -130,11 +130,11 @@ allow_escape = False # Default = True
 #response_timeout = 120 # in seconds
 
 #%% - Data Path Settings
-data_path = "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Yr 3 Project/Circular and Spherical Dummy Datasets/Archived/"
+data_path = "N:\Yr 3 Project Datasets\\"
 #ADILL - "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Yr 3 Project/Circular and Spherical Dummy Datasets/"
 #MAX - 
 
-results_output_path = "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Git Hub Repos/DeepClean Repo/DeepClean-Noise-Suppression-for-LHC-B-Torch-Detector/Models/"
+results_output_path = "N:\Yr 3 Project Results\\"
 #ADILL - "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Git Hub Repos/DeepClean Repo/DeepClean-Noise-Suppression-for-LHC-B-Torch-Detector/Models/"
 #MAX - 
 recovered_hits = []

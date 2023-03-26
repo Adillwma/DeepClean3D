@@ -68,13 +68,15 @@ Default: if None, uses a global default (see torch.set_default_tensor_type()).!!
 ### ~~~~~ Add all advanced program settings to end of net summary txt file i.e what typ eof normalisation used etc, also add th enam eof the autoencoder file i.e AE_V1 etc from the module name 
 """
 import torch
+print(torch.cuda.is_available())
+print(torch.version.cuda)
 
 #%% - User Inputs
 #mode = 0 ### 0=Data_Gathering, 1=Testing, 2=Speed_Test, 3=Debugging
-dataset_title = "Dataset 20_X500" #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
-model_save_name = "D20 X500"#"Dataset 18_X_rotshiftlarge"
+dataset_title = "Dataset 26_X150K" #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
+model_save_name = "D26 150Ks"#"Dataset 18_X_rotshiftlarge"
 
-num_epochs = 6                                          #User controll to set number of epochs (Hyperparameter)
+num_epochs = 11                                          #User controll to set number of epochs (Hyperparameter)
 batch_size = 10                                 #User controll to set batch size (Hyperparameter) - #Data Loader, number of Images to pull per batch 
 latent_dim = 10                     #User controll to set number of nodes in the latent space, the bottleneck layer (Hyperparameter)
 
@@ -131,7 +133,7 @@ plot_cutoff_telemetry = True          #[default = False] # Update name to pixel_
 
 plot_pixel_difference = True 
 plot_latent_generations = True
-plot_higher_dim = True
+plot_higher_dim = False
 plot_Graphwiz = True
 
 record_activity = True #False  ##Be carefull, the activity file recorded is ~ 2.5Gb  #Very slow, reduces net performance by XXXXXX%
