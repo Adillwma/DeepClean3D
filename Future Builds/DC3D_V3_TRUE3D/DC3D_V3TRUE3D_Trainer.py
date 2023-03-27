@@ -161,7 +161,7 @@ import datetime
 from Autoencoders.autoencoder_3D_V2 import Encoder, Decoder
 
 
-
+from Helper_files.TO3D_transform import to_3d_transform
 from Helper_files.Robust_model_exporter_V1 import Robust_model_export
 from Helper_files.System_Information_check import get_system_information
 from Helper_files.Dataset_Integrity_Check_V1 import dataset_integrity_check
@@ -532,22 +532,28 @@ others that arent so relevant....
 
 
 
-def train_loader3d(path):   #fix need for two seperate loads, one on each loader
+def train_loader2d(path):
     sample = (np.load(path))
-    sample = sample               
-    return torch.tensor(sample).double()
+    return (sample) #[0]
 
-def test_loader3d(path):
-    #load = 1 # Set manually, 0 = Blank, no data, 1 = just signal, 2 = just noise, 3 = both, but with differing values (1,2)    #!!! OPION 3 NOT WORKING
-    sample = (np.load(path))
-    #sample2 = np.ma.masked_where(sample                   
-    return torch.tensor(sample).double()
+def test_loader2d(path):
+    sample = (np.load(path))            
+    return (sample) #[0]
+
+def val_loader2d(path):
+    sample = (np.load(path))            
+    return (sample)
+
 
 #train_dir = r'C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\New big simp\Rectangle\\'
-train_dataset = torchvision.datasets.DatasetFolder(train_dir, train_loader3d, extensions='.npy')
+train_dataset = torchvision.datasets.DatasetFolder(train_dir, train_loader2d, extensions='.npy')
 
 #test_dir = r'C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\New big simp test\Rectangle\\'
-test_dataset = torchvision.datasets.DatasetFolder(test_dir, train_loader3d, extensions='.npy')
+test_dataset = torchvision.datasets.DatasetFolder(test_dir, train_loader2d, extensions='.npy')
+
+
+#function to convert the 2d saved data to 3d arrays for network
+to3d_with_args = partial(to_3d_transform, time_dimension=time_dimension)   #using functools partial to bundle the args into custom norm to use in custom torch transform using lambda function
 
 
 #%% - Data Preparation
@@ -567,7 +573,8 @@ train_transform = transforms.Compose([                                         #
                                        #transforms.RandomHorizontalFlip(),     #transforms.RandomHorizontalFlip() flips the image data horizontally 
                                        #transforms.Normalize((0.5), (0.5)),    #transforms.Normalize can be used to normalise the values in the array
                                        #transforms.Lambda(custom_normalisation_with_args),
-                                       #transforms.ToTensor()
+                                       transforms.Lambda(to3d_with_args),
+                                       transforms.ToTensor()
                                         ])                 #other transforms can be dissabled but to tensor must be left enabled ! it creates a tensor from a numpy array #!!! ?
 
 test_transform = transforms.Compose([                                          #test_transform variable holds the tensor tranformations to be performed on the evaluation data.  transforms.Compose([ ,  , ]) allows multiple transforms to be chained together (in serial?) (#!!! does it do more than this??)
@@ -575,7 +582,8 @@ test_transform = transforms.Compose([                                          #
                                       #transforms.CenterCrop(224),             #transforms.CenterCrop(pixels? #!!!) ?? Crops the given image at the center. If the image is torch Tensor, it is expected to have […, H, W] shape, where … means an arbitrary number of leading dimensions. If image size is smaller than output size along any edge, image is padded with 0 and then center cropp
                                       #transforms.Normalize((0.5), (0.5)),     #transforms.Normalize can be used to normalise the values in the array
                                       #transforms.Lambda(custom_normalisation_with_args),
-                                      #transforms.ToTensor()
+                                      transforms.Lambda(to3d_with_args),
+                                      transforms.ToTensor()
                                       ])                  #other transforms can be dissabled but to tensor must be left enabled ! it creates a tensor from a numpy array #!!! ?
 
 # this applies above transforms to dataset (dataset transform = transform above)
