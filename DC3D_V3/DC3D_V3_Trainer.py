@@ -68,13 +68,11 @@ Default: if None, uses a global default (see torch.set_default_tensor_type()).!!
 ### ~~~~~ Add all advanced program settings to end of net summary txt file i.e what typ eof normalisation used etc, also add th enam eof the autoencoder file i.e AE_V1 etc from the module name 
 """
 import torch
-print(torch.cuda.is_available())
-print(torch.version.cuda)
 
 #%% - User Inputs
 #mode = 0 ### 0=Data_Gathering, 1=Testing, 2=Speed_Test, 3=Debugging
 dataset_title = "Dataset 26_X150K" #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
-model_save_name = "D26 150Ks"#"Dataset 18_X_rotshiftlarge"
+model_save_name = "D26 150K 3reconthresh"#"Dataset 18_X_rotshiftlarge"
 
 num_epochs = 11                                          #User controll to set number of epochs (Hyperparameter)
 batch_size = 10                                 #User controll to set batch size (Hyperparameter) - #Data Loader, number of Images to pull per batch 
@@ -82,14 +80,15 @@ latent_dim = 10                     #User controll to set number of nodes in the
 
 learning_rate = 0.001  #User controll to set optimiser learning rate(Hyperparameter)
 optim_w_decay = 1e-05  #User controll to set optimiser weight decay (Hyperparameter)
-loss_fn = torch.nn.MSELoss()#torch.nn.BCELoss(reduction='none') #torch.nn.MSELoss()   #!!!!!!   #MSELoss()          #(mean square error) User controll to set loss function (Hyperparameter)
+loss_fn = torch.nn.MSELoss()  # torch.nn.BCELoss(reduction='none') #torch.nn.MSELoss()   #!!!!!!   #MSELoss()          #(mean square error) User controll to set loss function (Hyperparameter)
 
 time_dimension = 100
 noise_factor = 0                                          #User controll to set the noise factor, a multiplier for the magnitude of noise added. 0 means no noise added, 1 is defualt level of noise added, 10 is 10x default level added (Hyperparameter)
 
-reconstruction_threshold = 0.5      #MUST BE BETWEEN 0-1        #Threshold for 3d reconstruction, values below this confidence level are discounted
+reconstruction_threshold = 0.3      #MUST BE BETWEEN 0-1        #Threshold for 3d reconstruction, values below this confidence level are discounted
 
-"""#### NEW MULTI-LOSS FUCN WITH WEIGHTS
+"""
+#### NEW MULTI-LOSS FUCN WITH WEIGHTS
 loss_functions = [torch.nn.L1Loss(), torch.nn.MSELoss()] 
 loss_fn_weightings = [0.5, 0.5, 0]
 
@@ -134,9 +133,9 @@ plot_cutoff_telemetry = True          #[default = False] # Update name to pixel_
 plot_pixel_difference = True 
 plot_latent_generations = True
 plot_higher_dim = False
-plot_Graphwiz = True
+plot_Graphwiz = False
 
-record_activity = True #False  ##Be carefull, the activity file recorded is ~ 2.5Gb  #Very slow, reduces net performance by XXXXXX%
+record_activity = False #False  ##Be carefull, the activity file recorded is ~ 2.5Gb  #Very slow, reduces net performance by XXXXXX%
 compress_activations_npz_output = False #False   Compresses the activity file above for smaller file size but does increase loading and saving times for the file. (use if low on hdd space)
 
 #%% - Program Settings - CLEAN UP THIS SECTION

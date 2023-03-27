@@ -14,14 +14,14 @@ xdim = 88
 ydim = 128
 time_dimension = 100
 sig_pts = 300
-data_set_title = "Dataset 26_X150K"
+data_set_title = "Dataset 27_X100K"
 data_sets_folder =r"N:\Yr 3 Project Datasets\\"
 #Ada: r"C:\Users\Student\Documents\UNI\Onedrive - University of Bristol\Yr 3 Project\Circular and Spherical Dummy Datasets\\"
 #Max: 
 
 ### Number of data files of each type to generate  # (~89kb each, which scales linearly so 20,000 ~ 1.75Gb)
 number_of_blanks = 0
-number_single_x = 150000  
+number_single_x = 100000 
 number_of_two_x = 0
 number_of_three_x = 0
 number_of_four_x = 0
