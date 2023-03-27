@@ -1,16 +1,11 @@
 import os
 import numpy as np
+import matplotlib.pyplot as plt
 
-def custom_renormalisation(data, reconstruction_threshold, time_dimension=100):
-    data = np.where(data > reconstruction_threshold, ((data - reconstruction_threshold)*(1/(1-reconstruction_threshold)))*(time_dimension), data)
-    return data
+input_dir = "N:/Yr 3 Project Datasets/Test"
+output_dir = "N:/Yr 3 Project Datasets/3D_Test"
 
-
-input_dir = "path/to/input/directory"
-output_dir = 
-
-
-def dataset_2D_to_3D_Expansion(input_dir, output_dir):
+def dataset_2D_to_3D_Expansion(input_dir, output_dir, time_dimension=100):
     input_dir = input_dir + "/Data//"
     output_dir = output_dir + "/Data//"
 
@@ -25,8 +20,13 @@ def dataset_2D_to_3D_Expansion(input_dir, output_dir):
             filepath = os.path.join(input_dir, filename)
             data = np.load(filepath)
 
-            # Apply the processing function to the data
-            processed_data = custom_renormalisation(data, 0.8)
+            # Apply the processing functions to the data
+            shape = data.shape
+            processed_data = np.zeros((shape[0], shape[1], time_dimension))
+
+            i, j = np.nonzero(data)           # Compute the indices for the non-zero elements of data in the third dimension of array_3D
+            k = data[i, j].astype(int)        # Convert the values to integers
+            processed_data[i, j, k-1] = 1     # array_3D is now a 3D numpy array of size n by m by time_dimension_max, with the non-zero values from the original 2D array set to 1 in the appropriate location 
 
             # Save the processed data to a new file in the output directory
             output_filepath = os.path.join(output_dir, "3D -" + filename)
