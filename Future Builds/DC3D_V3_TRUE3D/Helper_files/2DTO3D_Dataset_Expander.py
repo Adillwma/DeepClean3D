@@ -11,6 +11,9 @@ output_dir =
 
 
 def dataset_2D_to_3D_Expansion(input_dir, output_dir):
+    input_dir = input_dir + "/Data//"
+    output_dir = output_dir + "/Data//"
+
     # Create the output directory if it doesn't exist
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
