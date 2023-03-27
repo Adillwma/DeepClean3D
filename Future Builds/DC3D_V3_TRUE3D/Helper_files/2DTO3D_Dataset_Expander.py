@@ -7,13 +7,13 @@ def custom_renormalisation(data, reconstruction_threshold, time_dimension=100):
 
 
 input_dir = "path/to/input/directory"
-output_dir = "path/to/output/directory"
+output_dir = 
 
 
 def dataset_2D_to_3D_Expansion(input_dir, output_dir):
-    # Define the function to be applied to each file
-    
-
+    # Create the output directory if it doesn't exist
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
 
     # Loop over each file in the input directory
     for filename in os.listdir(input_dir):
