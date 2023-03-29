@@ -71,11 +71,11 @@ import torch
 
 #%% - User Inputs
 #mode = 0 ### 0=Data_Gathering, 1=Testing, 2=Speed_Test, 3=Debugging
-dataset_title = "S_Dataset 4" #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
-model_save_name = "S_Dataset 4TRUE3D 222"#"Dataset 18_X_rotshiftlarge"
+dataset_title = "Dataset 20_X500" #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
+model_save_name = "2dto3dloadertest3D"#"Dataset 18_X_rotshiftlarge"
 
-num_epochs = 21                                          #User controll to set number of epochs (Hyperparameter)
-batch_size = 10                                 #User controll to set batch size (Hyperparameter) - #Data Loader, number of Images to pull per batch 
+num_epochs = 11                                          #User controll to set number of epochs (Hyperparameter)
+batch_size = 1                                 #User controll to set batch size (Hyperparameter) - #Data Loader, number of Images to pull per batch 
 latent_dim = 10                     #User controll to set number of nodes in the latent space, the bottleneck layer (Hyperparameter)
 
 learning_rate = 0.001  #User controll to set optimiser learning rate(Hyperparameter)
@@ -85,7 +85,7 @@ loss_fn = torch.nn.MSELoss()   #!!!!!!   #MSELoss()          #(mean square error
 time_dimension = 100
 noise_factor = 0                                          #User controll to set the noise factor, a multiplier for the magnitude of noise added. 0 means no noise added, 1 is defualt level of noise added, 10 is 10x default level added (Hyperparameter)
 
-reconstruction_threshold = 0.4      #MUST BE BETWEEN 0-1        #Threshold for 3d reconstruction, values below this confidence level are discounted
+reconstruction_threshold = 0.5      #MUST BE BETWEEN 0-1        #Threshold for 3d reconstruction, values below this confidence level are discounted
 
 #%% - Advanced Debugging Settings
 print_encoder_debug = False                     #[default = False]
@@ -96,7 +96,7 @@ debug_loader_batch = False   #REMOVE THIS PARAM!!!  #(Default = False) //INPUT 0
 full_dataset_integrity_check = False       #[Default = False] V slow   
 full_dataset_distribution_check = False    #[Default = False]
 
-print_network_summary = True              #[Default = False]
+print_network_summary = False              #[Default = False]
 seed = 0                                   #[Default = 0] which gives no seeeding to RNG, if the value is not zero then this is used for the RNG seeding for numpy, random, and torch libraries
 
 #Normalisation
@@ -533,15 +533,19 @@ others that arent so relevant....
 
 
 def train_loader2d(path):
-    sample = (np.load(path))
+    sample = np.load(path)
+    print("sample"), np.shape(sample)
+    sample = to_3d_transform(sample, time_dimension)
     return (sample) #[0]
 
 def test_loader2d(path):
-    sample = (np.load(path))            
+    sample = np.load(path)
+    sample = to_3d_transform(sample, time_dimension)
     return (sample) #[0]
 
 def val_loader2d(path):
-    sample = (np.load(path))            
+    sample = np.load(path)
+    sample = to_3d_transform(sample, time_dimension)
     return (sample)
 
 
@@ -573,7 +577,7 @@ train_transform = transforms.Compose([                                         #
                                        #transforms.RandomHorizontalFlip(),     #transforms.RandomHorizontalFlip() flips the image data horizontally 
                                        #transforms.Normalize((0.5), (0.5)),    #transforms.Normalize can be used to normalise the values in the array
                                        #transforms.Lambda(custom_normalisation_with_args),
-                                       transforms.Lambda(to3d_with_args),
+                                       #transforms.Lambda(to3d_with_args),
                                        transforms.ToTensor()
                                         ])                 #other transforms can be dissabled but to tensor must be left enabled ! it creates a tensor from a numpy array #!!! ?
 
@@ -582,7 +586,7 @@ test_transform = transforms.Compose([                                          #
                                       #transforms.CenterCrop(224),             #transforms.CenterCrop(pixels? #!!!) ?? Crops the given image at the center. If the image is torch Tensor, it is expected to have […, H, W] shape, where … means an arbitrary number of leading dimensions. If image size is smaller than output size along any edge, image is padded with 0 and then center cropp
                                       #transforms.Normalize((0.5), (0.5)),     #transforms.Normalize can be used to normalise the values in the array
                                       #transforms.Lambda(custom_normalisation_with_args),
-                                      transforms.Lambda(to3d_with_args),
+                                      #transforms.Lambda(to3d_with_args),
                                       transforms.ToTensor()
                                       ])                  #other transforms can be dissabled but to tensor must be left enabled ! it creates a tensor from a numpy array #!!! ?
 
