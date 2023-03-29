@@ -71,12 +71,12 @@ import torch
 
 #%% - User Inputs
 #mode = 0 ### 0=Data_Gathering, 1=Testing, 2=Speed_Test, 3=Debugging
-dataset_title = "Dataset 26_X150K" #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
-model_save_name = "D26 150K 3reconthresh"#"Dataset 18_X_rotshiftlarge"
+dataset_title = "Dataset 20_3_X5000"#"Dataset 25_X50ks"#"Dataset 27_X100K" #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
+model_save_name = "D20_3 X5k"#"D25 X50k wPretrainfrm5kOverfit"#"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
 
 num_epochs = 11                                          #User controll to set number of epochs (Hyperparameter)
 batch_size = 10                                 #User controll to set batch size (Hyperparameter) - #Data Loader, number of Images to pull per batch 
-latent_dim = 10                     #User controll to set number of nodes in the latent space, the bottleneck layer (Hyperparameter)
+latent_dim = 10                    #User controll to set number of nodes in the latent space, the bottleneck layer (Hyperparameter)
 
 learning_rate = 0.001  #User controll to set optimiser learning rate(Hyperparameter)
 optim_w_decay = 1e-05  #User controll to set optimiser weight decay (Hyperparameter)
@@ -85,17 +85,22 @@ loss_fn = torch.nn.MSELoss()  # torch.nn.BCELoss(reduction='none') #torch.nn.MSE
 time_dimension = 100
 noise_factor = 0                                          #User controll to set the noise factor, a multiplier for the magnitude of noise added. 0 means no noise added, 1 is defualt level of noise added, 10 is 10x default level added (Hyperparameter)
 
-reconstruction_threshold = 0.3      #MUST BE BETWEEN 0-1        #Threshold for 3d reconstruction, values below this confidence level are discounted
+reconstruction_threshold = 0.5      #MUST BE BETWEEN 0-1        #Threshold for 3d reconstruction, values below this confidence level are discounted
+
+#%% - Pretraining settings
+start_from_pretrained_model = False
+load_pretrained_optimser = False      #only availible if above is set to true
+full_statedict_path = 'N:/Yr 3 Project Results/D20_3 X5k - Training Results/D20_3 X5k - Model + Optimiser State Dicts.pth'      # specify the path to the saved full state dictionary
+
 
 """
 #### NEW MULTI-LOSS FUCN WITH WEIGHTS
 loss_functions = [torch.nn.L1Loss(), torch.nn.MSELoss()] 
-loss_fn_weightings = [0.5, 0.5, 0]
+loss_fn_weightings = [0.5, 0.5]
 
 # Protection from weights and loss_fns not being same len
 if len(loss_functions) != len(loss_fn_weightings):
     raise ValueError("Number of Loss Fucntions does not match number of weights for loss functions")
-
 
 #### NEW MULTI-LOSS FUNC CONSTRUCTION - THIS NEEDS TO BE MOVED DOWN TO THE MODEL SETUP ETC SECTION (NEEDS TESTING FIRST)
 lf_total = 0
@@ -265,6 +270,8 @@ def Determinism_Seeding(seed):
     random.seed(seed)
     np.random.seed(seed)
 
+
+
 #%% - Classes
 ### Gaussian Noise Generator Class
 class AddGaussianNoise(object):                   #Class generates noise based on the mean 0 and std deviation 1, (gaussian)
@@ -314,17 +321,6 @@ image_noisy_list = []
 if seed != 0: 
     Determinism_Seeding(seed)
 
-# Creates lists for tracking network activation for further analysis
-enc_input = list()
-enc_conv = list()
-enc_flatten = list()
-enc_lin = list()
-
-dec_input = list()
-dec_lin = list()
-dec_flatten = list()
-dec_conv = list()
-dec_out = list()
 
 
 
@@ -757,7 +753,11 @@ def plot_ae_outputs_den(encoder, decoder, epoch, model_save_name, time_dimension
 print("\n \nProgram Initalised - Welcome to DC3D Trainer\n")
 #%% - Dataset Pre-tests
 # Dataset Integrity Check    #???????? aslso perform on train data dir if ther is one?????? 
-print("Testing training dataset integrity, with {insert scan type}")
+scantype = "quick"
+if full_dataset_integrity_check:
+    scantype = "full"
+
+print("Testing training dataset integrity, with {scantype} scan")
 dataset_integrity_check(train_dir, full_test=full_dataset_integrity_check, print_output=True)
 print("Test completed\n")
 
@@ -885,6 +885,21 @@ params_to_optimize = [{'params': encoder.parameters()} ,{'params': decoder.param
 ### Define an optimizer (both for the encoder and the decoder!)
 optim = torch.optim.Adam(params_to_optimize, lr=lr, weight_decay=optim_w_decay)
 
+
+#%% - Load in pretrained netwrok if needed 
+
+if start_from_pretrained_model:
+    # load the full state dictionary into memory
+    full_state_dict = torch.load(full_statedict_path)
+
+    # load the state dictionaries into the models
+    encoder.load_state_dict(full_state_dict['encoder_state_dict'])
+    decoder.load_state_dict(full_state_dict['decoder_state_dict'])
+
+    if load_pretrained_optimser:
+        # load the optimizer state dictionary, if necessary
+        optim.load_state_dict(full_state_dict['optimizer_state_dict'])
+
 #%% - Initalise Model on compute device
 # Following section checks if a CUDA enabled GPU is available. If found it is selected as the 'device' to perform the tensor opperations. If no CUDA GPU is found the 'device' is set to CPU (much slower) 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
@@ -895,20 +910,25 @@ encoder.to(device)   #Moves encoder to selected device, CPU/GPU
 decoder.to(device)   #Moves decoder to selected device, CPU/GPU
 
 #%% - Prepare Network Summary
-# Create dummy input tensor
-enc_input_size = (batch_size, 1, 128, 88)
-enc_input_tensor = torch.randn(enc_input_size).double()  # Cast input tensor to double precision
+# Set evaluation mode for encoder and decoder
 
-# Join the encoder and decoder models
-full_network_model = torch.nn.Sequential(encoder, decoder)   #should this be done with no_grad?
+with torch.no_grad(): # No need to track the gradients
+    # Create dummy input tensor
+    enc_input_size = (batch_size, 1, 128, 88)
+    enc_input_tensor = torch.randn(enc_input_size).double()  # Cast input tensor to double precision
 
-# Generate network summary and then convert to string
-model_stats = summary(full_network_model, input_data=enc_input_tensor, device=device, verbose=0)
-summary_str = str(model_stats)             
+    # Join the encoder and decoder models
+    full_network_model = torch.nn.Sequential(encoder, decoder)   #should this be done with no_grad?
 
-# Print Encoder/Decoder Network Summary
-if print_network_summary:
-    print(summary_str)
+    # Generate network summary and then convert to string
+    model_stats = summary(full_network_model, input_data=enc_input_tensor, device=device, verbose=0)
+    summary_str = str(model_stats)             
+
+    # Print Encoder/Decoder Network Summary
+    if print_network_summary:
+        print(summary_str)
+
+
 
 #%% - Compute
 # this is a dictionary ledger of train val loss history
@@ -965,11 +985,14 @@ for epoch in loop_range:                              #For loop that iterates ov
     
     if epoch % print_every_other == 0 and epoch != 0:
         
-        print("\n \n## EPOCH {} PLOTS DRAWN ##".format(epoch))
+        print("\n## EPOCH {} PLOTS DRAWN ## \n  \n".format(epoch))
         
         # finally plot the figure with all images on it.
+        encoder.eval()
+        decoder.eval()
         number_of_true_signal_points, number_of_recovered_signal_points, in_data, noisy_data, rec_data = plot_ae_outputs_den(encoder, decoder, epoch, model_save_name, time_dimension, reconstruction_threshold, noise_factor=noise_factor)
-        
+        encoder.train()
+        decoder.train()
         # Allow user to exit training loop    
 
         if allow_escape:
@@ -997,6 +1020,9 @@ if speed_test is False:
 full_data_output = {}
 full_data_output["Train Loss"] = round(history_da['train_loss'][-1], 3)
 full_data_output["Val Loss"] = round(history_da['val_loss'][-1], 3)   #Val loss calulaton is broken? check it above
+
+encoder.eval()
+decoder.eval()
 
 #%% NOTE FIX ME!!! 
 #!!! NOTE HERE BEFORE THE VISULISATIONS WE SHOULD RUN THE RENORAMLISATION TO RETURN THE CORRECT VALUES FOR VISUALS:
@@ -1171,7 +1197,13 @@ if data_gathering:
         output_file.write("\nNormalisation:\n")
         output_file.write(f"simple_norm_instead_of_custom: {simple_norm_instead_of_custom}\n")
         output_file.write(f"all_norm_off: {all_norm_off}\n")
-      
+
+        output_file.write("\Pre Training:\n")
+        if start_from_pretrained_model:
+            output_file.write(f"full_statedict_path: {full_statedict_path}\n")    
+        output_file.write(f"start_from_pretrained_model: {start_from_pretrained_model}\n")
+        output_file.write(f"load_pretrained_optimser: {load_pretrained_optimser}\n")  
+        
         output_file.write("\nAutoencoder Network:\n")
         output_file.write((f"AE File ID: {AE_file_name}\n"))
         output_file.write("\n" + summary_str)
