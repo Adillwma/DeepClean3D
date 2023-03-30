@@ -71,15 +71,15 @@ import torch
 
 #%% - User Inputs
 #mode = 0 ### 0=Data_Gathering, 1=Testing, 2=Speed_Test, 3=Debugging
-dataset_title = "Dataset 20_3_X5000"#"Dataset 25_X50ks"#"Dataset 27_X100K" #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
-model_save_name = "D20_3 X5k"#"D25 X50k wPretrainfrm5kOverfit"#"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
+dataset_title = "Dataset 24_X10ks"#"Dataset 27_X100K" #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
+model_save_name = "D24 10K 120epochs simple renorm"#"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
 
-num_epochs = 11                                          #User controll to set number of epochs (Hyperparameter)
+num_epochs = 120                                          #User controll to set number of epochs (Hyperparameter)
 batch_size = 10                                 #User controll to set batch size (Hyperparameter) - #Data Loader, number of Images to pull per batch 
-latent_dim = 10                    #User controll to set number of nodes in the latent space, the bottleneck layer (Hyperparameter)
+latent_dim = 6                    #User controll to set number of nodes in the latent space, the bottleneck layer (Hyperparameter)
 
 learning_rate = 0.001  #User controll to set optimiser learning rate(Hyperparameter)
-optim_w_decay = 1e-05  #User controll to set optimiser weight decay (Hyperparameter)
+optim_w_decay = 1e-5  #User controll to set optimiser weight decay (Hyperparameter)
 loss_fn = torch.nn.MSELoss()  # torch.nn.BCELoss(reduction='none') #torch.nn.MSELoss()   #!!!!!!   #MSELoss()          #(mean square error) User controll to set loss function (Hyperparameter)
 
 time_dimension = 100
@@ -90,7 +90,7 @@ reconstruction_threshold = 0.5      #MUST BE BETWEEN 0-1        #Threshold for 3
 #%% - Pretraining settings
 start_from_pretrained_model = False
 load_pretrained_optimser = False      #only availible if above is set to true
-full_statedict_path = 'N:/Yr 3 Project Results/D20_3 X5k - Training Results/D20_3 X5k - Model + Optimiser State Dicts.pth'      # specify the path to the saved full state dictionary
+pretrained_model_path = 'N:/Yr 3 Project Results/D20_3 X5k - Training Results/D20_3 X5k - Model + Optimiser State Dicts.pth'      # specify the path to the saved full state dictionary
 
 
 """
@@ -124,6 +124,7 @@ seed = 0                                   #[Default = 0] which gives no seeedin
 #Normalisation
 simple_norm_instead_of_custom = False      #[Default is False]
 all_norm_off = False                       #[Default is False]
+simple_renorm = False                       #[Default is False]
 
 #%% - Plotting Control Settings
 print_every_other = 2
@@ -135,7 +136,7 @@ plot_validation_loss = True
 
 plot_cutoff_telemetry = True          #[default = False] # Update name to pixel_cuttoff_telemetry    #Very slow, reduces net performance by XXXXXX%
 
-plot_pixel_difference = True 
+plot_pixel_difference = False 
 plot_latent_generations = True
 plot_higher_dim = False
 plot_Graphwiz = False
@@ -196,14 +197,14 @@ def custom_normalisation(data, reconstruction_threshold, time_dimension=100):
     return data
 
 def custom_renormalisation(data, reconstruction_threshold, time_dimension=100):
-    data = np.where(data > reconstruction_threshold, ((data - reconstruction_threshold)*(1/(1-reconstruction_threshold)))*(time_dimension), data)
+    data = np.where(data > reconstruction_threshold, ((data - reconstruction_threshold)*(1/(1-reconstruction_threshold)))*(time_dimension), 0)
     return data
 
 def reconstruct_3D(data, reconstruction_threshold):
     data_output = []
     for cdx, row in enumerate(data):
         for idx, num in enumerate(row):
-            if num > reconstruction_threshold:  #should this be larger than or equal to??? depends how we deal with the 0 slice problem
+            if num > 0:  #should this be larger than or equal to??? depends how we deal with the 0 slice problem
                 data_output.append([cdx,idx,num])
     return np.array(data_output)
 
@@ -315,16 +316,11 @@ if speed_test:
 telemetry = [[0,0.5,0.5]]                # Initalises the telemetry memory, starting values are 0, 0.5, 0.5 which corrspond to epoch(0), above_threshold(0.5), below_threshold(0.5)
 
 # Initialises list for noised image storage
-image_noisy_list = []
+#image_noisy_list = []
 
 # Initialises seeding values to RNGs
 if seed != 0: 
     Determinism_Seeding(seed)
-
-
-
-
-
 
 #%% - Create record of all user input settings, to add to output data for testing and keeping track of settings
 settings = {} 
@@ -340,159 +336,7 @@ settings["Time Dimension"] = time_dimension
 settings["Seed Val"] = seed
 settings["Reconstruction Threshold"] = reconstruction_threshold
 
-#%% - Convoloution + Linear Autoencoder  #[DEPRECIATED!] MOVED TO SEPERATE FILE
 
-"""
-###Encoder
-class Encoder(nn.Module):
-    
-    def __init__(self, encoded_space_dim,fc2_input_dim, encoder_debug, record_activity):
-        super().__init__()
-        
-        # Enables encoder layer shape debug printouts
-        self.encoder_debug = encoder_debug
-
-        # Enables layer activation rcording
-        self.record_activity = record_activity
-
-        ###Convolutional Encoder Layers
-        
-        # Arguments: (input channels, output channels, kernel size/receiptive field (), stride and padding. # here for more info on arguments https://uob-my.sharepoint.com/personal/ex18871_bristol_ac_uk/_layouts/15/Doc.aspx?sourcedoc={109841d1-79cb-45c2-ac39-0fd24300c883}&action=edit&wd=target%28Code%20Companion.one%7C%2FUntitled%20Page%7C55b8dfad-d53c-4d8e-a2ef-de1376232896%2F%29&wdorigin=NavigationUrl
-        
-        # Input channels is 1 as the image is black and white so only has luminace values no rgb channels, 
-        # Output channels which is the amount of output tensors. Defines number of seperate kernels that will be run across image, all which produce thier own output arrays
-        # The kernal size, is the size of the convolving layer. Ours is 3 means 3x3 kernel matrix.
-        # Stride is how far the kernal moves across each time, the default is across by one pixel at a time.
-        # Padding adds padding (zeros) to the edges of the data array before convoloution filtering. This is to not neglect edge pixels.
-        # Dilation spreads out kernel
-        
-        self.encoder_cnn = nn.Sequential(
-            # N.B. input channel dimensions are not the same as output channel dimensions:
-            # the images will get smaller into the encoded layer
-            #Convolutional encoder layer 1                 
-            nn.Conv2d(1, 8, 3, stride=2, padding=1),       #Input_channels, Output_channels, Kernal_size, Stride, Padding
-            nn.ReLU(True),                                 #ReLU activation function - Activation function determinines if a neuron fires, i.e is the output of the node considered usefull. also allows for backprop. the arg 'True' makes the opperation carry out in-place(changes the values in the input array to the output values rather than making a new one), default would be false
-            #Convolutional encoder layer 2
-            nn.Conv2d(8, 16, 3, stride=2, padding=1),      #Input_channels, Output_channels, Kernal_size, Stride, Padding
-            nn.BatchNorm2d(16),                            #BatchNorm normalises the outputs as a batch? #!!!. argument is 'num_features' (expected input of size)
-            nn.ReLU(True),                                 #ReLU activation function - Activation function determinines if a neuron fires, i.e is the output of the node considered usefull. also allows for backprop. the arg 'True' makes the opperation carry out in-place(changes the values in the input array to the output values rather than making a new one), default would be false
-            #Convolutional encoder layer 3
-            nn.Conv2d(16, 32, 3, stride=2, padding=0),     #Input_channels, Output_channels, Kernal_size, Stride, Padding
-            nn.ReLU(True)                                  #ReLU activation function - Activation function determinines if a neuron fires, i.e is the output of the node considered usefull. also allows for backprop. the arg 'True' makes the opperation carry out in-place(changes the values in the input array to the output values rather than making a new one), default would be false
-        )
- 
-        ###Flatten layer
-        self.flatten = nn.Flatten(start_dim=1)
-    
-        ###Linear Encoder Layers
-        self.encoder_lin = nn.Sequential(
-            #Linear encoder layer 1  
-            nn.Linear(4800, 128),                   #!!! linear network layer. arguuments are input dimensions/size, output dimensions/size. Takes in data of dimensions 3* 3 *32 and outputs it in 1 dimension of size 128
-            # nn.Linear(L3[0] * L3[1] * 32, 128),
-            nn.ReLU(True),                                #ReLU activation function - Activation function determinines if a neuron fires, i.e is the output of the node considered usefull. also allows for backprop. the arg 'True' makes the opperation carry out in-place(changes the values in the input array to the output values rather than making a new one), default would be false
-            #Linear encoder layer 2
-            nn.Linear(128, encoded_space_dim)             #Takes in data of 1 dimension with size 128 and outputs it in one dimension of size defined by encoded_space_dim (this is the latent space? the smalle rit is the more comression but thte worse the final fidelity)
-        )
-        
-    def forward(self, x):
-        if self.record_activity:
-            enc_input.append(np.abs(x[0].detach().numpy()))
-        if self.encoder_debug == 1:
-            print("ENCODER LAYER SIZE DEBUG")
-            print("Encoder in", x.size())
-
-        x = self.encoder_cnn(x)                           #Runs convoloutional encoder on x #!!! input data???
-        if self.record_activity:
-            enc_conv.append(np.abs(x[0].detach().numpy()))
-        if self.encoder_debug == 1:
-            print("Encoder CNN out", x.size())
-    
-        x = self.flatten(x)                               #Runs flatten  on output of conv encoder #!!! what is flatten?
-        if self.record_activity:
-            enc_flatten.append(np.abs(x[0].detach().numpy()))
-        if self.encoder_debug == 1:
-            print("Encoder Flatten out", x.size())
-        
-        x = self.encoder_lin(x)                           #Runs linear encoder on flattened output 
-        if self.record_activity:
-            enc_lin.append(np.abs(x[0].detach().numpy()))
-        if self.encoder_debug == 1:
-            print("Encoder Lin out", x.size(),"\n")
-            self.encoder_debug = 0    #????? what is this line for     
-        
-        return x                                          #Return final result
-
-###Decoder
-class Decoder(nn.Module):
-    
-    def __init__(self, encoded_space_dim,fc2_input_dim, decoder_debug, record_activity):
-        super().__init__()
-        
-        # Enables decoder layer shape debug printouts
-        self.decoder_debug = decoder_debug
-
-        # Enables layer activation rcording
-        self.record_activity = record_activity
-
-        ###Linear Decoder Layers
-        self.decoder_lin = nn.Sequential(
-            #Linear decoder layer 1            
-            nn.Linear(encoded_space_dim, 128),
-            nn.ReLU(True),                                 #ReLU activation function - Activation function determinines if a neuron fires, i.e is the output of the node considered usefull. also allows for backprop. the arg 'True' makes the opperation carry out in-place(changes the values in the input array to the output values rather than making a new one), default would be false
-            #Linear decoder layer 2
-            nn.Linear(128, 4800),
-            nn.ReLU(True)                                  #ReLU activation function - Activation function determinines if a neuron fires, i.e is the output of the node considered usefull. also allows for backprop. the arg 'True' makes the opperation carry out in-place(changes the values in the input array to the output values rather than making a new one), default would be false
-        )
-        ###Unflatten layer
-        self.unflatten = nn.Unflatten(dim=1, 
-        unflattened_size=(32, 15, 10))
-        
-        self.decoder_conv = nn.Sequential(
-            #Convolutional decoder layer 1
-            nn.ConvTranspose2d(32, 16, 3, stride=2, output_padding=1),             #Input_channels, Output_channels, Kernal_size, Stride, padding(unused), Output_padding
-            nn.BatchNorm2d(16),                                                    #BatchNorm normalises the outputs as a batch? #!!!. argument is 'num_features' (expected input of size)
-            nn.ReLU(True),                                                         #ReLU activation function - Activation function determinines if a neuron fires, i.e is the output of the node considered usefull. also allows for backprop. the arg 'True' makes the opperation carry out in-place(changes the values in the input array to the output values rather than making a new one), default would be false
-            #Convolutional decoder layer 2
-            nn.ConvTranspose2d(16, 8, 3, stride=2, padding=1, output_padding=1),   #Input_channels, Output_channels, Kernal_size, Stride, padding, Output_padding
-            nn.BatchNorm2d(8),                                                     #BatchNorm normalises the outputs as a batch? #!!!. argument is 'num_features' (expected input of size)
-            nn.ReLU(True),                                                         #ReLU activation function - Activation function determinines if a neuron fires, i.e is the output of the node considered usefull. also allows for backprop. the arg 'True' makes the opperation carry out in-place(changes the values in the input array to the output values rather than making a new one), default would be false
-            #Convolutional decoder layer 3
-            nn.ConvTranspose2d(8, 1, 3, stride=2, padding=1, output_padding=1)     #Input_channels, Output_channels, Kernal_size, Stride, padding, Output_padding
-        )
-        
-    def forward(self, x):
-        if self.record_activity:
-            dec_input.append(np.abs(x[0].detach().numpy()))
-        if self.decoder_debug == 1:            
-            print("DECODER LAYER SIZE DEBUG")
-            print("Decoder in", x.size())   
-
-        x = self.decoder_lin(x)       #Runs linear decoder on x #!!! is x input data? where does it come from??
-        if self.record_activity:
-            dec_lin.append(np.abs(x[0].detach().numpy()))
-        if self.decoder_debug == 1:
-            print("Decoder Lin out", x.size()) 
-        
-        x = self.unflatten(x)         #Runs unflatten on output of linear decoder #!!! what is unflatten?
-        if self.record_activity:
-            dec_flatten.append(np.abs(x[0].detach().numpy()))
-        if self.decoder_debug == 1:
-            print("Decoder Unflatten out", x.size())  
-        
-        x = self.decoder_conv(x)      #Runs convoloutional decoder on output of unflatten
-        if self.record_activity:
-            dec_conv.append(np.abs(x[0].detach().numpy()))
-        if self.decoder_debug == 1:
-            print("Decoder CNN out", x.size(),"\n")            
-            self.decoder_debug = 0         
-        
-        x = torch.sigmoid(x)          #THIS IS IMPORTANT PART OF FINAL OUTPUT!: Runs sigmoid function which turns the output data values to range (0-1)#!!! ????    Also can use tanh fucntion if wanting outputs from -1 to 1
-        if self.record_activity:
-            dec_out.append(np.abs(x[0].detach().numpy()))
-        
-        return x                      #Retuns the final output
-
-"""    
 #%% - Functions
 ### Random Noise Generator Function
 def add_noise(input, noise_factor=0.3, debug_noise_function=False):
@@ -580,36 +424,30 @@ def plot_ae_outputs_den(encoder, decoder, epoch, model_save_name, time_dimension
     n is the number of images to plot i think?
     """
 
+    #%% - 2D Input/Output Comparison Plots 
     #Initialise lists for true and recovered signal point values 
     number_of_true_signal_points = []
     number_of_recovered_signal_points = []
 
-
     plt.figure(figsize=(16,4.5))                                      #Sets the figure size
-    # numpy array of correct unnoised data
-    # targets = test_dataset.targets.numpy()                            #Creates a numpy array (from the .numpy part) the array is created from the values in the specified tensor, which in this case is test_dataset.targets (test_dataset is the dataloader, .targets is a subclass of the dataloader that holds the labels, i.e the correct answer data (in this case the unnoised images).)                          
-    # defines dictionary keys 0-(n-1), values are indices in the targets array where those integers can be found 
-    # t_idx = {i:np.where(targets==i)[0][0] for i in range(n)}          #!!! ????
-    
+
     for i in range(n):                                                #Runs for loop where 'i' itterates over 'n' total values which range from 0 to n-1
         
       #Following section creates the noised image data drom the original clean labels (images)   
       ax = plt.subplot(3,n,i+1)                                       #Creates a number of subplots for the 'Original images??????' i.e the labels. the position of the subplot is i+1 as it falls in the first row
-      img = test_dataset[i][0].unsqueeze(0) # [t_idx[i]][0].unsqueeze(0)                    #!!! ????
       
+      # Load input image
+      img = test_dataset[i][0].unsqueeze(0) # [t_idx[i]][0].unsqueeze(0)                    #!!! ????
       
       #Determine the number of signal points on the input image (have to change this to take it directly from the embeded val in the datsaset as when addig noise this method will break)   
       int_sig_points = (img >= reconstruction_threshold).sum()
       number_of_true_signal_points.append(int(int_sig_points.numpy()))
       
-      
-      
-      if epoch <= print_every_other:                                                  #CHECKS TO SEE IF THE EPOCH IS LESS THAN ZERO , I ADDED THIS TO GET THE SAME NOISED IMAGES EACH EPOCH THOUGH THIS COULD BE WRONG TO DO?
-          global image_noisy                                          #'global' means the variable (image_noisy) set inside a function is globally defined, i.e defined also outside the function
-          image_noisy = img#!!!!add_noise(img, noise_factor, debug_noise_function)                   #Runs the function 'add_noise' (in this code) the function adds noise to a set of data, the function takes two arguments, img is the data to add noise to, noise factor is a multiplier for the noise values added, i.e if multiplier is 0 no noise is added, if it is 1 default amount is added, if it is 10 then the values are raised 10x 
-          image_noisy_list.append(image_noisy)                        #Adds the just generated noise image to the list of all the noisy images
-      image_noisy = image_noisy_list[i].to(device)                    #moves the list (i think of tensors?) to the device that will process it i.e either cpu or gpu, we have a check elsewhere in the code that detects if gpu is availible and sets the value of 'device' to gpu or cpu depending on availibility (look for the line that says "device = 'cuda' if torch.cuda.is_available() else 'cpu'"). NOTE: this moves the noised images to device, i think that the original images are already moved to device in previous code
-
+      #if epoch <= print_every_other:                                                  #CHECKS TO SEE IF THE EPOCH IS LESS THAN ZERO , I ADDED THIS TO GET THE SAME NOISED IMAGES EACH EPOCH THOUGH THIS COULD BE WRONG TO DO?
+      global image_noisy                                          #'global' means the variable (image_noisy) set inside a function is globally defined, i.e defined also outside the function
+      image_noisy = img#!!!!add_noise(img, noise_factor, debug_noise_function)                   #Runs the function 'add_noise' (in this code) the function adds noise to a set of data, the function takes two arguments, img is the data to add noise to, noise factor is a multiplier for the noise values added, i.e if multiplier is 0 no noise is added, if it is 1 default amount is added, if it is 10 then the values are raised 10x 
+      #image_noisy_list.append(image_noisy)                        #Adds the just generated noise image to the list of all the noisy images
+      #image_noisy = image_noisy_list[i].to(device)                    #moves the list (i think of tensors?) to the device that will process it i.e either cpu or gpu, we have a check elsewhere in the code that detects if gpu is availible and sets the value of 'device' to gpu or cpu depending on availibility (look for the line that says "device = 'cuda' if torch.cuda.is_available() else 'cpu'"). NOTE: this moves the noised images to device, i think that the original images are already moved to device in previous code
     
       #Following section sets the autoencoder to evaluation mode rather than training (up till line 'with torch.no_grad()')
       encoder.eval()                                   #.eval() is a kind of switch for some specific layers/parts of the model that behave differently during training and inference (evaluating) time. For example, Dropouts Layers, BatchNorm Layers etc. You need to turn off them during model evaluation, and .eval() will do it for you. In addition, the common practice for evaluating/validation is using torch.no_grad() in pair with model.eval() to turn off gradients computation
@@ -617,29 +455,32 @@ def plot_ae_outputs_den(encoder, decoder, epoch, model_save_name, time_dimension
 
       with torch.no_grad():                                               #As mentioned in .eval() comment, the common practice for evaluating/validation is using torch.no_grad() which turns off gradients computation whilst evaluating the model (the opposite of training the model)     
       #Following line runs the autoencoder on the noised data
-         rec_img  = decoder(encoder(image_noisy))                         #Creates a recovered image (denoised image), by running a noisy image through the encoder and then the output of that through the decoder.
+         rec_img = decoder(encoder(image_noisy))                         #Creates a recovered image (denoised image), by running a noisy image through the encoder and then the output of that through the decoder.
 
       #Determine the number of signal points on the recovered image 
       int_rec_sig_points = (rec_img >= reconstruction_threshold).sum()      
       number_of_recovered_signal_points.append(int(int_rec_sig_points.numpy()))
-
+      
+      test_image = img.squeeze() #.cpu().squeeze().numpy()
+      noised_test_image = image_noisy.squeeze() #.cpu().squeeze().numpy()
+      recovered_test_image = rec_img.cpu().squeeze().numpy()
 
       #Following section generates the img plots for the original(labels), noised, and denoised data)
-      plt.imshow(img.cpu().squeeze().numpy(), cmap='gist_gray')           #plt.imshow plots an image. The arguments for imshow are, 'image data array' and cmap= which is the colour map. #.squeeze() acts on a tensor and returns a tensor, it removes all dimensions of the tensor that are of length 1, (A×1×B) becomes (AxB) where A and B are greater than 1 #.numpy() creates a numpy array from a tensor #!!! is the .cpu part becuase the code was not made to accept the gpu/cpu check i made????
+      plt.imshow(test_image, cmap='gist_gray')           #plt.imshow plots an image. The arguments for imshow are, 'image data array' and cmap= which is the colour map. #.squeeze() acts on a tensor and returns a tensor, it removes all dimensions of the tensor that are of length 1, (A×1×B) becomes (AxB) where A and B are greater than 1 #.numpy() creates a numpy array from a tensor #!!! is the .cpu part becuase the code was not made to accept the gpu/cpu check i made????
       ax.get_xaxis().set_visible(False)                                   #Hides the x axis from showing in the plot as we are plotting images not graphs (we may want to retain axis?)
       ax.get_yaxis().set_visible(False)                                   #Hides the y axis from showing in the plot as we are plotting images not graphs (we may want to retain axis?)
       if i == n//2:                                                       #n//2 divides n by 2 without any remainder, i.e 6//2=3 and 7//2=3. So this line checks to see if i is equal to half of n without remainder. it will be yes once in the loop. not sure of its use
         ax.set_title('EPOCH %s \nOriginal images' %(epoch))               #When above condition is reached, the plots title is set                                   #When above condition is reached, the plots title is set
 
       ax = plt.subplot(3, n, i + 1 + n)                                   #Creates a number of subplots for the 'Corrupted images??????' i.e the labels. the position of the subplot is i+1+n as it falls in the second row
-      plt.imshow(image_noisy.cpu().squeeze().numpy(), cmap='gist_gray')   #plt.imshow plots an image. The arguments for imshow are, 'image data array' and cmap= which is the colour map. #.squeeze() acts on a tensor and returns a tensor, it removes all dimensions of the tensor that are of length 1, (A×1×B) becomes (AxB) where A and B are greater than 1 #.numpy() creates a numpy array from a tensor #!!! is the .cpu part becuase the code was not made to accept the gpu/cpu check i made????
+      plt.imshow(noised_test_image, cmap='gist_gray')   #plt.imshow plots an image. The arguments for imshow are, 'image data array' and cmap= which is the colour map. #.squeeze() acts on a tensor and returns a tensor, it removes all dimensions of the tensor that are of length 1, (A×1×B) becomes (AxB) where A and B are greater than 1 #.numpy() creates a numpy array from a tensor #!!! is the .cpu part becuase the code was not made to accept the gpu/cpu check i made????
       ax.get_xaxis().set_visible(False)                                   #Hides the x axis from showing in the plot as we are plotting images not graphs (we may want to retain axis?)
       ax.get_yaxis().set_visible(False)                                   #Hides the y axis from showing in the plot as we are plotting images not graphs (we may want to retain axis?)
       if i == n//2:                                                       #n//2 divides n by 2 without any remainder, i.e 6//2=3 and 7//2=3. So this line checks to see if i is equal to half of n without remainder. it will be yes once in the loop. not sure of its use
         ax.set_title('Corrupted images')                                  #When above condition is reached, the plots title is set
 
       ax = plt.subplot(3, n, i + 1 + n + n)                               #Creates a number of subplots for the 'Reconstructed images??????' i.e the labels. the position of the subplot is i+1+n+n as it falls in the third row
-      plt.imshow(rec_img.cpu().squeeze().numpy(), cmap='gist_gray')       #plt.imshow plots an image. The arguments for imshow are, 'image data array' and cmap= which is the colour map. #.squeeze() acts on a tensor and returns a tensor, it removes all dimensions of the tensor that are of length 1, (A×1×B) becomes (AxB) where A and B are greater than 1 #.numpy() creates a numpy array from a tensor #!!! is the .cpu part becuase the code was not made to accept the gpu/cpu check i made????
+      plt.imshow(recovered_test_image, cmap='gist_gray')       #plt.imshow plots an image. The arguments for imshow are, 'image data array' and cmap= which is the colour map. #.squeeze() acts on a tensor and returns a tensor, it removes all dimensions of the tensor that are of length 1, (A×1×B) becomes (AxB) where A and B are greater than 1 #.numpy() creates a numpy array from a tensor #!!! is the .cpu part becuase the code was not made to accept the gpu/cpu check i made????
       ax.get_xaxis().set_visible(False)                                   #Hides the x axis from showing in the plot as we are plotting images not graphs (we may want to retain axis?)
       ax.get_yaxis().set_visible(False)                                   #Hides the y axis from showing in the plot as we are plotting images not graphs (we may want to retain axis?)
       if i == n//2:                                                       #n//2 divides n by 2 without any remainder, i.e 6//2=3 and 7//2=3. So this line checks to see if i is equal to half of n without remainder. it will be yes once in the loop. not sure of its use
@@ -656,48 +497,44 @@ def plot_ae_outputs_den(encoder, decoder, epoch, model_save_name, time_dimension
     if (epoch) % print_every_other == 0:
         Out_Label = graphics_dir + f'{model_save_name} - Epoch {epoch}.png'
         plot_save_choice(plot_or_save, Out_Label)
+        plt.close()
     else:
         plt.close()
-    """
-    ### OLD !!! - PLOT SAVING, CLEAN UP!!! TURN INTO A FUCNTION FOR USE ON ALL PLOTS?????
-    if plot_or_save == 0:    # If user has chosen to just plot the output graphs to terminal not save them
-        if (epoch+1) % print_every_other == 0:
-            plt.show()                                 #After entire loop is finished, the generated plot is printed to screen
-        else:
-            plt.close()
-    else:
-        Out_Label = graphics_dir + f'{model_save_name} - Epoch {epoch}.png'
-        plt.savefig(Out_Label, format='png')
-        if plot_or_save == 2:
-            plt.show()
-        else:
-            plt.close()
 
-        print("\n# SAVED OUTPUT TEST IMAGE TO DISK #\n")                                 #After entire loop is finished, the generated plot is printed to screen
+    #%% - 3D Reconstruction Plots 
+    in_im = test_image
+    noise_im = noised_test_image
+    rec_im = recovered_test_image
 
-    """
-    ###################??????????????????????????????????????????
-    # 3D Reconstruction
-    inp_data = img.cpu().squeeze().numpy()
-    noise_data = image_noisy.cpu().squeeze().numpy()
-    rec_data = rec_img.cpu().squeeze().numpy()
-  
-  ###################WHY IS NORM HERE IN THE CODE??? shouldent it be directly after output and speed time is saved? (i think this is actually for the plots generated during the testig ratehr than afetr so okay maybe not?)
+    ###################WHY IS NORM HERE IN THE CODE??? shouldent it be directly after output and speed time is saved? (i think this is actually for the plots generated during the testig ratehr than afetr so okay maybe not?)
+    # RENORMALISATIONN
     if simple_norm_instead_of_custom or all_norm_off:
-        in_im = inp_data * time_dimension
-        noise_im = noise_data * time_dimension
-        rec_im = rec_data * time_dimension
-    else:
-        in_im = custom_renormalisation(inp_data, reconstruction_threshold, time_dimension)
-        noise_im = custom_renormalisation(noise_data, reconstruction_threshold, time_dimension)
-        rec_im = custom_renormalisation(rec_data, reconstruction_threshold, time_dimension)
+        rec_im = rec_im * time_dimension
+    else: 
+
+        #REMOVE - used for debugging
+        if simple_renorm:
+            in_im  = in_im * time_dimension
+            noise_im  = noise_im * time_dimension
+            rec_im  = rec_im * time_dimension
+
+        else:
+            in_im = custom_renormalisation(in_im, reconstruction_threshold, time_dimension)
+            noise_im = custom_renormalisation(noise_im, reconstruction_threshold, time_dimension)
+            rec_im = custom_renormalisation(rec_im, reconstruction_threshold, time_dimension)
 
 
 
+
+
+
+
+    # 3D Reconstruction
     in_im = reconstruct_3D(in_im, reconstruction_threshold)
     noise_im = reconstruct_3D(noise_im, reconstruction_threshold)
     rec_im = reconstruct_3D(rec_im, reconstruction_threshold)
     
+    #3D Plottting
     if rec_im.ndim != 1:                       # Checks if there are actually values in the reconstructed image, if not no image is aseved/plotted
         fig, (ax1, ax2, ax3) = plt.subplots(1, 3, subplot_kw={'projection': '3d'})
         #ax1 = plt.axes(projection='3d')
@@ -714,40 +551,15 @@ def plot_ae_outputs_den(encoder, decoder, epoch, model_save_name, time_dimension
             plot_save_choice(plot_or_save, Out_Label)
         else:
             plt.close()
-        """
-        ### - OLD !!!! PLOT SAVING, CLEAN UP!!! TURN INTO A FUCNTION FOR USE ON ALL PLOTS?????
-        if plot_or_save == 0:    # If user has chosen to just plot the output graphs to terminal not save them
-            if (epoch+1) % print_every_other == 0:   #should this just be epoch now??
-                plt.show()                                 #After entire loop is finished, the generated plot is printed to screen
-            else:
-                plt.close()
-        else:
-            Out_Label = graphics_dir + f'{model_save_name} 3D Reconstruction - Epoch {epoch}.png'
-            plt.savefig(Out_Label, format='png')
-            if plot_or_save == 2:
-                plt.show()
-            else:
-                plt.close()
-            print("\n# SAVED OUTPUT TEST IMAGE TO DISK #\n")  
-###################??????????????????????????????????????????
-
-        """
 
     if (epoch) % print_every_other == 0:        
-        # Passed out of func for 3D Reconstruction?????????????????????????????????????
-        in_data = img.cpu().squeeze().numpy()
-        noisy_data = image_noisy.cpu().squeeze().numpy()
-        rec_data = rec_img.cpu().squeeze().numpy()
-        
-        ####Should the above be renormalised? or even just deleted???
-
         #Telemetry plots
         if plot_cutoff_telemetry == 1:       #needs ttitles and labels etc added
-            above_threshold, below_threshold = belief_telemetry(rec_data, reconstruction_threshold, epoch+1, settings, plot_or_save)   
+            above_threshold, below_threshold = belief_telemetry(rec_im, reconstruction_threshold, epoch+1, settings, plot_or_save)   
             telemetry.append([epoch, above_threshold, below_threshold])
 
 
-    return(number_of_true_signal_points, number_of_recovered_signal_points, in_data, noisy_data, rec_data)    
+    return(number_of_true_signal_points, number_of_recovered_signal_points, in_im, noise_im, rec_im)    
     
 #%% - Program begins
 print("\n \nProgram Initalised - Welcome to DC3D Trainer\n")
@@ -757,7 +569,7 @@ scantype = "quick"
 if full_dataset_integrity_check:
     scantype = "full"
 
-print("Testing training dataset integrity, with {scantype} scan")
+print(f"Testing training dataset integrity, with {scantype} scan")
 dataset_integrity_check(train_dir, full_test=full_dataset_integrity_check, print_output=True)
 print("Test completed\n")
 
@@ -838,14 +650,18 @@ train_transform = transforms.Compose([                                         #
                                        #transforms.RandomHorizontalFlip(),     #transforms.RandomHorizontalFlip() flips the image data horizontally 
                                        #transforms.Normalize((0.5), (0.5)),    #transforms.Normalize can be used to normalise the values in the array
                                        transforms.Lambda(custom_normalisation_with_args),
-                                       transforms.ToTensor()])                 #other transforms can be dissabled but to tensor must be left enabled ! it creates a tensor from a numpy array #!!! ?
+                                       transforms.ToTensor(),
+                                       #transforms.RandomRotation(180)
+                                       ])                 #other transforms can be dissabled but to tensor must be left enabled ! it creates a tensor from a numpy array #!!! ?
 
 test_transform = transforms.Compose([                                          #test_transform variable holds the tensor tranformations to be performed on the evaluation data.  transforms.Compose([ ,  , ]) allows multiple transforms to be chained together (in serial?) (#!!! does it do more than this??)
                                       #transforms.Resize(255),                 #transforms.Resize(pixels? #!!!) ??
                                       #transforms.CenterCrop(224),             #transforms.CenterCrop(pixels? #!!!) ?? Crops the given image at the center. If the image is torch Tensor, it is expected to have […, H, W] shape, where … means an arbitrary number of leading dimensions. If image size is smaller than output size along any edge, image is padded with 0 and then center cropp
                                       #transforms.Normalize((0.5), (0.5)),     #transforms.Normalize can be used to normalise the values in the array
                                       transforms.Lambda(custom_normalisation_with_args),
-                                      transforms.ToTensor()])                  #other transforms can be dissabled but to tensor must be left enabled ! it creates a tensor from a numpy array #!!! ?
+                                      transforms.ToTensor(),
+                                      #transforms.RandomRotation(180)
+                                      ])                  #other transforms can be dissabled but to tensor must be left enabled ! it creates a tensor from a numpy array #!!! ?
 
 # this applies above transforms to dataset (dataset transform = transform above)
 train_dataset.transform = train_transform       #!!! train_dataset is the class? object 'dataset' it has a subclass called transforms which is the list of transofrms to perform on the dataset when loading it. train_tranforms is the set of chained transofrms we created, this is set to the dataset transforms subclass 
@@ -863,8 +679,8 @@ test_data, val_data =  random_split(test2_data, [half_slice, len(test2_data) - h
                                                                         #User controll to set batch size for the dataloaders (Hyperparameter)?? #!!!
 
 # required to load the data into the endoder/decoder. Combines a dataset and a sampler, and provides an iterable over the given dataset.
-train_loader = torch.utils.data.DataLoader(train_data, batch_size=batch_size)                 #Training data loader, can be run to pull training data as configured
-test_loader = torch.utils.data.DataLoader(test_data, batch_size=batch_size, shuffle=True)   #Testing data loader, can be run to pull training data as configured. Also is shuffled using parameter shuffle #!!! why is it shuffled?
+train_loader = torch.utils.data.DataLoader(train_data, batch_size=batch_size, shuffle=True)                 #Training data loader, can be run to pull training data as configured
+test_loader = torch.utils.data.DataLoader(test_data, batch_size=batch_size)   #Testing data loader, can be run to pull training data as configured. Also is shuffled using parameter shuffle #!!! why is it shuffled?
 valid_loader = torch.utils.data.DataLoader(val_data, batch_size=batch_size)                   #Validation data loader, can be run to pull training data as configured
 
 
@@ -890,7 +706,7 @@ optim = torch.optim.Adam(params_to_optimize, lr=lr, weight_decay=optim_w_decay)
 
 if start_from_pretrained_model:
     # load the full state dictionary into memory
-    full_state_dict = torch.load(full_statedict_path)
+    full_state_dict = torch.load(pretrained_model_path)
 
     # load the state dictionaries into the models
     encoder.load_state_dict(full_state_dict['encoder_state_dict'])
@@ -903,7 +719,7 @@ if start_from_pretrained_model:
 #%% - Initalise Model on compute device
 # Following section checks if a CUDA enabled GPU is available. If found it is selected as the 'device' to perform the tensor opperations. If no CUDA GPU is found the 'device' is set to CPU (much slower) 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-print(f'Selected device: {device}\n')  #Informs user if running on CPU or GPU
+print(f'Selected compute device: {device}\n')  #Informs user if running on CPU or GPU
 
 # Following section moves both the encoder and the decoder to the selected device i.e detected CUDA enabled GPU or to CPU
 encoder.to(device)   #Moves encoder to selected device, CPU/GPU
@@ -999,10 +815,6 @@ for epoch in loop_range:                              #For loop that iterates ov
             user_input = input("Press q to end training, or any other key to continue: \n")
             if user_input == 'q' or user_input == 'Q':
                 break
-
-
-
-
 
 #%% - After Training
 # Stop timing the training process and calculate the total training time
@@ -1211,7 +1023,13 @@ if data_gathering:
         output_file.write("\n \nFull Data Readouts:\n")
         for key, value in full_data_output.items():
             output_file.write(f"{key}: {value}\n")
-     
+
+        output_file.write("\nPython Lib Versions:\n")
+        output_file.write((f"PyTorch: {torch.__version__}\n"))
+        output_file.write((f"Torchvision: {torchvision.__version__}\n"))
+        output_file.write((f"Numpy: {np.__version__}\n"))
+        output_file.write((f"Matplotlib: {plt.__version__}\n"))
+
         system_information = get_system_information()
         output_file.write("\n" + system_information)
     print("- Completed -")
