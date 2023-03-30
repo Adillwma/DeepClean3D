@@ -68,6 +68,57 @@ Default: if None, uses a global default (see torch.set_default_tensor_type()).!!
 ### ~~~~~ Add all advanced program settings to end of net summary txt file i.e what typ eof normalisation used etc, also add th enam eof the autoencoder file i.e AE_V1 etc from the module name 
 """
 import torch
+def ada_weighted_mse_loss(target_image, reconstructed_image, zero_weighting, nonzero_weighting):
+    """
+    Calculates the weighted mean squared error (MSE) loss between target_image and reconstructed_image.
+    The loss for zero pixels in the target_image is weighted by zero_weighting, and the loss for non-zero
+    pixels is weighted by nonzero_weighting.
+
+    Args:
+    - target_image: a tensor of shape (B, C, H, W) containing the target image
+    - reconstructed_image: a tensor of shape (B, C, H, W) containing the reconstructed image
+    - zero_weighting: a scalar weighting coefficient for the MSE loss of zero pixels
+    - nonzero_weighting: a scalar weighting coefficient for the MSE loss of non-zero pixels
+
+    Returns:
+    - weighted_mse_loss: a scalar tensor containing the weighted MSE loss
+    """
+    
+    # Get the indices of 0 and non 0 values in target_image as a mask for speed
+    zero_mask = (target_image == 0)
+    nonzero_mask = ~zero_mask         # Invert mask
+    
+    # Get the values in target_image
+    values_zero = target_image[zero_mask]
+    values_nonzero = target_image[nonzero_mask]
+    
+    # Get the corresponding values in reconstructed_image
+    corresponding_values_zero = reconstructed_image[zero_mask]
+    corresponding_values_nonzero = reconstructed_image[nonzero_mask]
+    
+    # Create an instance of MSELoss class
+    mse_loss = torch.nn.MSELoss(reduction='mean')
+    
+    # Compute the MSE losses
+    zero_loss = mse_loss(corresponding_values_zero, values_zero)
+    nonzero_loss = mse_loss(corresponding_values_nonzero, values_nonzero)
+
+    # Protection from there being no 0 vals or no non zero vals, which then retunrs nan for MSE and creates a nan overall MSE return (which is error)
+    if torch.isnan(zero_loss):
+        zero_loss = 0
+    if torch.isnan(nonzero_loss):
+        nonzero_loss = 0
+    
+    # Sum losses with weighting coefficiants 
+    weighted_mse_loss = (zero_weighting * zero_loss) + (nonzero_weighting * nonzero_loss) 
+    
+    return weighted_mse_loss
+
+
+
+
+
+
 
 #%% - User Inputs
 dataset_title = "Dataset 27_X100K" #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
@@ -86,7 +137,7 @@ latent_dim = 12                    #User controll to set number of nodes in the 
 
 learning_rate = 0.0001  #User controll to set optimiser learning rate(Hyperparameter)
 optim_w_decay = 1e-05  #User controll to set optimiser weight decay (Hyperparameter)
-loss_fn = torch.nn.MSELoss()  # torch.nn.BCELoss() #torch.nn.MSELoss()   #!!!!!!   #MSELoss()          #(mean square error) User controll to set loss function (Hyperparameter)
+loss_fn = ada_weighted_mse_loss() #torch.nn.MSELoss()  # torch.nn.BCELoss() #torch.nn.MSELoss()   #!!!!!!   #MSELoss()          #(mean square error) User controll to set loss function (Hyperparameter)
 """
 #### NEW MULTI-LOSS FUCN WITH WEIGHTS
 loss_functions = [Max_Loss_Func, torch.nn.MSELoss()] 
