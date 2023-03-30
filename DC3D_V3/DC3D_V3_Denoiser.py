@@ -15,10 +15,9 @@ def DeepClean3D(image_noisy, model_file_path):       #Defines a function for plo
     if image_noisy.ndim == 2:
         x_px_len = len(image_noisy[0])
         y_px_len = len(image_noisy[:,0])
-        print("Input Image DIM = 2", x_px_len, y_px_len)
-        print("The array has 2 dimensions")
     else:
         print("The array has a different number of dimensions")
+        
     encoder, decoder = torch.load(model_file_path)
     print("MODEL LOADED SUCCESSFULLY")
     
