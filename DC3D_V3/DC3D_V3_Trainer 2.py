@@ -78,6 +78,10 @@ Default: if None, uses a global default (see torch.set_default_tensor_type()).!!
 ### ~~~~~ update custom mse loss fucntion so that user arguments are set in settings page rather than at function def by defualts i.e (zero_weighting=1, nonzero_weighting=5)
 
 ### ~~~~~ could investigate programatically setting the non_zero weighting based on the ratio of zero points to non zero points in the data set which would balance out the two classes in the loss functions eyes
+
+### ~~~~~ Add way for program to save the raw data for 3d plots so that they can be replotted after training and reviewed in rotatable 3d 
+
+### ~~~~~ Check if running model in dp (fp64) is causing large slow down???
 """
 import torch
 def ada_weighted_mse_loss(reconstructed_image, target_image, zero_weighting=1, nonzero_weighting=5):
@@ -126,30 +130,24 @@ def ada_weighted_mse_loss(reconstructed_image, target_image, zero_weighting=1, n
     
     return weighted_mse_loss
 
-
-
-
-
-
-
 #%% - User Inputs
-dataset_title = "Dataset 27_X100K" #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
-model_save_name = "D27 100K lr0001 ld12"#"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
+dataset_title = "Dataset 27_X100K"           #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
+model_save_name = "D27 100K lr0001 ld12"     #"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
 
-time_dimension = 100                                    #User controll to set the number of time steps in the data
-reconstruction_threshold = 0.5      #MUST BE BETWEEN 0-1        #Threshold for 3d reconstruction, values below this confidence level are discounted
+time_dimension = 100                         # User controll to set the number of time steps in the data
+reconstruction_threshold = 0.5               # MUST BE BETWEEN 0-1  #Threshold for 3d reconstruction, values below this confidence level are discounted
 
-noise_factor = 0                                          #User controll to set the noise factor, a multiplier for the magnitude of noise added. 0 means no noise added, 1 is defualt level of noise added, 10 is 10x default level added (Hyperparameter)
-noise_points = 0                                         #User controll to set the number of noise points to add 
+noise_factor = 0                             # User controll to set the noise factor, a multiplier for the magnitude of noise added. 0 means no noise added, 1 is defualt level of noise added, 10 is 10x default level added (Hyperparameter)
+noise_points = 0                             # User controll to set the number of noise points to add 
 
 #%% - Hyperparameter Settings
-num_epochs = 51                                         #User controll to set number of epochs (Hyperparameter)
-batch_size = 10                                 #User controll to set batch size (Hyperparameter) - #Data Loader, number of Images to pull per batch 
-latent_dim = 12                    #User controll to set number of nodes in the latent space, the bottleneck layer (Hyperparameter)
+num_epochs = 51                              # User controll to set number of epochs (Hyperparameter)
+batch_size = 10                              # User controll to set batch size - number of Images to pull per batch (Hyperparameter) 
+latent_dim = 12                              # User controll to set number of nodes in the latent space, the bottleneck layer (Hyperparameter)
 
-learning_rate = 0.0001  #User controll to set optimiser learning rate(Hyperparameter)
-optim_w_decay = 1e-05  #User controll to set optimiser weight decay (Hyperparameter)
-loss_fn = ada_weighted_mse_loss() #torch.nn.MSELoss()  # torch.nn.BCELoss() #torch.nn.MSELoss()   #!!!!!!   #MSELoss()          #(mean square error) User controll to set loss function (Hyperparameter)
+learning_rate = 0.0001                       # User controll to set optimiser learning rate (Hyperparameter)
+optim_w_decay = 1e-05                        # User controll to set optimiser weight decay for regularisation (Hyperparameter)
+loss_fn = ada_weighted_mse_loss()            # User controll to set loss function (Hyperparameter)    - #torch.nn.MSELoss()  #torch.nn.BCELoss() #torch.nn.L1Loss()  
 """
 #### NEW MULTI-LOSS FUCN WITH WEIGHTS
 loss_functions = [Max_Loss_Func, torch.nn.MSELoss()] 
@@ -167,14 +165,14 @@ for i in range (0, len(loss_fn_weightings)):
 """
 
 #%% - Pretraining settings
-start_from_pretrained_model = False     #if set to true then the model will load the pretrained model and optimiser state dicts from the path below
-load_pretrained_optimser = False      #only availible if above is set to true
-pretrained_model_path = 'N:/Yr 3 Project Results/D20_3 X5k - Training Results/D20_3 X5k - Model + Optimiser State Dicts.pth'      # specify the path to the saved full state dictionary
+start_from_pretrained_model = False          # If set to true then the model will load the pretrained model and optimiser state dicts from the path below
+load_pretrained_optimser = False             # Only availible if above is set to true
+pretrained_model_path = 'N:/Yr 3 Project Results/D20_3 X5k - Training Results/D20_3 X5k - Model + Optimiser State Dicts.pth'      # Specify the path to the saved full state dictionary for pretraining
 
 #%% - Normalisation Settings
-simple_norm_instead_of_custom = False      #[Default is False]
-all_norm_off = False                       #[Default is False]
-simple_renorm = False                      #[Default is False]
+simple_norm_instead_of_custom = False        #[Default is False]
+all_norm_off = False                         #[Default is False]
+simple_renorm = False                        #[Default is False]
 
 #%% - Plotting Control Settings
 print_every_other = 2                      #[default = 2] 1 is to save/print all training plots every epoch, 2 is every other epoch, 3 is every 3rd epoch etc
@@ -198,16 +196,16 @@ compress_activations_npz_output = False #False   Compresses the activity file ab
 print_encoder_debug = False                     # [default = False]
 print_decoder_debug = False                     # [default = False]
 debug_noise_function = False                    # [default = False]
-debug_loader_batch = False   #REMOVE THIS PARAM!!!  #(Default = False) //INPUT 0 or 1//   #Setting debug loader batch will print to user the images taken in by the dataoader in this current batch and print the corresponding labels
+debug_loader_batch = False                      # SAFELY REMOVE THIS PARAM!!!  #(Default = False) //INPUT 0 or 1//   #Setting debug loader batch will print to user the images taken in by the dataoader in this current batch and print the corresponding labels
 
-full_dataset_integrity_check = False       #[Default = False] V slow    #Checks the integrity of the dataset by checking shape of each item as opposed to when set to false which only checks one single random file in the dataset
-full_dataset_distribution_check = False    #[Default = False]  V slow   #Checks the distribution of the dataset , false maesn no distributionn check is done
-print_network_summary = False              #[Default = False] #Prints the network summary to terminal
-seed = 0                                   #[Default = 0] which gives no seeeding to RNG, if the value is not zero then this is used for the RNG seeding for numpy, random, and torch libraries
+full_dataset_integrity_check = False            # [Default = False] V slow  #Checks the integrity of the dataset by checking shape of each item as opposed to when set to false which only checks one single random file in the dataset
+full_dataset_distribution_check = False         # [Default = False] V slow  #Checks the distribution of the dataset , false maesn no distributionn check is done
+print_network_summary = False                   # [Default = False] Prints the network summary to terminal
+seed = 0                                        # [Default = 0] 0 gives no seeeding to RNG, if the value is not zero then this is used for the RNG seeding for numpy, random, and torch libraries
 
-print_partial_training_losses = False            # [default = True] #Prints the training loss for each batch in the epoch
-allow_escape = False                             # Default = True #Allows the user to escape the training loop at end of eaach epoch (blocking till closed)
-#response_timeout = 120 # in seconds             # Default = 120 
+print_partial_training_losses = False           # [Default = True] Prints the training loss for each batch in the epoch
+allow_escape = False                            # [Default = True] Allows the user to escape the training loop at end of eaach epoch (blocking till closed)
+#response_timeout = 120 # in seconds            # [Default = 120] 
 
 #%% - Program Mode Setting - CLEAN UP THIS SECTION
 #mode = 0 ### 0=Data_Gathering, 1=Testing, 2=Speed_Test, 3=Debugging
@@ -414,7 +412,6 @@ def add_noise(input, noise_factor=0.3, debug_noise_function=False):
         plt.show()   
     return noised_img
 
-
 # New function to add n noise points to the 2d numpy array
 def add_noise_points(input, noise_points=100, reconstruction_threshold=0.5):
 
@@ -519,7 +516,8 @@ def plot_ae_outputs_den(encoder, decoder, epoch, model_save_name, time_dimension
     """
     n is the number of images to plot
     """
-    #%% - 2D Input/Output Comparison Plots 
+    ### 2D Input/Output Comparison Plots 
+
     #Initialise lists for true and recovered signal point values 
     number_of_true_signal_points = []
     number_of_recovered_signal_points = []
@@ -596,7 +594,8 @@ def plot_ae_outputs_den(encoder, decoder, epoch, model_save_name, time_dimension
     else:
         plt.close()
 
-    #%% - 3D Reconstruction Plots 
+    ### 3D Reconstruction Plots 
+
     in_im = test_image   
     noise_im = noised_test_image
     rec_im = recovered_test_image
@@ -730,6 +729,8 @@ test_dataset = torchvision.datasets.DatasetFolder(test_dir, train_loader2d, exte
 
 #%% - Data Preparation
 
+
+####CLEAN UP!!!!!
 if simple_norm_instead_of_custom:
     custom_normalisation_with_args = lambda x: x/time_dimension
 else:
@@ -738,8 +739,9 @@ else:
 if all_norm_off:
     custom_normalisation_with_args = lambda x: x
 
-
 add_noise_with_Args = partial(add_noise_points, noise_points=noise_points, reconstruction_threshold=reconstruction_threshold)   #using functools partial to bundle the args into custom norm to use in custom torch transform using lambda function
+######!!!!!!!!
+
 
 train_transform = transforms.Compose([                                         #train_transform variable holds the tensor tranformations to be performed on the training data.  transforms.Compose([ ,  , ]) allows multiple transforms to be chained together (in serial?) (#!!! does it do more than this??)
                                        #transforms.RandomRotation(30),         #transforms.RandomRotation(angle (degrees?) ) rotates the tensor randomly up to max value of angle argument
@@ -774,31 +776,27 @@ train_split=int(m*train_test_split_ratio)
 train_data, test2_data = random_split(train_dataset, [train_split, m-train_split])    #random_split(data_to_split, [size of output1, size of output2]) just splits the train_dataset into two parts, 4/5 goes to train_data and 1/5 goes to val_data , validation?
 half_slice = int(len(test2_data)/2)
 test_data, val_data =  random_split(test2_data, [half_slice, len(test2_data) - half_slice])
-###Following section for Dataloaders, they just pull a random sample of images from each of the datasets we now have, train_data, valid_data, and test_data. the batch size defines how many are taken from each set, shuffle argument shuffles them each time?? #!!!
-                                                                        #User controll to set batch size for the dataloaders (Hyperparameter)?? #!!!
 
+###Following section for Dataloaders, they just pull a random sample of images from each of the datasets we now have, train_data, valid_data, and test_data. the batch size defines how many are taken from each set, shuffle argument shuffles them each time?? #!!!
 # required to load the data into the endoder/decoder. Combines a dataset and a sampler, and provides an iterable over the given dataset.
-train_loader = torch.utils.data.DataLoader(train_data, batch_size=batch_size, shuffle=True)                 #Training data loader, can be run to pull training data as configured
-test_loader = torch.utils.data.DataLoader(test_data, batch_size=batch_size)   #Testing data loader, can be run to pull training data as configured. Also is shuffled using parameter shuffle #!!! why is it shuffled?
-valid_loader = torch.utils.data.DataLoader(val_data, batch_size=batch_size)                   #Validation data loader, can be run to pull training data as configured
+train_loader = torch.utils.data.DataLoader(train_data, batch_size=batch_size, shuffle=True)                 #Training data loader, can be run to pull training data as configured  Also is shuffled using parameter shuffle
+test_loader = torch.utils.data.DataLoader(test_data, batch_size=batch_size)                                 #Testing data loader, can be run to pull training data as configured. 
+valid_loader = torch.utils.data.DataLoader(val_data, batch_size=batch_size)                                 #Validation data loader, can be run to pull training data as configured
 
 
 #%% - Setup model, loss criteria and optimiser    
-### Define a learning rate for the optimiser. 
-# Its how much to change the model in response to the estimated error each time the model weights are updated.
-lr = learning_rate                                     #Just sets the learing rate value from the user inputs pannel at the top           
 
-### Initialize the two networks
-# use encoder and decoder classes, providing dimensions for your dataset. FC2_INPUT_DIM IS NOT USED!! This would be extremely useful.
+### Initialize the encoder and decoder
 encoder = Encoder(encoded_space_dim=latent_dim,fc2_input_dim=128, encoder_debug=print_encoder_debug, record_activity=record_activity)
 decoder = Decoder(encoded_space_dim=latent_dim,fc2_input_dim=128, decoder_debug=print_decoder_debug, record_activity=record_activity)
+
+# Sets the encoder and decoder to double precision floating point arithmetic (fp64)
 encoder.double()   
 decoder.double()
+
+### Define the optimizer
 params_to_optimize = [{'params': encoder.parameters()} ,{'params': decoder.parameters()}] #Selects what to optimise, 
-
-
-### Define an optimizer (both for the encoder and the decoder!)
-optim = torch.optim.Adam(params_to_optimize, lr=lr, weight_decay=optim_w_decay)
+optim = torch.optim.Adam(params_to_optimize, lr=learning_rate, weight_decay=optim_w_decay)
 
 
 #%% - Load in pretrained netwrok if needed 
