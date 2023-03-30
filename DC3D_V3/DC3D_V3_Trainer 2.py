@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-DeepClean v0.3.4
-Build created on Sat Feb 1 2022
+DeepClean v0.3.5
+Build created on Wednesday March 29th 2023
 Authors: Adill Al-Ashgar & Max Carter
 University of Bristol
 
-@Adill: adillwmaa@gmail.co.uk - ex18871@bristol.ac.uk
+@Adill: adillwmaa@gmail.co.uk / ex18871@bristol.ac.uk
 @Max: qa19105@bristol.ac.uk
 
 
@@ -13,7 +13,7 @@ University of Bristol
 Possible improvements:
 ### ~~~~~ [DONE!] Make sure that autoecoder Encoder and Decoder are saved along with model in the models folder 
 
-### ~~~~~~ [TESTING!] Allow normalisation/renorm to be bypassed, to check how it affects results 
+### ~~~~~~ [DONE!] Allow normalisation/renorm to be bypassed, to check how it affects results 
 
 ### ~~~~~ Possibly set all to double?
 dtype (torch.dtype, optional) – the desired data type of returned tensor. 
@@ -35,11 +35,19 @@ Default: if None, uses a global default (see torch.set_default_tensor_type()).!!
 
 ### ~~~~~ [DONE!] Fix Val loss save bug
 
+### ~~~~~ [DONE!] Custom MSE loss fucntion with weighting on zero vals to solve class imbalence
+
 ### ~~~~~ [DONE!] Move things to other files (AE, Helper funcs, Visulisations etc)
 
 ### ~~~~~ [DONE!] Fix reconstruction threshold, use recon threshold to set bottom limit in custom normalisation
 
 ### ~~~~~ [DONE!] Turn plot or save into a function 
+
+### ~~~~~ [DONE!] Add in a way to save the model after each epoch, so that if the program crashes we can still use the last saved model
+
+### ~~~~~ [DONE!] Find way to allow user to exit which is non blocking 
+
+### ~~~~~ [DONE!] Train on labeld data which has the fill line paths in labels and then just points on line in the raw data?
 
 ### ~~~~~ Add arg to plot or save function that passes a test string to print for the plot generating user notice ratehr than the generic one used each time atm 
 
@@ -63,9 +71,13 @@ Default: if None, uses a global default (see torch.set_default_tensor_type()).!!
 
 ### ~~~~~ Create flatten module in main body so noise can be added to the 3D cube rather than slicewise
 
-### ~~~~~ [TESTING!]Add way to compress the NPZ output as filesize is to large ! ~3Gb+
+### ~~~~~ [DONE!] Add way to compress the NPZ output as filesize is to large ! ~3Gb+
 
-### ~~~~~ Add all advanced program settings to end of net summary txt file i.e what typ eof normalisation used etc, also add th enam eof the autoencoder file i.e AE_V1 etc from the module name 
+### ~~~~~ [DONE!] Add all advanced program settings to end of net summary txt file i.e what typ eof normalisation used etc, also add th enam eof the autoencoder file i.e AE_V1 etc from the module name 
+
+### ~~~~~ update custom mse loss fucntion so that user arguments are set in settings page rather than at function def by defualts i.e (zero_weighting=1, nonzero_weighting=5)
+
+### ~~~~~ could investigate programatically setting the non_zero weighting based on the ratio of zero points to non zero points in the data set which would balance out the two classes in the loss functions eyes
 """
 import torch
 def ada_weighted_mse_loss(reconstructed_image, target_image, zero_weighting=1, nonzero_weighting=5):
@@ -162,30 +174,30 @@ pretrained_model_path = 'N:/Yr 3 Project Results/D20_3 X5k - Training Results/D2
 #%% - Normalisation Settings
 simple_norm_instead_of_custom = False      #[Default is False]
 all_norm_off = False                       #[Default is False]
-simple_renorm = False                       #[Default is False]
+simple_renorm = False                      #[Default is False]
 
 #%% - Plotting Control Settings
 print_every_other = 2                      #[default = 2] 1 is to save/print all training plots every epoch, 2 is every other epoch, 3 is every 3rd epoch etc
-plot_or_save = 1                            #[default = 1] 0 prints plots to terminal (blocking till closed), If set to 1 then saves all end of epoch printouts to disk (non-blocking), if set to 2 then saves outputs whilst also printing for user (blocking till closed)
+plot_or_save = 1                           #[default = 1] 0 prints plots to terminal (blocking till closed), If set to 1 then saves all end of epoch printouts to disk (non-blocking), if set to 2 then saves outputs whilst also printing for user (blocking till closed)
 
 #%% - Advanced Visulisation Settings
-plot_train_loss = True                 #[default = True]     
-plot_validation_loss = True           #[default = True]     
+plot_train_loss = True               #[default = True]     
+plot_validation_loss = True          #[default = True]     
 
-plot_cutoff_telemetry = True          #[default = False] # Update name to pixel_cuttoff_telemetry    #Very slow, reduces net performance by XXXXXX%
+plot_cutoff_telemetry = True         #[default = False] # Update name to pixel_cuttoff_telemetry    #Very slow, reduces net performance by XXXXXX%
 
-plot_pixel_difference = False       #[default = True] 
-plot_latent_generations = True     #[default = True]      
-plot_higher_dim = False           #[default = True]    
-plot_Graphwiz = False          #[default = True]  
+plot_pixel_difference = False        #[default = True] 
+plot_latent_generations = True       #[default = True]      
+plot_higher_dim = False              #[default = True]    
+plot_Graphwiz = False                #[default = True]  
 
 record_activity = False #False  ##Be carefull, the activity file recorded is ~ 2.5Gb  #Very slow, reduces net performance by XXXXXX%
 compress_activations_npz_output = False #False   Compresses the activity file above for smaller file size but does increase loading and saving times for the file. (use if low on hdd space)
 
 #%% - Advanced Debugging Settings
-print_encoder_debug = False                     #[default = False]
-print_decoder_debug = False                     #[default = False]
-debug_noise_function = False                    #[default = False]
+print_encoder_debug = False                     # [default = False]
+print_decoder_debug = False                     # [default = False]
+debug_noise_function = False                    # [default = False]
 debug_loader_batch = False   #REMOVE THIS PARAM!!!  #(Default = False) //INPUT 0 or 1//   #Setting debug loader batch will print to user the images taken in by the dataoader in this current batch and print the corresponding labels
 
 full_dataset_integrity_check = False       #[Default = False] V slow    #Checks the integrity of the dataset by checking shape of each item as opposed to when set to false which only checks one single random file in the dataset
@@ -193,7 +205,7 @@ full_dataset_distribution_check = False    #[Default = False]  V slow   #Checks 
 print_network_summary = False              #[Default = False] #Prints the network summary to terminal
 seed = 0                                   #[Default = 0] which gives no seeeding to RNG, if the value is not zero then this is used for the RNG seeding for numpy, random, and torch libraries
 
-print_partial_training_losses = False            #[default = True] #Prints the training loss for each batch in the epoch
+print_partial_training_losses = False            # [default = True] #Prints the training loss for each batch in the epoch
 allow_escape = False                             # Default = True #Allows the user to escape the training loop at end of eaach epoch (blocking till closed)
 #response_timeout = 120 # in seconds             # Default = 120 
 
@@ -362,7 +374,7 @@ test_dir = data_path + dataset_title   #????????????????????????????????????????
 
 #%% - Parameters Initialisation
 # Sets program into speed test mode
-if speed_test:                       # If speed test is set to true
+if speed_test:                           # If speed test is set to true
     print_every_other = num_epochs + 5   # Makes sure print is larger than total num of epochs to avoid delays in execution for testing
 
 # Initialises pixel belief telemetry
@@ -372,8 +384,8 @@ telemetry = [[0,0.5,0.5]]                # Initalises the telemetry memory, star
 #image_noisy_list = []
 
 # Initialises seeding values to RNGs
-if seed != 0:                    # If seed is not set to 0
-    Determinism_Seeding(seed)   # Set the seed for the RNGs
+if seed != 0:                             # If seed is not set to 0
+    Determinism_Seeding(seed)             # Set the seed for the RNGs
 
 #%% - Create record of all user input settings, to add to output data for testing and keeping track of settings
 settings = {}  # Creates empty dictionary to store settings 
@@ -439,7 +451,7 @@ def train_epoch_den(encoder, decoder, device, dataloader, loss_fn, optimizer, no
     
     if print_partial_training_losses:  # Prints partial train losses per batch
         image_loop  = (dataloader)
-    else:                              # No print partial train losses per batch, instead create progress bar
+    else:                              # Rather than print partial train losses per batch, instead create progress bar
         image_loop  = tqdm(dataloader, desc='Batches', leave=False)
 
     # Iterate the dataloader (we do not need the label values, this is unsupervised learning)
