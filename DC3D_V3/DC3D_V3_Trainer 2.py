@@ -68,7 +68,7 @@ Default: if None, uses a global default (see torch.set_default_tensor_type()).!!
 ### ~~~~~ Add all advanced program settings to end of net summary txt file i.e what typ eof normalisation used etc, also add th enam eof the autoencoder file i.e AE_V1 etc from the module name 
 """
 import torch
-def ada_weighted_mse_loss(target_image, reconstructed_image, zero_weighting, nonzero_weighting):
+def ada_weighted_mse_loss(reconstructed_image, target_image, zero_weighting=1, nonzero_weighting=5):
     """
     Calculates the weighted mean squared error (MSE) loss between target_image and reconstructed_image.
     The loss for zero pixels in the target_image is weighted by zero_weighting, and the loss for non-zero
