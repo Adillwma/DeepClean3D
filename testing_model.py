@@ -24,11 +24,12 @@ input_image_path = os.path.join(input_image_path, np.random.choice(os.listdir(in
 input_image = np.load(input_image_path)
 
 # Turn input image into tensor and add two extra dimesnions to start of array so shape goes from (x,y) to (1,1,x,y) to represent batch and channel dims
-input_image = torch.tensor(input_image).unsqueeze(0).unsqueeze(0)   
+input_image = torch.tensor(input_image)
 input_image.double()
 
 #%% - functions
 def plotting(new_arr, t_max):
+    print("shape of new_arr: ", np.shape(new_arr))
     # Assume new_arr is your 3D array of size n by m by t_max
     n, m = new_arr.shape
 
@@ -52,7 +53,7 @@ def plotting(new_arr, t_max):
 
 def custom_normalisation(data, reconstruction_threshold, time_dimension=100):
     data = ((data / time_dimension) / (1/(1-reconstruction_threshold))) + reconstruction_threshold
-    for row in data:
+    for row in data:   ###REPLACE USING NP.WHERE
         for i, ipt in enumerate(row):
             if ipt == reconstruction_threshold:
                 row[i] = 0
@@ -84,9 +85,9 @@ def deepclean3(input_image, reconstruction_threshold, time_dimension=100):
         norm_image = custom_normalisation(input_image, reconstruction_threshold, time_dimension)
         image_prepared = norm_image.unsqueeze(0).unsqueeze(0)   #Adds two extra dimesnions to start of array so shape goes from (x,y) to (1,1,x,y) to represent batch and channel dims
         rec_image = decoder(encoder(image_prepared))                         #Creates a recovered image (denoised image), by running a noisy image through the encoder and then the output of that through the decoder.
-        rec_image = rec_image.squeeze().numpy()
-        print("SHAPEOUT", rec_image.shape)
-        rec_image_renorm = custom_renormalisation(rec_image, reconstruction_threshold, time_dimension)
+        rec = rec_image.squeeze().numpy()
+        print(type(rec))
+        rec_image_renorm = custom_renormalisation(rec, reconstruction_threshold, time_dimension)
     return rec_image_renorm
 
 
@@ -95,10 +96,10 @@ recovered_image = deepclean3(input_image, reconstruction_threshold, time_dimensi
 
 # Plot the input image and the recovered image beside each other on a mpl 2d plot   
 fig, (ax1, ax2) = plt.subplots(1, 2)
-ax1.imshow(input_image[0])
-ax2.imshow(recovered_image[0])
+ax1.imshow(input_image)
+ax2.imshow(recovered_image)
 plt.show()
 
 # Plot the input image and the recovered image beside each other on a mpl 3d plot
-plotting(input_image[0], time_dimension)
-plotting(recovered_image[0], time_dimension)
+plotting(input_image, time_dimension)
+plotting(recovered_image, time_dimension)
