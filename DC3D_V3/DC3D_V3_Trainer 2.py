@@ -108,7 +108,7 @@ noise_factor = 0                             # User controll to set the noise fa
 noise_points = 0                             # User controll to set the number of noise points to add 
 
 #%% - Hyperparameter Settings
-num_epochs = 6                              # User controll to set number of epochs (Hyperparameter)
+num_epochs = 51                              # User controll to set number of epochs (Hyperparameter)
 batch_size = 10                              # User controll to set batch size - number of Images to pull per batch (Hyperparameter) 
 latent_dim = 10                              # User controll to set number of nodes in the latent space, the bottleneck layer (Hyperparameter)
 
