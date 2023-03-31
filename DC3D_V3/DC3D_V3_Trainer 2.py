@@ -33,6 +33,8 @@ Default: if None, uses a global default (see torch.set_default_tensor_type()).!!
 
 ### ~~~~~ Functionalise things
 
+### ~~~~~ Clean up custom autoencoder.py file saver terminal prints left over from debugging
+
 ### ~~~~~ [DONE!] Fix Val loss save bug
 
 ### ~~~~~ [DONE!] Custom MSE loss fucntion with weighting on zero vals to solve class imbalence
@@ -97,7 +99,7 @@ def Maxs_Loss_Func ():
 
 #%% - User Inputs
 dataset_title = "Dataset 24_X10ks"           #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
-model_save_name = "D24 10K lr0001 weighted_loss0point99-1"     #"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
+model_save_name = "D24 10K lr0001 weighted_loss0point99-1 TRUE99"     #"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
 
 time_dimension = 100                         # User controll to set the number of time steps in the data
 reconstruction_threshold = 0.5               # MUST BE BETWEEN 0-1  #Threshold for 3d reconstruction, values below this confidence level are discounted
@@ -106,7 +108,7 @@ noise_factor = 0                             # User controll to set the noise fa
 noise_points = 0                             # User controll to set the number of noise points to add 
 
 #%% - Hyperparameter Settings
-num_epochs = 11                              # User controll to set number of epochs (Hyperparameter)
+num_epochs = 31                              # User controll to set number of epochs (Hyperparameter)
 batch_size = 10                              # User controll to set batch size - number of Images to pull per batch (Hyperparameter) 
 latent_dim = 10                              # User controll to set number of nodes in the latent space, the bottleneck layer (Hyperparameter)
 
@@ -253,7 +255,7 @@ def ada_weighted_mse_loss(reconstructed_image, target_image, zero_weighting=zero
 
 def custom_normalisation(data, reconstruction_threshold, time_dimension=100):
     data = ((data / time_dimension) / (1/(1-reconstruction_threshold))) + reconstruction_threshold
-    for row in data:
+    for row in data:     ###REPLACE USING NP.WHERE
         for i, ipt in enumerate(row):
             if ipt == reconstruction_threshold:
                 row[i] = 0
@@ -401,9 +403,9 @@ settings["Reconstruction Threshold"] = reconstruction_threshold
 
 #%% - Functions
 ### Random Noise Generator Function
-def add_noise(input, noise_factor=0.3, debug_noise_function=False):
+def add_noise(image, noise_factor=0.3, debug_noise_function=False):
     noise = torch.randn_like(input) * noise_factor
-    noised_img = input + noise
+    noised_img = image + noise
     noised_img = torch.clip(noised_img, 0., 1.)
     if debug_noise_function:
         plt.imshow(noise)
@@ -411,12 +413,12 @@ def add_noise(input, noise_factor=0.3, debug_noise_function=False):
     return noised_img
 
 # New function to add n noise points to the 2d numpy array
-def add_noise_points(input, noise_points=100, reconstruction_threshold=0.5):
+def add_noise_points(image, noise_points=100, reconstruction_threshold=0.5):
 
     if noise_points > 0:
         #Find dimensions of input image 
-        x_dim = input.shape[0]
-        y_dim = input.shape[1]
+        x_dim = image.shape[0]
+        y_dim = image.shape[1]
 
         #Create a list of random x and y coordinates
         x_coords = np.random.randint(0, x_dim, noise_points)
@@ -426,9 +428,9 @@ def add_noise_points(input, noise_points=100, reconstruction_threshold=0.5):
         for i in range(noise_points):
 
             # Add a random number between recon_threshold and 1 to the pixel 
-            input[x_coords[i], y_coords[i]] = np.random.uniform(reconstruction_threshold, 1)
+            image[x_coords[i], y_coords[i]] = np.random.uniform(reconstruction_threshold, 1)
 
-    return input
+    return image
 
 ###RNG Seeding for Determinism Function
 def Determinism_Seeding(seed):
@@ -1101,7 +1103,7 @@ if data_gathering:
         
         output_file.write("\Loss Function:\n")    # Write the loss function settings to the file
         output_file.write(f"Loss Function Choice: {loss_fn}\n")
-        if loss_fn == "ada_weighted_mse_loss":
+        if loss_function_selection == 0:
             output_file.write(f"zero_weighting: {zero_weighting}\n")
             output_file.write(f"nonzero_weighting: {nonzero_weighting}\n")    
 
