@@ -4,7 +4,8 @@ System Information Check V1.0.0
 Author: Adill Al-Ashgar
 Created on Fri March 3 2023
 
-#Return all vital computer statsistics to the main code body for adding to network summary, developed as helper file due to length of code (Trying to keep main file readable and clean)
+#Returns all vital computer statsistics to the main code body for adding to network summary, 
+developed as helper file due to length of code (Trying to keep main file readable and clean)
 """
 
 import psutil
@@ -30,11 +31,10 @@ def get_system_information():
         """
         For more detailed GPU info, added in try except stament as need pip install for wmi and trying to limit amount of dependencies that need install from breaking the main programs running
         """
+        gpu_data = list()
         try:
             import wmi
             GPU_devices = wmi.WMI().Win32_VideoController()
-
-            gpu_data = list()
 
             for GPU_id, GPU_device in enumerate(GPU_devices):
                 controller_info = {
@@ -105,3 +105,5 @@ def get_system_information():
     system_information += "\n"
 
     return system_information
+
+print(get_system_information())
