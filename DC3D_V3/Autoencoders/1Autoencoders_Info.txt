@@ -1,0 +1,9 @@
+
+The autoencoders in this section vary the number of linear layers after the convolutional layers
+
+
+AE1 has 2 lin layers - 4800 --> 128 --> encoded_space_dim
+AE2 has 3 lin layers - 4800 --> 1024 --> 128 --> encoded_space_dim
+AE3 has 4 lin layers - 4800 --> 1024 --> 256 --> 128 --> encoded_space_dim
+AE4 has 5 lin layers - 4800 --> 1024 --> 512 --> 256 --> 128 --> encoded_space_dim
+AE5 has 6 lin layers - 4800 --> 2048 --> 1024 --> 512 --> 256 --> 128 --> encoded_space_dim
