@@ -93,9 +93,6 @@ def dataset_distribution_tester(dir, time_dimension, ignore_zero_vals_on_plot=Tr
         # Calculate range using numpy function
         data_range = np.ptp(data)
 
-        # Calculate range using numpy function
-        data_range = np.ptp(data)
-
         # Calculate min and max from numpy functions
         data_min = min(data)
         data_max = max(data)
@@ -158,8 +155,8 @@ def dataset_distribution_tester(dir, time_dimension, ignore_zero_vals_on_plot=Tr
         full_set = full_set[np.where(full_set != 0)]
 
     # Plot the histogram and extract the bin counts and bin edges
-    ax1.hist(single_file, bins=time_dimension+1, density=False, color='blue', alpha=0.5, edgecolor='black', linewidth=1.2)
-    ax2.hist(full_set, bins=time_dimension+1, density=False, color='blue', alpha=0.5, edgecolor='black', linewidth=1.2)
+    ax1.hist(single_file, bins=time_dimension, density=False, color='blue', alpha=0.5, edgecolor='black', linewidth=1.2)
+    ax2.hist(full_set, bins=time_dimension, density=False, color='blue', alpha=0.5, edgecolor='black', linewidth=1.2)
     ###Could collect this bin number and width data for checking against after the test is complete???  i.e nfull, binfull, patches = ax2.hist(full_set, bins=time_dimension.... etx.
 
     ax1.yaxis.set_major_locator(MaxNLocator(integer=True))
@@ -245,15 +242,14 @@ def dataset_distribution_tester(dir, time_dimension, ignore_zero_vals_on_plot=Tr
     print("Distribution Test Completed\n")
     return results
 
-"""
+
 #%% - User Inputs - if not calling this from external script then can use this section to set inputs
 time_dimension = 100
-dataset_title = "Dataset 14_Real_10K_M broken"
-data_path = "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Yr 3 Project/Circular and Spherical Dummy Datasets/"
+dataset_title = "Data"
+data_path = r"C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Cross Stuff\MultiX - 80%1X - 20%2X - 128x88/"
 ignore_zero_vals_on_plot = True
 
 # Program internals setup
 dir = (data_path + dataset_title)
 
 dataset_distribution_tester(dir, time_dimension, ignore_zero_vals_on_plot)
-"""
