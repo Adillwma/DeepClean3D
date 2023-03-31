@@ -30,11 +30,11 @@ def get_system_information():
         """
         For more detailed GPU info, added in try except stament as need pip install for wmi and trying to limit amount of dependencies that need install from breaking the main programs running
         """
+        gpu_data = list()
+        
         try:
             import wmi
             GPU_devices = wmi.WMI().Win32_VideoController()
-
-            gpu_data = list()
 
             for GPU_id, GPU_device in enumerate(GPU_devices):
                 controller_info = {
