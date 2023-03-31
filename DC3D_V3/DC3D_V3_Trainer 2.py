@@ -131,8 +131,8 @@ def ada_weighted_mse_loss(reconstructed_image, target_image, zero_weighting=1, n
     return weighted_mse_loss
 
 #%% - User Inputs
-dataset_title = "Dataset 27_X100K"           #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
-model_save_name = "D27 100K lr0001 ld12"     #"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
+dataset_title = "Dataset 25_X50ks"           #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
+model_save_name = "D25 50K lr0001 weighted_loss1-5"     #"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
 
 time_dimension = 100                         # User controll to set the number of time steps in the data
 reconstruction_threshold = 0.5               # MUST BE BETWEEN 0-1  #Threshold for 3d reconstruction, values below this confidence level are discounted
@@ -141,13 +141,13 @@ noise_factor = 0                             # User controll to set the noise fa
 noise_points = 0                             # User controll to set the number of noise points to add 
 
 #%% - Hyperparameter Settings
-num_epochs = 51                              # User controll to set number of epochs (Hyperparameter)
+num_epochs = 5                              # User controll to set number of epochs (Hyperparameter)
 batch_size = 10                              # User controll to set batch size - number of Images to pull per batch (Hyperparameter) 
-latent_dim = 12                              # User controll to set number of nodes in the latent space, the bottleneck layer (Hyperparameter)
+latent_dim = 10                              # User controll to set number of nodes in the latent space, the bottleneck layer (Hyperparameter)
 
 learning_rate = 0.0001                       # User controll to set optimiser learning rate (Hyperparameter)
 optim_w_decay = 1e-05                        # User controll to set optimiser weight decay for regularisation (Hyperparameter)
-loss_fn = ada_weighted_mse_loss()            # User controll to set loss function (Hyperparameter)    - #torch.nn.MSELoss()  #torch.nn.BCELoss() #torch.nn.L1Loss()  
+loss_fn = ada_weighted_mse_loss            # User controll to set loss function (Hyperparameter)    - #torch.nn.MSELoss()  #torch.nn.BCELoss() #torch.nn.L1Loss()  
 """
 #### NEW MULTI-LOSS FUCN WITH WEIGHTS
 loss_functions = [Max_Loss_Func, torch.nn.MSELoss()] 
@@ -170,21 +170,21 @@ load_pretrained_optimser = False             # Only availible if above is set to
 pretrained_model_path = 'N:/Yr 3 Project Results/D20_3 X5k - Training Results/D20_3 X5k - Model + Optimiser State Dicts.pth'      # Specify the path to the saved full state dictionary for pretraining
 
 #%% - Normalisation Settings
-simple_norm_instead_of_custom = False        #[Default is False]
-all_norm_off = False                         #[Default is False]
-simple_renorm = False                        #[Default is False]
+simple_norm_instead_of_custom = False        #[Default is False] # If set to true then the model will use simple normalisation instead of custom normalisation
+all_norm_off = False                         #[Default is False] # If set to true then the model will not use any input normalisation
+simple_renorm = False                        #[Default is False] # If set to true then the model will use simple output renormalisation instead of custom output renormalisation
 
 #%% - Plotting Control Settings
 print_every_other = 2                      #[default = 2] 1 is to save/print all training plots every epoch, 2 is every other epoch, 3 is every 3rd epoch etc
 plot_or_save = 1                           #[default = 1] 0 prints plots to terminal (blocking till closed), If set to 1 then saves all end of epoch printouts to disk (non-blocking), if set to 2 then saves outputs whilst also printing for user (blocking till closed)
 
 #%% - Advanced Visulisation Settings
-plot_train_loss = True               #[default = True]     
-plot_validation_loss = True          #[default = True]     
+plot_train_loss = True               #[default = True]      
+plot_validation_loss = True          #[default = True]              
 
 plot_cutoff_telemetry = True         #[default = False] # Update name to pixel_cuttoff_telemetry    #Very slow, reduces net performance by XXXXXX%
 
-plot_pixel_difference = False        #[default = True] 
+plot_pixel_difference = False        #[default = True]    
 plot_latent_generations = True       #[default = True]      
 plot_higher_dim = False              #[default = True]    
 plot_Graphwiz = False                #[default = True]  
@@ -193,9 +193,9 @@ record_activity = False #False  ##Be carefull, the activity file recorded is ~ 2
 compress_activations_npz_output = False #False   Compresses the activity file above for smaller file size but does increase loading and saving times for the file. (use if low on hdd space)
 
 #%% - Advanced Debugging Settings
-print_encoder_debug = False                     # [default = False]
+print_encoder_debug = False                     # [default = False] 
 print_decoder_debug = False                     # [default = False]
-debug_noise_function = False                    # [default = False]
+debug_noise_function = False                    # [default = False] 
 debug_loader_batch = False                      # SAFELY REMOVE THIS PARAM!!!  #(Default = False) //INPUT 0 or 1//   #Setting debug loader batch will print to user the images taken in by the dataoader in this current batch and print the corresponding labels
 
 full_dataset_integrity_check = False            # [Default = False] V slow  #Checks the integrity of the dataset by checking shape of each item as opposed to when set to false which only checks one single random file in the dataset
@@ -205,7 +205,7 @@ seed = 0                                        # [Default = 0] 0 gives no seeed
 
 print_partial_training_losses = False           # [Default = True] Prints the training loss for each batch in the epoch
 allow_escape = False                            # [Default = True] Allows the user to escape the training loop at end of eaach epoch (blocking till closed)
-#response_timeout = 120 # in seconds            # [Default = 120] 
+#response_timeout = 120 # in seconds            # (BROKEN) [Default = 120]  If the user does not respond within this time then the training loop will continue 
 
 #%% - Program Mode Setting - CLEAN UP THIS SECTION
 #mode = 0 ### 0=Data_Gathering, 1=Testing, 2=Speed_Test, 3=Debugging
@@ -732,12 +732,12 @@ test_dataset = torchvision.datasets.DatasetFolder(test_dir, train_loader2d, exte
 
 ####CLEAN UP!!!!!
 if simple_norm_instead_of_custom:
-    custom_normalisation_with_args = lambda x: x/time_dimension
+    custom_normalisation_with_args = lambda x: x/time_dimension #if simple_norm_instead_of_custom is set to True, then the custom_normalisation_with_args is set to a lambda function that returns the input data divided by the time dimension
 else:
     custom_normalisation_with_args = partial(custom_normalisation, reconstruction_threshold=reconstruction_threshold, time_dimension=time_dimension)   #using functools partial to bundle the args into custom norm to use in custom torch transform using lambda function
 
 if all_norm_off:
-    custom_normalisation_with_args = lambda x: x
+    custom_normalisation_with_args = lambda x: x #if all_norm_off is set to True, then the custom_normalisation_with_args is set to a lambda function that returns the input data unchanged
 
 add_noise_with_Args = partial(add_noise_points, noise_points=noise_points, reconstruction_threshold=reconstruction_threshold)   #using functools partial to bundle the args into custom norm to use in custom torch transform using lambda function
 ######!!!!!!!!
@@ -749,7 +749,7 @@ train_transform = transforms.Compose([                                         #
                                        #transforms.RandomHorizontalFlip(),     #transforms.RandomHorizontalFlip() flips the image data horizontally 
                                        #transforms.Normalize((0.5), (0.5)),    #transforms.Normalize can be used to normalise the values in the array
                                        transforms.Lambda(custom_normalisation_with_args),
-                                       transforms.Lambda(add_noise_with_Args),
+                                       transforms.Lambda(add_noise_with_Args),        ####USed during debugging, noise adding should be moved to later? or maybe not tbf as this is place to add it if wanting it trained on??
                                        transforms.ToTensor(),
                                        #transforms.RandomRotation(180)
                                        ])                 #other transforms can be dissabled but to tensor must be left enabled ! it creates a tensor from a numpy array #!!! ?
@@ -758,11 +758,11 @@ test_transform = transforms.Compose([                                          #
                                       #transforms.Resize(255),                 #transforms.Resize(pixels? #!!!) ??
                                       #transforms.CenterCrop(224),             #transforms.CenterCrop(pixels? #!!!) ?? Crops the given image at the center. If the image is torch Tensor, it is expected to have […, H, W] shape, where … means an arbitrary number of leading dimensions. If image size is smaller than output size along any edge, image is padded with 0 and then center cropp
                                       #transforms.Normalize((0.5), (0.5)),     #transforms.Normalize can be used to normalise the values in the array
-                                      transforms.Lambda(custom_normalisation_with_args),
+                                      transforms.Lambda(custom_normalisation_with_args), #transforms.Lambda(function) applies a custom transform function to the data
                                       transforms.Lambda(add_noise_with_Args),
-                                      transforms.ToTensor(),
-                                      #transforms.RandomRotation(180)
-                                      ])                  #other transforms can be dissabled but to tensor must be left enabled ! it creates a tensor from a numpy array #!!! ?
+                                      transforms.ToTensor(),                           #transforms.ToTensor() converts a numpy array to a tensor
+                                      #transforms.RandomRotation(180)               #transforms.RandomRotation(angle (degrees?) ) rotates the tensor randomly up to max value of angle argument (if arg is int then it is used as both limits i.e form -180 to +180 deg is the range)
+                                      ])                  #other transforms can be dissabled but to tensor must be left enabled !
 
 # this applies above transforms to dataset (dataset transform = transform above)
 train_dataset.transform = train_transform       #!!! train_dataset is the class? object 'dataset' it has a subclass called transforms which is the list of transofrms to perform on the dataset when loading it. train_tranforms is the set of chained transofrms we created, this is set to the dataset transforms subclass 
