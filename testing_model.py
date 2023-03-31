@@ -3,18 +3,29 @@
 import numpy as np 
 import matplotlib.pyplot as plt
 import torch
+import os
 
 
+pretrained_model_path = "N:/Yr 3 Project Results/D24 10K lr0001 weighted_loss1-1point2 - Training Results/D24 10K lr0001 weighted_loss1-1point2 - Model + Optimiser State Dicts.pth"
 
-pretrained_model_path = ""
-
-input_image_path = ""
+input_image_path = "N:\Yr 3 Project Datasets\Dataset 24_X10ks\Data"
 reconstruction_threshold = 0.5
 time_dimension = 100
 latent_dim = 10
 
+# Load one random .npy file from the input directory
+input_image_path = os.path.join(input_image_path, np.random.choice(os.listdir(input_image_path)))
+
+# Load a specific file in the input directory
+#specificfilename = ""
+#input_image_path = os.path.join(input_image_path, specificfilename + ".npy")
+
 ### Load image from path 
-input_image = 
+input_image = np.load(input_image_path)
+
+# Turn input image into tensor and add two extra dimesnions to start of array so shape goes from (x,y) to (1,1,x,y) to represent batch and channel dims
+input_image = torch.tensor(input_image).unsqueeze(0).unsqueeze(0)   
+input_image.double()
 
 #%% - functions
 def plotting(new_arr, t_max):
@@ -70,6 +81,24 @@ decoder.eval()
 #Following function runs the autoencoder on the input data
 def deepclean3(input_image, reconstruction_threshold, time_dimension=100):
     with torch.no_grad():
-        rec_image = decoder(encoder(custom_normalisation(input_image, reconstruction_threshold, time_dimension)))                         #Creates a recovered image (denoised image), by running a noisy image through the encoder and then the output of that through the decoder.
+        norm_image = custom_normalisation(input_image, reconstruction_threshold, time_dimension)
+        image_prepared = norm_image.unsqueeze(0).unsqueeze(0)   #Adds two extra dimesnions to start of array so shape goes from (x,y) to (1,1,x,y) to represent batch and channel dims
+        rec_image = decoder(encoder(image_prepared))                         #Creates a recovered image (denoised image), by running a noisy image through the encoder and then the output of that through the decoder.
+        rec_image = rec_image.squeeze().numpy()
+        print("SHAPEOUT", rec_image.shape)
         rec_image_renorm = custom_renormalisation(rec_image, reconstruction_threshold, time_dimension)
     return rec_image_renorm
+
+
+#%% - Driver
+recovered_image = deepclean3(input_image, reconstruction_threshold, time_dimension=100)
+
+# Plot the input image and the recovered image beside each other on a mpl 2d plot   
+fig, (ax1, ax2) = plt.subplots(1, 2)
+ax1.imshow(input_image[0])
+ax2.imshow(recovered_image[0])
+plt.show()
+
+# Plot the input image and the recovered image beside each other on a mpl 3d plot
+plotting(input_image[0], time_dimension)
+plotting(recovered_image[0], time_dimension)
