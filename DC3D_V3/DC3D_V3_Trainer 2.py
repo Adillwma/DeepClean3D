@@ -84,55 +84,20 @@ Default: if None, uses a global default (see torch.set_default_tensor_type()).!!
 ### ~~~~~ Check if running model in dp (fp64) is causing large slow down???
 """
 import torch
-def ada_weighted_mse_loss(reconstructed_image, target_image, zero_weighting=1, nonzero_weighting=5):
-    """
-    Calculates the weighted mean squared error (MSE) loss between target_image and reconstructed_image.
-    The loss for zero pixels in the target_image is weighted by zero_weighting, and the loss for non-zero
-    pixels is weighted by nonzero_weighting.
 
-    Args:
-    - target_image: a tensor of shape (B, C, H, W) containing the target image
-    - reconstructed_image: a tensor of shape (B, C, H, W) containing the reconstructed image
-    - zero_weighting: a scalar weighting coefficient for the MSE loss of zero pixels
-    - nonzero_weighting: a scalar weighting coefficient for the MSE loss of non-zero pixels
 
-    Returns:
-    - weighted_mse_loss: a scalar tensor containing the weighted MSE loss
-    """
-    
-    # Get the indices of 0 and non 0 values in target_image as a mask for speed
-    zero_mask = (target_image == 0)
-    nonzero_mask = ~zero_mask         # Invert mask
-    
-    # Get the values in target_image
-    values_zero = target_image[zero_mask]
-    values_nonzero = target_image[nonzero_mask]
-    
-    # Get the corresponding values in reconstructed_image
-    corresponding_values_zero = reconstructed_image[zero_mask]
-    corresponding_values_nonzero = reconstructed_image[nonzero_mask]
-    
-    # Create an instance of MSELoss class
-    mse_loss = torch.nn.MSELoss(reduction='mean')
-    
-    # Compute the MSE losses
-    zero_loss = mse_loss(corresponding_values_zero, values_zero)
-    nonzero_loss = mse_loss(corresponding_values_nonzero, values_nonzero)
 
-    # Protection from there being no 0 vals or no non zero vals, which then retunrs nan for MSE and creates a nan overall MSE return (which is error)
-    if torch.isnan(zero_loss):
-        zero_loss = 0
-    if torch.isnan(nonzero_loss):
-        nonzero_loss = 0
-    
-    # Sum losses with weighting coefficiants 
-    weighted_mse_loss = (zero_weighting * zero_loss) + (nonzero_weighting * nonzero_loss) 
-    
-    return weighted_mse_loss
+
+###!!!!! ADD MAXS LOSS FUNCTION IN PLACE OF THIS PLACEHOLDER!
+def Maxs_Loss_Func ():
+    return 0
+
+
+
 
 #%% - User Inputs
-dataset_title = "Dataset 25_X50ks"           #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
-model_save_name = "D25 50K lr0001 weighted_loss1-5"     #"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
+dataset_title = "Dataset 24_X10ks"           #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
+model_save_name = "D24 10K lr0001 weighted_loss0point9-1"     #"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
 
 time_dimension = 100                         # User controll to set the number of time steps in the data
 reconstruction_threshold = 0.5               # MUST BE BETWEEN 0-1  #Threshold for 3d reconstruction, values below this confidence level are discounted
@@ -141,28 +106,18 @@ noise_factor = 0                             # User controll to set the noise fa
 noise_points = 0                             # User controll to set the number of noise points to add 
 
 #%% - Hyperparameter Settings
-num_epochs = 5                              # User controll to set number of epochs (Hyperparameter)
+num_epochs = 11                              # User controll to set number of epochs (Hyperparameter)
 batch_size = 10                              # User controll to set batch size - number of Images to pull per batch (Hyperparameter) 
 latent_dim = 10                              # User controll to set number of nodes in the latent space, the bottleneck layer (Hyperparameter)
 
 learning_rate = 0.0001                       # User controll to set optimiser learning rate (Hyperparameter)
 optim_w_decay = 1e-05                        # User controll to set optimiser weight decay for regularisation (Hyperparameter)
-loss_fn = ada_weighted_mse_loss            # User controll to set loss function (Hyperparameter)    - #torch.nn.MSELoss()  #torch.nn.BCELoss() #torch.nn.L1Loss()  
-"""
-#### NEW MULTI-LOSS FUCN WITH WEIGHTS
-loss_functions = [Max_Loss_Func, torch.nn.MSELoss()] 
-loss_fn_weightings = [0.5, 0.5]
 
-# Protection from weights and loss_fns not being same len
-if len(loss_functions) != len(loss_fn_weightings):
-    raise ValueError("Number of Loss Fucntions does not match number of weights for loss functions")
+loss_function_selection = 0                  # Select loss function (Hyperparameter): 0 = ada_weighted_mse_loss, 1 = Maxs_Loss_Func, 2 = torch.nn.MSELoss(), 3 = torch.nn.BCELoss(), 4 = torch.nn.L1Loss() 
 
-#### NEW MULTI-LOSS FUNC CONSTRUCTION - THIS NEEDS TO BE MOVED DOWN TO THE MODEL SETUP ETC SECTION (NEEDS TESTING FIRST)
-lf_total = 0
-for i in range (0, len(loss_fn_weightings)):
-    lf_contribution = loss_fn_weightings[i] * loss_functions[i]
-    lf_total = lf_total + lf_contribution
-"""
+# Below weights only used if loss func set to 0 aka ada_weighted_mse_loss
+zero_weighting = 0.9                           # User controll to set zero weighting for ada_weighted_mse_loss (Hyperparameter)
+nonzero_weighting = 1                      # User controll to set non zero weighting for ada_weighted_mse_loss (Hyperparameter)
 
 #%% - Pretraining settings
 start_from_pretrained_model = False          # If set to true then the model will load the pretrained model and optimiser state dicts from the path below
@@ -251,6 +206,52 @@ from Helper_files.Dataset_distribution_tester_V1 import dataset_distribution_tes
 from Helper_files.AE_Visulisations import Generative_Latent_information_Visulisation, Reduced_Dimension_Data_Representations, Graphwiz_visulisation, AE_visual_difference
 
 #%% - Helper functions
+def ada_weighted_mse_loss(reconstructed_image, target_image, zero_weighting=zero_weighting, nonzero_weighting=nonzero_weighting):
+    """
+    Calculates the weighted mean squared error (MSE) loss between target_image and reconstructed_image.
+    The loss for zero pixels in the target_image is weighted by zero_weighting, and the loss for non-zero
+    pixels is weighted by nonzero_weighting.
+
+    Args:
+    - target_image: a tensor of shape (B, C, H, W) containing the target image
+    - reconstructed_image: a tensor of shape (B, C, H, W) containing the reconstructed image
+    - zero_weighting: a scalar weighting coefficient for the MSE loss of zero pixels
+    - nonzero_weighting: a scalar weighting coefficient for the MSE loss of non-zero pixels
+
+    Returns:
+    - weighted_mse_loss: a scalar tensor containing the weighted MSE loss
+    """
+    
+    # Get the indices of 0 and non 0 values in target_image as a mask for speed
+    zero_mask = (target_image == 0)
+    nonzero_mask = ~zero_mask         # Invert mask
+    
+    # Get the values in target_image
+    values_zero = target_image[zero_mask]
+    values_nonzero = target_image[nonzero_mask]
+    
+    # Get the corresponding values in reconstructed_image
+    corresponding_values_zero = reconstructed_image[zero_mask]
+    corresponding_values_nonzero = reconstructed_image[nonzero_mask]
+    
+    # Create an instance of MSELoss class
+    mse_loss = torch.nn.MSELoss(reduction='mean')
+    
+    # Compute the MSE losses
+    zero_loss = mse_loss(corresponding_values_zero, values_zero)
+    nonzero_loss = mse_loss(corresponding_values_nonzero, values_nonzero)
+
+    # Protection from there being no 0 vals or no non zero vals, which then retunrs nan for MSE and creates a nan overall MSE return (which is error)
+    if torch.isnan(zero_loss):
+        zero_loss = 0
+    if torch.isnan(nonzero_loss):
+        nonzero_loss = 0
+    
+    # Sum losses with weighting coefficiants 
+    weighted_mse_loss = (zero_weighting * zero_loss) + (nonzero_weighting * nonzero_loss) 
+    
+    return weighted_mse_loss
+
 def custom_normalisation(data, reconstruction_threshold, time_dimension=100):
     data = ((data / time_dimension) / (1/(1-reconstruction_threshold))) + reconstruction_threshold
     for row in data:
@@ -335,7 +336,6 @@ def Determinism_Seeding(seed):
     np.random.seed(seed)
 
 
-
 #%% - Classes
 ### Gaussian Noise Generator Class
 class AddGaussianNoise(object):                   #Class generates noise based on the mean 0 and std deviation 1, (gaussian)
@@ -384,6 +384,11 @@ telemetry = [[0,0.5,0.5]]                # Initalises the telemetry memory, star
 # Initialises seeding values to RNGs
 if seed != 0:                             # If seed is not set to 0
     Determinism_Seeding(seed)             # Set the seed for the RNGs
+
+### Set loss function choice
+availible_loss_functions = [ada_weighted_mse_loss, Maxs_Loss_Func, torch.nn.MSELoss(), torch.nn.BCELoss(), torch.nn.L1Loss()]    # List of all availible loss functions
+loss_fn = availible_loss_functions[loss_function_selection]            # Sets loss function based on user input of parameter loss_function_selection
+
 
 #%% - Create record of all user input settings, to add to output data for testing and keeping track of settings
 settings = {}  # Creates empty dictionary to store settings 
@@ -554,8 +559,8 @@ def plot_ae_outputs_den(encoder, decoder, epoch, model_save_name, time_dimension
       int_rec_sig_points = (rec_img >= reconstruction_threshold).sum()      
       number_of_recovered_signal_points.append(int(int_rec_sig_points.numpy()))
       
-      test_image = img.squeeze() #.cpu().squeeze().numpy()
-      noised_test_image = image_noisy.squeeze() #.cpu().squeeze().numpy()
+      test_image = img.squeeze() #.cpu().squeeze().numpy()???????????????????????
+      noised_test_image = image_noisy.squeeze() #.cpu().squeeze().numpy()??????????????????
       recovered_test_image = rec_img.cpu().squeeze().numpy()
 
       #Following section generates the img plots for the original(labels), noised, and denoised data)
@@ -785,7 +790,6 @@ valid_loader = torch.utils.data.DataLoader(val_data, batch_size=batch_size)     
 
 
 #%% - Setup model, loss criteria and optimiser    
-
 ### Initialize the encoder and decoder
 encoder = Encoder(encoded_space_dim=latent_dim,fc2_input_dim=128, encoder_debug=print_encoder_debug, record_activity=record_activity)
 decoder = Decoder(encoded_space_dim=latent_dim,fc2_input_dim=128, decoder_debug=print_decoder_debug, record_activity=record_activity)
@@ -800,7 +804,6 @@ optim = torch.optim.Adam(params_to_optimize, lr=learning_rate, weight_decay=opti
 
 
 #%% - Load in pretrained netwrok if needed 
-
 if start_from_pretrained_model:
     # load the full state dictionary into memory
     full_state_dict = torch.load(pretrained_model_path)
@@ -843,7 +846,7 @@ with torch.no_grad(): # No need to track the gradients
 
 
 
-#%% - Compute
+#%% - Running Training Loop
 # this is a dictionary ledger of train val loss history
 history_da={'train_loss':[],'val_loss':[]}                   #Just creates a variable called history_da which contains two lists, 'train_loss' and 'val_loss' which are both empty to start with. value are latter appeneded to the two lists by way of history_da['val_loss'].append(x)
 
