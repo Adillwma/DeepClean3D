@@ -97,7 +97,7 @@ def Maxs_Loss_Func ():
 
 #%% - User Inputs
 dataset_title = "Dataset 24_X10ks"           #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
-model_save_name = "D24 10K lr0001 weighted_loss0point9-1"     #"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
+model_save_name = "D24 10K lr0001 weighted_loss0point99-1"     #"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
 
 time_dimension = 100                         # User controll to set the number of time steps in the data
 reconstruction_threshold = 0.5               # MUST BE BETWEEN 0-1  #Threshold for 3d reconstruction, values below this confidence level are discounted
@@ -116,7 +116,7 @@ optim_w_decay = 1e-05                        # User controll to set optimiser we
 loss_function_selection = 0                  # Select loss function (Hyperparameter): 0 = ada_weighted_mse_loss, 1 = Maxs_Loss_Func, 2 = torch.nn.MSELoss(), 3 = torch.nn.BCELoss(), 4 = torch.nn.L1Loss() 
 
 # Below weights only used if loss func set to 0 aka ada_weighted_mse_loss
-zero_weighting = 0.9                           # User controll to set zero weighting for ada_weighted_mse_loss (Hyperparameter)
+zero_weighting = 0.99                             # User controll to set zero weighting for ada_weighted_mse_loss (Hyperparameter)
 nonzero_weighting = 1                      # User controll to set non zero weighting for ada_weighted_mse_loss (Hyperparameter)
 
 #%% - Pretraining settings
@@ -178,7 +178,6 @@ data_path = "N:\Yr 3 Project Datasets\\"
 results_output_path = "N:\Yr 3 Project Results\\"
 #ADILL - "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Git Hub Repos/DeepClean Repo/DeepClean-Noise-Suppression-for-LHC-B-Torch-Detector/Models/"
 #MAX - 
-
 
 #%% - Dependencies
 # External Libraries
@@ -378,17 +377,13 @@ if speed_test:                           # If speed test is set to true
 # Initialises pixel belief telemetry
 telemetry = [[0,0.5,0.5]]                # Initalises the telemetry memory, starting values are 0, 0.5, 0.5 which corrspond to epoch(0), above_threshold(0.5), below_threshold(0.5)
 
-# Initialises list for noised image storage
-#image_noisy_list = []
-
 # Initialises seeding values to RNGs
 if seed != 0:                             # If seed is not set to 0
     Determinism_Seeding(seed)             # Set the seed for the RNGs
 
-### Set loss function choice
+#%% - Set loss function choice
 availible_loss_functions = [ada_weighted_mse_loss, Maxs_Loss_Func, torch.nn.MSELoss(), torch.nn.BCELoss(), torch.nn.L1Loss()]    # List of all availible loss functions
 loss_fn = availible_loss_functions[loss_function_selection]            # Sets loss function based on user input of parameter loss_function_selection
-
 
 #%% - Create record of all user input settings, to add to output data for testing and keeping track of settings
 settings = {}  # Creates empty dictionary to store settings 
@@ -396,7 +391,6 @@ settings["Epochs"] = num_epochs
 settings["Batch Size"] = batch_size
 settings["Learning Rate"] = learning_rate
 settings["Optimiser Decay"] = optim_w_decay
-settings["Loss Function"] = loss_fn
 settings["Latent Dimension"] = latent_dim
 settings["Noise Factor"] = noise_factor
 settings["Noise Points"] = noise_points
@@ -404,7 +398,6 @@ settings["Dataset"] = dataset_title
 settings["Time Dimension"] = time_dimension
 settings["Seed Val"] = seed
 settings["Reconstruction Threshold"] = reconstruction_threshold
-
 
 #%% - Functions
 ### Random Noise Generator Function
@@ -1106,6 +1099,12 @@ if data_gathering:
         for key, value in settings.items():
             output_file.write(f"{key}: {value}\n")
         
+        output_file.write("\Loss Function:\n")    # Write the loss function settings to the file
+        output_file.write(f"Loss Function Choice: {loss_fn}\n")
+        if loss_fn == "ada_weighted_mse_loss":
+            output_file.write(f"zero_weighting: {zero_weighting}\n")
+            output_file.write(f"nonzero_weighting: {nonzero_weighting}\n")    
+
         output_file.write("\nNormalisation:\n")     # Write the normalisation settings to the file
         output_file.write(f"simple_norm_instead_of_custom: {simple_norm_instead_of_custom}\n")    
         output_file.write(f"all_norm_off: {all_norm_off}\n") 
