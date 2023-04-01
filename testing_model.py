@@ -28,10 +28,9 @@ input_image = torch.tensor(input_image)
 input_image.double()
 
 #%% - functions
-def plotting(new_arr, t_max):
-    print("shape of new_arr: ", np.shape(new_arr))
+def plotting(new_arr):   #OLD - single image at a time
     # Assume new_arr is your 3D array of size n by m by t_max
-    n, m = new_arr.shape
+    n, m, t_max = new_arr.shape
 
     # Create a meshgrid of x, y, and z values for the 3D plot
     x, y, z = np.meshgrid(np.arange(m), np.arange(n), np.arange(t_max))
