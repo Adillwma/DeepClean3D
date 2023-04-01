@@ -98,8 +98,8 @@ def Maxs_Loss_Func ():
 #NOTE to users: Known good parameters so far (changing these either way damages performance): learning_rate = 0.0001, Batch Size = 10, Latent Dim = 10, Reconstruction Threshold = 0.5, loss_function_selection = 0
 
 #%% - User Inputs
-dataset_title = "Dataset 25_X50ks"           #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
-model_save_name = "D25 50K lr0001 weightedMSE0point99-1"     #"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
+dataset_title = "Dataset 26_X150K"           #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
+model_save_name = "D26 150K lr0001 AE3 weightedMSE1-1.01 "     #"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
 
 time_dimension = 100                         # User controll to set the number of time steps in the data
 reconstruction_threshold = 0.5               # MUST BE BETWEEN 0-1  #Threshold for 3d reconstruction, values below this confidence level are discounted
@@ -108,7 +108,7 @@ noise_factor = 0                             # User controll to set the noise fa
 noise_points = 0                             # User controll to set the number of noise points to add 
 
 #%% - Hyperparameter Settings
-num_epochs = 51                              # User controll to set number of epochs (Hyperparameter)
+num_epochs = 16                            # User controll to set number of epochs (Hyperparameter)
 batch_size = 10                              # User controll to set batch size - number of Images to pull per batch (Hyperparameter) 
 latent_dim = 10                              # User controll to set number of nodes in the latent space, the bottleneck layer (Hyperparameter)
 
@@ -118,8 +118,8 @@ optim_w_decay = 1e-05                        # User controll to set optimiser we
 loss_function_selection = 0                  # Select loss function (Hyperparameter): 0 = ada_weighted_mse_loss, 1 = Maxs_Loss_Func, 2 = torch.nn.MSELoss(), 3 = torch.nn.BCELoss(), 4 = torch.nn.L1Loss() 
 
 # Below weights only used if loss func set to 0 aka ada_weighted_mse_loss
-zero_weighting = 0.99                   # User controll to set zero weighting for ada_weighted_mse_loss (Hyperparameter)
-nonzero_weighting = 1                      # User controll to set non zero weighting for ada_weighted_mse_loss (Hyperparameter)
+zero_weighting = 1                   # User controll to set zero weighting for ada_weighted_mse_loss (Hyperparameter)
+nonzero_weighting = 1.01                      # User controll to set non zero weighting for ada_weighted_mse_loss (Hyperparameter)
 
 #%% - Pretraining settings
 start_from_pretrained_model = False          # If set to true then the model will load the pretrained model and optimiser state dicts from the path below
@@ -198,7 +198,7 @@ from functools import partial
 import datetime
 
 # Imports from our other custom scripts
-from Autoencoders.DC3D_Autoencoder_V1 import Encoder, Decoder
+from Autoencoders.DC3D_Autoencoder_V3 import Encoder, Decoder
 
 from Helper_files.Robust_model_exporter_V1 import Robust_model_export
 from Helper_files.System_Information_check import get_system_information
