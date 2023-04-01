@@ -105,5 +105,3 @@ def get_system_information():
     system_information += "\n"
 
     return system_information
-
-print(get_system_information())
