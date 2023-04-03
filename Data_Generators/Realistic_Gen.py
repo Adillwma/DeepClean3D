@@ -28,7 +28,7 @@ def multi_real_gen_wrapper(directory, realistic_proportions, signal_points=1000,
     """
     quick wrappewr to clean up the fast datset generator and keep it simple
     """
-    def realistic_data_gen(directory, dataset_size=5, signal_points=1000, detector_pixel_dimensions=(128,88), hit_point='random', ideal=True, debug_image_generator=True, shift=True, num = 'random', idx=0):
+    def realistic_data_gen(directory, dataset_size=5, signal_points=1000, detector_pixel_dimensions=(128,88), height=100, hit_point='random', ideal=True, debug_image_generator=True, shift=True, num = 'random', idx=0):
         """
         This is a generator function that produces, and saves to a specified directory, a number of flattened realistic data images.
         This takes the following inputs:
@@ -223,7 +223,7 @@ def multi_real_gen_wrapper(directory, realistic_proportions, signal_points=1000,
 
 
         # run the sim
-        flattened_data = realistic_data_sim(signal_points, detector_pixel_dimensions, hit_point, ideal, debug_image_generator, shift, num)
+        flattened_data = realistic_data_sim(signal_points, detector_pixel_dimensions, height, hit_point, ideal, debug_image_generator, shift, num)
         
         # count for how many are empty:
         if np.sum(flattened_data) == 0:
