@@ -135,8 +135,8 @@ class Max_loss(torch.nn.Module):
         
 
         # now we find the minimum of either mse to 0 or to the altered one:
-        # mse for altered:
-        alt_mseloss = (reconstruction - original)**2
+        # cubed for altered (so that it increases faster than 0 MSE):
+        alt_mseloss = (reconstruction - original)**3
 
         # this is where we add the minimum loss the alt_mseloss can get to:
         alt_mseloss += close_min
