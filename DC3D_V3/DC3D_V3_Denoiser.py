@@ -4,6 +4,9 @@ Created on Sat Feb 10 2023
 DeepClean Model Runner
 @author: Adill Al-Ashgar
 """
+"""
+This is simply code that takes in a noised image and runs one of the saved, trained models on it to denoise it.
+"""
 import torch
 from torchinfo import summary
 from Autoencoders.DC3D_Autoencoder_V1 import Encoder, Decoder
