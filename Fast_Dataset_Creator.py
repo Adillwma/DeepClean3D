@@ -14,21 +14,21 @@ xdim = 88
 ydim = 128
 time_dimension = 100
 sig_pts = 300
-data_set_title = "Dataset 27_X10K"
+data_set_title = "Dataset 31_X10Ksr"
 data_sets_folder =r"N:\Yr 3 Project Datasets\\"
 #Ada: r"C:\Users\Student\Documents\UNI\Onedrive - University of Bristol\Yr 3 Project\Circular and Spherical Dummy Datasets\\"
 #Max: 
 
 ### Number of data files of each type to generate  # (~89kb each, which scales linearly so 20,000 ~ 1.75Gb)
 number_of_blanks = 0
-number_single_x = 50000
+number_single_x = 10000
 number_of_two_x = 0
 number_of_three_x = 0
 number_of_four_x = 0
 number_of_hemisphere = 0
 
 shift_x_positions = True
-rotate_x_positions = False
+rotate_x_positions = True
 rotate_seperatly = True
 
 #%% - Dependencies
