@@ -94,11 +94,70 @@ Default: if None, uses a global default (see torch.set_default_tensor_type()).!!
 import torch
 
 
+class Max_loss(torch.nn.Module):
+    def __init__(self, size_average=None, reduce=None, reduction='mean', furthest_line = True, furthest = 1, sig_weight = 30, close_min = 0.05):
+        """
+        Inputs:
+        furthest_line = True - This is set to true to save compute. This will add special loss effect to a LINE of pixels in y-axis
+        from the signal point. If set to false will do a square instead of line. (This is much better, but takes more compute)
+        furthest - This is how far to extend this special loss function box.
+        sig_weight - How much the signal is weighted over the empty points when calculating loss.
+        close_min - This is to set the minimum loss in the local minima around the signal points. This is here so that continuing to
+        guess close to the signal points is not optimal in the long run.
+        """
+        super(Max_loss, self).__init__()
+        self.size_average = size_average
+        self.reduce = reduce
+        self.reduction = reduction
+        self.furthest = furthest
+        self.sig_weight = sig_weight
+        self.close_min = close_min
+        self.furthest_line = furthest_line
 
+    def forward(self, reconstruction, original):
+        reduction = self.reduction
+        furthest = self.furthest
+        sig_weight = self.sig_weight
+        close_min = self.close_min
+        furthest_line = self.furthest_line
 
-###!!!!! ADD MAXS LOSS FUNCTION IN PLACE OF THIS PLACEHOLDER!
-def Maxs_Loss_Func ():
-    return 0
+        # mse original:
+        orig_mseloss = (reconstruction - original)**2
+
+        # first make a list of all the indices of the non-zero original points:
+        non_zero = torch.nonzero(original)
+
+        # set pixels around signal in x to the same as them:
+        for img, chan, x, y in non_zero:
+
+            # set all within furthest in x to the signal height:
+            if furthest_line:
+                original[img, 0, x, y-furthest:y+furthest+1] = original[img,0,x,y]
+
+            # if you want a square around them, not lines (this is much much better for sparse data, not that youd want
+            # to use it on that anyway)
+            else:
+                original[img, 0, x-furthest:x+furthest+1, y-furthest:y+furthest+1] = original[img,0,x,y]
+        
+
+        # now we find the minimum of either mse to 0 or to the altered one:
+        # cubed for altered (so that it increases faster than 0 MSE):
+        alt_mseloss = (reconstruction - original)**3
+
+        # this is where we add the minimum loss the alt_mseloss can get to:
+        alt_mseloss += close_min
+
+        # now find the minimum of the two:
+        mseloss = torch.min(orig_mseloss, alt_mseloss)
+
+        signals = tuple(torch.nonzero(original).t())
+
+        mseloss[signals] *= sig_weight
+        
+        # now we just find the mean of the matrix:
+        loss = torch.mean(mseloss)
+
+        return loss
 
 
 #NOTE to users: Known good parameters so far (changing these either way damages performance): learning_rate = 0.0001, Batch Size = 10, Latent Dim = 10, Reconstruction Threshold = 0.5, loss_function_selection = 0, loss weighting = 0.9 - 1

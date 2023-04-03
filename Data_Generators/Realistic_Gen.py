@@ -24,11 +24,11 @@ std = 70E-12
 #directory = r"C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Realistic Stuff\CombinedTest\Data2/"
 
 
-def multi_real_gen_wrapper(directory, realistic_proportions, signal_points=1000, detector_pixel_dimensions=(128,88), hit_point='random', ideal=True, debug_image_generator=True, shift=True):
+def multi_real_gen_wrapper(directory, realistic_proportions, signal_points=1000, detector_pixel_dimensions=(128,88), height=100, hit_point='random', ideal=True, debug_image_generator=True, shift=True):
     """
     quick wrappewr to clean up the fast datset generator and keep it simple
     """
-    def realistic_data_gen(directory, dataset_size=5, signal_points=1000, detector_pixel_dimensions=(128,88), hit_point='random', ideal=True, debug_image_generator=True, shift=True, num = 'random', idx=0):
+    def realistic_data_gen(directory, dataset_size=5, signal_points=1000, detector_pixel_dimensions=(128,88), height=100, hit_point='random', ideal=True, debug_image_generator=True, shift=True, num = 'random', idx=0):
         """
         This is a generator function that produces, and saves to a specified directory, a number of flattened realistic data images.
         This takes the following inputs:
@@ -54,7 +54,7 @@ def multi_real_gen_wrapper(directory, realistic_proportions, signal_points=1000,
         # define count for number of empty arrays:
         count = 0
 
-        def realistic_data_sim(signal_points, detector_pixel_dimensions, hit_point, ideal, debug_image_generator, shift, num):
+        def realistic_data_sim(signal_points, detector_pixel_dimensions, height, hit_point, ideal, debug_image_generator, shift, num):
             
             # do random number of realistic points
             if num == 'random':
@@ -186,10 +186,10 @@ def multi_real_gen_wrapper(directory, realistic_proportions, signal_points=1000,
                 
                 # this continues if there is data
                 for point in filtered:
-                    # TOF is the z axis
-                    TOF = int(point[2])
+                    # TOF is the z axis. Rescale to 100.
+                    TOF = round(point[2] * (height / t_pix_max))
                     # index is the x and y axis
-                    flattened_data[int(point[0])][int(point[1])] = TOF
+                    flattened_data[round(point[0])][round(point[1])] = TOF
 
             
             #Plots the figure if user requests debugging
@@ -200,13 +200,13 @@ def multi_real_gen_wrapper(directory, realistic_proportions, signal_points=1000,
                 ax = fig.add_subplot(projection='3d')
                 
                 # the origional ribbon graph
-                ax.scatter(x_pixel, y_pixel, z_pixel, label='Unshifted Data')
+                ax.scatter(x_pixel, y_pixel, z_pixel * (height / t_pix_max), label='Unshifted Data')
                 ax.legend()
 
                 # setting limits:
                 ax.set_xlim((0, detector_pixel_dimensions[0]))
                 ax.set_ylim((0, detector_pixel_dimensions[1]))
-                ax.set_zlim((0, t_pix_max))
+                ax.set_zlim((0, height))
 
                 # add axis labels
                 ax.set_xlabel('X')
@@ -223,7 +223,7 @@ def multi_real_gen_wrapper(directory, realistic_proportions, signal_points=1000,
 
 
         # run the sim
-        flattened_data = realistic_data_sim(signal_points, detector_pixel_dimensions, hit_point, ideal, debug_image_generator, shift, num)
+        flattened_data = realistic_data_sim(signal_points, detector_pixel_dimensions, height, hit_point, ideal, debug_image_generator, shift, num)
         
         # count for how many are empty:
         if np.sum(flattened_data) == 0:
@@ -240,7 +240,7 @@ def multi_real_gen_wrapper(directory, realistic_proportions, signal_points=1000,
 
             # define number of crosses
             num_sigs = signals + 1 #(to stop 0 gen)
-            flattened_data = realistic_data_gen(directory, num_save, signal_points, detector_pixel_dimensions, hit_point, ideal, debug_image_generator, shift, num=num_sigs, idx=idx)
+            flattened_data = realistic_data_gen(directory, num_save, signal_points, detector_pixel_dimensions, height, hit_point, ideal, debug_image_generator, shift, num=num_sigs, idx=idx)
 
         print(f"Generation of {num_save} {signals+1}Realistic Signal images completed successfully\n")
 

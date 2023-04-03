@@ -22,7 +22,7 @@ std = 70E-12
 # directory to save to
 directory = r"C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Realistic Stuff\CombinedTest\Data2/"
 
-def realistic_data_gen(dataset_size=5, signal_points=1000, detector_pixel_dimensions=(128,88), hit_point='random', ideal=True, debug_image_generator=True, shift=True, num = 'random'):
+def realistic_data_gen(dataset_size=5, signal_points=1000, detector_pixel_dimensions=(128,88), height=100, hit_point='random', ideal=True, debug_image_generator=True, shift=True, num = 'random'):
     """
     This is a generator function that produces, and saves to a specified directory, a number of flattened realistic data images.
     This takes the following inputs:
@@ -31,6 +31,7 @@ def realistic_data_gen(dataset_size=5, signal_points=1000, detector_pixel_dimens
     signal_points = Number of points the hit produces (average 30 for realistic impact), 
     N.B. these may not be at critical angle to 60 is maximum number
     detector_pixel_dimensions = pixel dimensions of the detector, x,y in a tuple (128x88) is same as torch.
+    height - Sets the max output height for the data. We need it 100 as this is what all the AE are trained for
     hit_point = The point on the detector the particle makes impact. This changes the shape of the graph.
     hit_point can be set to 'random' to produce a different hit point on the quartz each time.
     ideal = [default=True] produces either perfect circular photon ejection from impact (True) or random (False)
@@ -48,16 +49,7 @@ def realistic_data_gen(dataset_size=5, signal_points=1000, detector_pixel_dimens
     # define count for number of empty arrays:
     count = 0
 
-    def realistic_data_sim(signal_points, detector_pixel_dimensions, hit_point, ideal, debug_image_generator, shift, num):
-        
-        # do random number of realistic points
-        if num == 'random':
-            num = random.randint(0,5)
-        
-        if hit_point == 'random':
-
-            # produce random hit point in the height of the quartz (1.6m):
-            hit_point = np.random.random() * 1.6
+    def realistic_data_sim(signal_points, detector_pixel_dimensions, height, hit_point, ideal, debug_image_generator, shift, num):
         
         # Width of Quartz Block in meters (physical x dimension - not to be confused with pixel x dimensions)
         # (this is not actual size of quarts, but it forms a good pattern. This is fundamental to the way this
@@ -166,7 +158,7 @@ def realistic_data_gen(dataset_size=5, signal_points=1000, detector_pixel_dimens
             filtered = np.array([coord for coord in new_coords if
             (0 <= coord[0] <= detector_pixel_dimensions[0] - 1) and
             (0 <= coord[1] <= detector_pixel_dimensions[1] - 1) and
-            (1 <= coord[2] <= t_pix_max)])  
+            (1 <= coord[2] <= t_pix_max)])
 
             #Generates the random noise points (tmax//resolution sets the max pixels in the z axis)
             # x_noise = [random.randint(1, detector_pixel_dimensions[0]) for _ in range(noise_points)]
@@ -180,10 +172,10 @@ def realistic_data_gen(dataset_size=5, signal_points=1000, detector_pixel_dimens
             
             # this continues if there is data
             for point in filtered:
-                # TOF is the z axis
-                TOF = int(point[2])
+                # TOF is the z axis. Rescale to 100.
+                TOF = round(point[2] * (height / t_pix_max))
                 # index is the x and y axis
-                flattened_data[int(point[0])][int(point[1])] = TOF
+                flattened_data[round(point[0])][round(point[1])] = TOF
 
         
         #Plots the figure if user requests debugging
@@ -194,13 +186,13 @@ def realistic_data_gen(dataset_size=5, signal_points=1000, detector_pixel_dimens
             ax = fig.add_subplot(projection='3d')
             
             # the origional ribbon graph
-            ax.scatter(x_pixel, y_pixel, z_pixel, label='Unshifted Data')
+            ax.scatter(x_pixel, y_pixel, z_pixel * (height / t_pix_max), label='Unshifted Data')
             ax.legend()
 
             # setting limits:
             ax.set_xlim((0, detector_pixel_dimensions[0]))
             ax.set_ylim((0, detector_pixel_dimensions[1]))
-            ax.set_zlim((0, t_pix_max))
+            ax.set_zlim((0, height))
 
             # add axis labels
             ax.set_xlabel('X')
@@ -217,8 +209,17 @@ def realistic_data_gen(dataset_size=5, signal_points=1000, detector_pixel_dimens
 
     for idx in range(dataset_size):
 
+        # do random number of realistic points
+        if num == 'random':
+            num2 = random.randint(0,5)
+        
+        if hit_point == 'random':
+
+            # produce random hit point in the height of the quartz (1.6m):
+            hit_point2 = np.random.random() * 1.6
+
         # run the sim
-        flattened_data = realistic_data_sim(signal_points, detector_pixel_dimensions, hit_point, ideal, debug_image_generator, shift, num)
+        flattened_data = realistic_data_sim(signal_points, detector_pixel_dimensions, height, hit_point2, ideal, debug_image_generator, shift, num2)
         
         # count for how many are empty:
         if np.sum(flattened_data) == 0:
