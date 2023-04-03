@@ -54,7 +54,7 @@ def multi_real_gen_wrapper(directory, realistic_proportions, signal_points=1000,
         # define count for number of empty arrays:
         count = 0
 
-        def realistic_data_sim(signal_points, detector_pixel_dimensions, hit_point, ideal, debug_image_generator, shift, num):
+        def realistic_data_sim(signal_points, detector_pixel_dimensions, height, hit_point, ideal, debug_image_generator, shift, num):
             
             # do random number of realistic points
             if num == 'random':
@@ -186,10 +186,10 @@ def multi_real_gen_wrapper(directory, realistic_proportions, signal_points=1000,
                 
                 # this continues if there is data
                 for point in filtered:
-                    # TOF is the z axis
-                    TOF = int(point[2])
+                    # TOF is the z axis. Rescale to 100.
+                    TOF = round(point[2] * (height / t_pix_max))
                     # index is the x and y axis
-                    flattened_data[int(point[0])][int(point[1])] = TOF
+                    flattened_data[round(point[0])][round(point[1])] = TOF
 
             
             #Plots the figure if user requests debugging
@@ -200,13 +200,13 @@ def multi_real_gen_wrapper(directory, realistic_proportions, signal_points=1000,
                 ax = fig.add_subplot(projection='3d')
                 
                 # the origional ribbon graph
-                ax.scatter(x_pixel, y_pixel, z_pixel, label='Unshifted Data')
+                ax.scatter(x_pixel, y_pixel, z_pixel * (height / t_pix_max), label='Unshifted Data')
                 ax.legend()
 
                 # setting limits:
                 ax.set_xlim((0, detector_pixel_dimensions[0]))
                 ax.set_ylim((0, detector_pixel_dimensions[1]))
-                ax.set_zlim((0, t_pix_max))
+                ax.set_zlim((0, height))
 
                 # add axis labels
                 ax.set_xlabel('X')

@@ -173,7 +173,7 @@ def realistic_data_gen(dataset_size=5, signal_points=1000, detector_pixel_dimens
             # this continues if there is data
             for point in filtered:
                 # TOF is the z axis. Rescale to 100.
-                TOF = round(point[2]) * (height / t_pix_max)
+                TOF = round(point[2] * (height / t_pix_max))
                 # index is the x and y axis
                 flattened_data[round(point[0])][round(point[1])] = TOF
 
