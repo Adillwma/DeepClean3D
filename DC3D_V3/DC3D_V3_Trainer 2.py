@@ -88,6 +88,8 @@ Default: if None, uses a global default (see torch.set_default_tensor_type()).!!
 ### ~~~~~ Add way for program to save the raw data for 3d plots so that they can be replotted after training and reviewed in rotatable 3d 
 
 ### ~~~~~ Check if running model in dp (fp64) is causing large slow down???
+
+### ~~~~~ Allow seperate loss fucntion for testing/validation phase?
 """
 import torch
 
@@ -102,14 +104,14 @@ def Maxs_Loss_Func ():
 #NOTE to users: Known good parameters so far (changing these either way damages performance): learning_rate = 0.0001, Batch Size = 10, Latent Dim = 10, Reconstruction Threshold = 0.5, loss_function_selection = 0, loss weighting = 0.9 - 1
 
 #%% - User Inputs
-dataset_title = "Dataset 24_X10Ks"           #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
-model_save_name = "D24 10K lr.0001 weight0.9-1 reconfix0.2"     #"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
+dataset_title = "Dataset 32_X10Ks Sparse SIG50"#"Dataset 24_X10Ks"           #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
+model_save_name = "D32_X10K SparseSIG50 np50 lr.0001 weight0.9-1 reconfix0.5"     #"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
 
 time_dimension = 100                         # User controll to set the number of time steps in the data
-reconstruction_threshold = 0.2               # MUST BE BETWEEN 0-1  #Threshold for 3d reconstruction, values below this confidence level are discounted
+reconstruction_threshold = 0.5               # MUST BE BETWEEN 0-1  #Threshold for 3d reconstruction, values below this confidence level are discounted
 
 noise_factor = 0                             # User controll to set the noise factor, a multiplier for the magnitude of noise added. 0 means no noise added, 1 is defualt level of noise added, 10 is 10x default level added (Hyperparameter)
-noise_points = 0                             # User controll to set the number of noise points to add 
+noise_points = 50                             # User controll to set the number of noise points to add 
 
 #%% - Hyperparameter Settings
 num_epochs = 16                             # User controll to set number of epochs (Hyperparameter)
@@ -123,11 +125,17 @@ dropout_prob = 0.2                           # [NOTE Not connected yet] User con
 train_test_split_ratio = 0.8                 # User controll to set the ratio of the dataset to be used for training (Hyperparameter)
 val_test_split_ratio = 0.5                   # [NOTE LEAVE AT 0.5, is for future update, not working currently] User controll to set the ratio of the non-training data to be used for validation as opposed to testing (Hyperparameter)
 
-loss_function_selection = 0                  # Select loss function (Hyperparameter): 0 = ada_weighted_mse_loss, 1 = Maxs_Loss_Func, 2 = torch.nn.MSELoss(), 3 = torch.nn.BCELoss(), 4 = torch.nn.L1Loss() 
+loss_function_selection = 0                  # Select loss function (Hyperparameter): 0 = ada_weighted_mse_loss, 1 = Maxs_Loss_Func, 2 = torch.nn.MSELoss(), 3 = torch.nn.BCELoss(), 4 = torch.nn.L1Loss(), 5 = ada_SSE_loss, 6 ada_weighted_custom_split_loss 
 
-# Below weights only used if loss func set to 0 aka ada_weighted_mse_loss
+# Below weights only used if loss func set to 0 or 6 aka ada_weighted_mse_loss
 zero_weighting = 0.9                           # User controll to set zero weighting for ada_weighted_mse_loss (Hyperparameter)
 nonzero_weighting = 1                     # User controll to set non zero weighting for ada_weighted_mse_loss (Hyperparameter)
+
+# Below only used if loss func set to 6 aka ada_weighted_custom_split_loss
+# Create an instance of MSELoss class
+zeros_loss = torch.nn.MSELoss()
+nonzero_loss = torch.nn.MSELoss()
+split_loss_functions = [zeros_loss, nonzero_loss]
 
 #%% - Pretraining settings
 start_from_pretrained_model = False          # If set to true then the model will load the pretrained model and optimiser state dicts from the path below
@@ -170,7 +178,7 @@ seed = 0                                        # [Default = 0] 0 gives no seeed
 
 print_partial_training_losses = False           # [Default = True] Prints the training loss for each batch in the epoch
 allow_escape = False                            # [Default = True] Allows the user to escape the training loop at end of eaach epoch (blocking till closed)
-#response_timeout = 120 # in seconds            # (BROKEN) [Default = 120]  If the user does not respond within this time then the training loop will continue 
+#response_timeout = 120 # in seconds            # (NOTE BROKEN) [Default = 120]  If the user does not respond within this time then the training loop will continue 
 
 #%% - Program Mode Setting - CLEAN UP THIS SECTION
 #mode = 0 ### 0=Data_Gathering, 1=Testing, 2=Speed_Test, 3=Debugging
@@ -215,6 +223,57 @@ from Helper_files.Dataset_distribution_tester_V1 import dataset_distribution_tes
 from Helper_files.AE_Visulisations import Generative_Latent_information_Visulisation, Reduced_Dimension_Data_Representations, Graphwiz_visulisation, AE_visual_difference # These are our custom functions to visulise the autoencoders training progression
 
 #%% - Helper functions
+
+# Weighted Custom Split Loss Function
+def ada_weighted_custom_split_loss(reconstructed_image, target_image, split_loss_functions=split_loss_functions, zero_weighting=zero_weighting, nonzero_weighting=nonzero_weighting):
+    """
+    Calculates the weighted error loss between target_image and reconstructed_image.
+    The loss for zero pixels in the target_image is weighted by zero_weighting, and the loss for non-zero
+    pixels is weighted by nonzero_weighting and both have loss functions as passed in by user.
+
+    Args:
+    - target_image: a tensor of shape (B, C, H, W) containing the target image
+    - reconstructed_image: a tensor of shape (B, C, H, W) containing the reconstructed image
+    - zero_weighting: a scalar weighting coefficient for the MSE loss of zero pixels
+    - nonzero_weighting: a scalar weighting coefficient for the MSE loss of non-zero pixels
+
+    Returns:
+    - weighted_mse_loss: a scalar tensor containing the weighted MSE loss
+    """
+    
+    # Get the indices of 0 and non 0 values in target_image as a mask for speed
+    zero_mask = (target_image == 0)
+    nonzero_mask = ~zero_mask         # Invert mask
+    
+    # Get the values in target_image
+    values_zero = target_image[zero_mask]
+    values_nonzero = target_image[nonzero_mask]
+    
+    # Get the corresponding values in reconstructed_image
+    corresponding_values_zero = reconstructed_image[zero_mask]
+    corresponding_values_nonzero = reconstructed_image[nonzero_mask]
+    
+    # Get the loss functions
+    loss_func_zeros = split_loss_functions[0]
+    loss_func_nonzeros = split_loss_functions[1]
+    
+    # Compute the MSE losses
+    zero_loss = loss_func_zeros(corresponding_values_zero, values_zero)
+    nonzero_loss = loss_func_nonzeros(corresponding_values_nonzero, values_nonzero)
+
+    # Protection from there being no 0 vals or no non zero vals, which then retunrs nan for MSE and creates a nan overall MSE return (which is error)
+    if torch.isnan(zero_loss):
+        zero_loss = 0
+    if torch.isnan(nonzero_loss):
+        nonzero_loss = 0
+    
+    # Sum losses with weighting coefficiants 
+    weighted_mse_loss = (zero_weighting * zero_loss) + (nonzero_weighting * nonzero_loss) 
+    
+    return weighted_mse_loss
+
+
+
 # Custom weighted signal/noise MSE loss function
 def ada_weighted_mse_loss(reconstructed_image, target_image, zero_weighting=zero_weighting, nonzero_weighting=nonzero_weighting):
     """
@@ -261,6 +320,12 @@ def ada_weighted_mse_loss(reconstructed_image, target_image, zero_weighting=zero
     weighted_mse_loss = (zero_weighting * zero_loss) + (nonzero_weighting * nonzero_loss) 
     
     return weighted_mse_loss
+
+#  Adaptive Sum of Squared Errors loss function
+def ada_SSE_loss(target, input):
+    """Adaptive Sum of Squared Errors Loss Function"""
+    loss = ((input-target)**2).sum()
+    return(loss)
 
 # Custom normalisation function
 def custom_normalisation(data, reconstruction_threshold, time_dimension=100):
@@ -435,7 +500,7 @@ if seed != 0:                             # If seed is not set to 0
     Determinism_Seeding(seed)             # Set the seed for the RNGs
 
 #%% - Set loss function choice
-availible_loss_functions = [ada_weighted_mse_loss, Maxs_Loss_Func, torch.nn.MSELoss(), torch.nn.BCELoss(), torch.nn.L1Loss()]    # List of all availible loss functions
+availible_loss_functions = [ada_weighted_mse_loss, Max_Loss, torch.nn.MSELoss(), torch.nn.BCELoss(), torch.nn.L1Loss(), ada_SSE_loss, ada_weighted_custom_split_loss]    # List of all availible loss functions
 loss_fn = availible_loss_functions[loss_function_selection]            # Sets loss function based on user input of parameter loss_function_selection
 
 #%% - Create record of all user input settings, to add to output data for testing and keeping track of settings
