@@ -128,8 +128,8 @@ CL2 = conv_calculator(conv_type=0, K=(7,7), P=1, S=2, D=1, H_in=max_pool[0], W_i
 CL3 = conv_calculator(conv_type=0, K=(3,3), P=0, S=1, D=1, H_in=CL2[0], W_in=CL2[1])
 CL4 = conv_calculator(conv_type=0, K=(3,3), P=0, S=1, D=1, H_in=CL3[0], W_in=CL3[1])
 
-CLT1 = conv_calculator(conv_type=1, K=(3,3), P=0, S=1, D=1, H_in=CL4[0], W_in=CL4[1], O=1)
-CLT2 = conv_calculator(conv_type=1, K=(3,3), P=0, S=1, D=1, H_in=CLT1[0], W_in=CLT1[1], O=1)
+CLT1 = conv_calculator(conv_type=1, K=(3,3), P=0, S=1, D=1, H_in=CL4[0], W_in=CL4[1], O=0)
+CLT2 = conv_calculator(conv_type=1, K=(3,3), P=0, S=1, D=1, H_in=CLT1[0], W_in=CLT1[1], O=0)
 CLT3 = conv_calculator(conv_type=1, K=(7,7), P=1, S=2, D=1, H_in=CLT2[0], W_in=CLT2[1], O=0)
 R_max_pool = conv_calculator(conv_type=1, K=(2,2), P=0, S=2, D=1, H_in=CLT3[0], W_in=CLT3[1], O=0)
 CLT4 = conv_calculator(conv_type=1, K=(7,7), P=1, S=2, D=1, H_in=R_max_pool[0], W_in=R_max_pool[1], O=1)
