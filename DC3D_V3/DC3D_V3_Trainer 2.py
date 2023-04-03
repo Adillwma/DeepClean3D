@@ -98,8 +98,8 @@ def Maxs_Loss_Func ():
 #NOTE to users: Known good parameters so far (changing these either way damages performance): learning_rate = 0.0001, Batch Size = 10, Latent Dim = 10, Reconstruction Threshold = 0.5, loss_function_selection = 0
 
 #%% - User Inputs
-dataset_title = "Dataset 26_X150K"           #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
-model_save_name = "D26 150K lr0001 AE3 weightedMSE1-1.01 "     #"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
+dataset_title = "Dataset 24_X10Ks"           #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
+model_save_name = "D24 10K lr.0001 weight0.9-1 noise_fixed = 100"     #"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
 
 time_dimension = 100                         # User controll to set the number of time steps in the data
 reconstruction_threshold = 0.5               # MUST BE BETWEEN 0-1  #Threshold for 3d reconstruction, values below this confidence level are discounted
@@ -108,18 +108,22 @@ noise_factor = 0                             # User controll to set the noise fa
 noise_points = 0                             # User controll to set the number of noise points to add 
 
 #%% - Hyperparameter Settings
-num_epochs = 16                            # User controll to set number of epochs (Hyperparameter)
+num_epochs = 51                             # User controll to set number of epochs (Hyperparameter)
 batch_size = 10                              # User controll to set batch size - number of Images to pull per batch (Hyperparameter) 
 latent_dim = 10                              # User controll to set number of nodes in the latent space, the bottleneck layer (Hyperparameter)
 
 learning_rate = 0.0001                       # User controll to set optimiser learning rate (Hyperparameter)
-optim_w_decay = 1e-05                        # User controll to set optimiser weight decay for regularisation (Hyperparameter)
+optim_w_decay = 1e-05 #!!!!1e-07 seeems better?? test!                        # User controll to set optimiser weight decay for regularisation (Hyperparameter)
+dropout_prob = 0.2                           # [NOTE Not connected yet] User controll to set dropout probability (Hyperparameter)
+
+train_test_split_ratio = 0.8                 # User controll to set the ratio of the dataset to be used for training (Hyperparameter)
+val_test_split_ratio = 0.5                   # [NOTE LEAVE AT 0.5, is for future update, not working currently] User controll to set the ratio of the non-training data to be used for validation as opposed to testing (Hyperparameter)
 
 loss_function_selection = 0                  # Select loss function (Hyperparameter): 0 = ada_weighted_mse_loss, 1 = Maxs_Loss_Func, 2 = torch.nn.MSELoss(), 3 = torch.nn.BCELoss(), 4 = torch.nn.L1Loss() 
 
 # Below weights only used if loss func set to 0 aka ada_weighted_mse_loss
-zero_weighting = 1                   # User controll to set zero weighting for ada_weighted_mse_loss (Hyperparameter)
-nonzero_weighting = 1.01                      # User controll to set non zero weighting for ada_weighted_mse_loss (Hyperparameter)
+zero_weighting = 0.9                           # User controll to set zero weighting for ada_weighted_mse_loss (Hyperparameter)
+nonzero_weighting = 1                     # User controll to set non zero weighting for ada_weighted_mse_loss (Hyperparameter)
 
 #%% - Pretraining settings
 start_from_pretrained_model = False          # If set to true then the model will load the pretrained model and optimiser state dicts from the path below
@@ -136,23 +140,23 @@ print_every_other = 2                      #[default = 2] 1 is to save/print all
 plot_or_save = 1                           #[default = 1] 0 prints plots to terminal (blocking till closed), If set to 1 then saves all end of epoch printouts to disk (non-blocking), if set to 2 then saves outputs whilst also printing for user (blocking till closed)
 
 #%% - Advanced Visulisation Settings
-plot_train_loss = True               #[default = True]      
-plot_validation_loss = True          #[default = True]              
+plot_train_loss = True               #[default = True]       
+plot_validation_loss = True          #[default = True]               
 
 plot_cutoff_telemetry = True         #[default = False] # Update name to pixel_cuttoff_telemetry    #Very slow, reduces net performance by XXXXXX%
 
-plot_pixel_difference = False        #[default = True]    
+plot_pixel_difference = False        #[default = True]     
 plot_latent_generations = True       #[default = True]      
 plot_higher_dim = False              #[default = True]    
-plot_Graphwiz = False                #[default = True]  
+plot_Graphwiz = False                #[default = True]   
 
 record_activity = False #False  ##Be carefull, the activity file recorded is ~ 2.5Gb  #Very slow, reduces net performance by XXXXXX%
 compress_activations_npz_output = False #False   Compresses the activity file above for smaller file size but does increase loading and saving times for the file. (use if low on hdd space)
 
 #%% - Advanced Debugging Settings
-print_encoder_debug = False                     # [default = False] 
-print_decoder_debug = False                     # [default = False]
-debug_noise_function = False                    # [default = False] 
+print_encoder_debug = False                     # [default = False]  
+print_decoder_debug = False                     # [default = False] 
+debug_noise_function = False                    # [default = False]  
 debug_loader_batch = False                      # SAFELY REMOVE THIS PARAM!!!  #(Default = False) //INPUT 0 or 1//   #Setting debug loader batch will print to user the images taken in by the dataoader in this current batch and print the corresponding labels
 
 full_dataset_integrity_check = False            # [Default = False] V slow  #Checks the integrity of the dataset by checking shape of each item as opposed to when set to false which only checks one single random file in the dataset
@@ -183,30 +187,31 @@ results_output_path = "N:\Yr 3 Project Results\\"
 
 #%% - Dependencies
 # External Libraries
-import numpy as np 
-import matplotlib.pyplot as plt
-import torchvision
-from torchvision import transforms
+import numpy as np  
+import matplotlib.pyplot as plt     
+import torchvision 
+from torchvision import transforms  
 from torch.utils.data import DataLoader, random_split
-from torch import nn
-import random 
-import time
-from torchinfo import summary
-from tqdm import tqdm
+from torch import nn    
+import random   
+import time     # Used to time the training loop
+from torchinfo import summary # function to get the summary of the model layers structure, trainable parameters and memory usage
+from tqdm import tqdm  # Progress bar 
 import os
 from functools import partial
 import datetime
 
-# Imports from our other custom scripts
-from Autoencoders.DC3D_Autoencoder_V3 import Encoder, Decoder
+# Imports from our custom scripts
+from Autoencoders.DC3D_Autoencoder_V1 import Encoder, Decoder # This imports the autoencoder classes from the file selected, changig the V# sets the version of the autoencoder
 
-from Helper_files.Robust_model_exporter_V1 import Robust_model_export
-from Helper_files.System_Information_check import get_system_information
-from Helper_files.Dataset_Integrity_Check_V1 import dataset_integrity_check
-from Helper_files.Dataset_distribution_tester_V1 import dataset_distribution_tester
-from Helper_files.AE_Visulisations import Generative_Latent_information_Visulisation, Reduced_Dimension_Data_Representations, Graphwiz_visulisation, AE_visual_difference
+from Helper_files.Robust_model_exporter_V1 import Robust_model_export   # This is a custom function to export the raw .py file that contains the autoencoder class
+from Helper_files.System_Information_check import get_system_information # This is a custom function to get the host system performance specs of the training machine
+from Helper_files.Dataset_Integrity_Check_V1 import dataset_integrity_check     # This is a custom function to check the integrity of the datasets values
+from Helper_files.Dataset_distribution_tester_V1 import dataset_distribution_tester     # This is a custom function to check the distribution of the datasets values
+from Helper_files.AE_Visulisations import Generative_Latent_information_Visulisation, Reduced_Dimension_Data_Representations, Graphwiz_visulisation, AE_visual_difference # These are our custom functions to visulise the autoencoders training progression
 
 #%% - Helper functions
+# Custom weighted signal/noise MSE loss function
 def ada_weighted_mse_loss(reconstructed_image, target_image, zero_weighting=zero_weighting, nonzero_weighting=nonzero_weighting):
     """
     Calculates the weighted mean squared error (MSE) loss between target_image and reconstructed_image.
@@ -253,6 +258,7 @@ def ada_weighted_mse_loss(reconstructed_image, target_image, zero_weighting=zero
     
     return weighted_mse_loss
 
+# Custom normalisation function
 def custom_normalisation(data, reconstruction_threshold, time_dimension=100):
     data = ((data / time_dimension) / (1/(1-reconstruction_threshold))) + reconstruction_threshold
     for row in data:     ###REPLACE USING NP.WHERE
@@ -261,27 +267,21 @@ def custom_normalisation(data, reconstruction_threshold, time_dimension=100):
                 row[i] = 0
     return data
 
+# Custom renormalisation function
 def custom_renormalisation(data, reconstruction_threshold, time_dimension=100):
     data = np.where(data > reconstruction_threshold, ((data - reconstruction_threshold)*(1/(1-reconstruction_threshold)))*(time_dimension), 0)
     return data
 
+# 3D Reconstruction function
 def reconstruct_3D(data, reconstruction_threshold):
     data_output = []
     for cdx, row in enumerate(data):
         for idx, num in enumerate(row):
-            if num > 0:  #should this be larger than or equal to??? depends how we deal with the 0 slice problem
+            if num > 0:  
                 data_output.append([cdx,idx,num])
     return np.array(data_output)
 
-def reconstruct_3D2(data, reconstruction_threshold):
-    data_output = []
-    for cdx, row in enumerate(data):
-        for idx, num in enumerate(row):
-            if num > reconstruction_threshold:  #should this be larger than or equal to??? depends how we deal with the 0 slice problem
-                num_renorm = custom_renormalisation(num)
-                data_output.append([cdx,idx,num_renorm])
-    return np.array(data_output)
-
+# Helper function to clean up repeated plot save/show code
 def plot_save_choice(plot_or_save, output_file_path):
     if plot_or_save == 0:
         plt.show()
@@ -292,6 +292,7 @@ def plot_save_choice(plot_or_save, output_file_path):
         else:
             plt.show()
 
+# Helper function to return the batch learning method string to user
 def batch_learning(training_dataset_size, batch_size):
     if batch_size == 1: 
         output = "Stochastic Gradient Descent"
@@ -301,7 +302,7 @@ def batch_learning(training_dataset_size, batch_size):
         output = "Mini-Batch Gradient Descent"
     return(output)
 
-###Ploting confidence of each pixel as histogram per epoch with line showing the detection threshold
+# Tracks confidence of each pixel as histogram per epoch with line showing the detection threshold
 def belief_telemetry(data, reconstruction_threshold, epoch, settings, plot_or_save=0):
     data2 = data.flatten()
 
@@ -318,6 +319,7 @@ def belief_telemetry(data, reconstruction_threshold, epoch, settings, plot_or_sa
     below_threshold = (data2 < reconstruction_threshold).sum()
     return (above_threshold, below_threshold)
 
+# Plots the confidence telemetry data
 def plot_telemetry(telemetry, plot_or_save=0):
     tele = np.array(telemetry)
     #!!! Add labels to lines
@@ -330,11 +332,58 @@ def plot_telemetry(telemetry, plot_or_save=0):
     Out_Label = graphics_dir + f'{model_save_name} - Reconstruction Telemetry Histogram - Epoch {epoch}.png'
     plot_save_choice(plot_or_save, Out_Label)
 
-###RNG Seeding for Determinism Function
+# Helper fucntion that sets RNG Seeding for determinism in debugging
 def Determinism_Seeding(seed):
     torch.manual_seed(seed)
     random.seed(seed)
     np.random.seed(seed)
+
+# Function to add n noise points to an image 
+def add_noise_points(image, noise_points=100, reconstruction_threshold=0.5):
+
+    if noise_points > 0:
+        #Find dimensions of input image 
+        x_dim = image.shape[0]
+        y_dim = image.shape[1]
+
+        #Create a list of random x and y coordinates
+        x_coords = np.random.randint(0, x_dim, noise_points)
+        y_coords = np.random.randint(0, y_dim, noise_points)
+
+        # Iterate through noise_points number of random pixels to noise
+        for i in range(noise_points):
+
+            # Add a random number between recon_threshold and 1 to the pixel 
+            image[x_coords[i], y_coords[i]] = np.random.uniform(reconstruction_threshold, 1)
+
+    return image
+
+# Function to add n noise points to each image in a tensor batch 
+def add_noise_points_to_batch(image_batch, noise_points=100, reconstruction_threshold=0.5):
+
+    if noise_points > 0:
+        #Find dimensions of input image 
+        x_dim = image_batch.shape[2]
+        y_dim = image_batch.shape[3]
+        print(x_dim, y_dim)
+
+        #For each image in the batch
+        for image in image_batch:
+
+            # Create a list of unique random x and y coordinates
+            num_pixels = x_dim * y_dim
+            all_coords = np.arange(num_pixels)
+            selected_coords = np.random.choice(all_coords, noise_points, replace=False)
+            x_coords, y_coords = np.unravel_index(selected_coords, (x_dim, y_dim))
+            print(image)
+            
+            # Iterate through noise_points number of random pixels to noise
+            for i in range(noise_points):
+
+                # Add a random number between recon_threshold and 1 to the pixel 
+                image[0][x_coords[i], y_coords[i]] = np.random.uniform(reconstruction_threshold, 1)
+
+    return image_batch
 
 
 #%% - Classes
@@ -389,61 +438,29 @@ loss_fn = availible_loss_functions[loss_function_selection]            # Sets lo
 
 #%% - Create record of all user input settings, to add to output data for testing and keeping track of settings
 settings = {}  # Creates empty dictionary to store settings 
-settings["Epochs"] = num_epochs
-settings["Batch Size"] = batch_size
-settings["Learning Rate"] = learning_rate
-settings["Optimiser Decay"] = optim_w_decay
-settings["Latent Dimension"] = latent_dim
-settings["Noise Factor"] = noise_factor
-settings["Noise Points"] = noise_points
-settings["Dataset"] = dataset_title
-settings["Time Dimension"] = time_dimension
-settings["Seed Val"] = seed
-settings["Reconstruction Threshold"] = reconstruction_threshold
+settings["Epochs"] = num_epochs     # Adds the number of epochs to the settings dictionary
+settings["Batch Size"] = batch_size # Adds the batch size to the settings dictionary
+settings["Learning Rate"] = learning_rate # Adds the learning rate to the settings dictionary
+settings["Optimiser Decay"] = optim_w_decay # Adds the optimiser decay to the settings dictionary
+settings["Dropout Probability"] = dropout_prob # Adds the dropout probability to the settings dictionary
+settings["Latent Dimension"] = latent_dim # Adds the latent dimension to the settings dictionary
+settings["Noise Factor"] = noise_factor # Adds the noise factor to the settings dictionary
+settings["Noise Points"] = noise_points # Adds the noise points to the settings dictionary
+settings["Train Split"] = train_test_split_ratio # Adds the train split to the settings dictionary
+settings["Val/Test Split"] = val_test_split_ratio   # Adds the val/test split to the settings dictionary
+settings["Dataset"] = dataset_title # Adds the dataset title to the settings dictionary
+settings["Time Dimension"] = time_dimension # Adds the time dimension to the settings dictionary
+settings["Seed Val"] = seed # Adds the seed value to the settings dictionary
+settings["Reconstruction Threshold"] = reconstruction_threshold # Adds the reconstruction threshold to the settings dictionary
 
-#%% - Functions
-### Random Noise Generator Function
-def add_noise(image, noise_factor=0.3, debug_noise_function=False):
-    noise = torch.randn_like(input) * noise_factor
-    noised_img = image + noise
-    noised_img = torch.clip(noised_img, 0., 1.)
-    if debug_noise_function:
-        plt.imshow(noise)
-        plt.show()   
-    return noised_img
-
-# New function to add n noise points to the 2d numpy array
-def add_noise_points(image, noise_points=100, reconstruction_threshold=0.5):
-
-    if noise_points > 0:
-        #Find dimensions of input image 
-        x_dim = image.shape[0]
-        y_dim = image.shape[1]
-
-        #Create a list of random x and y coordinates
-        x_coords = np.random.randint(0, x_dim, noise_points)
-        y_coords = np.random.randint(0, y_dim, noise_points)
-
-        # Iterate through noise_points number of random pixels to noise
-        for i in range(noise_points):
-
-            # Add a random number between recon_threshold and 1 to the pixel 
-            image[x_coords[i], y_coords[i]] = np.random.uniform(reconstruction_threshold, 1)
-
-    return image
-
-###RNG Seeding for Determinism Function
-def Determinism_Seeding(seed):
-    torch.manual_seed(seed)
-    random.seed(seed)
-    np.random.seed(seed)
+#%% - Train Test and Plot Functions
 
 ### Training Function
-def train_epoch_den(encoder, decoder, device, dataloader, loss_fn, optimizer, noise_factor=0.3, print_partial_training_losses=print_partial_training_losses):
+def train_epoch_den(encoder, decoder, device, dataloader, loss_fn, optimizer, noise_points=0, reconstruction_threshold=0.5, print_partial_training_losses=print_partial_training_losses):
     # Set train mode for both the encoder and the decoder
     # train mode makes the autoencoder know the parameters can change
-    encoder.train()
-    decoder.train()
+    encoder.train()  
+    decoder.train()  
     train_loss = [] # List to store the loss values for each batch
     
     if print_partial_training_losses:  # Prints partial train losses per batch
@@ -454,7 +471,7 @@ def train_epoch_den(encoder, decoder, device, dataloader, loss_fn, optimizer, no
     # Iterate the dataloader (we do not need the label values, this is unsupervised learning)
     for image_batch, _ in image_loop: # with "_" we just ignore the labels (the second element of the dataloader tuple
         # Move tensor to the proper device
-        image_noisy = image_batch###!!!add_noise(image_batch, noise_factor, debug_noise_function)
+        image_noisy = add_noise_points_to_batch(image_batch, noise_points, reconstruction_threshold=0.5) #image_batch###!!!add_noise(image_batch, noise_factor, debug_noise_function)
         image_batch = image_batch.to(device)
         image_noisy = image_noisy.to(device)    
         
@@ -470,7 +487,7 @@ def train_epoch_den(encoder, decoder, device, dataloader, loss_fn, optimizer, no
         optimizer.zero_grad() # Reset the gradients
         loss.backward() # Compute the gradients
         optimizer.step() # Update the parameters
-        train_loss.append(loss.detach().cpu().numpy())
+        train_loss.append(loss.detach().cpu().numpy()) # Store the loss value for the batch
 
         if print_partial_training_losses:         # Prints partial train losses per batch
             
@@ -479,8 +496,7 @@ def train_epoch_den(encoder, decoder, device, dataloader, loss_fn, optimizer, no
     return np.mean(train_loss) # Return the mean loss value for the epoch???
 
 ### Testing Function
-# exact same as train, but doesnt alter the encoder, and defines the loss over the entire batch, not individually.
-def test_epoch_den(encoder, decoder, device, dataloader, loss_fn,noise_factor=0.3):
+def test_epoch_den(encoder, decoder, device, dataloader, loss_fn, noise_points=0, reconstruction_threshold=0.5):
     # Set evaluation mode for encoder and decoder
     encoder.eval()
     decoder.eval()
@@ -490,7 +506,7 @@ def test_epoch_den(encoder, decoder, device, dataloader, loss_fn,noise_factor=0.
         conc_label = []
         for image_batch, _ in dataloader:
             # Move tensor to the proper device
-            image_noisy = image_batch#####!!!add_noise(image_batch, noise_factor, debug_noise_function)
+            image_noisy = add_noise_points_to_batch(image_batch, noise_points, reconstruction_threshold=0.5) #####!!!add_noise(image_batch, noise_factor, debug_noise_function)
             image_noisy = image_noisy.to(device)
 
             # Encode data
@@ -511,7 +527,7 @@ def test_epoch_den(encoder, decoder, device, dataloader, loss_fn,noise_factor=0.
 
     return float(val_loss.data)
 
-###Plotting Function
+### Plotting Function
 def plot_ae_outputs_den(encoder, decoder, epoch, model_save_name, time_dimension, reconstruction_threshold, n=10, noise_factor=0.3):       #Defines a function for plotting the output of the autoencoder. And also the input + clean training data? Function takes inputs, 'encoder' and 'decoder' which are expected to be classes (defining the encode and decode nets), 'n' which is the number of ?????Images in the batch????, and 'noise_factor' which is a multiplier for the magnitude of the added noise allowing it to be scaled in intensity.  
     """
     n is the number of images to plot
@@ -538,7 +554,7 @@ def plot_ae_outputs_den(encoder, decoder, epoch, model_save_name, time_dimension
       
       #if epoch <= print_every_other:                                                  #CHECKS TO SEE IF THE EPOCH IS LESS THAN ZERO , I ADDED THIS TO GET THE SAME NOISED IMAGES EACH EPOCH THOUGH THIS COULD BE WRONG TO DO?
       global image_noisy                                          #'global' means the variable (image_noisy) set inside a function is globally defined, i.e defined also outside the function
-      image_noisy = img#!!!!add_noise(img, noise_factor, debug_noise_function)                   #Runs the function 'add_noise' (in this code) the function adds noise to a set of data, the function takes two arguments, img is the data to add noise to, noise factor is a multiplier for the noise values added, i.e if multiplier is 0 no noise is added, if it is 1 default amount is added, if it is 10 then the values are raised 10x 
+      image_noisy = add_noise_points_to_batch(img, noise_points, reconstruction_threshold=0.5) #img#!!!!add_noise(img, noise_factor, debug_noise_function)                   #Runs the function 'add_noise' (in this code) the function adds noise to a set of data, the function takes two arguments, img is the data to add noise to, noise factor is a multiplier for the noise values added, i.e if multiplier is 0 no noise is added, if it is 1 default amount is added, if it is 10 then the values are raised 10x 
       #image_noisy_list.append(image_noisy)                        #Adds the just generated noise image to the list of all the noisy images
       #image_noisy = image_noisy_list[i].to(device)                    #moves the list (i think of tensors?) to the device that will process it i.e either cpu or gpu, we have a check elsewhere in the code that detects if gpu is availible and sets the value of 'device' to gpu or cpu depending on availibility (look for the line that says "device = 'cuda' if torch.cuda.is_available() else 'cpu'"). NOTE: this moves the noised images to device, i think that the original images are already moved to device in previous code
     
@@ -656,31 +672,31 @@ def plot_ae_outputs_den(encoder, decoder, epoch, model_save_name, time_dimension
     return(number_of_true_signal_points, number_of_recovered_signal_points, in_im, noise_im, rec_im)        #returns the number of true signal points, number of recovered signal points, input image, noised image and reconstructed image
     
 #%% - Program begins
-print("\n \nProgram Initalised - Welcome to DC3D Trainer\n")
+print("\n \nProgram Initalised - Welcome to DC3D Trainer\n")  #prints the welcome message
 #%% - Dataset Pre-tests
 # Dataset Integrity Check    #???????? aslso perform on train data dir if ther is one?????? 
-scantype = "quick"
-if full_dataset_integrity_check:
+scantype = "quick" #sets the scan type to quick
+if full_dataset_integrity_check: #if full_dataset_integrity_check is set to True, then the scan type is set to full (slow)
     scantype = "full"
 
-print(f"Testing training dataset integrity, with {scantype} scan")
-dataset_integrity_check(train_dir, full_test=full_dataset_integrity_check, print_output=True)
+print(f"Testing training dataset integrity, with {scantype} scan")  #prints the scan type
+dataset_integrity_check(train_dir, full_test=full_dataset_integrity_check, print_output=True) #checks the integrity of the training dataset
 print("Test completed\n")
 
-if train_dir != test_dir:
-    print("Testing test dataset signal distribution")
-    dataset_integrity_check(test_dir, full_test=full_dataset_integrity_check, print_output=True)
+if train_dir != test_dir: #if the training dataset directory is not the same as the test dataset directory, then the test dataset is checked
+    print("Testing test dataset signal distribution") #checks the integrity of the test dataset
+    dataset_integrity_check(test_dir, full_test=full_dataset_integrity_check, print_output=True) 
     print("Test completed\n")
 
 # Dataset Distribution Check
-if full_dataset_distribution_check:
+if full_dataset_distribution_check: #if full_dataset_distribution_check is set to True, then the dataset distribution is checked
     print("\nTesting training dataset signal distribution")
-    dataset_distribution_tester(train_dir, time_dimension, ignore_zero_vals_on_plot=True, output_image_dir=graphics_dir)
+    dataset_distribution_tester(train_dir, time_dimension, ignore_zero_vals_on_plot=True, output_image_dir=graphics_dir) #checks the distribution of the training dataset
     print("Test completed\n")
 
-    if train_dir != test_dir:
-        print("Testing test dataset signal distribution")
-        dataset_distribution_tester(test_dir, time_dimension, ignore_zero_vals_on_plot=True)
+    if train_dir != test_dir: #if the training dataset directory is not the same as the test dataset directory, then the test dataset is checked
+        print("Testing test dataset signal distribution") 
+        dataset_distribution_tester(test_dir, time_dimension, ignore_zero_vals_on_plot=True) #checks the distribution of the test dataset
         print("Test completed\n")
     
 
@@ -714,22 +730,22 @@ learning = batch_learning(num_of_files_in_path, batch_size)  #calculates which t
 print("%s files in path." %num_of_files_in_path ,"// Batch size =",batch_size, "\nLearning via: " + learning,"\n") #prints the number of files in the path and the batch size and the resultant type of batch learning
 
 # - Path images, greater than batch choice? CHECK
-if num_of_files_in_path < batch_size:
+if num_of_files_in_path < batch_size: #if the number of files in the path is less than the batch size, user is promted to input a new batch size
     print("Error, the path selected has", num_of_files_in_path, "image files, which is", (batch_size - num_of_files_in_path) , "less than the chosen batch size. Please select a batch size less than the total number of images in the directory")
-    batch_err_message = "Choose new batch size, must be less than total amount of images in directory", (num_of_files_in_path)
+    batch_err_message = "Choose new batch size, must be less than total amount of images in directory", (num_of_files_in_path) #creates the error message
     batch_size = int(input(batch_err_message))  #!!! not sure why input message is printing with wierd brakets and speech marks in the terminal? Investigate
 
 
 #train_dir = r'C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\New big simp\Rectangle\\'
-train_dataset = torchvision.datasets.DatasetFolder(train_dir, train_loader2d, extensions='.npy')
+train_dataset = torchvision.datasets.DatasetFolder(train_dir, train_loader2d, extensions='.npy') #creates the training dataset using the DatasetFolder function from torchvision.datasets
 
 #test_dir = r'C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\New big simp test\Rectangle\\'
-test_dataset = torchvision.datasets.DatasetFolder(test_dir, train_loader2d, extensions='.npy')
+test_dataset = torchvision.datasets.DatasetFolder(test_dir, train_loader2d, extensions='.npy') #creates the test dataset using the DatasetFolder function from torchvision.datasets
 
 
 #%% - Data Preparation
 
-
+### Normalisation
 ####CLEAN UP!!!!!
 if simple_norm_instead_of_custom:
     custom_normalisation_with_args = lambda x: x/time_dimension #if simple_norm_instead_of_custom is set to True, then the custom_normalisation_with_args is set to a lambda function that returns the input data divided by the time dimension
@@ -742,14 +758,14 @@ if all_norm_off:
 add_noise_with_Args = partial(add_noise_points, noise_points=noise_points, reconstruction_threshold=reconstruction_threshold)   #using functools partial to bundle the args into custom norm to use in custom torch transform using lambda function
 ######!!!!!!!!
 
-
+### Transormations
 train_transform = transforms.Compose([                                         #train_transform variable holds the tensor tranformations to be performed on the training data.  transforms.Compose([ ,  , ]) allows multiple transforms to be chained together (in serial?) (#!!! does it do more than this??)
                                        #transforms.RandomRotation(30),         #transforms.RandomRotation(angle (degrees?) ) rotates the tensor randomly up to max value of angle argument
                                        #transforms.RandomResizedCrop(224),     #transforms.RandomResizedCrop(pixels) crops the data to 'pixels' in height and width (#!!! and (maybe) chooses a random centre point????)
                                        #transforms.RandomHorizontalFlip(),     #transforms.RandomHorizontalFlip() flips the image data horizontally 
                                        #transforms.Normalize((0.5), (0.5)),    #transforms.Normalize can be used to normalise the values in the array
                                        transforms.Lambda(custom_normalisation_with_args),
-                                       transforms.Lambda(add_noise_with_Args),        ####USed during debugging, noise adding should be moved to later? or maybe not tbf as this is place to add it if wanting it trained on??
+                                       #transforms.Lambda(add_noise_with_Args),        ####USed during debugging, noise adding should be moved to later? or maybe not tbf as this is place to add it if wanting it trained on??
                                        transforms.ToTensor(),
                                        #transforms.RandomRotation(180)
                                        ])                 #other transforms can be dissabled but to tensor must be left enabled ! it creates a tensor from a numpy array #!!! ?
@@ -759,7 +775,7 @@ test_transform = transforms.Compose([                                          #
                                       #transforms.CenterCrop(224),             #transforms.CenterCrop(pixels? #!!!) ?? Crops the given image at the center. If the image is torch Tensor, it is expected to have […, H, W] shape, where … means an arbitrary number of leading dimensions. If image size is smaller than output size along any edge, image is padded with 0 and then center cropp
                                       #transforms.Normalize((0.5), (0.5)),     #transforms.Normalize can be used to normalise the values in the array
                                       transforms.Lambda(custom_normalisation_with_args), #transforms.Lambda(function) applies a custom transform function to the data
-                                      transforms.Lambda(add_noise_with_Args),
+                                      #transforms.Lambda(add_noise_with_Args),
                                       transforms.ToTensor(),                           #transforms.ToTensor() converts a numpy array to a tensor
                                       #transforms.RandomRotation(180)               #transforms.RandomRotation(angle (degrees?) ) rotates the tensor randomly up to max value of angle argument (if arg is int then it is used as both limits i.e form -180 to +180 deg is the range)
                                       ])                  #other transforms can be dissabled but to tensor must be left enabled !
@@ -769,13 +785,17 @@ train_dataset.transform = train_transform       #!!! train_dataset is the class?
 test_dataset.transform = test_transform         #!!! similar to the above but for the test(eval) dataset, check into this for the exact reason for using it, have seen it deone in other ways i.e as in the dataloader.py it is performed differntly. this way seems to be easier to follow
 #####For info on all transforms check out: https://pytorch.org/vision/0.9/transforms.html
 
-train_test_split_ratio = 0.8
+### Dataset Partitioning
+
+
 ###Following section splits the training dataset into two, train_data (to be noised) and valid data (to use in eval)
-m=len(train_dataset) #Just calculates length of train dataset, m is only used in the next line to decide the values of the split, (4/5 m) and (1/5 m)
-train_split=int(m*train_test_split_ratio)
-train_data, test2_data = random_split(train_dataset, [train_split, m-train_split])    #random_split(data_to_split, [size of output1, size of output2]) just splits the train_dataset into two parts, 4/5 goes to train_data and 1/5 goes to val_data , validation?
-half_slice = int(len(test2_data)/2)
-test_data, val_data =  random_split(test2_data, [half_slice, len(test2_data) - half_slice])
+m = len(train_dataset)  #m is the length of the train_dataset, i.e the number of images in the dataset
+train_split = int(m * train_test_split_ratio) #train_split is the ratio of train images to be used in the training set as opposed to non_training set
+train_data, non_training_data = random_split(train_dataset, [train_split, m-train_split])    #random_split(data_to_split, [size of output1, size of output2]) just splits the train_dataset into two parts, 4/5 goes to train_data and 1/5 goes to val_data , validation?
+
+m2 = len(non_training_data)  #m2 is the length of the non_training_data, i.e the number of images in the dataset
+val_split = int(m2 * val_test_split_ratio) #val_split is the ratio of npon train images to be used in the validation set as opposed to test set
+test_data, val_data = random_split(non_training_data, [m2 - val_split, val_split])  
 
 ###Following section for Dataloaders, they just pull a random sample of images from each of the datasets we now have, train_data, valid_data, and test_data. the batch size defines how many are taken from each set, shuffle argument shuffles them each time?? #!!!
 # required to load the data into the endoder/decoder. Combines a dataset and a sampler, and provides an iterable over the given dataset.
@@ -1047,8 +1067,8 @@ if data_gathering:
 
     try:
         # Retriveve network activity and convert to numpy from torch tensors !!! # Simplify the conversion code 
-        enc_input, enc_conv, enc_flatten, enc_lin = encoder.get_activation_data()
-        enc_input = np.array(enc_input)
+        enc_input, enc_conv, enc_flatten, enc_lin = encoder.get_activation_data()       
+        enc_input = np.array(enc_input)     
         enc_conv = np.array(enc_conv)
         enc_flatten = np.array(enc_flatten)
         enc_lin = np.array(enc_lin)
@@ -1078,8 +1098,8 @@ if data_gathering:
     try: 
         #print("True signal points",number_of_true_signal_points)
         #print("Recovered signal points: ",number_of_recovered_signal_points, "\n")
-        full_data_output["true_signal_points"] = number_of_true_signal_points
-        full_data_output["recovered_signal_points"] = number_of_recovered_signal_points
+        full_data_output["true_signal_points"] = number_of_true_signal_points  # Save the number of true signal points to the full_data_output dictionary
+        full_data_output["recovered_signal_points"] = number_of_recovered_signal_points  # Save the number of recovered signal points to the full_data_output dictionary
     except:
         pass
     
