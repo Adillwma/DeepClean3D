@@ -242,17 +242,3 @@ def dataset_distribution_tester(dir, time_dimension, ignore_zero_vals_on_plot=Tr
     print("Distribution Test Completed\n")
     return results
 
-
-#%% - User Inputs - if not calling this from external script then can use this section to set inputs
-
-"""
-time_dimension = 100
-dataset_title = "Data"
-data_path = r"C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Cross Stuff\MultiX - 80%1X - 20%2X - 128x88/"
-ignore_zero_vals_on_plot = True
-
-# Program internals setup
-dir = (data_path + dataset_title)
-
-dataset_distribution_tester(dir, time_dimension, ignore_zero_vals_on_plot)
-"""
