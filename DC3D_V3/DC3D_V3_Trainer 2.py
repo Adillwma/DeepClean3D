@@ -93,7 +93,7 @@ import torch
 
 
 class Max_loss(torch.nn.Module):
-    def __init__(self, size_average=None, reduce=None, reduction='mean', furthest_line = True, furthest = 1, sig_weight = 100, close_min = 0.05):
+    def __init__(self, size_average=None, reduce=None, reduction='mean', furthest_line = True, furthest = 1, sig_weight = 30, close_min = 0.05):
         """
         Inputs:
         furthest_line = True - This is set to true to save compute. This will add special loss effect to a LINE of pixels in y-axis
