@@ -24,7 +24,7 @@ std = 70E-12
 #directory = r"C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Realistic Stuff\CombinedTest\Data2/"
 
 
-def multi_real_gen_wrapper(directory, realistic_proportions, signal_points=1000, detector_pixel_dimensions=(128,88), hit_point='random', ideal=True, debug_image_generator=True, shift=True):
+def multi_real_gen_wrapper(directory, realistic_proportions, signal_points=1000, detector_pixel_dimensions=(128,88), height=100, hit_point='random', ideal=True, debug_image_generator=True, shift=True):
     """
     quick wrappewr to clean up the fast datset generator and keep it simple
     """
@@ -240,7 +240,7 @@ def multi_real_gen_wrapper(directory, realistic_proportions, signal_points=1000,
 
             # define number of crosses
             num_sigs = signals + 1 #(to stop 0 gen)
-            flattened_data = realistic_data_gen(directory, num_save, signal_points, detector_pixel_dimensions, hit_point, ideal, debug_image_generator, shift, num=num_sigs, idx=idx)
+            flattened_data = realistic_data_gen(directory, num_save, signal_points, detector_pixel_dimensions, height, hit_point, ideal, debug_image_generator, shift, num=num_sigs, idx=idx)
 
         print(f"Generation of {num_save} {signals+1}Realistic Signal images completed successfully\n")
 
