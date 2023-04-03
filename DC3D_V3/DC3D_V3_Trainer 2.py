@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-DeepClean v0.3.5
+DeepClean v0.3.6
 Build created on Wednesday March 29th 2023
 Authors: Adill Al-Ashgar & Max Carter
 University of Bristol
@@ -14,6 +14,10 @@ Possible improvements:
 ### ~~~~~ [DONE!] Make sure that autoecoder Encoder and Decoder are saved along with model in the models folder 
 
 ### ~~~~~~ [DONE!] Allow normalisation/renorm to be bypassed, to check how it affects results 
+
+### ~~~~~~ [DONE!] Find out what is going on with recon threshold scaling issue
+
+### ~~~~~~ [DONE!] fix noise adding to the data, it is not working as intended, need to retain clean images for label data 
 
 ### ~~~~~ Possibly set all to double?
 dtype (torch.dtype, optional) – the desired data type of returned tensor. 
@@ -95,20 +99,20 @@ def Maxs_Loss_Func ():
     return 0
 
 
-#NOTE to users: Known good parameters so far (changing these either way damages performance): learning_rate = 0.0001, Batch Size = 10, Latent Dim = 10, Reconstruction Threshold = 0.5, loss_function_selection = 0
+#NOTE to users: Known good parameters so far (changing these either way damages performance): learning_rate = 0.0001, Batch Size = 10, Latent Dim = 10, Reconstruction Threshold = 0.5, loss_function_selection = 0, loss weighting = 0.9 - 1
 
 #%% - User Inputs
 dataset_title = "Dataset 24_X10Ks"           #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
-model_save_name = "D24 10K lr.0001 weight0.9-1 noise_fixed = 100"     #"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
+model_save_name = "D24 10K lr.0001 weight0.9-1 reconfix0.2"     #"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
 
 time_dimension = 100                         # User controll to set the number of time steps in the data
-reconstruction_threshold = 0.5               # MUST BE BETWEEN 0-1  #Threshold for 3d reconstruction, values below this confidence level are discounted
+reconstruction_threshold = 0.2               # MUST BE BETWEEN 0-1  #Threshold for 3d reconstruction, values below this confidence level are discounted
 
 noise_factor = 0                             # User controll to set the noise factor, a multiplier for the magnitude of noise added. 0 means no noise added, 1 is defualt level of noise added, 10 is 10x default level added (Hyperparameter)
 noise_points = 0                             # User controll to set the number of noise points to add 
 
 #%% - Hyperparameter Settings
-num_epochs = 51                             # User controll to set number of epochs (Hyperparameter)
+num_epochs = 16                             # User controll to set number of epochs (Hyperparameter)
 batch_size = 10                              # User controll to set batch size - number of Images to pull per batch (Hyperparameter) 
 latent_dim = 10                              # User controll to set number of nodes in the latent space, the bottleneck layer (Hyperparameter)
 
@@ -365,7 +369,6 @@ def add_noise_points_to_batch(image_batch, noise_points=100, reconstruction_thre
         #Find dimensions of input image 
         x_dim = image_batch.shape[2]
         y_dim = image_batch.shape[3]
-        print(x_dim, y_dim)
 
         #For each image in the batch
         for image in image_batch:
@@ -375,7 +378,6 @@ def add_noise_points_to_batch(image_batch, noise_points=100, reconstruction_thre
             all_coords = np.arange(num_pixels)
             selected_coords = np.random.choice(all_coords, noise_points, replace=False)
             x_coords, y_coords = np.unravel_index(selected_coords, (x_dim, y_dim))
-            print(image)
             
             # Iterate through noise_points number of random pixels to noise
             for i in range(noise_points):
@@ -456,32 +458,32 @@ settings["Reconstruction Threshold"] = reconstruction_threshold # Adds the recon
 #%% - Train Test and Plot Functions
 
 ### Training Function
-def train_epoch_den(encoder, decoder, device, dataloader, loss_fn, optimizer, noise_points=0, reconstruction_threshold=0.5, print_partial_training_losses=print_partial_training_losses):
+def train_epoch_den(encoder, decoder, device, dataloader, loss_fn, optimizer, noise_points=0, reconstruction_threshold=0.5, print_partial_training_losses=False):
     # Set train mode for both the encoder and the decoder
     # train mode makes the autoencoder know the parameters can change
-    encoder.train()  
-    decoder.train()  
+    encoder.train()   
+    decoder.train()   
     train_loss = [] # List to store the loss values for each batch
     
     if print_partial_training_losses:  # Prints partial train losses per batch
-        image_loop  = (dataloader)
+        image_loop  = (dataloader)     # No progress bar for the batches
     else:                              # Rather than print partial train losses per batch, instead create progress bar
-        image_loop  = tqdm(dataloader, desc='Batches', leave=False)
+        image_loop  = tqdm(dataloader, desc='Batches', leave=False) # Creates a progress bar for the batches
 
     # Iterate the dataloader (we do not need the label values, this is unsupervised learning)
     for image_batch, _ in image_loop: # with "_" we just ignore the labels (the second element of the dataloader tuple
         # Move tensor to the proper device
-        image_noisy = add_noise_points_to_batch(image_batch, noise_points, reconstruction_threshold=0.5) #image_batch###!!!add_noise(image_batch, noise_factor, debug_noise_function)
-        image_batch = image_batch.to(device)
-        image_noisy = image_noisy.to(device)    
+        image_noisy = add_noise_points_to_batch(image_batch, noise_points, reconstruction_threshold=0.5) # Adds noise to the batch
+        image_batch = image_batch.to(device) # Move the clean image batch to the device
+        image_noisy = image_noisy.to(device) # Move the noised image batch to the device
         
         # Encode data
-        encoded_data = encoder(image_noisy)
+        encoded_data = encoder(image_noisy) # Encode the noised image batch
         # Decode data
-        decoded_data = decoder(encoded_data)
+        decoded_data = decoder(encoded_data) # Decode the encoded image batch
         
         # Evaluate loss
-        loss = loss_fn(decoded_data, image_batch)
+        loss = loss_fn(decoded_data, image_batch)  # Compute the loss between the decoded image batch and the clean image batch
         
         # Backward pass
         optimizer.zero_grad() # Reset the gradients
@@ -498,34 +500,34 @@ def train_epoch_den(encoder, decoder, device, dataloader, loss_fn, optimizer, no
 ### Testing Function
 def test_epoch_den(encoder, decoder, device, dataloader, loss_fn, noise_points=0, reconstruction_threshold=0.5):
     # Set evaluation mode for encoder and decoder
-    encoder.eval()
-    decoder.eval()
+    encoder.eval() # Evaluation mode for the encoder
+    decoder.eval() # Evaluation mode for the decoder
     with torch.no_grad(): # No need to track the gradients
         # Define the lists to store the outputs for each batch
-        conc_out = []
-        conc_label = []
-        for image_batch, _ in dataloader:
+        conc_out = [] # List to store the output of the network
+        conc_label = []  # List to store the original image
+        for image_batch, _ in dataloader:  
             # Move tensor to the proper device
-            image_noisy = add_noise_points_to_batch(image_batch, noise_points, reconstruction_threshold=0.5) #####!!!add_noise(image_batch, noise_factor, debug_noise_function)
-            image_noisy = image_noisy.to(device)
+            image_noisy = add_noise_points_to_batch(image_batch, noise_points, reconstruction_threshold=0.5) # Adds noise to the batch
+            image_noisy = image_noisy.to(device) # Move the noised image batch to the device
 
             # Encode data
-            encoded_data = encoder(image_noisy)
+            encoded_data = encoder(image_noisy) # Encode the noised image batch
             # Decode data
-            decoded_data = decoder(encoded_data)
+            decoded_data = decoder(encoded_data) # Decode the encoded image batch
 
             # Append the network output and the original image to the lists
-            conc_out.append(decoded_data.cpu())
-            conc_label.append(image_batch.cpu())
+            conc_out.append(decoded_data.cpu()) # Append the decoded image batch to the list
+            conc_label.append(image_batch.cpu()) # Append the clean image batch to the list
 
         # Create a single tensor with all the values in the lists
-        conc_out = torch.cat(conc_out)
+        conc_out = torch.cat(conc_out)  
         conc_label = torch.cat(conc_label) 
 
         # Evaluate global loss
-        val_loss = loss_fn(conc_out, conc_label)
+        val_loss = loss_fn(conc_out, conc_label) # Compute the loss between the decoded image batch and the clean image batch
 
-    return float(val_loss.data)
+    return float(val_loss.data) # Return the loss value for the epoch
 
 ### Plotting Function
 def plot_ae_outputs_den(encoder, decoder, epoch, model_save_name, time_dimension, reconstruction_threshold, n=10, noise_factor=0.3):       #Defines a function for plotting the output of the autoencoder. And also the input + clean training data? Function takes inputs, 'encoder' and 'decoder' which are expected to be classes (defining the encode and decode nets), 'n' which is the number of ?????Images in the batch????, and 'noise_factor' which is a multiplier for the magnitude of the added noise allowing it to be scaled in intensity.  
@@ -554,7 +556,7 @@ def plot_ae_outputs_den(encoder, decoder, epoch, model_save_name, time_dimension
       
       #if epoch <= print_every_other:                                                  #CHECKS TO SEE IF THE EPOCH IS LESS THAN ZERO , I ADDED THIS TO GET THE SAME NOISED IMAGES EACH EPOCH THOUGH THIS COULD BE WRONG TO DO?
       global image_noisy                                          #'global' means the variable (image_noisy) set inside a function is globally defined, i.e defined also outside the function
-      image_noisy = add_noise_points_to_batch(img, noise_points, reconstruction_threshold=0.5) #img#!!!!add_noise(img, noise_factor, debug_noise_function)                   #Runs the function 'add_noise' (in this code) the function adds noise to a set of data, the function takes two arguments, img is the data to add noise to, noise factor is a multiplier for the noise values added, i.e if multiplier is 0 no noise is added, if it is 1 default amount is added, if it is 10 then the values are raised 10x 
+      image_noisy = add_noise_points_to_batch(img, noise_points, reconstruction_threshold=0.5) # Adds noise to the batch
       #image_noisy_list.append(image_noisy)                        #Adds the just generated noise image to the list of all the noisy images
       #image_noisy = image_noisy_list[i].to(device)                    #moves the list (i think of tensors?) to the device that will process it i.e either cpu or gpu, we have a check elsewhere in the code that detects if gpu is availible and sets the value of 'device' to gpu or cpu depending on availibility (look for the line that says "device = 'cuda' if torch.cuda.is_available() else 'cpu'"). NOTE: this moves the noised images to device, i think that the original images are already moved to device in previous code
     
@@ -886,23 +888,27 @@ for epoch in loop_range:                              #For loop that iterates ov
     # this has batches built in from dataloader part. Does all train batches.
     # loss for each batch is averaged and single loss produced as output.
     train_loss=train_epoch_den(
-                               encoder=encoder, 
-                               decoder=decoder, 
-                               device=device, 
+                               encoder, 
+                               decoder, 
+                               device, 
                                dataloader=train_loader, 
                                loss_fn=loss_fn, 
                                optimizer=optim,
-                               noise_factor=noise_factor)
+                               noise_points=noise_points,
+                               reconstruction_threshold=reconstruction_threshold,
+                               print_partial_training_losses = print_partial_training_losses
+                               )
     
     ### Validation (use the testing function)
     # does all validation batches. single average loss produced.
     val_loss = test_epoch_den(
-                              encoder=encoder, 
-                              decoder=decoder, 
-                              device=device, 
+                              encoder, 
+                              decoder, 
+                              device, 
                               dataloader=valid_loader, 
                               loss_fn=loss_fn,
-                              noise_factor=noise_factor)
+                              noise_points=noise_points,
+                              reconstruction_threshold=reconstruction_threshold)
     
     # Print Validation_loss and plots at end of each epoch
     history_da['train_loss'].append(train_loss)
@@ -918,10 +924,19 @@ for epoch in loop_range:                              #For loop that iterates ov
         
         print("\n## EPOCH {} PLOTS DRAWN ## \n  \n".format(epoch))
         
-        # finally plot the figure with all images on it.
+        # Run plotting function for training feedback and telemetry.
         encoder.eval()
         decoder.eval()
-        number_of_true_signal_points, number_of_recovered_signal_points, in_data, noisy_data, rec_data = plot_ae_outputs_den(encoder, decoder, epoch, model_save_name, time_dimension, reconstruction_threshold, noise_factor=noise_factor)
+
+        returned_data_from_plotting_function = plot_ae_outputs_den(encoder, 
+                                                                   decoder, 
+                                                                   epoch, 
+                                                                   model_save_name, 
+                                                                   time_dimension, 
+                                                                   reconstruction_threshold, 
+                                                                   noise_factor=noise_factor)
+        
+        number_of_true_signal_points, number_of_recovered_signal_points, in_data, noisy_data, rec_data = returned_data_from_plotting_function
         encoder.train()
         decoder.train()
         # Allow user to exit training loop    
