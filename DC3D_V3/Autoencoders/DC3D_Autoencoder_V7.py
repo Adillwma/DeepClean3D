@@ -53,13 +53,21 @@ class Encoder(nn.Module):
             #Convolutional encoder layer 1                 
             nn.Conv2d(1, 8, 7, stride=2, padding=1),       #Input_channels, Output_channels, Kernal_size, Stride, Padding
             nn.ReLU(True),                                 #ReLU activation function - Activation function determinines if a neuron fires, i.e is the output of the node considered usefull. also allows for backprop. the arg 'True' makes the opperation carry out in-place(changes the values in the input array to the output values rather than making a new one), default would be false
+            #Max Pooling layer after large kernel
+            nn.MaxPool2d(kernel_size=2, stride=2),
             #Convolutional encoder layer 2
-            nn.Conv2d(8, 16, 3, stride=2, padding=1),      #Input_channels, Output_channels, Kernal_size, Stride, Padding
+            nn.Conv2d(8, 16, 7, stride=2, padding=1),      #Input_channels, Output_channels, Kernal_size, Stride, Padding
             nn.BatchNorm2d(16),                            #BatchNorm normalises the outputs as a batch? #!!!. argument is 'num_features' (expected input of size)
             nn.ReLU(True),                                 #ReLU activation function - Activation function determinines if a neuron fires, i.e is the output of the node considered usefull. also allows for backprop. the arg 'True' makes the opperation carry out in-place(changes the values in the input array to the output values rather than making a new one), default would be false
+            # with max pooling and these two 7x7 kernels, pixels retain information from up to ~20 pixels away.
+            # now do smaller conv nets to relate them:
             #Convolutional encoder layer 3
-            nn.Conv2d(16, 32, 3, stride=2, padding=0),     #Input_channels, Output_channels, Kernal_size, Stride, Padding
-            nn.ReLU(True)                                  #ReLU activation function - Activation function determinines if a neuron fires, i.e is the output of the node considered usefull. also allows for backprop. the arg 'True' makes the opperation carry out in-place(changes the values in the input array to the output values rather than making a new one), default would be false
+            nn.Conv2d(16, 32, 3, stride=1, padding=0),     #Input_channels, Output_channels, Kernal_size, Stride, Padding
+            nn.BatchNorm2d(32),
+            nn.ReLU(True),                                  #ReLU activation function - Activation function determinines if a neuron fires, i.e is the output of the node considered usefull. also allows for backprop. the arg 'True' makes the opperation carry out in-place(changes the values in the input array to the output values rather than making a new one), default would be false
+            #Convolutional encoder layer 4
+            nn.Conv2d(32, 64, 3, stride=1, padding=0),     #Input_channels, Output_channels, Kernal_size, Stride, Padding
+            nn.ReLU(True)
         )
  
         ###Flatten layer
@@ -140,15 +148,20 @@ class Decoder(nn.Module):
         
         self.decoder_conv = nn.Sequential(
             #Convolutional decoder layer 1
+            nn.ConvTranspose2d(64, 32, 3, stride=2, output_padding=1),             #Input_channels, Output_channels, Kernal_size, Stride, padding(unused), Output_padding
+            nn.BatchNorm2d(32),
+            #Convolutional decoder layer 2
             nn.ConvTranspose2d(32, 16, 3, stride=2, output_padding=1),             #Input_channels, Output_channels, Kernal_size, Stride, padding(unused), Output_padding
             nn.BatchNorm2d(16),                                                    #BatchNorm normalises the outputs as a batch? #!!!. argument is 'num_features' (expected input of size)
             nn.ReLU(True),                                                         #ReLU activation function - Activation function determinines if a neuron fires, i.e is the output of the node considered usefull. also allows for backprop. the arg 'True' makes the opperation carry out in-place(changes the values in the input array to the output values rather than making a new one), default would be false
-            #Convolutional decoder layer 2
-            nn.ConvTranspose2d(16, 8, 3, stride=2, padding=1, output_padding=1),   #Input_channels, Output_channels, Kernal_size, Stride, padding, Output_padding
+            #Convolutional decoder layer 3
+            nn.ConvTranspose2d(16, 8, 7, stride=2, padding=1, output_padding=1),   #Input_channels, Output_channels, Kernal_size, Stride, padding, Output_padding
             nn.BatchNorm2d(8),                                                     #BatchNorm normalises the outputs as a batch? #!!!. argument is 'num_features' (expected input of size)
             nn.ReLU(True),                                                         #ReLU activation function - Activation function determinines if a neuron fires, i.e is the output of the node considered usefull. also allows for backprop. the arg 'True' makes the opperation carry out in-place(changes the values in the input array to the output values rather than making a new one), default would be false
-            #Convolutional decoder layer 3
-            nn.ConvTranspose2d(8, 1, 3, stride=2, padding=1, output_padding=1)     #Input_channels, Output_channels, Kernal_size, Stride, padding, Output_padding
+            #Reverse Max pooling:
+            nn.ConvTranspose2d(in_channels=8, out_channels=8, kernel_size=2, stride=2),
+            #Convolutional decoder layer 4
+            nn.ConvTranspose2d(8, 1, 7, stride=2, padding=1, output_padding=1)     #Input_channels, Output_channels, Kernal_size, Stride, padding, Output_padding
         )
 
     def get_activation_data(self):    # Returns the per node activation values 

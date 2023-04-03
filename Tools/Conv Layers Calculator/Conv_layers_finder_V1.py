@@ -122,30 +122,32 @@ def conv_calculator(conv_type, K, P, S, D, H_in, W_in, D_in=0, O=0):
 start_size = 128, 88
 Kernal = (3,3)
 
-CL1 = conv_calculator(conv_type=0, K=Kernal, P=1, S=2, D=1, H_in=start_size[0], W_in=start_size[1])
-CL2 = conv_calculator(conv_type=0, K=Kernal, P=1, S=2, D=1, H_in=CL1[0], W_in=CL1[1])
-CL3 = conv_calculator(conv_type=0, K=Kernal, P=0, S=2, D=1, H_in=CL2[0], W_in=CL2[1])
-#CL4 = conv_calculator(conv_type=0, K=Kernal, P=0, S=2, D=1, H_in=CL3[0], W_in=CL3[1])
-#CL5 = conv_calculator(conv_type=0, K=Kernal, P=0, S=2, D=1, H_in=CL4[0], W_in=CL4[1])
+CL1 = conv_calculator(conv_type=0, K=(7,7), P=1, S=2, D=1, H_in=start_size[0], W_in=start_size[1])
+max_pool = conv_calculator(conv_type=0, K=(2,2), P=0, S=2, D=1, H_in=CL1[0], W_in=CL1[1])
+CL2 = conv_calculator(conv_type=0, K=(7,7), P=1, S=2, D=1, H_in=max_pool[0], W_in=max_pool[1])
+CL3 = conv_calculator(conv_type=0, K=(3,3), P=0, S=1, D=1, H_in=CL2[0], W_in=CL2[1])
+CL4 = conv_calculator(conv_type=0, K=(3,3), P=0, S=1, D=1, H_in=CL3[0], W_in=CL3[1])
 
-CLT1 = conv_calculator(conv_type=1, K=Kernal, P=0, S=2, D=1, H_in=CL3[0], W_in=CL3[1], O=1)
-CLT2 = conv_calculator(conv_type=1, K=Kernal, P=1, S=2, D=1, H_in=CLT1[0], W_in=CLT1[1], O=1)
-CLT3 = conv_calculator(conv_type=1, K=Kernal, P=1, S=2, D=1, H_in=CLT2[0], W_in=CLT2[1], O=1)
-#CLT4 = conv_calculator(conv_type=1, K=Kernal, P=0, S=2, D=1, H_in=CLT3[0], W_in=CLT3[1], O=0)
-#CLT5 = conv_calculator(conv_type=1, K=Kernal, P=0, S=2, D=1, H_in=CLT4[0], W_in=CLT4[1], O=0)
+CLT1 = conv_calculator(conv_type=1, K=(3,3), P=0, S=1, D=1, H_in=CL4[0], W_in=CL4[1], O=1)
+CLT2 = conv_calculator(conv_type=1, K=(3,3), P=0, S=1, D=1, H_in=CLT1[0], W_in=CLT1[1], O=1)
+CLT3 = conv_calculator(conv_type=1, K=(7,7), P=1, S=2, D=1, H_in=CLT2[0], W_in=CLT2[1], O=0)
+R_max_pool = conv_calculator(conv_type=1, K=(2,2), P=0, S=2, D=1, H_in=CLT3[0], W_in=CLT3[1], O=0)
+CLT4 = conv_calculator(conv_type=1, K=(7,7), P=1, S=2, D=1, H_in=R_max_pool[0], W_in=R_max_pool[1], O=1)
 
 
 #Outputs
 print("Initial Size:", start_size,"\n")
 print ("Conv 1 Size:", CL1)
+print ("pool Size:", max_pool)
 print ("Conv 2 Size:", CL2)
 print ("Conv 3 Size:", CL3)
-#print ("Conv 4 Size:", CL4)
-#print ("Conv 5 Size:", CL5)
+print ("Conv 4 Size:", CL4)
+
 print()
 print ("Conv.T 1 Size:", CLT1)
 print ("Conv.T 2 Size:", CLT2)
 print ("Conv.T 3 Size:", CLT3)
-#print ("Conv.T 4 Size:", CLT4)
-#print ("Conv.T 5 Size:", CLT5)
+print ("pool Size:", R_max_pool)
+print ("Conv.T 4 Size:", CLT4)
+
 
