@@ -14,7 +14,7 @@ xdim = 88                                            # X dimension of image
 ydim = 128                                           # Y dimension of image
 time_dimension = 100                                 # Time dimension of image
 sig_pts = 300                                         # Number of signal points to generate
-data_set_title = "Dataset 34_Real10Ks RANDOM"     # Ouput title of dataset
+data_set_title = "Dataset 33_Real10Ks IDEAL"     # Ouput title of dataset
 data_sets_folder = r"N:\Yr 3 Project Datasets\\"     # Folder to save dataset to
 
 #Ada: r"C:\Users\Student\Documents\UNI\Onedrive - University of Bristol\Yr 3 Project\Circular and Spherical Dummy Datasets\\"
@@ -42,7 +42,7 @@ rotate_x_positions = False     #If True then the x signals are rotated, otherwis
 rotate_seperatly = True        #If True then each x signal is rotated by a random amount, otherwise they are all rotated by the same amount (only used if rotate_x_positions is True)
 
 #Realistic Gen Settings
-ideal_hit_spread = False        #If True then the hit points spread is idealised as linearly spaced in the pattern, otherwise points are chosen randomly from pattern 
+ideal_hit_spread = True       #If True then the hit points spread is idealised as linearly spaced in the pattern, otherwise points are chosen randomly from pattern 
 
 #%% - Dependencies
 #External Libraries
@@ -75,7 +75,7 @@ simp_generator(output_dir, datasplit_values, sig_pts, ydim, xdim, time_dimension
 
 #Generate Realisitic Signals
 realistic_proportions = [number_single_realisitic, number_of_two_realisitic, number_of_three_realisitic, number_of_four_realisitic]  # List of number of each type of realistic signal to generate
-multi_real_gen_wrapper(output_dir, realistic_proportions, signal_points=sig_pts, detector_pixel_dimensions=(ydim, xdim), hit_point='random', ideal=ideal_hit_spread, debug_image_generator=False, shift=shift_positions)  # Generate realistic signals
+multi_real_gen_wrapper(output_dir, realistic_proportions, signal_points=sig_pts, detector_pixel_dimensions=(ydim, xdim), height=time_dimension, hit_point='random', ideal=ideal_hit_spread, debug_image_generator=False, shift=shift_positions)  # Generate realistic signals
 
 print("Dataset Generation Completed")   # Print to console to show that dataset generation has completed
 #%% - Run Tests
