@@ -101,8 +101,8 @@ import torch
 #NOTE to users: Known good parameters so far (changing these either way damages performance): learning_rate = 0.0001, Batch Size = 10, Latent Dim = 10, Reconstruction Threshold = 0.5, loss_function_selection = 0, loss weighting = 0.9 - 1
 
 #%% - User Inputs
-dataset_title = "Dataset 24_X10Ks"#"Dataset 24_X10Ks"           #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
-model_save_name = "D24_X10K lr.0001 weight0.99-1 reconfix0.5 split MAE-MSEloss"     #"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
+dataset_title = "Dataset 24_X10Ks"       #"MultiX - 80%1X - 20%2X - 128x88"#"Dataset 24_X10Ks"           #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
+model_save_name = "D24_X10K lr.0001 weight0.99-1 reconfix0.5 split MAE-MSEloss"   #"MaxLoss"     #"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
 
 time_dimension = 100                         # User controll to set the number of time steps in the data
 reconstruction_threshold = 0.5               # MUST BE BETWEEN 0-1  #Threshold for 3d reconstruction, values below this confidence level are discounted
@@ -122,7 +122,7 @@ dropout_prob = 0.2                           # [NOTE Not connected yet] User con
 train_test_split_ratio = 0.8                 # User controll to set the ratio of the dataset to be used for training (Hyperparameter)
 val_test_split_ratio = 0.5                   # [NOTE LEAVE AT 0.5, is for future update, not working currently] User controll to set the ratio of the non-training data to be used for validation as opposed to testing (Hyperparameter)
 
-loss_function_selection = 6                  # Select loss function (Hyperparameter): 0 = ada_weighted_mse_loss, 1 = Maxs_Loss_Func, 2 = torch.nn.MSELoss(), 3 = torch.nn.BCELoss(), 4 = torch.nn.L1Loss(), 5 = ada_SSE_loss, 6 ada_weighted_custom_split_loss 
+loss_function_selection = 1                  # Select loss function (Hyperparameter): 0 = ada_weighted_mse_loss, 1 = Maxs_Loss_Func, 2 = torch.nn.MSELoss(), 3 = torch.nn.BCELoss(), 4 = torch.nn.L1Loss(), 5 = ada_SSE_loss, 6 ada_weighted_custom_split_loss 
 
 # Below weights only used if loss func set to 0 or 6 aka ada_weighted_mse_loss
 zero_weighting = 0.99                           # User controll to set zero weighting for ada_weighted_mse_loss (Hyperparameter)
@@ -186,11 +186,11 @@ data_gathering = True
 #%% - Data Path Settings
 data_path = "N:\Yr 3 Project Datasets\\"
 #ADILL - "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Yr 3 Project/Circular and Spherical Dummy Datasets/"
-#MAX - r"C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets/"
+#MAX - r"C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Cross Stuff/"
 
 results_output_path = "N:\Yr 3 Project Results\\"
 #ADILL - "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Git Hub Repos/DeepClean Repo/DeepClean-Noise-Suppression-for-LHC-B-Torch-Detector/Models/"
-#MAX - r"C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\DeepClean-Noise-Suppression-for-LHC-B-Torch-Detector\Models/"
+#MAX - r"C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\DeepClean-Noise-Suppression-for-LHC-B-Torch-Detector\Models/Archived/"
 
 #%% - Dependencies
 # External Libraries
@@ -482,22 +482,25 @@ class Max_loss(torch.nn.Module):
         # first make a list of all the indices of the non-zero original points:
         non_zero = torch.nonzero(original)
 
+        # fix cos im getting the error:
+        original_mod = original.clone()
+
         # set pixels around signal in x to the same as them:
         for img, chan, x, y in non_zero:
 
             # set all within furthest in x to the signal height:
             if furthest_line:
-                original[img, 0, x, y-furthest:y+furthest+1] = original[img,0,x,y]
+                original_mod[img, 0, x, y-furthest:y+furthest+1] = original[img,0,x,y]
 
             # if you want a square around them, not lines (this is much much better for sparse data, not that youd want
             # to use it on that anyway)
             else:
-                original[img, 0, x-furthest:x+furthest+1, y-furthest:y+furthest+1] = original[img,0,x,y]
+                original_mod[img, 0, x-furthest:x+furthest+1, y-furthest:y+furthest+1] = original[img,0,x,y]
         
 
         # now we find the minimum of either mse to 0 or to the altered one:
         # cubed for altered (so that it increases faster than 0 MSE):
-        alt_mseloss = (reconstruction - original)**3
+        alt_mseloss = (reconstruction - original_mod)**3
 
         # this is where we add the minimum loss the alt_mseloss can get to:
         alt_mseloss += close_min
