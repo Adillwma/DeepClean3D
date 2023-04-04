@@ -12,3 +12,7 @@ AE5 has 6 lin layers - 4800 --> 2048 --> 1024 --> 512 --> 256 --> 128 --> encode
 AE1_2 is same as AE1 but with Dropout layers added.
 AE1_3 is same as AE1 but with Dropout layers added to just the decoder.
 
+
+AE6?
+AE7?
+
