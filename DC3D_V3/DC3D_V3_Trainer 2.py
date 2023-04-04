@@ -186,11 +186,11 @@ data_gathering = True
 #%% - Data Path Settings
 data_path = "N:\Yr 3 Project Datasets\\"
 #ADILL - "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Yr 3 Project/Circular and Spherical Dummy Datasets/"
-#MAX - 
+#MAX - r"C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets/"
 
 results_output_path = "N:\Yr 3 Project Results\\"
 #ADILL - "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Git Hub Repos/DeepClean Repo/DeepClean-Noise-Suppression-for-LHC-B-Torch-Detector/Models/"
-#MAX - 
+#MAX - r"C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\DeepClean-Noise-Suppression-for-LHC-B-Torch-Detector\Models/"
 
 #%% - Dependencies
 # External Libraries
@@ -505,13 +505,16 @@ class Max_loss(torch.nn.Module):
         # now find the minimum of the two:
         mseloss = torch.min(orig_mseloss, alt_mseloss)
 
+        # get indices of signals
         signals = tuple(torch.nonzero(original).t())
 
+        # multiply signals by weight
         mseloss[signals] *= sig_weight
         
         # now we just find the mean of the matrix:
         loss = torch.mean(mseloss)
 
+        # return loss
         return loss
 
 #%% - # Input / Output Path Initialisation
