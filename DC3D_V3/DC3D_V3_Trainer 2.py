@@ -90,87 +90,25 @@ Default: if None, uses a global default (see torch.set_default_tensor_type()).!!
 ### ~~~~~ Check if running model in dp (fp64) is causing large slow down???
 
 ### ~~~~~ Allow seperate loss fucntion for testing/validation phase?
+
+### ~~~~~ Properly track the choices for split loss funcs in txt output file 
+
+### ~~~~~ Explicitlly pass in split_loss_functions to the split custom weigted func atm is not done to simplify the code but is not ideal
 """
 import torch
-
-
-class Max_loss(torch.nn.Module):
-    def __init__(self, size_average=None, reduce=None, reduction='mean', furthest_line = True, furthest = 1, sig_weight = 30, close_min = 0.05):
-        """
-        Inputs:
-        furthest_line = True - This is set to true to save compute. This will add special loss effect to a LINE of pixels in y-axis
-        from the signal point. If set to false will do a square instead of line. (This is much better, but takes more compute)
-        furthest - This is how far to extend this special loss function box.
-        sig_weight - How much the signal is weighted over the empty points when calculating loss.
-        close_min - This is to set the minimum loss in the local minima around the signal points. This is here so that continuing to
-        guess close to the signal points is not optimal in the long run.
-        """
-        super(Max_loss, self).__init__()
-        self.size_average = size_average
-        self.reduce = reduce
-        self.reduction = reduction
-        self.furthest = furthest
-        self.sig_weight = sig_weight
-        self.close_min = close_min
-        self.furthest_line = furthest_line
-
-    def forward(self, reconstruction, original):
-        reduction = self.reduction
-        furthest = self.furthest
-        sig_weight = self.sig_weight
-        close_min = self.close_min
-        furthest_line = self.furthest_line
-
-        # mse original:
-        orig_mseloss = (reconstruction - original)**2
-
-        # first make a list of all the indices of the non-zero original points:
-        non_zero = torch.nonzero(original)
-
-        # set pixels around signal in x to the same as them:
-        for img, chan, x, y in non_zero:
-
-            # set all within furthest in x to the signal height:
-            if furthest_line:
-                original[img, 0, x, y-furthest:y+furthest+1] = original[img,0,x,y]
-
-            # if you want a square around them, not lines (this is much much better for sparse data, not that youd want
-            # to use it on that anyway)
-            else:
-                original[img, 0, x-furthest:x+furthest+1, y-furthest:y+furthest+1] = original[img,0,x,y]
-        
-
-        # now we find the minimum of either mse to 0 or to the altered one:
-        # cubed for altered (so that it increases faster than 0 MSE):
-        alt_mseloss = (reconstruction - original)**3
-
-        # this is where we add the minimum loss the alt_mseloss can get to:
-        alt_mseloss += close_min
-
-        # now find the minimum of the two:
-        mseloss = torch.min(orig_mseloss, alt_mseloss)
-
-        signals = tuple(torch.nonzero(original).t())
-
-        mseloss[signals] *= sig_weight
-        
-        # now we just find the mean of the matrix:
-        loss = torch.mean(mseloss)
-
-        return loss
 
 
 #NOTE to users: Known good parameters so far (changing these either way damages performance): learning_rate = 0.0001, Batch Size = 10, Latent Dim = 10, Reconstruction Threshold = 0.5, loss_function_selection = 0, loss weighting = 0.9 - 1
 
 #%% - User Inputs
-dataset_title = "Dataset 32_X10Ks Sparse SIG50"#"Dataset 24_X10Ks"           #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
-model_save_name = "D32_X10K SparseSIG50 np50 lr.0001 weight0.9-1 reconfix0.5"     #"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
+dataset_title = "Dataset 24_X10Ks"#"Dataset 24_X10Ks"           #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
+model_save_name = "D24_X10K lr.0001 weight0.99-1 reconfix0.5 split MAE-MSEloss"     #"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
 
 time_dimension = 100                         # User controll to set the number of time steps in the data
 reconstruction_threshold = 0.5               # MUST BE BETWEEN 0-1  #Threshold for 3d reconstruction, values below this confidence level are discounted
 
 noise_factor = 0                             # User controll to set the noise factor, a multiplier for the magnitude of noise added. 0 means no noise added, 1 is defualt level of noise added, 10 is 10x default level added (Hyperparameter)
-noise_points = 50                             # User controll to set the number of noise points to add 
+noise_points = 0                          # User controll to set the number of noise points to add 
 
 #%% - Hyperparameter Settings
 num_epochs = 16                             # User controll to set number of epochs (Hyperparameter)
@@ -184,17 +122,15 @@ dropout_prob = 0.2                           # [NOTE Not connected yet] User con
 train_test_split_ratio = 0.8                 # User controll to set the ratio of the dataset to be used for training (Hyperparameter)
 val_test_split_ratio = 0.5                   # [NOTE LEAVE AT 0.5, is for future update, not working currently] User controll to set the ratio of the non-training data to be used for validation as opposed to testing (Hyperparameter)
 
-loss_function_selection = 0                  # Select loss function (Hyperparameter): 0 = ada_weighted_mse_loss, 1 = Maxs_Loss_Func, 2 = torch.nn.MSELoss(), 3 = torch.nn.BCELoss(), 4 = torch.nn.L1Loss(), 5 = ada_SSE_loss, 6 ada_weighted_custom_split_loss 
+loss_function_selection = 6                  # Select loss function (Hyperparameter): 0 = ada_weighted_mse_loss, 1 = Maxs_Loss_Func, 2 = torch.nn.MSELoss(), 3 = torch.nn.BCELoss(), 4 = torch.nn.L1Loss(), 5 = ada_SSE_loss, 6 ada_weighted_custom_split_loss 
 
 # Below weights only used if loss func set to 0 or 6 aka ada_weighted_mse_loss
-zero_weighting = 0.9                           # User controll to set zero weighting for ada_weighted_mse_loss (Hyperparameter)
+zero_weighting = 0.99                           # User controll to set zero weighting for ada_weighted_mse_loss (Hyperparameter)
 nonzero_weighting = 1                     # User controll to set non zero weighting for ada_weighted_mse_loss (Hyperparameter)
 
 # Below only used if loss func set to 6 aka ada_weighted_custom_split_loss
-# Create an instance of MSELoss class
-zeros_loss = torch.nn.MSELoss()
-nonzero_loss = torch.nn.MSELoss()
-split_loss_functions = [zeros_loss, nonzero_loss]
+zeros_loss_choice = 3                     # Select loss function for zero values (Hyperparameter): 0 = Maxs_Loss_Func, 1 = torch.nn.MSELoss(), 2 = torch.nn.BCELoss(), 3 = torch.nn.L1Loss(), 4 = ada_SSE_loss
+nonzero_loss_choice = 1                 # Select loss function for non zero values (Hyperparameter): 0 = Maxs_Loss_Func, 1 = torch.nn.MSELoss(), 2 = torch.nn.BCELoss(), 3 = torch.nn.L1Loss(), 4 = ada_SSE_loss
 
 #%% - Pretraining settings
 start_from_pretrained_model = False          # If set to true then the model will load the pretrained model and optimiser state dicts from the path below
@@ -284,7 +220,7 @@ from Helper_files.AE_Visulisations import Generative_Latent_information_Visulisa
 #%% - Helper functions
 
 # Weighted Custom Split Loss Function
-def ada_weighted_custom_split_loss(reconstructed_image, target_image, split_loss_functions=split_loss_functions, zero_weighting=zero_weighting, nonzero_weighting=nonzero_weighting):
+def ada_weighted_custom_split_loss(reconstructed_image, target_image, zero_weighting=zero_weighting, nonzero_weighting=nonzero_weighting):
     """
     Calculates the weighted error loss between target_image and reconstructed_image.
     The loss for zero pixels in the target_image is weighted by zero_weighting, and the loss for non-zero
@@ -513,17 +449,70 @@ def add_noise_points_to_batch(image_batch, noise_points=100, reconstruction_thre
 
 
 #%% - Classes
-### Gaussian Noise Generator Class
-class AddGaussianNoise(object):                   #Class generates noise based on the mean 0 and std deviation 1, (gaussian)
-    def __init__(self, mean=0., std=1.):
-        self.std = std
-        self.mean = mean
+class Max_loss(torch.nn.Module):
+    def __init__(self, size_average=None, reduce=None, reduction='mean', furthest_line = True, furthest = 1, sig_weight = 30, close_min = 0.05):
+        """
+        Inputs:
+        furthest_line = True - This is set to true to save compute. This will add special loss effect to a LINE of pixels in y-axis
+        from the signal point. If set to false will do a square instead of line. (This is much better, but takes more compute)
+        furthest - This is how far to extend this special loss function box.
+        sig_weight - How much the signal is weighted over the empty points when calculating loss.
+        close_min - This is to set the minimum loss in the local minima around the signal points. This is here so that continuing to
+        guess close to the signal points is not optimal in the long run.
+        """
+        super(Max_loss, self).__init__()
+        self.size_average = size_average
+        self.reduce = reduce
+        self.reduction = reduction
+        self.furthest = furthest
+        self.sig_weight = sig_weight
+        self.close_min = close_min
+        self.furthest_line = furthest_line
+
+    def forward(self, reconstruction, original):
+        reduction = self.reduction
+        furthest = self.furthest
+        sig_weight = self.sig_weight
+        close_min = self.close_min
+        furthest_line = self.furthest_line
+
+        # mse original:
+        orig_mseloss = (reconstruction - original)**2
+
+        # first make a list of all the indices of the non-zero original points:
+        non_zero = torch.nonzero(original)
+
+        # set pixels around signal in x to the same as them:
+        for img, chan, x, y in non_zero:
+
+            # set all within furthest in x to the signal height:
+            if furthest_line:
+                original[img, 0, x, y-furthest:y+furthest+1] = original[img,0,x,y]
+
+            # if you want a square around them, not lines (this is much much better for sparse data, not that youd want
+            # to use it on that anyway)
+            else:
+                original[img, 0, x-furthest:x+furthest+1, y-furthest:y+furthest+1] = original[img,0,x,y]
         
-    def __call__(self, tensor):
-        return tensor + torch.randn(tensor.size()) * self.std + self.mean
-    
-    def __repr__(self):
-        return self.__class__.__name__ + '(mean={0}, std={1})'.format(self.mean, self.std)
+
+        # now we find the minimum of either mse to 0 or to the altered one:
+        # cubed for altered (so that it increases faster than 0 MSE):
+        alt_mseloss = (reconstruction - original)**3
+
+        # this is where we add the minimum loss the alt_mseloss can get to:
+        alt_mseloss += close_min
+
+        # now find the minimum of the two:
+        mseloss = torch.min(orig_mseloss, alt_mseloss)
+
+        signals = tuple(torch.nonzero(original).t())
+
+        mseloss[signals] *= sig_weight
+        
+        # now we just find the mean of the matrix:
+        loss = torch.mean(mseloss)
+
+        return loss
 
 #%% - # Input / Output Path Initialisation
 
@@ -559,8 +548,13 @@ if seed != 0:                             # If seed is not set to 0
     Determinism_Seeding(seed)             # Set the seed for the RNGs
 
 #%% - Set loss function choice
-availible_loss_functions = [ada_weighted_mse_loss, Max_Loss, torch.nn.MSELoss(), torch.nn.BCELoss(), torch.nn.L1Loss(), ada_SSE_loss, ada_weighted_custom_split_loss]    # List of all availible loss functions
+availible_loss_functions = [ada_weighted_mse_loss, Max_loss(), torch.nn.MSELoss(), torch.nn.BCELoss(), torch.nn.L1Loss(), ada_SSE_loss, ada_weighted_custom_split_loss]    # List of all availible loss functions
 loss_fn = availible_loss_functions[loss_function_selection]            # Sets loss function based on user input of parameter loss_function_selection
+
+# Set loss function choice for split loss (if loss function choice is set to ada weighted custom split loss)
+availible_split_loss_functions = [Max_loss(), torch.nn.MSELoss(), torch.nn.BCELoss(), torch.nn.L1Loss(), ada_SSE_loss]    # List of all availible loss functions is set to ada_weighted_custom_split_loss
+split_loss_functions = [availible_split_loss_functions[zeros_loss_choice], availible_split_loss_functions[nonzero_loss_choice]] # Sets loss functions based on user input
+
 
 #%% - Create record of all user input settings, to add to output data for testing and keeping track of settings
 settings = {}  # Creates empty dictionary to store settings 
