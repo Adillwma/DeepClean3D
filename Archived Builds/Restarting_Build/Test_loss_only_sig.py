@@ -570,6 +570,8 @@ class RatioLoss(nn.Module):
         # ratio b : w to get ratio
         ratio = all_pixels / num_hits
 
+        print(all_pixels, num_hits, ratio)
+
         # now multiply hit losses by ratio:
         squared_difference[signals] *= ratio
 

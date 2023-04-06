@@ -18,6 +18,8 @@ import random
 import math
 import torch.nn as nn
 import torch.nn.functional as F
+import pytorch_ssim
+import cv2
 
 #import pandas as pd 
 #import torch.nn.functional as F
@@ -549,8 +551,179 @@ class custom2(torch.nn.Module):
 
         return loss
 
+def ssim(img1, img2, window_size=11, sigma=1.5, C1=0.01**2, C2=0.03**2):
+    window = torch.tensor([[0.0625, 0.125, 0.0625], [0.125, 0.25, 0.125], [0.0625, 0.125, 0.0625]], dtype=img1.dtype)
+    window = window.view(1, 1, 3, 3).repeat(img1.shape[1], 1, 1, 1).to(img1.device)
+
+    mu1 = F.conv2d(img1, window, padding=1, groups=img1.shape[1])
+    mu2 = F.conv2d(img2, window, padding=1, groups=img1.shape[1])
+
+    mu1_sq = mu1.pow(2)
+    mu2_sq = mu2.pow(2)
+    mu1_mu2 = mu1 * mu2
+
+    sigma1_sq = F.conv2d(img1 * img1, window, padding=1, groups=img1.shape[1]) - mu1_sq
+    sigma2_sq = F.conv2d(img2 * img2, window, padding=1, groups=img1.shape[1]) - mu2_sq
+    sigma12 = F.conv2d(img1 * img2, window, padding=1, groups=img1.shape[1]) - mu1_mu2
+
+    ssim_map = ((2 * mu1_mu2 + C1) * (2 * sigma12 + C2)) / ((mu1_sq + mu2_sq + C1) * (sigma1_sq + sigma2_sq + C2))
+
+    return ssim_map.mean()
+
+class SSIMLoss(nn.Module):
+    def __init__(self):
+        super(SSIMLoss, self).__init__()
+
+    def forward(self, input, target):
+        return 1 - ssim(input, target)
+
+
+class ORBLoss(torch.nn.Module):
+    def __init__(self, nfeatures=500, scaleFactor=1.2, nlevels=8, edgeThreshold=31, patchSize=31):
+        super(ORBLoss, self).__init__()
+
+        # creates an instance of the ORB detector and descriptor with the specified parameters
+        self.orb = cv2.ORB_create(nfeatures=nfeatures, scaleFactor=scaleFactor, nlevels=nlevels, 
+                                  edgeThreshold=edgeThreshold, patchSize=patchSize)
+        
+    def forward(self, recon, orig):
+
+        # detect and describe the features in the input and target images
+        kp1, des1 = self.orb.detectAndCompute(recon, None)
+        kp2, des2 = self.orb.detectAndCompute(orig, None)
+
+        # match using a Brute-Force Matcher
+        bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
+        matches = bf.match(des1, des2)
+
+        # set loss before loop
+        loss = 0
+        # distance between the matched features is computed as the loss
+        for match in matches:
+            loss += match.distance
+        loss /= len(matches)
+
+        # return loss
+        return loss
+
+class ORBLoss2(torch.nn.Module):
+    def __init__(self, nfeatures=500, scaleFactor=1.2, nlevels=8, edgeThreshold=31, patchSize=31):
+        super(ORBLoss2, self).__init__()
+
+        # creates an instance of the ORB detector and descriptor with the specified parameters
+        self.orb = cv2.ORB_create(nfeatures=nfeatures, scaleFactor=scaleFactor, nlevels=nlevels,
+                                  edgeThreshold=edgeThreshold, patchSize=patchSize)
+
+    def forward(self, recon, orig):
+        batch_size = recon.shape[0]
+
+        # Initialize loss
+        loss = 0
+
+        # Loop through each image in the batch
+        for i in range(batch_size):
+            recon_np = recon[i].squeeze().detach().cpu().numpy()
+            orig_np = orig[i].squeeze().detach().cpu().numpy()
+
+            # Convert single-channel images to 3-channel images
+            recon_np = np.repeat(recon_np[..., np.newaxis], 3, axis=-1)
+            orig_np = np.repeat(orig_np[..., np.newaxis], 3, axis=-1)
+
+            # Convert images to uint8 format
+            recon_np = (recon_np * 255).astype(np.uint8)
+            orig_np = (orig_np * 255).astype(np.uint8)
+
+            # detect and describe the features in the input and target images
+            kp1, des1 = self.orb.detectAndCompute(recon_np, None)
+            kp2, des2 = self.orb.detectAndCompute(orig_np, None)
+
+            # match using a Brute-Force Matcher
+            bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
+            matches = bf.match(des1, des2)
+
+            # distance between the matched features is computed as the loss
+            batch_loss = sum(match.distance for match in matches) / len(matches)
+            loss += batch_loss
+
+        # Compute average loss across the batch
+        loss /= batch_size
+
+        # return loss
+        return torch.tensor(loss, dtype=recon.dtype, device=recon.device)
+
+class ORBLoss3(torch.nn.Module):
+    def __init__(self, nfeatures=500, scaleFactor=1.2, nlevels=8, edgeThreshold=31, patchSize=31):
+        super(ORBLoss3, self).__init__()
+
+        # creates an instance of the ORB detector and descriptor with the specified parameters
+        self.orb = cv2.ORB_create(nfeatures=nfeatures, scaleFactor=scaleFactor, nlevels=nlevels,
+                                  edgeThreshold=edgeThreshold, patchSize=patchSize)
+    def forward(self, recon, orig):
+        batch_size = recon.shape[0]
+
+        # Initialize loss
+        loss = 0
+
+        # Loop through each image in the batch
+        for i in range(batch_size):
+            recon_np = recon[i].squeeze().detach().cpu().numpy()
+            orig_np = orig[i].squeeze().detach().cpu().numpy()
+
+            # Convert single-channel images to 3-channel images
+            recon_np = np.repeat(recon_np[..., np.newaxis], 3, axis=-1)
+            orig_np = np.repeat(orig_np[..., np.newaxis], 3, axis=-1)
+
+            # Convert images to uint8 format
+            recon_np = (recon_np * 255).astype(np.uint8)
+            orig_np = (orig_np * 255).astype(np.uint8)
+
+            # detect and describe the features in the input and target images
+            kp1, des1 = self.orb.detectAndCompute(recon_np, None)
+            kp2, des2 = self.orb.detectAndCompute(orig_np, None)
+
+            # Check if both des1 and des2 are not empty and have the same data type
+            if des1 is not None and des2 is not None and des1.dtype == des2.dtype:
+                # match using a Brute-Force Matcher
+                bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
+                matches = bf.match(des1, des2)
+
+                # distance between the matched features is computed as the loss
+                batch_loss = sum(match.distance for match in matches) / len(matches)
+                loss += batch_loss
+            else:
+                # If either des1 or des2 is empty or their data types don't match, skip this pair
+                batch_size -= 1
+
+        # Compute average loss across the batch, if there were any valid pairs
+        if batch_size > 0:
+            loss /= batch_size
+
+        # return loss
+        return torch.tensor(loss, dtype=recon.dtype, device=recon.device)
+
+class CombinedLoss(torch.nn.Module):
+    def __init__(self, ssim_loss, orb_loss, weighting_factor=0.8):
+        super(CombinedLoss, self).__init__()
+        self.ssim_loss = ssim_loss
+        self.orb_loss = orb_loss
+        self.weighting_factor = weighting_factor
+
+    def forward(self, input, target):
+        ssim_loss_value = self.ssim_loss(input, target)
+        orb_loss_value = self.orb_loss(input, target)
+
+        combined_loss = self.weighting_factor * ssim_loss_value + (1 - self.weighting_factor) * orb_loss_value
+        return combined_loss
+
+# this is for CombinedLoss function which combines ORB and SSIM.
+ssim_loss = SSIMLoss()
+orb_loss = ORBLoss3(nfeatures=500, scaleFactor=1.2, nlevels=8, edgeThreshold=31, patchSize=31)
+weighting_factor = 0.1
+
 ### Define the loss function (mean square error), defaults are size_average=None, reduce=None, reduction='mean'
 loss_fn = custom2(furthest = 1, sig_weight = 100, close_min = 0.05)
+#loss_fn = SSIMLoss()
+#loss_fn = CombinedLoss(ssim_loss, orb_loss, weighting_factor=weighting_factor)
 
 ### Define a learning rate for the optimiser. 
 # Its how much to change the model in response to the estimated error each time the model weights are updated.
