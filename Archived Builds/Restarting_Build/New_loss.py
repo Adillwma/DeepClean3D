@@ -502,7 +502,7 @@ test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size,sh
 
 # potench make the 'line' square either side, so that being firther is still bad.
 class custom2(torch.nn.Module):
-    def __init__(self, size_average=None, reduce=None, reduction='mean', furthest = 1, sig_weight = 100, close_min = 0.05):
+    def __init__(self, size_average=None, reduce=None, reduction='mean', furthest = 1, sig_weight = 'ratio', close_min = 0.05):
         super(custom2, self).__init__()
         self.size_average = size_average
         self.reduce = reduce
@@ -523,16 +523,21 @@ class custom2(torch.nn.Module):
         # first make a list of all the indices of the non-zero original points:
         non_zero = torch.nonzero(original)
 
+        original_mod = original.clone()
+
+        if sig_weight == 'ratio':
+            sig_weight = original.numel() / non_zero.shape[0]
+
         # set pixels around signal in x to the same as them:
         for img, chan, x, y in non_zero:
 
             # set all within furthest in x to the signal height:
-            original[img, 0, x, y-furthest:y+furthest+1] = original[img,0,x,y]
+            original_mod[img, 0, x, y-furthest:y+furthest+1] = original[img,0,x,y]
         
 
         # now we find the minimum of either mse to 0 or to the altered one:
         # mse for altered:
-        alt_mseloss = (reconstruction - original)**2
+        alt_mseloss = torch.abs((reconstruction - original_mod)**3)
 
         # this is where we add the minimum loss the alt_mseloss can get to:
         alt_mseloss += close_min
@@ -550,7 +555,7 @@ class custom2(torch.nn.Module):
         return loss
 
 ### Define the loss function (mean square error), defaults are size_average=None, reduce=None, reduction='mean'
-loss_fn = custom2(furthest = 1, sig_weight = 100, close_min = 0.05)
+loss_fn = custom2(furthest = 1, sig_weight = 'ratio', close_min = 0.1)
 
 ### Define a learning rate for the optimiser. 
 # Its how much to change the model in response to the estimated error each time the model weights are updated.

@@ -101,7 +101,8 @@ import torch
 #NOTE to users: Known good parameters so far (changing these either way damages performance): learning_rate = 0.0001, Batch Size = 10, Latent Dim = 10, Reconstruction Threshold = 0.5, loss_function_selection = 0, loss weighting = 0.9 - 1
 
 #%% - User Inputs
-dataset_title = "Dataset 24_X10Ks"       #"MultiX - 80%1X - 20%2X - 128x88"#"Dataset 24_X10Ks"           #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
+#dataset_title = "Dataset 24_X10Ks"       #"MultiX - 80%1X - 20%2X - 128x88"#"Dataset 24_X10Ks"           #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
+dataset_title = "MultiX - 80%1X - 20%2X - 128x88"
 model_save_name = "D24_X10K lr.0001 weight0.99-1 reconfix0.5 split MAE-MSEloss"   #"MaxLoss"     #"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
 
 time_dimension = 100                         # User controll to set the number of time steps in the data
@@ -143,8 +144,8 @@ all_norm_off = False                         #[Default is False] # If set to tru
 simple_renorm = False                        #[Default is False] # If set to true then the model will use simple output renormalisation instead of custom output renormalisation
 
 #%% - Plotting Control Settings
-print_every_other = 2                      #[default = 2] 1 is to save/print all training plots every epoch, 2 is every other epoch, 3 is every 3rd epoch etc
-plot_or_save = 1                           #[default = 1] 0 prints plots to terminal (blocking till closed), If set to 1 then saves all end of epoch printouts to disk (non-blocking), if set to 2 then saves outputs whilst also printing for user (blocking till closed)
+print_every_other = 5                      #[default = 2] 1 is to save/print all training plots every epoch, 2 is every other epoch, 3 is every 3rd epoch etc
+plot_or_save = 0                           #[default = 1] 0 prints plots to terminal (blocking till closed), If set to 1 then saves all end of epoch printouts to disk (non-blocking), if set to 2 then saves outputs whilst also printing for user (blocking till closed)
 
 #%% - Advanced Visulisation Settings
 plot_train_loss = True               #[default = True]       
@@ -186,11 +187,13 @@ data_gathering = True
 #%% - Data Path Settings
 data_path = "N:\Yr 3 Project Datasets\\"
 #ADILL - "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Yr 3 Project/Circular and Spherical Dummy Datasets/"
-#MAX - r"C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Cross Stuff/"
+#MAX 
+data_path = r"C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Cross Stuff/"
 
 results_output_path = "N:\Yr 3 Project Results\\"
 #ADILL - "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Git Hub Repos/DeepClean Repo/DeepClean-Noise-Suppression-for-LHC-B-Torch-Detector/Models/"
-#MAX - r"C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\DeepClean-Noise-Suppression-for-LHC-B-Torch-Detector\Models/Archived/"
+#MAX 
+results_output_path = r"C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\DeepClean-Noise-Suppression-for-LHC-B-Torch-Detector\Models/Archived/"
 
 #%% - Dependencies
 # External Libraries
@@ -450,7 +453,7 @@ def add_noise_points_to_batch(image_batch, noise_points=100, reconstruction_thre
 
 #%% - Classes
 class Max_loss(torch.nn.Module):
-    def __init__(self, size_average=None, reduce=None, reduction='mean', furthest_line = True, furthest = 1, sig_weight = 30, close_min = 0.05):
+    def __init__(self, size_average=None, reduce=None, reduction='mean', furthest_line = True, furthest = 1, sig_weight = 'ratio', close_min = 0.05):
         """
         Inputs:
         furthest_line = True - This is set to true to save compute. This will add special loss effect to a LINE of pixels in y-axis
@@ -500,19 +503,24 @@ class Max_loss(torch.nn.Module):
 
         # now we find the minimum of either mse to 0 or to the altered one:
         # cubed for altered (so that it increases faster than 0 MSE):
-        alt_mseloss = (reconstruction - original_mod)**3
+        alt_loss = torch.abs((reconstruction - original_mod)**3)
 
         # this is where we add the minimum loss the alt_mseloss can get to:
-        alt_mseloss += close_min
+        alt_loss += close_min
 
         # now find the minimum of the two:
-        mseloss = torch.min(orig_mseloss, alt_mseloss)
+        mseloss = torch.min(orig_mseloss, alt_loss)
 
         # get indices of signals
         signals = tuple(torch.nonzero(original).t())
 
         # multiply signals by weight
-        mseloss[signals] *= sig_weight
+        # set weight as all points / signal points so that noise and signal have equal priority.
+        if sig_weight == 'ratio':
+            ratio_sig_weight = original.numel() / non_zero.shape[0]
+            mseloss[signals] *= ratio_sig_weight
+        else:
+            mseloss[signals] *= sig_weight
         
         # now we just find the mean of the matrix:
         loss = torch.mean(mseloss)
