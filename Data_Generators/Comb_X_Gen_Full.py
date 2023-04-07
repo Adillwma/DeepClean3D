@@ -11,7 +11,7 @@ that matters, i will generate and test the same amount here:
 
 # ----------------------------------------------------------------------------------
 # you can change all the arguments in the function below:
-def simp_generator(output_directory, Proportions=[0,0.8,0.2,0,0], sig_pts=200, x_dim=128, y_dim=88, z_dim=100, shift=True, rotate=False, rotate_seperately=True):
+def simp_generator(output_directory, Proportions=[0,0.8,0.2,0,0], sig_pts=200, x_dim=128, y_dim=88, z_dim=100, shift=True, rotate=False, rotate_seperately=True, std = [2,2,2]):
     """
     This function simply calls the simulator function, and creates and saves the number of simulations with the defined imputs,
     to the directory specified above.
@@ -24,6 +24,7 @@ def simp_generator(output_directory, Proportions=[0,0.8,0.2,0,0], sig_pts=200, x
     shift - [default = 1] adds shift to the cross to reduce overfitting. when == 0 mean all the same.
     (First item in list is for 0 Xs, second for 1 X, etx)
     rotate - rotates Xs (if you want all rotated SEPERATELY call 'seperate', together call 'together', not at all call 0)
+    std - the standard deviation in pixels on each noise point on the cross you would like to make - in x, y, z
     """
     
     #Converts shit and rotate boolean True/False inputs to 1/0 inputs (could be updated in simp_sim to accept the booleans and remove this line)
@@ -37,14 +38,14 @@ def simp_generator(output_directory, Proportions=[0,0.8,0.2,0,0], sig_pts=200, x
 
             # define number of crosses
             num_X = Crosses + 1 #(to stop 0 gen)
-            flattened_data = comb_simp_simulator(sig_pts, x_dim, y_dim, z_dim, shift, rotate, rotate_seperately, num_X)
+            flattened_data = comb_simp_simulator(sig_pts, x_dim, y_dim, z_dim, shift, rotate, rotate_seperately, num_X, std)
             np.save(output_directory + 'Flat SimpleX-' + str(x_dim) + 'x' + str(y_dim) + '-' + str(Crosses+1) + ' Crosses, No' + str(idx), flattened_data)
 
         print(f"Generation of {num_save} {Crosses+1}X images completed successfully\n")
 
 
 
-def comb_simp_simulator(sig_pts = 100, x_dim = 200, y_dim = 200, z_dim = 100, shift = True, rotate = False, rotate_seperately=True, num_X = 1):
+def comb_simp_simulator(sig_pts = 100, x_dim = 200, y_dim = 200, z_dim = 100, shift = False, rotate = False, rotate_seperately=False, num_X = 1, std = [2,2,2]):
     """
     This generator function generates crosses across the dimensions of the volume. (seeds to be generalised for non-perfect 28x28).
     It returns a numpy array of only signal points
@@ -57,6 +58,8 @@ def comb_simp_simulator(sig_pts = 100, x_dim = 200, y_dim = 200, z_dim = 100, sh
     shift - [default = 1] adds shift to the cross to reduce overfitting. when == 0 mean all the same.
     rotate - rotates Xs 
     rotate_seperately - If you want all rotated SEPERATELY call True, TOGETHER call False
+    num_X is the number of X to make
+    std - the standard deviation in pixels on each noise point on the cross you would like to make - in x, y, z
     """
     # define min and max of graph (pixels between 0 and 27)
     x_min = 0
@@ -161,12 +164,33 @@ def comb_simp_simulator(sig_pts = 100, x_dim = 200, y_dim = 200, z_dim = 100, sh
             new_hits_comb[:,1] = new_hits_comb[:,1] + np.random.randint(-np.round(y_max/2),np.round(y_max/2))
             new_hits_comb[:,2] = new_hits_comb[:,2] + np.random.randint(-np.round(z_max/2),np.round(z_max/2))
 
-        # select those that would fall within the bounds of the array after rotating and shifting for each loop:
+        # here we add an std to all the signal points:
+        if type(std) == list:
+            # # select those that would fall within the bounds of the array after rotating and shifting for each loop:
+            # for hit in new_hits_comb:
+
+            #     shift_x = np.random.normal(0,std[0])
+            #     shift_y = np.random.normal(0,std[1])
+            #     shift_z = np.random.normal(0,std[2])
+
+                
+            #     hit = np.add(hit, [shift_x, shift_y, shift_z])
+            #     print(hit)
+
+            #     if (x_min <= round(hit[0]) <= x_max) or (y_min <= round(hit[1]) <= y_max) or (z_min <= round(hit[2]) <= z_max):
+            #         del hit
+            for idx, val in enumerate(std):
+
+                std_vals = np.random.normal(loc=0, scale=val, size=np.shape(new_hits_comb)[0])
+
+                new_hits_comb[:, idx] += std_vals
+
+
         new_hits_comb = np.array([hit for hit in new_hits_comb if
             (x_min <= round(hit[0]) <= x_max) and
             (y_min <= round(hit[1]) <= y_max) and
             (z_min <= round(hit[2]) <= z_max)])
-
+        
         # adds this loops cross:
         for point in new_hits_comb:
             # TOF is the z axis
@@ -177,9 +201,10 @@ def comb_simp_simulator(sig_pts = 100, x_dim = 200, y_dim = 200, z_dim = 100, sh
         # break the loop as the coordinates will just be overwritten if shift = 0 and (rotate = 0 or together):
         if shift == False and (rotate == False or rotate_seperately == False):
             break
+    
+    plt.imshow(flattened_data)
+    plt.show()
 
     return flattened_data
 
-
-
-
+comb_simp_simulator(sig_pts = 100, x_dim = 200, y_dim = 200, z_dim = 100, shift = False, rotate = False, rotate_seperately=False, num_X = 1, std = [2,2,2])
