@@ -1,8 +1,66 @@
 import numpy as np
 import torch
 
-a = [3,3,3]
+zero_weighting = 1
+nonzero_weighting = 1
 
-a = np.add(a, [1,2,1])
+def ada_weighted_mse_loss(reconstructed_image, target_image, zero_weighting=zero_weighting, nonzero_weighting=nonzero_weighting):
+    """
+    Calculates the weighted mean squared error (MSE) loss between target_image and reconstructed_image.
+    The loss for zero pixels in the target_image is weighted by zero_weighting, and the loss for non-zero
+    pixels is weighted by nonzero_weighting.
 
-print(a)
+    Args:
+    - target_image: a tensor of shape (B, C, H, W) containing the target image
+    - reconstructed_image: a tensor of shape (B, C, H, W) containing the reconstructed image
+    - zero_weighting: a scalar weighting coefficient for the MSE loss of zero pixels
+    - nonzero_weighting: a scalar weighting coefficient for the MSE loss of non-zero pixels
+
+    Returns:
+    - weighted_mse_loss: a scalar tensor containing the weighted MSE loss
+    """
+    
+    # Get the indices of 0 and non 0 values in target_image as a mask for speed
+    zero_mask = (target_image == 0)
+    nonzero_mask = ~zero_mask         # Invert mask
+    
+    # Get the values in target_image
+    values_zero = target_image[zero_mask]
+    values_nonzero = target_image[nonzero_mask]
+    
+    # Get the corresponding values in reconstructed_image
+    corresponding_values_zero = reconstructed_image[zero_mask]
+    corresponding_values_nonzero = reconstructed_image[nonzero_mask]
+    
+    # Create an instance of MSELoss class
+    mse_loss = torch.nn.MSELoss(reduction='mean')
+    
+    # Compute the MSE losses
+    zero_loss = mse_loss(corresponding_values_zero, values_zero)
+    nonzero_loss = mse_loss(corresponding_values_nonzero, values_nonzero)
+
+    # Protection from there being no 0 vals or no non zero vals, which then retunrs nan for MSE and creates a nan overall MSE return (which is error)
+    if torch.isnan(zero_loss):
+        zero_loss = 0
+    if torch.isnan(nonzero_loss):
+        nonzero_loss = 0
+    
+    # Sum losses with weighting coefficiants 
+    weighted_mse_loss = (zero_weighting * zero_loss) + (nonzero_weighting * nonzero_loss)
+
+    print('Ada zero loss: ', zero_loss)
+    print('Ada nonzero loss: ', nonzero_loss)
+    
+    return weighted_mse_loss
+
+#example tensors
+ex_shape = (1,1,256,256)
+t1 = torch.randn(ex_shape).double()
+t2 = torch.randn(ex_shape).double()
+
+mse_loss = torch.nn.MSELoss()
+
+print('this is with only 1 value set to 0 (non-hit)')
+t2[0,0,0,0] = 0
+print('ADA MSE: ', ada_weighted_mse_loss(reconstructed_image = t1, target_image = t2, zero_weighting=1, nonzero_weighting=1))
+print('STD MSE: ', mse_loss(t1,t2))
