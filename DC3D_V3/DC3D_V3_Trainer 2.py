@@ -517,7 +517,7 @@ class Max_loss(torch.nn.Module):
         # multiply signals by weight
         # set weight as all points / signal points so that noise and signal have equal priority.
         if sig_weight == 'ratio':
-            ratio_sig_weight = original.numel() / non_zero.shape[0]
+            ratio_sig_weight = (original.numel() - non_zero.shape[0]) / non_zero.shape[0]
             mseloss[signals] *= ratio_sig_weight
         else:
             mseloss[signals] *= sig_weight
