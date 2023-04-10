@@ -11,7 +11,7 @@ that matters, i will generate and test the same amount here:
 
 # ----------------------------------------------------------------------------------
 # you can change all the arguments in the function below:
-def simp_generator(output_directory, Proportions=[0,0.8,0.2,0,0], sig_pts=10000, x_dim=128, y_dim=88, z_dim=100, shift=True, rotate=True, rotate_seperately=True, std = None):
+def simp_generator(output_directory, Proportions=[1,0,0,0,0], sig_pts=10000, x_dim=128, y_dim=88, z_dim=100, shift=True, rotate=True, rotate_seperately=True, std = None):
     """
     This function simply calls the simulator function, and creates and saves the number of simulations with the defined imputs,
     to the directory specified above.
@@ -45,7 +45,7 @@ def simp_generator(output_directory, Proportions=[0,0.8,0.2,0,0], sig_pts=10000,
 
 
 
-def comb_simp_simulator(sig_pts = 100, x_dim = 200, y_dim = 200, z_dim = 100, shift = False, rotate = False, rotate_seperately=False, num_X = 1, std = [2,2,2]):
+def comb_simp_simulator(sig_pts = 10000, x_dim = 200, y_dim = 200, z_dim = 100, shift = False, rotate = False, rotate_seperately=False, num_X = 1, std = [2,2,2]):
     """
     This generator function generates crosses across the dimensions of the volume. (seeds to be generalised for non-perfect 28x28).
     It returns a numpy array of only signal points
@@ -194,4 +194,5 @@ def comb_simp_simulator(sig_pts = 100, x_dim = 200, y_dim = 200, z_dim = 100, sh
 
     return flattened_data
 
-comb_simp_simulator(sig_pts = 10000, x_dim = 200, y_dim = 200, z_dim = 100, shift = True, rotate = True, rotate_seperately=True, num_X = 1, std = None)
+#comb_simp_simulator(sig_pts = 10000, x_dim = 200, y_dim = 200, z_dim = 100, shift = True, rotate = True, rotate_seperately=True, num_X = 1, std = None)
+simp_generator(r"C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Cross Stuff\SingleButPerfect\Data/")
