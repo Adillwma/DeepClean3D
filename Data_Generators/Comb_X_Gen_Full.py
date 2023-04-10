@@ -11,7 +11,7 @@ that matters, i will generate and test the same amount here:
 
 # ----------------------------------------------------------------------------------
 # you can change all the arguments in the function below:
-def simp_generator(output_directory, Proportions=[0,0.8,0.2,0,0], sig_pts=200, x_dim=128, y_dim=88, z_dim=100, shift=True, rotate=False, rotate_seperately=True, std = [2,2,2]):
+def simp_generator(output_directory, Proportions=[0,0.8,0.2,0,0], sig_pts=10000, x_dim=128, y_dim=88, z_dim=100, shift=True, rotate=True, rotate_seperately=True, std = None):
     """
     This function simply calls the simulator function, and creates and saves the number of simulations with the defined imputs,
     to the directory specified above.
@@ -166,19 +166,6 @@ def comb_simp_simulator(sig_pts = 100, x_dim = 200, y_dim = 200, z_dim = 100, sh
 
         # here we add an std to all the signal points:
         if type(std) == list:
-            # # select those that would fall within the bounds of the array after rotating and shifting for each loop:
-            # for hit in new_hits_comb:
-
-            #     shift_x = np.random.normal(0,std[0])
-            #     shift_y = np.random.normal(0,std[1])
-            #     shift_z = np.random.normal(0,std[2])
-
-                
-            #     hit = np.add(hit, [shift_x, shift_y, shift_z])
-            #     print(hit)
-
-            #     if (x_min <= round(hit[0]) <= x_max) or (y_min <= round(hit[1]) <= y_max) or (z_min <= round(hit[2]) <= z_max):
-            #         del hit
             for idx, val in enumerate(std):
 
                 std_vals = np.random.normal(loc=0, scale=val, size=np.shape(new_hits_comb)[0])
@@ -207,4 +194,4 @@ def comb_simp_simulator(sig_pts = 100, x_dim = 200, y_dim = 200, z_dim = 100, sh
 
     return flattened_data
 
-comb_simp_simulator(sig_pts = 100, x_dim = 200, y_dim = 200, z_dim = 100, shift = False, rotate = False, rotate_seperately=False, num_X = 1, std = [2,2,2])
+comb_simp_simulator(sig_pts = 10000, x_dim = 200, y_dim = 200, z_dim = 100, shift = True, rotate = True, rotate_seperately=True, num_X = 1, std = None)

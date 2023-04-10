@@ -10,6 +10,7 @@ The detector also has a standard deviation of 70ps on the time axis.
 This produces a time dimension of max 100.
 
 N.B. THIS IS DIFFERENT TO THE FIRST FINALGENERATOR AS IT NOW CAN HAVE AN IMPACT POINT IN THE Y AXIS. THIS ADDS MUCH MORE VARIATION.
+IT ALSO HAS A CHROMATIC DISPERSION AND A SHIFT IN ONLY THE Z AXIS PARAMETER.
 """
 
 #%% - Dependencies
@@ -21,10 +22,14 @@ import random
 resolution = 35E-12
 std = 70E-12
 
-# directory to save to
-directory = r"C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Realistic Stuff\CombinedTest\Data2/"
+# this is to account for the chromatic dispersion in the quartz. It shifts the photons on the detector with normal distributions
+# drawing from the indices below.
+chrom_disp = [2,2]
 
-def realistic_data_gen(dataset_size=1, signal_points=1000, detector_pixel_dimensions=(128,88), height=100, hit_point='random', ideal=True, debug_image_generator=False, shift=False, num = 'random'):
+# directory to save to
+directory = r"C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Realistic Stuff\RealSetPerfect\Data/"
+
+def realistic_data_gen(dataset_size=1, signal_points=10000, detector_pixel_dimensions=(128,88), height=100, hit_point='random', ideal=True, debug_image_generator=False, shift=False, num = 1, shift_z_only = True, std = False, chro_dis = False):
     """
     This is a generator function that produces, and saves to a specified directory, a number of flattened realistic data images.
     This takes the following inputs:
@@ -40,7 +45,10 @@ def realistic_data_gen(dataset_size=1, signal_points=1000, detector_pixel_dimens
     ideal = [default=True] produces either perfect circular photon ejection from impact (True) or random (False)
     debug_image_generator = [default=False] set to True to plot the output of this simulator (for debugging purposes)
     shift = [default=True] produces ribbon patterns that are shifted by half the axis maximum in either the +ve or -ve direction.
+    shift_z_only = shift applied only in z
     num = the amount of realistic ribbon patterns to make (can set to 'random' to have random amounts between 0 and 5)
+    sdt = True to add standard deviation
+    chro_dis = True to add chromatic dispersion
 
     N.B. The data can be varied in two ways...
     1 - You can change the hit_point argument, which will produce a different pattern for a different impact point
@@ -52,7 +60,7 @@ def realistic_data_gen(dataset_size=1, signal_points=1000, detector_pixel_dimens
     # define count for number of empty arrays:
     count = 0
 
-    def realistic_data_sim(signal_points, detector_pixel_dimensions, height, hit_point, ideal, debug_image_generator, shift, num):
+    def realistic_data_sim(signal_points, detector_pixel_dimensions, height, hit_point, ideal, debug_image_generator, shift, num, shift_z_only):
         
         # Width of Quartz Block in meters (physical x dimension - not to be confused with pixel x dimensions)
         # (this is not actual size of quarts, but it forms a good pattern. This is fundamental to the way this
@@ -128,17 +136,32 @@ def realistic_data_gen(dataset_size=1, signal_points=1000, detector_pixel_dimens
 
         # create bins
         # x, y go from 0 to dim - 1 respectively here. z has TOF pixel.
-        # x axis is between the reflectors, and the pixels of the x axis are the first dim of the input dim
-        x_pixel = np.digitize([i[0][0] for i in final],np.linspace(-reflect_x, reflect_x, detector_pixel_dimensions[0])) #takes x points, then bins, returns indices
 
-        # y axis is currently between 1 and -1 from cosine function (which has angle embedded by nature)
-        # splits this into pixels in y:
-        y_pixel = np.digitize([i[0][1] for i in final],np.linspace(-1, 1, detector_pixel_dimensions[1]))
+
+
+        
+
+        # this is if you set the chromatic dispersion to True:
+        if chro_dis:
+            # x axis is between the reflectors, and the pixels of the x axis are the first dim of the input dim
+            #takes x points, then bins, returns indices
+            x_pixel = np.digitize([np.random.normal(i[0][0], chrom_disp[0] * 2 * reflect_x / detector_pixel_dimensions[0]) for i in final],np.linspace(-reflect_x, reflect_x, detector_pixel_dimensions[0]))
+            # y axis is currently between 1 and -1 from cosine function (which has angle embedded by nature)
+            # splits this into pixels in y:            
+            y_pixel = np.digitize([np.random.normal(i[0][1], chrom_disp[1] * (2/detector_pixel_dimensions[1])) for i in final],np.linspace(-1, 1, detector_pixel_dimensions[1]))
+        else:
+            # same but without dispersion if you want perfect data:
+            x_pixel = np.digitize([i[0][0] for i in final],np.linspace(-reflect_x, reflect_x, detector_pixel_dimensions[0]))
+            y_pixel = np.digitize([i[0][1] for i in final],np.linspace(-1, 1, detector_pixel_dimensions[1]))
 
         # z needs std dev in time added. This is added after the pattern is set.
         # This is put into bins without the digitize for now:
-        z_pixel = np.array([np.random.normal(i[1], std)//resolution for i in final]) # i[1] add std to time then give z pixel with //resolution
-
+        if std:
+            # adds std to z axis:
+            z_pixel = np.array([np.random.normal(i[1], std)//resolution for i in final]) # i[1] add std to time then give z pixel with //resolution
+        else:
+            # doesnt add std to z axis:
+            z_pixel = np.array([i[1]//resolution for i in final])
         # combine them:
         coords = np.column_stack((x_pixel, y_pixel, z_pixel))
 
@@ -155,6 +178,9 @@ def realistic_data_gen(dataset_size=1, signal_points=1000, detector_pixel_dimens
             if shift:
                 new_coords[:,0] += np.random.randint(-round(detector_pixel_dimensions[0] / 2),round(detector_pixel_dimensions[0] / 2))
                 new_coords[:,1] += np.random.randint(-round(detector_pixel_dimensions[1] / 2),round(detector_pixel_dimensions[1] / 2))
+                new_coords[:,2] += np.random.randint(-np.round(t_pix_max/2),np.round(t_pix_max/2))
+            
+            if shift_z_only:
                 new_coords[:,2] += np.random.randint(-np.round(t_pix_max/2),np.round(t_pix_max/2))
 
             # select those that would fall within the bounds of the thing after shifting:
@@ -226,7 +252,7 @@ def realistic_data_gen(dataset_size=1, signal_points=1000, detector_pixel_dimens
             hit_point2 = hit_point
 
         # run the sim
-        flattened_data = realistic_data_sim(signal_points, detector_pixel_dimensions, height, hit_point2, ideal, debug_image_generator, shift, num2)
+        flattened_data = realistic_data_sim(signal_points, detector_pixel_dimensions, height, hit_point2, ideal, debug_image_generator, shift, num2, shift_z_only)
 
         # count for how many are empty:
         if np.sum(flattened_data) == 0:
@@ -241,4 +267,4 @@ def realistic_data_gen(dataset_size=1, signal_points=1000, detector_pixel_dimens
 
 
 # run function with defaults:
-realistic_data_gen(debug_image_generator=True, num = 1)
+realistic_data_gen(dataset_size=1, signal_points=10000, debug_image_generator=True, num = 1)

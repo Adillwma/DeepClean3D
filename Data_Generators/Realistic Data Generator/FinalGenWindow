@@ -22,6 +22,10 @@ import random
 resolution = 35E-12
 std = 70E-12
 
+# this is to account for the chromatic dispersion in the quartz. It shifts the photons on the detector with normal distributions
+# drawing from the indices below.
+chrom_disp = [2,2]
+
 # directory to save to
 directory = r"C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Realistic Stuff\CombinedTest\Data2/"
 
@@ -130,11 +134,11 @@ def realistic_data_gen(dataset_size=1, signal_points=1000, detector_pixel_dimens
         # create bins
         # x, y go from 0 to dim - 1 respectively here. z has TOF pixel.
         # x axis is between the reflectors, and the pixels of the x axis are the first dim of the input dim
-        x_pixel = np.digitize([i[0][0] for i in final],np.linspace(-reflect_x, reflect_x, detector_pixel_dimensions[0])) #takes x points, then bins, returns indices
+        x_pixel = np.digitize([np.random.normal(i[0][0], chrom_disp[0] * 2 * reflect_x / detector_pixel_dimensions[0]) for i in final],np.linspace(-reflect_x, reflect_x, detector_pixel_dimensions[0])) #takes x points, then bins, returns indices
 
         # y axis is currently between 1 and -1 from cosine function (which has angle embedded by nature)
         # splits this into pixels in y:
-        y_pixel = np.digitize([i[0][1] for i in final],np.linspace(-1, 1, detector_pixel_dimensions[1]))
+        y_pixel = np.digitize([np.random.normal(i[0][1], chrom_disp[1] * (2/detector_pixel_dimensions[1])) for i in final],np.linspace(-1, 1, detector_pixel_dimensions[1]))
 
         # z needs std dev in time added. This is added after the pattern is set.
         # This is put into bins without the digitize for now:
