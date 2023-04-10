@@ -30,7 +30,7 @@ q_crit = 40.49 * np.pi / 180
 
 # impact at [x,y], for now we will neglect thickness but this can be trivially added
 # choise now set to make the impact at one point or many different
-impact = [0.33,1]
+impact = [0.1,1]
 
 # random or ideal? If ideal = 1 then data is perfect and linear, random if = 0
 ideal = 1
