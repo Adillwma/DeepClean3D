@@ -10,12 +10,12 @@ University of Bristol
 """
 
 #%% - User Inputs
-xdim = 88                                            # X dimension of image
-ydim = 128                                           # Y dimension of image
-time_dimension = 100                                 # Time dimension of image
-sig_pts = 300                                         # Number of signal points to generate
-data_set_title = "Dataset 33_Real10Ks IDEAL"     # Ouput title of dataset
-data_sets_folder = r"N:\Yr 3 Project Datasets\\"     # Folder to save dataset to
+xdim = 88                                             # X dimension of image
+ydim = 128                                            # Y dimension of image
+time_dimension = 100                                  # Time dimension of image
+sig_pts = 2000                                         # Number of signal points to generate
+data_set_title = "Dataset 38_X50K Realistic IDEAL SIG2000"          # Ouput title of dataset
+data_sets_folder = r"N:\Yr 3 Project Datasets\\"      # Folder to save dataset to
 
 #Ada: r"C:\Users\Student\Documents\UNI\Onedrive - University of Bristol\Yr 3 Project\Circular and Spherical Dummy Datasets\\"
 #Max: 
@@ -24,15 +24,15 @@ data_sets_folder = r"N:\Yr 3 Project Datasets\\"     # Folder to save dataset to
 number_of_blanks = 0            # Number of blank data files to 
 number_of_hemisphere = 0        # Number of hemisphere data files to generate
 
-number_single_x = 0         # Number of single x data files to generate
+number_single_x = 0             # Number of single x data files to generate
 number_of_two_x = 0             # Number of two x data files to generate
 number_of_three_x = 0           # Number of three x data files to generate
 number_of_four_x = 0            # Number of four x data files to generate
 
-number_single_realisitic = 10000    # Number of realistic data files to generate
-number_of_two_realisitic = 0    # Number of two realistic data files to generate
-number_of_three_realisitic = 0  # Number of three realistic data files to generate
-number_of_four_realisitic = 0   # Number of four realistic data files to generate
+number_single_realisitic = 50000   # Number of realistic data files to generate
+number_of_two_realisitic = 0        # Number of two realistic data files to generate
+number_of_three_realisitic = 0      # Number of three realistic data files to generate
+number_of_four_realisitic = 0       # Number of four realistic data files to generate
 
 # Shared Settings
 shift_positions = True         #If True then the signal positions are shifted by a random amount, otherwise they are not
@@ -42,7 +42,7 @@ rotate_x_positions = False     #If True then the x signals are rotated, otherwis
 rotate_seperatly = True        #If True then each x signal is rotated by a random amount, otherwise they are all rotated by the same amount (only used if rotate_x_positions is True)
 
 #Realistic Gen Settings
-ideal_hit_spread = True       #If True then the hit points spread is idealised as linearly spaced in the pattern, otherwise points are chosen randomly from pattern 
+ideal_hit_spread = True        #If True then the hit points spread is idealised as linearly spaced in the pattern, otherwise points are chosen randomly from pattern 
 
 #%% - Dependencies
 #External Libraries
