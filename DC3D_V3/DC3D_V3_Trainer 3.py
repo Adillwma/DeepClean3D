@@ -2,10 +2,11 @@
 """
 DeepClean v0.3.8
 Build created on Wednesday March 29th 2023
-Author: Adill Al-Ashgar
+Authors: Adill Al-Ashgar & Max Carter
 University of Bristol
 
-@Adill: adillwmaa@gmail.co.uk / ex18871@bristol.ac.uk
+@Adill: adillwmaa@gmail.co.uk - ex18871@bristol.ac.uk
+@Max: qa19105@bristol.ac.uk
 
 
 Possible improvements:
@@ -160,10 +161,10 @@ plot_validation_loss = True          #[default = True]
 
 plot_cutoff_telemetry = True         #[default = False] # Update name to pixel_cuttoff_telemetry    #Very slow, reduces net performance by XXXXXX%
 
-plot_pixel_difference = False        #[default = True]     
-plot_latent_generations = True       #[default = True]      
-plot_higher_dim = False              #[default = True]    
-plot_Graphwiz = False                #[default = True]   
+plot_pixel_difference = False        #[default = True]          
+plot_latent_generations = True       #[default = True]              
+plot_higher_dim = False              #[default = True]  
+plot_Graphwiz = False                #[default = True]       
 
 record_activity = False #False  ##Be carefull, the activity file recorded is ~ 2.5Gb  #Very slow, reduces net performance by XXXXXX%
 compress_activations_npz_output = False #False   Compresses the activity file above for smaller file size but does increase loading and saving times for the file. (use if low on hdd space)
@@ -332,7 +333,7 @@ def ada_SSE_loss(target, input):
 
 # Custom normalisation function
 def custom_normalisation(data, reconstruction_threshold, time_dimension=100):
-    data = np.where(data > 0, (((data / time_dimension) / (1/(1-reconstruction_threshold))) + reconstruction_threshold), 0 )
+    data = np.where(data > 0, (((data / time_dimension) / (1/(1-reconstruction_threshold))) + reconstruction_threshold), 0 )  
     return data
 
 def custom_normalisation_torch(data, reconstruction_threshold, time_dimension=100):

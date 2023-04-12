@@ -21,27 +21,20 @@ points on to the reconstruction algorithm saving the computation time spent on r
 
 This is critical in the efficiency of the processing pipeline as the LHC moves into its high luminosity upgrade where data rates will be further increased.
 
-# Code Contents:
-01 - Simple Circular & Spherical Dataset Generator
-Genrates a simple dataset of circular and spherical data, used to test the autoencoder architecture.
-
-02 - Dataset Validator
-Used to validate the dataset generated in 01
-  
-
-   
-03 - 2D & 3D DataLoader
-   - DataLoader_Functions_V1
-   
-04 - Convolution Layer Output Size Calculator
- Calcaultes the output dimensions of a convolution layer, works for 2D and 3D convolutions and thier corresponding transpose layers.
+# Quick Start for Denoising
+To denoise images they must first be numpy arrays with shape 88 x 128.
+Use the DC3D_V3 Denoiser file located in the folder DC3D_V3.
+To use the file all you need to do is input the file dir to the foldr that contains the images to be denoised, and
+spcify the output dir where the resulting denoised images should be saved. 
+Then run the file.
 
 
-05 - 2D Conv Autoencoder - Simple Data
-   - DataLoader_Functions_V1
-   
-06 - 3D Conv Autoencoder - Simple Data
-   - DataLoader_Functions_V1
+
+# Quick start for Training
+Using the settins guide below set the trainer settings to the desired values.
+Then run the file DC3D_V3_Trainer 3.py
+
+
 
 # DC3D Settings
 Program Settings
@@ -107,3 +100,28 @@ This section contains the hyperparameters that control normalization. These hype
     all_norm_off: a boolean representing whether to use any input normalization.
     simple_renorm: a boolean representing whether to use simple output renormalization instead of custom output renormal
 
+
+
+
+
+# Code Contents:
+01 - Simple Circular & Spherical Dataset Generator
+Genrates a simple dataset of circular and spherical data, used to test the autoencoder architecture.
+
+02 - Dataset Validator
+Used to validate the dataset generated in 01
+  
+
+   
+03 - 2D & 3D DataLoader
+   - DataLoader_Functions_V1
+   
+04 - Convolution Layer Output Size Calculator
+ Calcaultes the output dimensions of a convolution layer, works for 2D and 3D convolutions and thier corresponding transpose layers.
+
+
+05 - 2D Conv Autoencoder - Simple Data
+   - DataLoader_Functions_V1
+   
+06 - 3D Conv Autoencoder - Simple Data
+   - DataLoader_Functions_V1

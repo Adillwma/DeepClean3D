@@ -1,0 +1,1 @@
+git log --graph --date=short --full-history --all --pretty=format:"%x09%d%x20%ad%x20%s%x20[%an]" > "Git Tree.txt"
