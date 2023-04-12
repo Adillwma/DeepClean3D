@@ -426,8 +426,8 @@ def add_noise_points(image, noise_points=100, reconstruction_threshold=0.5):
     return image
 
 # Function to add n noise points to each image in a tensor batch 
-def add_noise_points_to_batch(image_batch, noise_points=100, reconstruction_threshold=0.5):
-
+def add_noise_points_to_batch(input_image_batch, noise_points=100, reconstruction_threshold=0.5):
+    image_batch = input_image_batch.clone()
     if noise_points > 0:
         #Find dimensions of input image 
         x_dim = image_batch.shape[2]
