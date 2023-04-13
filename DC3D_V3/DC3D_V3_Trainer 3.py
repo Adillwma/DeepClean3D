@@ -104,20 +104,20 @@ import torch
 #NOTE to users: Known good parameters so far (changing these either way damages performance): learning_rate = 0.0001, Batch Size = 10, Latent Dim = 10, Reconstruction Threshold = 0.5, loss_function_selection = 0, loss weighting = 0.9 - 1
 
 #%% - User Inputs
-dataset_title =  "Dataset 38_X50K Realistic IDEAL SIG2000"# "Dataset 37_X15K Perfect track recovery" #"Dataset 24_X10Ks"           #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
-model_save_name = "D38 50K DCDV3 REAL LD14 NP10"     #"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
+dataset_title =  "RealSetPerfect" #"Dataset 38_X50K Realistic IDEAL SIG2000"# "Dataset 37_X15K Perfect track recovery" #"Dataset 24_X10Ks"           #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
+model_save_name = "PerfReal10k Control" #"D38 50K DCDV3 REAL LD14 NP10"     #"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
 
 time_dimension = 100                         # User controll to set the number of time steps in the data
 reconstruction_threshold = 0.5               # MUST BE BETWEEN 0-1  #Threshold for 3d reconstruction, values below this confidence level are discounted
 
 #%% - Hyperparameter Settings
-num_epochs = 101                             # User controll to set number of epochs (Hyperparameter)
+num_epochs = 12                             # User controll to set number of epochs (Hyperparameter)
 batch_size = 10                              # User controll to set batch size - number of Images to pull per batch (Hyperparameter) 
-latent_dim = 14                              # User controll to set number of nodes in the latent space, the bottleneck layer (Hyperparameter)
+latent_dim = 10                              # User controll to set number of nodes in the latent space, the bottleneck layer (Hyperparameter)
 
 learning_rate = 0.0001 #!!                       # User controll to set optimiser learning rate (Hyperparameter)
 optim_w_decay = 1e-05 #!!!!1e-07 seeems better?? test!                        # User controll to set optimiser weight decay for regularisation (Hyperparameter)
-dropout_prob = 0.2                           # [NOTE Not connected yet] User controll to set dropout probability (Hyperparameter)
+dropout_prob = 0                           # [NOTE Not connected yet] User controll to set dropout probability (Hyperparameter)
 
 train_test_split_ratio = 0.8                 # User controll to set the ratio of the dataset to be used for training (Hyperparameter)
 val_test_split_ratio = 0.5                   # [NOTE LEAVE AT 0.5, is for future update, not working currently] User controll to set the ratio of the non-training data to be used for validation as opposed to testing (Hyperparameter)
@@ -125,7 +125,7 @@ val_test_split_ratio = 0.5                   # [NOTE LEAVE AT 0.5, is for future
 loss_function_selection = 0                  # Select loss function (Hyperparameter): 0 = ada_weighted_mse_loss, 1 = Maxs_Loss_Func, 2 = torch.nn.MSELoss(), 3 = torch.nn.BCELoss(), 4 = torch.nn.L1Loss(), 5 = ada_SSE_loss, 6 ada_weighted_custom_split_loss 
 
 # Below weights only used if loss func set to 0 or 6 aka ada_weighted_mse_loss
-zero_weighting = 0.99                           # User controll to set zero weighting for ada_weighted_mse_loss (Hyperparameter)
+zero_weighting = 1 #0.99                           # User controll to set zero weighting for ada_weighted_mse_loss (Hyperparameter)
 nonzero_weighting = 1                     # User controll to set non zero weighting for ada_weighted_mse_loss (Hyperparameter)
 
 # Below only used if loss func set to 6 aka ada_weighted_custom_split_loss
@@ -136,9 +136,9 @@ nonzero_loss_choice = 1                 # Select loss function for non zero valu
 signal_points = 4000                           # User controll to set the number of signal points to add
 noise_points = 10                          # User controll to set the number of noise points to add
 
-x_std_dev = 0                              # User controll to set the standard deviation of the detectors error in the x axis
-y_std_dev = 0                               # User controll to set the standard deviation of the detectors error in the y axis
-tof_std_dev = 0                             # User controll to set the standard deviation of the detectors error in the time of flight 
+x_std_dev = 1                              # User controll to set the standard deviation of the detectors error in the x axis
+y_std_dev = 1                               # User controll to set the standard deviation of the detectors error in the y axis
+tof_std_dev = 2                             # User controll to set the standard deviation of the detectors error in the time of flight 
 
 
 #%% - Pretraining settings
@@ -152,21 +152,21 @@ all_norm_off = False                         #[Default is False] # If set to tru
 simple_renorm = False                        #[Default is False] # If set to true then the model will use simple output renormalisation instead of custom output renormalisation
 
 #%% - Plotting Control Settings
-print_every_other = 2                      #[default = 2] 1 is to save/print all training plots every epoch, 2 is every other epoch, 3 is every 3rd epoch etc
-plot_or_save = 1                           #[default = 1] 0 prints plots to terminal (blocking till closed), If set to 1 then saves all end of epoch printouts to disk (non-blocking), if set to 2 then saves outputs whilst also printing for user (blocking till closed)
+print_every_other = 4                      #[default = 2] 1 is to save/print all training plots every epoch, 2 is every other epoch, 3 is every 3rd epoch etc
+plot_or_save = 0                           #[default = 1] 0 prints plots to terminal (blocking till closed), If set to 1 then saves all end of epoch printouts to disk (non-blocking), if set to 2 then saves outputs whilst also printing for user (blocking till closed)
 
 #%% - Advanced Visulisation Settings
 plot_train_loss = True               #[default = True]       
 plot_validation_loss = True          #[default = True]               
 
-plot_cutoff_telemetry = True         #[default = False] # Update name to pixel_cuttoff_telemetry    #Very slow, reduces net performance by XXXXXX%
+plot_cutoff_telemetry = False         #[default = False] # Update name to pixel_cuttoff_telemetry    #Very slow, reduces net performance by XXXXXX%
 
 plot_pixel_difference = False        #[default = True]          
-plot_latent_generations = True       #[default = True]              
+plot_latent_generations = False       #[default = True]              
 plot_higher_dim = False              #[default = True]  
 plot_Graphwiz = False                #[default = True]       
 
-record_activity = False #False  ##Be carefull, the activity file recorded is ~ 2.5Gb  #Very slow, reduces net performance by XXXXXX%
+record_activity = True #False  ##Be carefull, the activity file recorded is ~ 2.5Gb  #Very slow, reduces net performance by XXXXXX%
 compress_activations_npz_output = False #False   Compresses the activity file above for smaller file size but does increase loading and saving times for the file. (use if low on hdd space)
 
 #%% - Advanced Debugging Settings
@@ -196,10 +196,12 @@ data_gathering = True
 data_path = "N:\Yr 3 Project Datasets\\"
 #ADILL - "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Yr 3 Project/Circular and Spherical Dummy Datasets/"
 #MAX - 
+data_path = r"C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Realistic Stuff\RealSetPerfect/"
 
 results_output_path = "N:\Yr 3 Project Results\\"
 #ADILL - "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Git Hub Repos/DeepClean Repo/DeepClean-Noise-Suppression-for-LHC-B-Torch-Detector/Models/"
 #MAX - 
+results_output_path = r"C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Testing Params\RealSetPerfectData\Control\Data/"
 
 #%% - Dependencies
 # External Libraries

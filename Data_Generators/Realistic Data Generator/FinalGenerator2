@@ -27,9 +27,9 @@ std = 70E-12
 chrom_disp = [2,2]
 
 # directory to save to
-directory = r"C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Realistic Stuff\PerfectTesting\Data/"
+directory = r"C:\Users\maxsc\OneDrive - University of Bristol\3rd Year Physics\Project\Autoencoder\2D 3D simple version\Circular and Spherical Dummy Datasets\Realistic Stuff\RealSetPerfect\Data/"
 
-def realistic_data_gen(dataset_size=1, signal_points=10000, detector_pixel_dimensions=(128,88), height=100, hit_point='random', ideal=True, debug_image_generator=False, shift=False, num = 1, shift_z_only = True, std = False, chro_dis = False):
+def realistic_data_gen(dataset_size=10000, signal_points=5000, detector_pixel_dimensions=(128,88), height=100, hit_point='random', ideal=True, debug_image_generator=False, shift=False, num = 1, shift_z_only = True, std = False, chro_dis = False):
     """
     This is a generator function that produces, and saves to a specified directory, a number of flattened realistic data images.
     This takes the following inputs:
@@ -267,4 +267,4 @@ def realistic_data_gen(dataset_size=1, signal_points=10000, detector_pixel_dimen
 
 
 # run function with defaults:
-realistic_data_gen(dataset_size=1, signal_points=10000, debug_image_generator=True, num = 1)
+realistic_data_gen()
