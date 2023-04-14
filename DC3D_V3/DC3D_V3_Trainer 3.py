@@ -1166,84 +1166,89 @@ else:                              # No print partial train losses per batch, in
     loop_range = tqdm(range(num_epochs), desc='Epochs', colour='red')
 
 
-# bringing everything together to train model
-for epoch in loop_range:                              #For loop that iterates over the number of epochs where 'epoch' takes the values (0) to (num_epochs - 1)
-    if print_partial_training_losses:
-        print('\nStart of EPOCH %d/%d' % (epoch + 1, num_epochs))
-    
-    ### Training (use the training function)
-    train_loss=train_epoch_den(
-                               encoder, 
-                               decoder, 
-                               device, 
-                               dataloader=train_loader, 
-                               loss_fn=loss_fn, 
-                               optimizer=optim,
-                               signal_points=signal_points,
-                               noise_points=noise_points,
-                               x_std_dev = x_std_dev, 
-                               y_std_dev = y_std_dev,
-                               tof_std_dev = tof_std_dev,
-                               time_dimension=time_dimension,
-                               reconstruction_threshold=reconstruction_threshold,
-                               print_partial_training_losses = print_partial_training_losses)
-
-    ### Validation (use the testing function)
-    val_loss = test_epoch_den(
-                              encoder, 
-                              decoder, 
-                              device, 
-                              dataloader=valid_loader, 
-                              loss_fn=loss_fn,
-                              signal_points=signal_points,
-                              noise_points=noise_points,
-                              x_std_dev = x_std_dev, 
-                              y_std_dev = y_std_dev,
-                              tof_std_dev = tof_std_dev,
-                              time_dimension=time_dimension,
-                              reconstruction_threshold=reconstruction_threshold,
-                              print_partial_training_losses = print_partial_training_losses)
-    
-    # Print Validation_loss and plots at end of each epoch
-    history_da['train_loss'].append(train_loss)
-    history_da['val_loss'].append(val_loss)
-    
-    #Updates the epoch reached counter  
-    max_epoch_reached = epoch    
-
-    if print_partial_training_losses:
-        print('\n End of EPOCH {}/{} \t train loss {:.3f} \t val loss {:.3f}'.format(epoch + 1, num_epochs,train_loss,val_loss))     #epoch +1 is to make up for the fact the range spans 0 to epoch-1 but we want to numerate things from 1 upwards for sanity
-    
-    if epoch % print_every_other == 0 and epoch != 0:
+try:    # Try except clause allows user to exit trainig gracefully whilst still retaiing a saved model and ouput plots
+    # bringing everything together to train model
+    for epoch in loop_range:                              #For loop that iterates over the number of epochs where 'epoch' takes the values (0) to (num_epochs - 1)
+        if print_partial_training_losses:
+            print('\nStart of EPOCH %d/%d' % (epoch + 1, num_epochs))
         
-        print("\n## EPOCH {} PLOTS DRAWN ## \n  \n".format(epoch))
+        ### Training (use the training function)
+        train_loss=train_epoch_den(
+                                encoder, 
+                                decoder, 
+                                device, 
+                                dataloader=train_loader, 
+                                loss_fn=loss_fn, 
+                                optimizer=optim,
+                                signal_points=signal_points,
+                                noise_points=noise_points,
+                                x_std_dev = x_std_dev, 
+                                y_std_dev = y_std_dev,
+                                tof_std_dev = tof_std_dev,
+                                time_dimension=time_dimension,
+                                reconstruction_threshold=reconstruction_threshold,
+                                print_partial_training_losses = print_partial_training_losses)
+
+        ### Validation (use the testing function)
+        val_loss = test_epoch_den(
+                                encoder, 
+                                decoder, 
+                                device, 
+                                dataloader=valid_loader, 
+                                loss_fn=loss_fn,
+                                signal_points=signal_points,
+                                noise_points=noise_points,
+                                x_std_dev = x_std_dev, 
+                                y_std_dev = y_std_dev,
+                                tof_std_dev = tof_std_dev,
+                                time_dimension=time_dimension,
+                                reconstruction_threshold=reconstruction_threshold,
+                                print_partial_training_losses = print_partial_training_losses)
         
-        # Run plotting function for training feedback and telemetry.
-        encoder.eval()
-        decoder.eval()
-
-        returned_data_from_plotting_function = plot_ae_outputs_den(encoder, 
-                                                                   decoder, 
-                                                                   epoch, 
-                                                                   model_save_name, 
-                                                                   time_dimension, 
-                                                                   reconstruction_threshold,
-                                                                   signal_points=signal_points,
-                                                                   noise_points=noise_points,
-                                                                   x_std_dev = x_std_dev, 
-                                                                   y_std_dev = y_std_dev,
-                                                                   tof_std_dev = tof_std_dev)
+        # Print Validation_loss and plots at end of each epoch
+        history_da['train_loss'].append(train_loss)
+        history_da['val_loss'].append(val_loss)
         
-        number_of_true_signal_points, number_of_recovered_signal_points, in_data, noisy_data, rec_data = returned_data_from_plotting_function
-        encoder.train()
-        decoder.train()
+        #Updates the epoch reached counter  
+        max_epoch_reached = epoch    
 
-        # Allow user to exit training loop    
-        if allow_escape:
-            user_input = input("Press q to end training, or any other key to continue: \n")
-            if user_input == 'q' or user_input == 'Q':
-                break
+        if print_partial_training_losses:
+            print('\n End of EPOCH {}/{} \t train loss {:.3f} \t val loss {:.3f}'.format(epoch + 1, num_epochs,train_loss,val_loss))     #epoch +1 is to make up for the fact the range spans 0 to epoch-1 but we want to numerate things from 1 upwards for sanity
+        
+        if epoch % print_every_other == 0 and epoch != 0:
+            
+            print("\n## EPOCH {} PLOTS DRAWN ##\nPress Ctr + c to exit and save the model from this epoch. \n  \n".format(epoch))
+            
+            # Run plotting function for training feedback and telemetry.
+            encoder.eval()
+            decoder.eval()
 
+            returned_data_from_plotting_function = plot_ae_outputs_den(encoder, 
+                                                                    decoder, 
+                                                                    epoch, 
+                                                                    model_save_name, 
+                                                                    time_dimension, 
+                                                                    reconstruction_threshold,
+                                                                    signal_points=signal_points,
+                                                                    noise_points=noise_points,
+                                                                    x_std_dev = x_std_dev, 
+                                                                    y_std_dev = y_std_dev,
+                                                                    tof_std_dev = tof_std_dev)
+            
+            number_of_true_signal_points, number_of_recovered_signal_points, in_data, noisy_data, rec_data = returned_data_from_plotting_function
+            encoder.train()
+            decoder.train()
+
+            # Allow user to exit training loop  (OLD METHOD DEPRECIATED,,, MAY BE USE FOR IT??? CLEAN UP)  
+            if allow_escape:
+                user_input = input("Press q to end training, or any other key to continue: \n")
+                if user_input == 'q' or user_input == 'Q':
+                    break
+
+        pass
+        
+except KeyboardInterrupt:
+    print("Keyboard interrupt detected. Exiting training gracefully...")
 #%% - After Training
 # Stop timing the training process and calculate the total training time
 end_time = time.time()
