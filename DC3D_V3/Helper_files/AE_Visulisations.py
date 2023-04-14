@@ -9,9 +9,6 @@ University of Bristol
 # Fix GraphViz
 # Enable tracking of differnce plot over training? 
 """
-#image = 
-#noised_image = 
-#cleaned_image = 
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -192,5 +189,38 @@ def Reduced_Dimension_Data_Representations(encoder, device, test_dataset, plot_o
     except:
         return(None)
 
+"""
+This code is performing the following operations:
+
+    encoded_samples = []: Initializes an empty list called encoded_samples to store the encoded images.
+
+    for sample in tqdm(test_dataset):: Loops through each sample in the test_dataset and uses the tqdm library to display a progress bar for the loop.
+
+    img = sample[0].unsqueeze(0).to(device): Extracts the image from the current sample and converts it to a PyTorch tensor. unsqueeze(0) adds an extra dimension to the tensor, which is required for passing it through the neural network. to(device) moves the tensor to the specified device (e.g., GPU or CPU).
+
+    label = sample[1]: Extracts the label from the current sample.
+
+    encoder.eval(): Sets the neural network called encoder to evaluation mode. This is required to disable dropout and other regularization techniques during inference.
+
+    with torch.no_grad():: Wraps the subsequent code in a with statement to disable gradient calculations, which can save memory and computation time.
+
+    encoded_img = encoder(img): Passes the image through the encoder neural network to obtain a compressed representation of the image. This is called encoding.
+
+    encoded_img = encoded_img.flatten().cpu().numpy(): Flattens the encoded image tensor and converts it to a NumPy array. This is required to store the encoded image in a Pandas DataFrame later.
+
+    encoded_sample = {f"Enc. Variable {i}": enc for i, enc in enumerate(encoded_img)}: Creates a dictionary called encoded_sample with keys "Enc. Variable 0", "Enc. Variable 1", etc., and values corresponding to the encoded image array. This is done to store the encoded image data in a structured format.
+
+    encoded_sample['label'] = label: Adds a key-value pair to the encoded_sample dictionary, where the key is "label" and the value is the corresponding label for the current image.
+
+    encoded_samples.append(encoded_sample): Adds the encoded_sample dictionary to the encoded_samples list.
+
+    encoded_samples = pd.DataFrame(encoded_samples): Converts the encoded_samples list to a Pandas DataFrame for easier manipulation and analysis.
+
+    tsne = TSNE(n_components=2): Initializes a t-SNE object with 2 components. t-SNE is a dimensionality reduction technique that can be used to visualize high-dimensional data in 2D or 3D.
+
+    tsne_results = tsne.fit_transform(encoded_samples.drop(['label'],axis=1)): Applies t-SNE to the encoded image data (i.e., all columns except the "label" column) to obtain 2D coordinates for each image. The resulting tsne_results array contains 2D coordinates for each image, which can be used to visualize the data.
+
+    return(encoded_samples, tsne_results): Returns the encoded image data (encoded_samples) and the t-SNE results (tsne_results) as output from the function.
 
 
+"""
