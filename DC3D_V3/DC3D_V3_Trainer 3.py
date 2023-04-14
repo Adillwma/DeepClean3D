@@ -103,7 +103,7 @@ Default: if None, uses a global default (see torch.set_default_tensor_type()).!!
 
 #%% - User Inputs
 dataset_title =  "Dataset 24_X10ks"# "Dataset 37_X15K Perfect track recovery" #"Dataset 24_X10Ks"           #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
-model_save_name = "D24 10K SP(20,400) NP(10-400) pt frm BM w Op"     #"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
+model_save_name = "D24 10K SP5-230 pt frm BM w Op"     #"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
 
 time_dimension = 100                         # User controll to set the number of time steps in the data
 reconstruction_threshold = 0.5               # MUST BE BETWEEN 0-1  #Threshold for 3d reconstruction, values below this confidence level are discounted
@@ -131,8 +131,8 @@ zeros_loss_choice = 1                     # Select loss function for zero values
 nonzero_loss_choice = 1                 # Select loss function for non zero values (Hyperparameter): 0 = Maxs_Loss_Func, 1 = torch.nn.MSELoss(), 2 = torch.nn.BCELoss(), 3 = torch.nn.L1Loss(), 4 = ada_SSE_loss
 
 # Image Preprocessing Settings  (when using perfect track images as labels)
-signal_points = (20,400)                           # User controll to set the number of signal points to add
-noise_points = (10,400)                          # User controll to set the number of noise points to add
+signal_points = (5,230)                           # User controll to set the number of signal points to add
+noise_points = 0                          # User controll to set the number of noise points to add
 
 x_std_dev = 0                              # User controll to set the standard deviation of the detectors error in the x axis
 y_std_dev = 0                               # User controll to set the standard deviation of the detectors error in the y axis
@@ -159,12 +159,12 @@ plot_validation_loss = True          #[default = True]
 
 plot_cutoff_telemetry = True         #[default = False] # Update name to pixel_cuttoff_telemetry    #Very slow, reduces net performance by XXXXXX%
 
-plot_pixel_difference = False        #[default = True]          
+plot_pixel_difference = False #BROKEN        #[default = True]          
 plot_latent_generations = True       #[default = True]              
-plot_higher_dim = False              #[default = True]  
+plot_higher_dim = True              #[default = True]  
 plot_Graphwiz = False                #[default = True]       
 
-record_activity = False #False  ##Be carefull, the activity file recorded is ~ 2.5Gb  #Very slow, reduces net performance by XXXXXX%
+record_activity = True #False  ##Be carefull, the activity file recorded is ~ 2.5Gb  #Very slow, reduces net performance by XXXXXX%
 compress_activations_npz_output = False #False   Compresses the activity file above for smaller file size but does increase loading and saving times for the file. (use if low on hdd space)
 
 #%% - Advanced Debugging Settings
@@ -1439,11 +1439,13 @@ if data_gathering:
         for key, value in settings.items():
             output_file.write(f"{key}: {value}\n")
         
-        output_file.write("\Loss Function:\n")    # Write the loss function settings to the file
+        output_file.write("\nLoss Function Settings:\n")    # Write the loss function settings to the file
         output_file.write(f"Loss Function Choice: {loss_fn}\n")
         if loss_function_selection == 0:
             output_file.write(f"zero_weighting: {zero_weighting}\n")
             output_file.write(f"nonzero_weighting: {nonzero_weighting}\n")    
+        if loss_function_selection == 6:
+            output_file.write(f"Split Loss Functions Selected (Hits, Non-Hits): {split_loss_functions}\n")
 
         output_file.write("\nNormalisation:\n")     # Write the normalisation settings to the file
         output_file.write(f"simple_norm_instead_of_custom: {simple_norm_instead_of_custom}\n")    
@@ -1454,10 +1456,6 @@ if data_gathering:
             output_file.write(f"full_statedict_path: {full_statedict_path}\n")    
         output_file.write(f"start_from_pretrained_model: {start_from_pretrained_model}\n")
         output_file.write(f"load_pretrained_optimser: {load_pretrained_optimser}\n")  
-        
-        output_file.write("\nAutoencoder Network:\n")  # Write the autoencoder network settings to the file
-        output_file.write((f"AE File ID: {AE_file_name}\n"))    # Write the autoencoder network file ID to the file
-        output_file.write("\n" + summary_str)   # Write the autoencoder network summary to the file
         
         output_file.write("\n \nFull Data Readouts:\n") 
         for key, value in full_data_output.items(): 
@@ -1470,6 +1468,10 @@ if data_gathering:
 
         system_information = get_system_information()  # Get the system information using helper function
         output_file.write("\n" + system_information)  # Write the system information to the file
+
+        output_file.write("\nAutoencoder Network:\n")  # Write the autoencoder network settings to the file
+        output_file.write((f"AE File ID: {AE_file_name}\n"))    # Write the autoencoder network file ID to the file
+        output_file.write("\n" + summary_str)   # Write the autoencoder network summary to the file
     print("- Completed -")
 #%% - End of Program - Printing message to notify user!
 print("\nProgram Complete - Shutting down...\n")    
