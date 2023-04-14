@@ -103,7 +103,7 @@ Default: if None, uses a global default (see torch.set_default_tensor_type()).!!
 
 #%% - User Inputs
 dataset_title =  "Dataset 24_X10ks"# "Dataset 37_X15K Perfect track recovery" #"Dataset 24_X10Ks"           #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
-model_save_name = "D24 10K DCDV3 30 sig NP100 pretrain from best model with load optim"     #"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
+model_save_name = "D24 10K DCDV3 NP(10-1000) pretrain from best model with load optim"     #"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
 
 time_dimension = 100                         # User controll to set the number of time steps in the data
 reconstruction_threshold = 0.5               # MUST BE BETWEEN 0-1  #Threshold for 3d reconstruction, values below this confidence level are discounted
@@ -131,8 +131,8 @@ zeros_loss_choice = 1                     # Select loss function for zero values
 nonzero_loss_choice = 1                 # Select loss function for non zero values (Hyperparameter): 0 = Maxs_Loss_Func, 1 = torch.nn.MSELoss(), 2 = torch.nn.BCELoss(), 3 = torch.nn.L1Loss(), 4 = ada_SSE_loss
 
 # Image Preprocessing Settings  (when using perfect track images as labels)
-signal_points = 30                           # User controll to set the number of signal points to add
-noise_points = 100                          # User controll to set the number of noise points to add
+signal_points = 4000                           # User controll to set the number of signal points to add
+noise_points = (10,100)                          # User controll to set the number of noise points to add
 
 x_std_dev = 0                              # User controll to set the standard deviation of the detectors error in the x axis
 y_std_dev = 0                               # User controll to set the standard deviation of the detectors error in the y axis
@@ -710,9 +710,9 @@ def train_epoch_den(encoder, decoder, device, dataloader, loss_fn, optimizer, si
 
         # DATA PREPROCESSING
         with torch.no_grad(): # No need to track the gradients
-            sparse_output_batch = create_sparse_signal(image_batch, input_range_to_random_value(signal_points))
-            sparse_and_resolution_limited_batch = simulate_detector_resolution(sparse_output_batch, input_range_to_random_value(x_std_dev), input_range_to_random_value(y_std_dev), input_range_to_random_value(tof_std_dev))
-            noised_sparse_reslimited_batch = add_noise_points_to_batch_prenorm(sparse_and_resolution_limited_batch, input_range_to_random_value(noise_points), time_dimension)
+            sparse_output_batch = create_sparse_signal(image_batch, signal_points)
+            sparse_and_resolution_limited_batch = simulate_detector_resolution(sparse_output_batch, x_std_dev, y_std_dev, tof_std_dev)
+            noised_sparse_reslimited_batch = add_noise_points_to_batch_prenorm(sparse_and_resolution_limited_batch, noise_points, time_dimension)
             normalised_batch = custom_normalisation_torch(noised_sparse_reslimited_batch, reconstruction_threshold, time_dimension)
             normalised_inputs = custom_normalisation_torch(image_batch, reconstruction_threshold, time_dimension)
         
@@ -828,22 +828,47 @@ def plot_ae_outputs_den(encoder, decoder, epoch, model_save_name, time_dimension
       noised_test_image = normalised_batch.squeeze() #.cpu().squeeze().numpy()??????????????????
       recovered_test_image = rec_img.cpu().squeeze().numpy()
 
+
+
+
+      in_im = test_image   
+      noise_im = noised_test_image
+      rec_im = recovered_test_image
+
+      ###################WHY IS NORM HERE IN THE CODE??? shouldent it be directly after output and speed time is saved? (i think this is actually for the plots generated during the testig ratehr than afetr so okay maybe not?)
+      # RENORMALISATIONN
+      if simple_norm_instead_of_custom or all_norm_off: #if simple_norm_instead_of_custom is set to 1, then the normalisation is done using the simple_renormalisation function, if all_norm_off is set to 1, then no normalisation is done
+          rec_im = rec_im * time_dimension #multiplies the reconstructed image by the time dimension   
+      else: 
+
+          #REMOVE - used for debugging
+          if simple_renorm: 
+              noise_im  = noise_im * time_dimension
+              rec_im  = rec_im * time_dimension
+
+          else:
+              noise_im = custom_renormalisation(noise_im, reconstruction_threshold, time_dimension)
+              rec_im = custom_renormalisation(rec_im, reconstruction_threshold, time_dimension)
+
+
+
+
       #Following section generates the img plots for the original(labels), noised, and denoised data)
-      plt.imshow(test_image, cmap='gist_gray')           #plt.imshow plots an image. The arguments for imshow are, 'image data array' and cmap= which is the colour map. #.squeeze() acts on a tensor and returns a tensor, it removes all dimensions of the tensor that are of length 1, (A×1×B) becomes (AxB) where A and B are greater than 1 #.numpy() creates a numpy array from a tensor #!!! is the .cpu part becuase the code was not made to accept the gpu/cpu check i made????
+      plt.imshow(in_im, cmap='gist_gray')           #plt.imshow plots an image. The arguments for imshow are, 'image data array' and cmap= which is the colour map. #.squeeze() acts on a tensor and returns a tensor, it removes all dimensions of the tensor that are of length 1, (A×1×B) becomes (AxB) where A and B are greater than 1 #.numpy() creates a numpy array from a tensor #!!! is the .cpu part becuase the code was not made to accept the gpu/cpu check i made????
       ax.get_xaxis().set_visible(False)                                   #Hides the x axis from showing in the plot as we are plotting images not graphs (we may want to retain axis?)
       ax.get_yaxis().set_visible(False)                                   #Hides the y axis from showing in the plot as we are plotting images not graphs (we may want to retain axis?)
       if i == n//2:                                                       #n//2 divides n by 2 without any remainder, i.e 6//2=3 and 7//2=3. So this line checks to see if i is equal to half of n without remainder. it will be yes once in the loop. not sure of its use
         ax.set_title('EPOCH %s \nOriginal images' %(epoch))               #When above condition is reached, the plots title is set                                   #When above condition is reached, the plots title is set
 
       ax = plt.subplot(3, n, i + 1 + n)                                   #Creates a number of subplots for the 'Corrupted images??????' i.e the labels. the position of the subplot is i+1+n as it falls in the second row
-      plt.imshow(noised_test_image, cmap='gist_gray')   #plt.imshow plots an image. The arguments for imshow are, 'image data array' and cmap= which is the colour map. #.squeeze() acts on a tensor and returns a tensor, it removes all dimensions of the tensor that are of length 1, (A×1×B) becomes (AxB) where A and B are greater than 1 #.numpy() creates a numpy array from a tensor #!!! is the .cpu part becuase the code was not made to accept the gpu/cpu check i made????
+      plt.imshow(noise_im, cmap='gist_gray')   #plt.imshow plots an image. The arguments for imshow are, 'image data array' and cmap= which is the colour map. #.squeeze() acts on a tensor and returns a tensor, it removes all dimensions of the tensor that are of length 1, (A×1×B) becomes (AxB) where A and B are greater than 1 #.numpy() creates a numpy array from a tensor #!!! is the .cpu part becuase the code was not made to accept the gpu/cpu check i made????
       ax.get_xaxis().set_visible(False)                                   #Hides the x axis from showing in the plot as we are plotting images not graphs (we may want to retain axis?)
       ax.get_yaxis().set_visible(False)                                   #Hides the y axis from showing in the plot as we are plotting images not graphs (we may want to retain axis?)
       if i == n//2:                                                       #n//2 divides n by 2 without any remainder, i.e 6//2=3 and 7//2=3. So this line checks to see if i is equal to half of n without remainder. it will be yes once in the loop. not sure of its use
         ax.set_title('Corrupted images')                                  #When above condition is reached, the plots title is set
 
       ax = plt.subplot(3, n, i + 1 + n + n)                               #Creates a number of subplots for the 'Reconstructed images??????' i.e the labels. the position of the subplot is i+1+n+n as it falls in the third row
-      plt.imshow(recovered_test_image, cmap='gist_gray')       #plt.imshow plots an image. The arguments for imshow are, 'image data array' and cmap= which is the colour map. #.squeeze() acts on a tensor and returns a tensor, it removes all dimensions of the tensor that are of length 1, (A×1×B) becomes (AxB) where A and B are greater than 1 #.numpy() creates a numpy array from a tensor #!!! is the .cpu part becuase the code was not made to accept the gpu/cpu check i made????
+      plt.imshow(rec_im, cmap='gist_gray')       #plt.imshow plots an image. The arguments for imshow are, 'image data array' and cmap= which is the colour map. #.squeeze() acts on a tensor and returns a tensor, it removes all dimensions of the tensor that are of length 1, (A×1×B) becomes (AxB) where A and B are greater than 1 #.numpy() creates a numpy array from a tensor #!!! is the .cpu part becuase the code was not made to accept the gpu/cpu check i made????
       ax.get_xaxis().set_visible(False)                                   #Hides the x axis from showing in the plot as we are plotting images not graphs (we may want to retain axis?)
       ax.get_yaxis().set_visible(False)                                   #Hides the y axis from showing in the plot as we are plotting images not graphs (we may want to retain axis?)
       if i == n//2:                                                       #n//2 divides n by 2 without any remainder, i.e 6//2=3 and 7//2=3. So this line checks to see if i is equal to half of n without remainder. it will be yes once in the loop. not sure of its use
@@ -864,27 +889,8 @@ def plot_ae_outputs_den(encoder, decoder, epoch, model_save_name, time_dimension
     else:
         plt.close()
 
+
     ### 3D Reconstruction Plots 
-
-    in_im = test_image   
-    noise_im = noised_test_image
-    rec_im = recovered_test_image
-
-    ###################WHY IS NORM HERE IN THE CODE??? shouldent it be directly after output and speed time is saved? (i think this is actually for the plots generated during the testig ratehr than afetr so okay maybe not?)
-    # RENORMALISATIONN
-    if simple_norm_instead_of_custom or all_norm_off: #if simple_norm_instead_of_custom is set to 1, then the normalisation is done using the simple_renormalisation function, if all_norm_off is set to 1, then no normalisation is done
-        rec_im = rec_im * time_dimension #multiplies the reconstructed image by the time dimension   
-    else: 
-
-        #REMOVE - used for debugging
-        if simple_renorm: 
-            noise_im  = noise_im * time_dimension
-            rec_im  = rec_im * time_dimension
-
-        else:
-            noise_im = custom_renormalisation(noise_im, reconstruction_threshold, time_dimension)
-            rec_im = custom_renormalisation(rec_im, reconstruction_threshold, time_dimension)
-
 
 
 
@@ -1133,6 +1139,14 @@ else:                              # No print partial train losses per batch, in
 for epoch in loop_range:                              #For loop that iterates over the number of epochs where 'epoch' takes the values (0) to (num_epochs - 1)
     if print_partial_training_losses:
         print('\nStart of EPOCH %d/%d' % (epoch + 1, num_epochs))
+    
+    #Select settings randomly from user range
+    signal_points = input_range_to_random_value(signal_points)
+    x_std_dev = input_range_to_random_value(x_std_dev) 
+    y_std_dev =input_range_to_random_value(y_std_dev) 
+    tof_std_dev = input_range_to_random_value(tof_std_dev)
+    noise_points = input_range_to_random_value(noise_points)
+    
     ### Training (use the training function)
     # N.B. train_epoch_den does training phase with encoder/decoder, but only returns the trainloss to show for it. Same w valloss.
     # this has batches built in from dataloader part. Does all train batches.
