@@ -1245,7 +1245,7 @@ try:    # Try except clause allows user to exit trainig gracefully whilst still 
                 if user_input == 'q' or user_input == 'Q':
                     break
 
-        pass
+        pass # end of try clause, if all goes well and user doesen't request an early exit then the training loop will end here
         
 except KeyboardInterrupt:
     print("Keyboard interrupt detected. Exiting training gracefully...")
