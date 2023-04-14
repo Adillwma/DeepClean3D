@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
+
+# DeepClean Trainer v0.3.9
+# Build created on Wednesday April 14th 2023
+# Authors: Adill Al-Ashgar & Max Carter
+# University of Bristol
+
+# @Adill: adillwmaa@gmail.co.uk - ex18871@bristol.ac.uk
+# @Max: qa19105@bristol.ac.uk
+
 """
-DeepClean v0.3.9
-Build created on Wednesday March 29th 2023
-Authors: Adill Al-Ashgar & Max Carter
-University of Bristol
-
-@Adill: adillwmaa@gmail.co.uk - ex18871@bristol.ac.uk
-@Max: qa19105@bristol.ac.uk
-
-
 Possible improvements:
 ### ~~~~~ [DONE!] Make sure that autoecoder Encoder and Decoder are saved along with model in the models folder 
 
