@@ -16,13 +16,13 @@ be verified for correct dtype, correct image size and correct min-max value rang
 """
 
 #%% - User Inputs
-time_dimension = 100
-dataset_full_filepath = r"C:\Users\Student\Documents\UNI\Onedrive - University of Bristol\Yr 3 Project\Circular and Spherical Dummy Datasets\Dataset 15_MultiX_80X_20X2"
+time_dimension = 1000
+dataset_full_filepath = r"N:\Yr 3 Project Datasets\RDT 10K MOVE"
 
 #%% - Load Tests
 from DC3D_V3.Helper_files.Dataset_distribution_tester_V1 import dataset_distribution_tester
 from DC3D_V3.Helper_files.Dataset_Integrity_Check_V1 import dataset_integrity_check
 
 #%% - Run Tests
-dataset_integrity_check(dataset_full_filepath, full_test=True, print_output=True)
+#dataset_integrity_check(dataset_full_filepath, full_test=True, print_output=True)
 dataset_distribution_tester(dataset_full_filepath, time_dimension=time_dimension, ignore_zero_vals_on_plot=True)
