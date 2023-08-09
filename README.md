@@ -3,37 +3,20 @@
 #### Contributors: Max Carter, Dr. Alex Marshall, Dr. Jonas Radamaker
 #### Department of Physics - University of Bristol, UK 
 
-
+![LHC](Images/image-20150605-8677-1ykfc31.jpg)
 
 # Introduction
 One of the four largest experiments on the LHC, the LHCb's (Large Hadron Collider Beauty) main focus is in investigating
 baryon anti-baryon asymmetry, responsible for the matter dominated universe we inhabit today.
 
-As part of the planned upgrade for the LHCb in 2022, a new detector is proposed to be added called TORCH (Time Of internally Reflected Cherenkov light) 
-which is closely related  to the PANDA DIRC and Belle TOP detectors, combining timing information with DIRC-style reconstruction, but aiming 
-for higher TOF resolution, 10–15 ps (per track). The detecttor is sensetive to incoming photons, it is arranged in a grid format, its output is a list of 
-grid coocrdinates which detected photons
+As part of the planned upgrade for the LHCb in 2022, a new detector is proposed to be added called TORCH (Time Of internally Reflected Cherenkov light) which is closely related  to the PANDA DIRC and Belle TOP detectors, combining timing information with DIRC-style reconstruction, but aiming for higher TOF resolution, 10–15 ps (per track). The detector is sensetive to incoming photons and is arranged in a grid format, it outputs a list of grid coordinates where photons were detected.
 
-A current challenge is in reconstructing detected photons path data, it is a computationally costly process and the data flow is incredible (Xinclude data rates here from the 40Mhz streamX). 
-All detections are currently reconstructed. However, once reconstructed the events are filtered down to those that correlated to a particular event, a large 
-proportion of the detected photons (Xquote average percentage of noise? or sig to noise ratioX) are noise from other collisions or the detector and electronic subsystem.
+A current challenge is in reconstructing detected photons path data, it is a computationally costly process and the data flow is incredible (Xinclude data rates here from the 40Mhz streamX). All detections are currently reconstructed. However, once reconstructed the events are filtered down to those that correlated to a particular event, a large  proportion of the detected photons (Xquote average percentage of noise? or sig to noise ratioX) are noise from other collisions or the detector and electronic subsystem.
 
-Our desire is to reduce the number of signals that require path reconstruction by using a neural network to detect the signal, only passing these 
-points on to the reconstruction algorithm saving the computation time spent on reconstructing the noise signals only to throw them away.
-
-This is critical in the efficiency of the processing pipeline as the LHC moves into its high luminosity upgrade where data rates will be further increased.
-
-
-
-![LHC](Images/image-20150605-8677-1ykfc31.jpg)
-
+Our desire is to reduce the number of signals that require path reconstruction by using a neural network to detect the signal, only passing these points on to the reconstruction algorithm saving the computation time spent on reconstructing the noise signals only to throw them away. This is critical in the efficiency of the processing pipeline as the LHC moves into its high luminosity upgrade where data rates will be further increased.
 
 [![Language](https://img.shields.io/badge/language-Python-blue.svg)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-brightgreen.svg)](https://opensource.org/licenses/MIT)
-
-
-
-
 
 ## Table of Contents
 - [Introduction](#introduction)
