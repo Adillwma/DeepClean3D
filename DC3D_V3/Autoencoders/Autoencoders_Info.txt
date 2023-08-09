@@ -1,5 +1,5 @@
 
-The autoencoders in this section vary the number of linear layers after the convolutional layers
+
 
 
 AE1 has 2 lin layers - 4800 --> 128 --> encoded_space_dim
@@ -16,3 +16,6 @@ AE1_3 is same as AE1 but with Dropout layers added to just the decoder.
 AE6?
 AE7?
 
+AE1_Protected is the same as AE1 but adds 10px of padding around all sides of the input images and then removes it after the network, this changes the first linear layer to size 7488
+AE1_Protected2 is the same as AE1 but adds 4px of padding around all sides of the input images and then removes it after the network, this changes the first linear layer to size ~6500
+AE1_Protected3 is the same as AE1 but adds one more linear layer and 4px of padding around all sides of the input images and then removes it after the network, this changes the first linear layer to size ~6500
