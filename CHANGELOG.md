@@ -1,12 +1,35 @@
-[Changelog]
+Changelog
 All notable changes to this project will be documented in this file.
-All latest changes to this release can be found on [GitHub](https://github.com/user/repo/commits/master).
 
-
-
-
-
-* 	 (HEAD -> main, origin/main, origin/HEAD) 2023-04-12 Update DC3D_V3_Trainer 2.py [Adill Al-Ashgar]
+* 	 (HEAD -> main, origin/main, origin/HEAD) 2023-08-10 Full reorganisation of repository structure and clean-up old builds [Adill Al-Ashgar]
+* 	 2023-08-10 Update .gitignore [Adill Al-Ashgar]
+* 	 2023-08-10 Update .gitignore [Adill Al-Ashgar]
+* 	 2023-08-09 Update README.md [Adill Al-Ashgar]
+* 	 2023-08-09 Update README.md [Adill Al-Ashgar]
+* 	 2023-08-09 Create image-20150605-8677-1ykfc31.jpg [Adill Al-Ashgar]
+* 	 2023-08-09 Added images from DC3D paper to be added to readme [Adill Al-Ashgar]
+* 	 2023-08-09 Large platform update for DC3D trainer [Adill Al-Ashgar]
+* 	 2023-08-09 Update Autoencoders_Info.txt [Adill Al-Ashgar]
+* 	 2023-08-09 Quick testing file that allows for dataset checking [Adill Al-Ashgar]
+* 	 2023-08-09 Created a more realisitic (in terms on created pattern, not the method of simulating this) data generator [Adill Al-Ashgar]
+* 	 2023-08-09 Update ROOT to NUMPY Convertor V1.py [Adill Al-Ashgar]
+* 	 2023-08-09 Update Conv_layers_finder_V1.py [Adill Al-Ashgar]
+* 	 2023-08-09 Create loss function testing.ipynb [Adill Al-Ashgar]
+* 	 2023-08-09 Large platform update to the denoiser deployment file, added in masking as default [Adill Al-Ashgar]
+* 	 2023-08-09 Added protective padding to the autoencoder to safeguard edges of the detector which were anomalous due to the unequal kernel view time on the right and bottom edges [Adill Al-Ashgar]
+* 	 2023-08-09 Update .gitignore [Adill Al-Ashgar]
+* 	 2023-04-14 Updated network summary output txt to include separate loss func selections, also improved readability of formatting and fixed bug in normalisation titling [Adill Al-Ashgar]
+* 	 2023-04-14 Update DC3D_V3_Trainer 3.py [Adill Al-Ashgar]
+* 	 2023-04-14 Large update to training loop to allow user to exit training gracefully using keyboard interrupt Ctrl + c, (does cause error if used before first set of plots saved) [Adill Al-Ashgar]
+* 	 2023-04-14 Update .gitignore [Adill Al-Ashgar]
+* 	 2023-04-14 Added progress bar for calidation/testing phase and updated ranged user inputs to work per batch rather than per epoch, per image would still be better but for now its per batch [Adill Al-Ashgar]
+* 	 2023-04-14 Update AE_Visulisations.py [Adill Al-Ashgar]
+* 	 2023-04-14 Fixed bug in 2D plots where reconstructed signal was not renormalized, also fixed the range inputs for variables which was causing an error due to where I was calculating them [Adill Al-Ashgar]
+* 	 2023-04-14 Update DC3D_V3_Trainer 3.py [Adill Al-Ashgar]
+* 	 2023-04-14 Large program update added input as constant or ranges to all image degradation parameters [Adill Al-Ashgar]
+* 	 2023-04-13 Testing [CarterM143]
+* 	 2023-04-12 Cleaned up git dir for external viewing, added more detail to readme, updated changelog [Adill Al-Ashgar]
+* 	 2023-04-12 Update DC3D_V3_Trainer 2.py [Adill Al-Ashgar]
 * 	 2023-04-11 Added detailed comments about program input settings for users [Adill Al-Ashgar]
 * 	 2023-04-11 Delete Max loss error message.txt [Adill Al-Ashgar]
 * 	 2023-04-11 Update Fast_Dataset_Creator.py [Adill Al-Ashgar]
@@ -675,3 +698,7 @@ All latest changes to this release can be found on [GitHub](https://github.com/u
 | * 	 2022-10-11 Basic Deep Learning Handbook [Adill Al-Ashgar]
 |/  
 * 	 2022-10-10 "First Test Commit" [Adill Al-Ashgar]
+
+
+
+All changes up to this release can be found on [GitHub](https://github.com/user/repo/commits/master).
