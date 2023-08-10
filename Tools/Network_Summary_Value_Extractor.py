@@ -7,7 +7,6 @@ University of Bristol
 
 # File not found error already returns well defined error message so not including reporting for it?
 """
-
 # Scrape Training Time
 def get_training_time(file_path):
     "Time_Scraper V1.0.0"
@@ -29,7 +28,6 @@ def get_valloss_time(file_path):
                 return float(Dstr)                                # Converts the extracted string to a float and returns it
     print('Val Loss not found in file')               # If the function reaches the end of the file without finding the training time string, it warns user but does not break for error, the function will return a flag so main body program can implement its own conditions if neded.
     return ("Error")
-
 
 # Train Loss
 def get_trainloss_time(file_path):
