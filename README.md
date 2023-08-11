@@ -16,7 +16,6 @@ Our desire is to reduce the number of signals that require path reconstruction b
 
 [![Language](https://img.shields.io/badge/language-Python-blue.svg)](https://www.python.org/)
 
-[![License](https://img.shields.io/badge/license-MIT-brightgreen.svg)](https://opensource.org/licenses/MIT)  CHANGE!!!!!!!!!!!!!!!
 
 ## Table of Contents
 - [Introduction](#introduction)
