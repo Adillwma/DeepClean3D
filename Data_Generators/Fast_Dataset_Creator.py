@@ -49,10 +49,10 @@ ideal_hit_spread = True        #If True then the hit points spread is idealised 
 import datetime          # Current local time and date
 
 # Local Custom Generators
-from Data_Generators.Comb_X_Gen_Full import simp_generator                     # Import custom function for generating X signals
-from Data_Generators.Blank_Data_Image_Generator import generate_blanks         # Import custom function for generating blank images
-from Data_Generators.Realistic_Gen import multi_real_gen_wrapper               # Import custom function for generating realistic TORCH signals
-#from Data_Generators.Hemispheres_Gen import hemispheres_gen_wrapper           # Import custom function for generating hemisphere signals
+from Data_Generators.X_Generator.Comb_X_Gen_Full import simp_generator                     # Import custom function for generating X signals
+from Data_Generators.Blank_Generator.Blank_Data_Image_Generator import generate_blanks         # Import custom function for generating blank images
+from Data_Generators.Maxs_Realistic_Generator.Realistic_Gen import multi_real_gen_wrapper               # Import custom function for generating realistic TORCH signals
+#from Data_Generators.Hemisphere_Generator.Hemispheres_Gen import hemispheres_gen_wrapper           # Import custom function for generating hemisphere signals
 #from Data_Generators.spherical                                                # Import custom function for generating spherical signals
 
 # Local Dataset Validation Functions
