@@ -34,6 +34,15 @@ def get_system_information():
         gpu_data = list()
         try:
             import wmi
+        except:
+            print("GPU Identification failed due to missing 'wmi' Python lib, for more GPU info please 'pip install wmi'!")
+            controller_info = {
+                    'Name': "Identification failed due to missing 'wmi' Python lib please pip install wmi",
+                    'VRAM': "Identification failed due to missing 'wmi' Python lib please pip install wmi",
+                }
+            gpu_data.append(controller_info)
+
+        try:
             GPU_devices = wmi.WMI().Win32_VideoController()
 
             for GPU_id, GPU_device in enumerate(GPU_devices):
@@ -42,14 +51,13 @@ def get_system_information():
                     f'GPU {GPU_id+1} VRAM': get_size(GPU_device.wmi_property('AdapterRAM').value),
                 }
             gpu_data.append(controller_info)
-
         except:
-            print("GPU Identification failed due to missing 'wmi' Python lib, for more GPU info please 'pip install wmi'!")
             controller_info = {
-                    'Name': "Identification failed due to missing 'wmi' Python lib please pip install wmi",
-                    'VRAM': "Identification failed due to missing 'wmi' Python lib please pip install wmi",
+                    'Name': "Identification failed: Possbly due to system not having a discrete GPU",
+                    'VRAM': "Identification failed: Possbly due to system not having a discrete GPU",
                 }
             gpu_data.append(controller_info)
+
 
         return (gpu_data)
 
