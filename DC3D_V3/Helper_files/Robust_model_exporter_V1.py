@@ -24,7 +24,7 @@ import os
 import shutil
 
 
-def Robust_model_export(function_name, search_dir, output_dir):
+def Robust_model_export(function_name, search_dir, output_dir, debug = False):
 
     def parse_module_name(string):
         # Protection from module being in subfolder so _get_module retuns subfolder.module_name we want just module name, so following lines check for any dots in the module name and if so find the right most dot and returns the string following it, otheriwse just retunrs it's input 
@@ -48,8 +48,10 @@ def Robust_model_export(function_name, search_dir, output_dir):
     
     if subfolder != None:
         search_dir = search_dir + "\\" + subfolder
-        print("subfolder")
-    print("search loc", search_dir)
+        if debug:
+            print("subfolder")
+    if debug:
+        print("search loc", search_dir)
     # Traverse the directory tree to find the file
     file_path = None
     try:
@@ -70,7 +72,8 @@ def Robust_model_export(function_name, search_dir, output_dir):
         os.makedirs(output_dir, exist_ok=True)
         new_file_path = os.path.join(output_dir, new_filename)
         shutil.copyfile(file_path, new_file_path)
-        print(f"File '{filename}' copied to '{new_file_path}'")
+        if debug:
+            print(f"File '{filename}' copied to '{new_file_path}'")
         AE_file_name = filename
 
     return (AE_file_name)
