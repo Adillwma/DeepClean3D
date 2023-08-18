@@ -20,6 +20,10 @@ from torchviz import make_dot
 from PIL import Image
 import plotly.express as px
 from sklearn.manifold import TSNE
+import os
+import torch
+from torchvision.transforms import ToPILImage
+
 
 #%% - Differnce between images
 ####Would be cool to run this similarity function every plotting cycle in the training and then plot over time the number of mathching elemets to see if we ever get any perfect pixel reconstructions
@@ -75,37 +79,30 @@ def AE_visual_difference(image, noised_image, cleaned_image, print_text=False):
     return (num_diff_noised, num_same_noised, num_diff_cleaned, num_same_cleaned, im_diff_noised, im_diff_cleaned)
 
 #%% - GraphViz
-def Graphwiz_visulisation():
+import os
+import torch
+from torchviz import make_dot
+
+def Graphviz_visulisation(encoder, decoder, double_precision, batch_size, x_dim, y_dim, output_folder):
     """
     Using GraphViz: GraphViz is a popular open-source graph visualization software that can be used to visualize the 
-    structure of your PyTorch autoencoder network. You can use the torchviz package to generate a GraphViz dot file from 
-    your PyTorch model and then use the dot command-line tool to generate a PNG image of the graph.:
+    structure of a PyTorch network. This code uses the torchviz graphviz wrapper to generate a GraphViz dot file from 
+    a PyTorch model which is converted to a PNG image.:
     """
-    """
-    ##### WORKING ######
+
     # Join the encoder and decoder models
     model = torch.nn.Sequential(encoder, decoder)
 
     # Generate a dot file from the model
-    x = torch.randn(batchsize, 1, 128, 88, dtype=torch.double) # dummy input tensor
-    dot = make_dot(model(x), params=dict(model.named_parameters()))
+    dtype = torch.float64 if double_precision else torch.float32
+    x = torch.randn(batch_size, 1, 128, 88, dtype=dtype) # dummy input tensor
+    dot = make_dot(model(x), params=dict(model.named_parameters()), show_attrs=True, show_saved=True)
 
     # Save the dot file
-    dot.render('model_graphpp')
+    dot.render('network_model_graph', output_folder, format='png', cleanup=True)
+
 
     
-    ##### NOT WORKING ######
-    import os
-
-    # Convert the dot file to a PNG image
-    os.system('C:/Program Files/Graphviz/bin/dot -Tpng model_graph.dot -o model_graph.png')
-
-    # Open and display the PNG image then save it to a file
-    img = Image.open('model_graph.png')
-    img.save('model_graph_saved.png')
-    img.show()
-
-    """
 
 #%% - Create new images from the latent space
 def Generative_Latent_information_Visulisation(encoder, decoder, latent_dim, device, test_loader):
@@ -150,6 +147,78 @@ def Generative_Latent_information_Visulisation(encoder, decoder, latent_dim, dev
         return (img_recon)
 
 #%% - Plots for the higher dimensional space
+
+
+
+import torch
+from sklearn.manifold import TSNE
+import pandas as pd
+from tqdm import tqdm
+
+def Reduced_Dimension_Data_Representations2(encoder, device, test_dataset, plot_or_save=0):
+    """
+    Display the input data samples as a XXXXX
+
+    Parameters:
+        encoder (torch.nn.Module): The encoder model.
+        device (str): The device to run the computations on.
+        test_dataset (TYPE???): The test dataset.
+        plot_or_save (int, optional): Specifies whether to display the visualization (0) or save it to file (1) or both (2).
+
+    Returns:
+    """
+    try:
+        # Prepare for error handling
+        encoded_samples = []
+
+        # Ensure that encoder is on the right device
+        encoder.to(device)
+        encoder.eval()
+
+        # Check if test_dataset is iterable
+        if not hasattr(test_dataset, '__iter__'):
+            raise ValueError("test_dataset must be iterable")
+
+        for sample in tqdm(test_dataset):
+            img = sample[0].unsqueeze(0).to(device)
+            label = sample[1]
+            # Encode image
+            with torch.no_grad():
+                encoded_img = encoder(img)
+                # Append to list
+                encoded_img = encoded_img.flatten().cpu().numpy()
+                encoded_sample = {f"Enc. Variable {i}": enc for i, enc in enumerate(encoded_img)}
+                encoded_sample['label'] = label
+                encoded_samples.append(encoded_sample)
+
+        if not encoded_samples:
+            raise ValueError("No encoded samples obtained")
+
+        encoded_samples_df = pd.DataFrame(encoded_samples)
+
+        if len(encoded_samples_df) < 2:
+            raise ValueError("Insufficient samples for t-SNE")
+
+        # TSNE of Higher dim
+        tsne = TSNE(n_components=2)
+        tsne_results = tsne.fit_transform(encoded_samples_df.drop(['label'], axis=1))
+
+        return encoded_samples_df, tsne_results
+
+    except Exception as e:
+        # Handle errors gracefully
+        print("An error occurred:", e)
+        return None, None
+
+# Example usage
+# encoder = your_encoder_model
+# device = 'cuda' or 'cpu'
+# test_dataset = your_test_dataset
+# result_df, tsne_results = Reduced_Dimension_Data_Representations(encoder, device, test_dataset)
+
+
+
+
 def Reduced_Dimension_Data_Representations(encoder, device, test_dataset, plot_or_save=0):
     """
     Display the input data samples as a XXXXX
