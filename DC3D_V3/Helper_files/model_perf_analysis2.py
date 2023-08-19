@@ -346,9 +346,13 @@ def initialise_model(pretrained_model_folder_path, verbose_mode=False): # Define
             # Load the .py file
             py_file_path = file_path
             
-        elif file_name.endswith('_int.pkl'):
+        elif file_name.endswith('ld_int.pkl'):
             # Load the .pkl file
             intpkl_file_path = file_path
+
+        elif file_name.endswith('dim_int.pkl'):
+            # Load the .pkl file
+            fc2pkl_file_path = file_path        
 
         elif file_name.endswith('_str.pkl'):
             strpkl_file_path = file_path
@@ -359,7 +363,7 @@ def initialise_model(pretrained_model_folder_path, verbose_mode=False): # Define
 
     # Check if all the required files are found
     if verbose_mode:
-        if py_file_path and intpkl_file_path and strpkl_file_path and pth_model_file_path:
+        if py_file_path and intpkl_file_path and strpkl_file_path and pth_model_file_path and fc2pkl_file_path:
             # Load the files into Python using their respective paths
             # Add your code here to process or use the files as needed
             print("Files loaded successfully!\n")
@@ -367,12 +371,17 @@ def initialise_model(pretrained_model_folder_path, verbose_mode=False): # Define
             print("One or more required files not found.\n")
 
 
-        print(f"Loading settings from: {intpkl_file_path} & {strpkl_file_path}")
+        print(f"Loading settings from: {intpkl_file_path}, {fc2pkl_file_path} & {strpkl_file_path}")
     # Import the settings from the .pkl file
     import pickle
     with open(intpkl_file_path, 'rb') as f:
         latent_dim = pickle.load(f)
     latent_dim = int(latent_dim)
+
+    if fc2pkl_file_path != None:
+        with open(fc2pkl_file_path, 'rb') as f:
+            fc_layer_size = pickle.load(f)
+        fc_layer_size = int(fc_layer_size)
 
     with open(strpkl_file_path, 'rb') as f:
         double_precision = pickle.load(f)
@@ -395,8 +404,12 @@ def initialise_model(pretrained_model_folder_path, verbose_mode=False): # Define
         print(f"Loading Encoder and Decoder from: {py_file_path}")
     Encoder, Decoder = import_encoder_decoder(py_file_path)
  
-    encoder = Encoder(latent_dim, False)
-    decoder = Decoder(latent_dim, False)
+    if fc2pkl_file_path != None:     
+        encoder = Encoder(latent_dim, False, fc_layer_size)
+        decoder = Decoder(latent_dim, False, fc_layer_size)
+    else: #LEGACY !!! REMOVE ONCE ENOUGH NEW DATA
+        encoder = Encoder(latent_dim, False)
+        decoder = Decoder(latent_dim, False)
 
     # Sets the encoder and decoder to double precision floating point arithmetic (fp64)
     if double_precision:
