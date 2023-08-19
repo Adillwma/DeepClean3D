@@ -7,9 +7,11 @@
 """
 Possible improvements:
 
-### ~~~~~ Create new unseen dataset for performance analysis on hyperparameter optimisation, could have a switch to make it use the val/test data?
+### ~~~~~ USe seeding value to controll data spareness and noise addition so that thay can be set to fixed
 
-### ~~~~~ Record the time taken per epoch, and then alongside the loss vs epoch plot (which dosent show time, so 1 epoch that takes 2 hrs is same as one that takes 1 min) plot loss vs time as a seperate plot
+### ~~~~~ [DONE!] Create new unseen dataset for performance analysis on hyperparameter optimisation, could have a switch to make it use the val/test data?
+
+### ~~~~~ [DONE!] Record the time taken per epoch, and then alongside the loss vs epoch plot (which dosent show time, so 1 epoch that takes 2 hrs is same as one that takes 1 min) plot loss vs time as a seperate plot
 
 ### ~~~~~ [DONE!] Add user controll to overide double precision processing
 
@@ -71,7 +73,7 @@ Possible improvements:
 
 ### ~~~~~ Add arg to plot or save function that passes a test string to print for the plot generating user notice ratehr than the generic one used each time atm 
 
-### ~~~~~ change telemetry variable name to output_pixel_telemetry
+### ~~~~~ [DONE!] change telemetry variable name to output_pixel_telemetry
 
 ### ~~~~~ [DONE!] Fix this " if plot_higher_dim: AE_visulisation(en...)" break out all seperate plotting functions
     
@@ -101,7 +103,7 @@ Possible improvements:
 
 ### ~~~~~ [DONE!] Add way for program to save the raw data for 3d plots so that they can be replotted after training and reviewed in rotatable 3d 
 
-### ~~~~~ Check if running model in dp (fp64) is causing large slow down???
+### ~~~~~ [DONE!] Check if running model in dp (fp64) is causing large slow down???
 
 ### ~~~~~ Allow seperate loss fucntion for testing/validation phase?
 
@@ -119,7 +121,7 @@ Possible improvements:
 
 ### ~~~~~ [DONE!] add masking directly to the trainer so we can see masked output too 
 
-### ~~~~~ [DONE!] Label loss plots y axis programatically based on user loss function selection
+### ~~~~~  Label loss plots y axis programatically based on user loss function selection
 """
 
 # NOTE to users: Known good parameters so far (changing these either way damages performance): learning_rate = 0.0001, Batch Size = 10, Latent Dim = 10, Reconstruction Threshold = 0.5, loss_function_selection = 0, loss weighting = 0.9 - 1
@@ -127,7 +129,7 @@ Possible improvements:
 
 #%% - User Inputs
 dataset_title = "RDT 10K MOVE" #'RDT 500K 1000ToF' #"RDT 10K MOVE" #"RDT 50KM"# "Dataset 37_X15K Perfect track recovery" #"Dataset 24_X10Ks"           #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
-model_save_name = 'X'#"T2"#"RDT 500K 1000ToF timed"#"2023 Testing - RDT100K n100"#"2023 Testing - RDT10K NEW" #"RDT 100K 30s 200n Fixed"#"RDT 50KM tdim1000 AE2PROTECT 30 sig 200NP LD10"     #"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
+model_save_name = 'O'#"T2"#"RDT 500K 1000ToF timed"#"2023 Testing - RDT100K n100"#"2023 Testing - RDT10K NEW" #"RDT 100K 30s 200n Fixed"#"RDT 50KM tdim1000 AE2PROTECT 30 sig 200NP LD10"     #"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
 
 xdim = 88   # Currently useless
 ydim = 128  # Currently useless
@@ -139,7 +141,8 @@ batch_size = 10                              # User controll to set batch size -
 learning_rate = 0.0001                       # User controll to set optimiser learning rate (Hyperparameter)
 optim_w_decay = 1e-05                        # User controll to set optimiser weight decay for regularisation (Hyperparameter)
 
-latent_dim = 10                              # User controll to set number of nodes in the latent space, the bottleneck layer (Hyperparameter)
+latent_dim = 50     #NOTE: Tested!                         # User controll to set number of nodes in the latent space, the bottleneck layer (Hyperparameter)
+fc_input_dim = 128                         # User controll to set number of nodes in the fc2 layer (Hyperparameter)
 dropout_prob = 0.2                           # [NOTE Not connected yet] User controll to set dropout probability (Hyperparameter)
 reconstruction_threshold = 0.5               # MUST BE BETWEEN 0-1  #Threshold for 3d reconstruction, values below this confidence level are discounted
 
@@ -150,11 +153,13 @@ val_test_split_ratio = 0.9                   # This needs to be better explained
 
 #%% - Loss Function Settings
 loss_vs_sparse_img = False    #NOTE: Tested!                # User controll to set if the loss is calculated against the sparse image or the full image (Hyperparameter)
-loss_function_selection = 0                  # Select loss function (Hyperparameter): 0 = ada_weighted_mse_loss, 1 = torch.nn.MSELoss(), 2 = torch.nn.BCELoss(), 3 = torch.nn.L1Loss(), 4 = ada_SSE_loss, 5 = ada_weighted_custom_split_loss, 6 = weighted_perfect_reconstruction_loss
+loss_function_selection = 0                  # Select loss function (Hyperparameter): 0 = ACBMSE, 1 = torch.nn.MSELoss(), 2 = torch.nn.BCELoss(), 3 = torch.nn.L1Loss(), 4 = ada_SSE_loss, 5 = ada_weighted_custom_split_loss, 6 = weighted_perfect_reconstruction_loss
 
-# Below weights only used if loss func set to 0 or 6 aka ada_weighted_mse_loss
-zero_weighting = 0.99                        # User controll to set zero weighting for ada_weighted_mse_loss (Hyperparameter)
-nonzero_weighting = 1                        # User controll to set non zero weighting for ada_weighted_mse_loss (Hyperparameter)
+# Below weights only used if loss func set to 0, 1 or 6 aka ACBMSE or split loss varients
+zero_weighting = 0.99                        # User controll to set zero weighting for ACBMSE (Hyperparameter)
+nonzero_weighting = 1                        # User controll to set non zero weighting for ACBMSE (Hyperparameter)
+# Only used for ffACBMSE along with above two settings
+fullframe_weighting = 1                      # User controll to set full frame weighting for ffACBMSE (Hyperparameter)
 
 # Below only used if loss func set to 6 aka ada_weighted_custom_split_loss
 zeros_loss_choice = 1                        # Select loss function for zero values (Hyperparameter): 0 = Maxs_Loss_Func, 1 = torch.nn.MSELoss(), 2 = torch.nn.BCELoss(), 3 = torch.nn.L1Loss(), 4 = ada_SSE_loss
@@ -183,11 +188,11 @@ num_to_plot = 10
 save_all_raw_plot_data = True               # [default = False] If set to true then all raw data for plots is saved to disk for replotting and analysis later
 
 #%% - New beta feature settings 
-double_precision = False #NOTE: Tested!                  # [default = False] If set to true then the model will use double precision floating point numbers for all calculations, otherwise will use single precision
-shuffle_train_data = True #NOTE: Tested!                   # If set to true then the model will shuffle the training data each epoch, otherwise will not shuffle
+double_precision = False #NOTE: Tested!     # [default = False] If set to true then the model will use double precision floating point numbers for all calculations, otherwise will use single precision
+shuffle_train_data = True #NOTE: Tested!    # If set to true then the model will shuffle the training data each epoch, otherwise will not shuffle
 
 timeout_training = False                    # If set to true then the model will stop training after the timeout time has been reached
-timeout_time = 720                         # Time in minuits to wait before stopping training if timeout_training is set to true`
+timeout_time = 720                          # Time in minuits to wait before stopping training if timeout_training is set to true`
 
 record_weights = False                      # If set to true then the model will record the weights of the network at the end of each epoch
 record_biases = False                       # If set to true then the model will record the biases of the network at the end of each epoch
@@ -196,12 +201,13 @@ compress_activations_npz_output = False     # Compresses the activity file above
 
 #%% - Advanced Visulisation Settings
 plot_train_loss = True                      # [default = True]       
+plot_test_loss = True                       # [default = True]
 plot_validation_loss = True                 # [default = True]               
 plot_time_loss = True                       # [default = True]
 plot_detailed_performance_loss = True       # Plots ssim nmi etc for each epoch 
 
-plot_live_time_loss = True                 # [default = True] Generate plot of live training loss vs time during trainig which is overwritten each epoch, this is useful for seeing how the training is progressing
-plot_live_training_loss = True             # [default = True] Generate plot of live training loss vs epoch during trainig which is overwritten each epoch, this is useful for seeing how the training is progressing
+plot_live_time_loss = True                  # [default = True] Generate plot of live training loss vs time during trainig which is overwritten each epoch, this is useful for seeing how the training is progressing
+plot_live_training_loss = True              # [default = True] Generate plot of live training loss vs epoch during trainig which is overwritten each epoch, this is useful for seeing how the training is progressing
 comparative_live_loss = True                # [default = True] Adds comparative lines to the live plots, the models for comparison are selected below
 slide_live_plot_size = 0                    # [default = 0] Number of epochs to show on the live plot (if set to 0 then will show all epochs)
 
@@ -215,7 +221,7 @@ plot_pixel_threshold_telemetry = True     # [default = False] # Update name to p
 plot_pixel_difference = False #BROKEN     # [default = True]          
 plot_latent_generations = True            # [default = True]              
 plot_higher_dim = False                   # [default = True]  
-plot_Graphwiz = True                     # [default = True]       
+plot_Graphwiz = True                      # [default = True]       
 
 #%% - Advanced Debugging Settings
 print_encoder_debug = False                     # [default = False]  
@@ -225,23 +231,23 @@ print_partial_training_losses = False           # [Default = True] Prints the tr
 
 debug_noise_function = False                    # [default = False]  
 debug_loader_batch = False                      # SAFELY REMOVE THIS PARAM!!!  #(Default = False) //INPUT 0 or 1//   #Setting debug loader batch will print to user the images taken in by the dataoader in this current batch and print the corresponding labels
-debug_model_exporter  = False                 # [default = False]
+debug_model_exporter  = False                   # [default = False]
 
 full_dataset_integrity_check = False            # [Default = False] V slow  #Checks the integrity of the dataset by checking shape of each item as opposed to when set to false which only checks one single random file in the dataset
 full_dataset_distribution_check = False         # [Default = False] V slow  #Checks the distribution of the dataset , false maesn no distributionn check is done
 
-seed = 0                                        # [Default = 0] 0 gives no seeeding to RNG, if the value is not zero then this is used for the RNG seeding for numpy, random, and torch libraries
+seeding_value = 10 #None                            # [Default = None] None gives no seeeding to RNG, if the value is set this is used for the RNG seeding for numpy, and torch libraries
 
 #%% Hyperparameter Optimisation Settings  #######IMPLEMENT!!!
 optimise_hyperparameter = True              # User controll to set if hyperparameter optimisation is used
-hyperparam_to_optimise = 'latent_dim'      # User controll to set which hyperparameter to optimise  - options are: 'batch_size', 'learning_rate', 'optim_w_decay', 'dropout_prob', 'loss_function_selection', 'conv_layers', 'conv_filter_multiplier', 'latent_dim'
-set_optimisiation_list_manually = [10, 19, 20, 21, 22]   # (NOTE: Overrides the above) If set false then the above is used to set the list. Otheriwse if wanting to deinfe the list manually then set this param = to your list i.e [[12, 120], [12, 240], [12, 480]]
+hyperparam_to_optimise = 'fc_input_dim'      # User controll to set which hyperparameter to optimise  - options are: 'batch_size', 'learning_rate', 'optim_w_decay', 'dropout_prob', 'loss_function_selection', 'conv_layers', 'conv_filter_multiplier', 'latent_dim'
+set_optimisiation_list_manually = [128, 256, 512, 1024]   # (NOTE: Overrides the above) If set false then the above is used to set the list. Otheriwse if wanting to deinfe the list manually then set this param = to your list i.e [[12, 120], [12, 240], [12, 480]]
 
 # Simple Performance Measure
 print_validation_results = True            # User controll to set if the validation results are printed to terminal 
 plot_training_time = True                   # User controll to set if the training time is plotted 
 
-# Full Performance Analysis                       - PErformed in addition to and seperatly from the validation stage for automatic data analysis
+# Full Performance Analysis - Performed in addition to and seperatly from the validation stage for automatic data analysis
 perf_analysis_num_files = 10000   # number of files to test
 perf_analysis_plot = 100       # The number of results to print imshow plots for for each model tested, set to False for none
 perf_analysis_dataset_dir = (r"N:\\Yr 3 Project Datasets\\PERF VALIDATION SETS\\40K 100N 30S\\")   # directory of dataset to test - (Best to use totally unseen data files that are not contianed within the train, test or validation sets)
@@ -251,9 +257,7 @@ debug_hpo_perf_analysis = False
 if print_every_other > num_epochs:   #protection from audio data not being there to save if plot not genrated - Can fix by moving audio genration out of the plotting function entirely and only perform it once at the end wher eit is actually saved.
     print_every_other = num_epochs
 
-### IMPLEMENT !!!!!!!!!!!!!!!!!
 history_da = {'train_loss':[], 'test_loss':[], 'val_loss':[], 'HTO_val':[], 'training_time':[]} # needs better placement???
-
 max_epoch_reached = 0 # in case user exits before end of first epoch 
 
 # Create a dictionary to store the activations
@@ -272,7 +276,6 @@ import os
 import time     # Used to time the training loop
 import torch
 import pickle
-import random  
 import datetime 
 import torchvision 
 import numpy as np  
@@ -295,6 +298,21 @@ from Helper_files.Dataset_distribution_tester_V1 import dataset_distribution_tes
 from Helper_files.AE_Visulisations import Generative_Latent_information_Visulisation, Reduced_Dimension_Data_Representations, Graphviz_visulisation, AE_visual_difference # Functions to visulise the autoencoders training progression
 from Helper_files.ExcelExtractor import extract_data_to_excel # This is a custom function to extract data from excel files
 from Helper_files.model_perf_analysis2 import run_full_perf_tests
+from Helper_files.Export_User_Settings import create_settings_dict
+
+
+#%% - Create full settings dictionary !!! NEEDS CLEANUP
+
+"""
+if optimise_hyperparameter:
+    settings_path = results_output_path_1 + model_save_name + "_" + hyperparam_to_optimise + f" Optimisation\\"
+else:
+    settings_path = results_output_path + model_save_name + " - Training Results/"
+#create settings path if not exists
+os.makedirs(settings_path, exist_ok=True)
+full_settings_dictionary = create_settings_dict(settings_path + "full_settings_dictionary")
+
+"""
 
 #%% - Comparative Live Loss Plotting
 if comparative_live_loss:
@@ -398,52 +416,103 @@ def ada_weighted_custom_split_loss(reconstructed_image, target_image, zero_weigh
     
     return weighted_mse_loss
 
-# Custom weighted signal/noise MSE loss function
-def ada_weighted_mse_loss(reconstructed_image, target_image, zero_weighting=zero_weighting, nonzero_weighting=nonzero_weighting):
-    """
-    Calculates the weighted mean squared error (MSE) loss between target_image and reconstructed_image.
-    The loss for zero pixels in the target_image is weighted by zero_weighting, and the loss for non-zero
-    pixels is weighted by nonzero_weighting.
+class ACBLoss(torch.nn.Module):
+    def __init__(self, zero_weighting=1, nonzero_weighting=1):
+        """
+        Initializes the ACB-MSE Loss Function class with weighting coefficients.
 
-    Args:
-    - target_image: a tensor of shape (B, C, H, W) containing the target image
-    - reconstructed_image: a tensor of shape (B, C, H, W) containing the reconstructed image
-    - zero_weighting: a scalar weighting coefficient for the MSE loss of zero pixels
-    - nonzero_weighting: a scalar weighting coefficient for the MSE loss of non-zero pixels
+        Args:
+        - zero_weighting: a scalar weighting coefficient for the MSE loss of zero pixels
+        - nonzero_weighting: a scalar weighting coefficient for the MSE loss of non-zero pixels
+        """
+        super().__init__()   
+        self.zero_weighting = zero_weighting
+        self.nonzero_weighting = nonzero_weighting
+        self.mse_loss = torch.nn.MSELoss(reduction='mean')
 
-    Returns:
-    - weighted_mse_loss: a scalar tensor containing the weighted MSE loss
-    """
-    
-    # Get the indices of 0 and non 0 values in target_image as a mask for speed
-    zero_mask = (target_image == 0)
-    nonzero_mask = ~zero_mask         # Invert mask
-    
-    # Get the values in target_image
-    values_zero = target_image[zero_mask]
-    values_nonzero = target_image[nonzero_mask]
-    
-    # Get the corresponding values in reconstructed_image
-    corresponding_values_zero = reconstructed_image[zero_mask]
-    corresponding_values_nonzero = reconstructed_image[nonzero_mask]
-    
-    # Create an instance of MSELoss class
-    mse_loss = torch.nn.MSELoss(reduction='mean')
-    
-    # Compute the MSE losses
-    zero_loss = mse_loss(corresponding_values_zero, values_zero)
-    nonzero_loss = mse_loss(corresponding_values_nonzero, values_nonzero)
+    def forward(self, reconstructed_image, target_image):
+        """
+        Calculates the weighted mean squared error (MSE) loss between target_image and reconstructed_image.
+        The loss for zero pixels in the target_image is weighted by zero_weighting, and the loss for non-zero
+        pixels is weighted by nonzero_weighting.
 
-    # Protection from there being no 0 vals or no non zero vals, which then retunrs nan for MSE and creates a nan overall MSE return (which is error)
-    if torch.isnan(zero_loss):
-        zero_loss = 0
-    if torch.isnan(nonzero_loss):
-        nonzero_loss = 0
-    
-    # Sum losses with weighting coefficiants 
-    weighted_mse_loss = (zero_weighting * zero_loss) + (nonzero_weighting * nonzero_loss) 
-    
-    return weighted_mse_loss
+        Args:
+        - target_image: a tensor of shape (B, C, H, W) containing the target image
+        - reconstructed_image: a tensor of shape (B, C, H, W) containing the reconstructed image
+
+        Returns:
+        - weighted_mse_loss: a scalar tensor containing the weighted MSE loss
+        """
+        zero_mask = (target_image == 0)
+        nonzero_mask = ~zero_mask
+
+        values_zero = target_image[zero_mask]
+        values_nonzero = target_image[nonzero_mask]
+
+        corresponding_values_zero = reconstructed_image[zero_mask]
+        corresponding_values_nonzero = reconstructed_image[nonzero_mask]
+
+        zero_loss = self.mse_loss(corresponding_values_zero, values_zero)
+        nonzero_loss = self.mse_loss(corresponding_values_nonzero, values_nonzero)
+
+        if torch.isnan(zero_loss):
+            zero_loss = 0
+        if torch.isnan(nonzero_loss):
+            nonzero_loss = 0
+
+        weighted_mse_loss = (self.zero_weighting * zero_loss) + (self.nonzero_weighting * nonzero_loss)
+
+        return weighted_mse_loss
+
+class ffACBLoss(torch.nn.Module):
+    def __init__(self, zero_weighting=1, nonzero_weighting=1, fullframe_weighting=1):
+        """
+        Initializes the ACB-MSE Loss Function class with weighting coefficients.
+
+        Args:
+        - zero_weighting: a scalar weighting coefficient for the MSE loss of zero pixels
+        - nonzero_weighting: a scalar weighting coefficient for the MSE loss of non-zero pixels
+        """
+        super().__init__()   
+        self.zero_weighting = zero_weighting
+        self.nonzero_weighting = nonzero_weighting
+        self.fullframe_weighting = fullframe_weighting
+        self.mse_loss = torch.nn.MSELoss(reduction='mean')
+
+    def forward(self, reconstructed_image, target_image):
+        """
+        Calculates the weighted mean squared error (MSE) loss between target_image and reconstructed_image.
+        The loss for zero pixels in the target_image is weighted by zero_weighting, and the loss for non-zero
+        pixels is weighted by nonzero_weighting.
+
+        Args:
+        - target_image: a tensor of shape (B, C, H, W) containing the target image
+        - reconstructed_image: a tensor of shape (B, C, H, W) containing the reconstructed image
+
+        Returns:
+        - weighted_mse_loss: a scalar tensor containing the weighted MSE loss
+        """
+        zero_mask = (target_image == 0)
+        nonzero_mask = ~zero_mask
+
+        values_zero = target_image[zero_mask]
+        values_nonzero = target_image[nonzero_mask]
+
+        corresponding_values_zero = reconstructed_image[zero_mask]
+        corresponding_values_nonzero = reconstructed_image[nonzero_mask]
+
+        zero_loss = self.mse_loss(corresponding_values_zero, values_zero)
+        nonzero_loss = self.mse_loss(corresponding_values_nonzero, values_nonzero)
+        full_frame_loss = self.mse_loss(reconstructed_image, target_image)
+
+        if torch.isnan(zero_loss):
+            zero_loss = 0
+        if torch.isnan(nonzero_loss):
+            nonzero_loss = 0
+
+        weighted_mse_loss = (self.zero_weighting * zero_loss) + (self.nonzero_weighting * nonzero_loss) + (self.fullframe_weighting * full_frame_loss)
+
+        return fweighted_mse_loss
 
 #  Adaptive Sum of Squared Errors loss function
 def ada_SSE_loss(target, input):
@@ -553,18 +622,17 @@ def plot_telemetry(telemetry, true_num_of_signal_points, plot_or_save=0):
 # Helper fucntion that sets RNG Seeding for determinism in debugging
 def Determinism_Seeding(seed):
     torch.manual_seed(seed)
-    random.seed(seed)
     np.random.seed(seed)
 
 # Helper function to allow values to be input as a range from which random values are chosen each time unless the input is a single value in which case it is used as the constant value
 def input_range_to_random_value(input_range):
     # check if input is a single value (int or float) or a range (list or tuple)
     if isinstance(input_range, (int, float)):
-        return input_range  
+        return input_range
     elif isinstance(input_range, (list, tuple)):
-        return random.randint(input_range[0], input_range[1])
+        return torch.randint(input_range[0], input_range[1] + 1, (1,)).item()  # Generate a random integer
     else:
-        print("Error: input_range_to_random_value() input is not an value or pair of values")
+        print("Error: input_range_to_random_value() input is not a value or pair of values")
         return None
 
 # Function to add n noise points to an image 
@@ -576,14 +644,14 @@ def add_noise_points(image, noise_points=100, reconstruction_threshold=0.5):
         y_dim = image.shape[1]
 
         #Create a list of random x and y coordinates
-        x_coords = np.random.randint(0, x_dim, noise_points)
-        y_coords = np.random.randint(0, y_dim, noise_points)
+        x_coords = np.random.randint(0, x_dim, noise_points)   ##### NOTE: Change to using a torch random function instead of a numpy one
+        y_coords = np.random.randint(0, y_dim, noise_points)  ##### NOTE: Change to using a torch random function instead of a numpy one
 
         # Iterate through noise_points number of random pixels to noise
         for i in range(noise_points):
 
             # Add a random number between recon_threshold and 1 to the pixel 
-            image[x_coords[i], y_coords[i]] = np.random.uniform(reconstruction_threshold, 1)
+            image[x_coords[i], y_coords[i]] = np.random.uniform(reconstruction_threshold, 1)   ##### NOTE: Change to using a torch random function instead of a numpy one
 
     return image
 
@@ -626,14 +694,14 @@ def add_noise_points_to_batch_prenorm(input_image_batch, noise_points=100, time_
             # Create a list of unique random x and y coordinates
             num_pixels = x_dim * y_dim
             all_coords = np.arange(num_pixels)
-            selected_coords = np.random.choice(all_coords, noise_points, replace=False)
+            selected_coords = np.random.choice(all_coords, noise_points, replace=False)  ##### NOTE: Change to using a torch random function instead of a numpy one
             x_coords, y_coords = np.unravel_index(selected_coords, (x_dim, y_dim))
             
             # Iterate through noise_points number of random pixels to noise
             for i in range(noise_points):
 
                 # Add a random number between recon_threshold and 1 to the pixel 
-                image[0][x_coords[i], y_coords[i]] = np.random.uniform(0, time_dimension)
+                image[0][x_coords[i], y_coords[i]] = np.random.uniform(0, time_dimension)   ##### NOTE: Change to using a torch random function instead of a numpy one
 
     return image_batch
 
@@ -859,7 +927,6 @@ def loss_plot(x, y, x_label, y_label, title, save_path, plot_or_save):
     plt.grid(alpha=0.2)
     plot_save_choice(plot_or_save, save_path) 
 
-
 #%% NEW!! IMAGE METRICS - NEEDS CLEANING UP!!!
 
 #Signal to Noise Ratio (SNR)
@@ -1069,8 +1136,6 @@ def compare_images_pixels(clean_img, denoised_img, terminal_print=False):   ###!
     
     return percentage_of_true_positive_xy, percentage_of_true_positive_tof, numof_false_positives_xy
 
-
-
 #Combine all performance metrics into simple test script
 def quantify_loss_performance(clean_input_batch, noised_target_batch, time_dimension):
     loss_mse = []
@@ -1110,7 +1175,6 @@ def quantify_loss_performance(clean_input_batch, noised_target_batch, time_dimen
     avg_loss_true_positive_xy.append(np.mean(loss_true_positive_xy))
     avg_loss_true_positive_tof.append(np.mean(loss_true_positive_tof))
     avg_loss_false_positive_xy.append(np.mean(loss_false_positive_xy))
-
 
 #%% - Train, Test, Val and Plot Functions
 ### Training Function
@@ -1299,6 +1363,8 @@ def validation_routine(encoder, decoder, device, dataloader, loss_fn, signal_poi
 
             #Run additional perfomrnace metric loss functions for final plots, this needs cleaning up!!!!!
             #quantify_loss_performance(loss_comparator, decoded_data, time_dimension)
+    
+    return loss_total/batches
 
 ### Plotting function
 def plot_epoch_data(encoder, decoder, epoch, model_save_name, time_dimension, reconstruction_threshold, signal_points, noise_points=0, x_std_dev=0, y_std_dev=0, tof_std_dev=0, n=10):       #Defines a function for plotting the output of the autoencoder. And also the input + clean training data? Function takes inputs, 'encoder' and 'decoder' which are expected to be classes (defining the encode and decode nets), 'n' which is the number of ?????Images in the batch????, and 'noise_factor' which is a multiplier for the magnitude of the added noise allowing it to be scaled in intensity.  
@@ -1562,16 +1628,16 @@ class WeightedPerfectRecoveryLoss(torch.nn.Module):
 
 
 
-#%% - Parameters Initialisation
+#%% - Initialises seeding values to RNGs
+if seeding_value:
+    Determinism_Seeding(seeding_value)             # Set the seed for the RNGs
+    print("Seeding with value:", seeding_value)
+else:
+    torch.seed()                                    # Set the seed for the RNGs
+    np.random.seed()
 
-# Initialises pixel belief telemetry
-telemetry = [[0,0.5,0.5]]                # Initalises the telemetry memory, starting values are 0, 0.5, 0.5 which corrspond to epoch(0), above_threshold(0.5), below_threshold(0.5)
-
-# Initialises seeding values to RNGs
-if seed != 0:                             # If seed is not set to 0
-    Determinism_Seeding(seed)             # Set the seed for the RNGs
-
-
+T_seed = torch.initial_seed()
+N_seed = np.random.get_state()[1][0]
 
 
 #%% - Program begins
@@ -1601,7 +1667,6 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
     #%% - # Input / Output Path Initialisation
     if optimise_hyperparameter:
         results_output_path = results_output_path_1 + model_save_name + "_" + hyperparam_to_optimise + f" Optimisation\\{HTO_val}\\"
-
 
     # Create output directory if it doesn't exist
     dir = results_output_path + model_save_name + " - Training Results/"
@@ -1641,9 +1706,12 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
     epoch_avg_loss_true_positive_tof = []
     epoch_avg_loss_false_positive_xy = []
 
+    # Initialises pixel belief telemetry
+    telemetry = [[0,0.5,0.5]]                # Initalises the telemetry memory, starting values are 0, 0.5, 0.5 which corrspond to epoch(0), above_threshold(0.5), below_threshold(0.5)
+
     #%% - Set loss function choice
-    availible_loss_functions = [ada_weighted_mse_loss, torch.nn.MSELoss(), torch.nn.BCELoss(), torch.nn.L1Loss(), ada_SSE_loss, ada_weighted_custom_split_loss, WeightedPerfectRecoveryLoss()]    # List of all availible loss functions
-    loss_function_labels = ["ACB_MSE", "MSE", "BCE", "MAE", "SSE", "Split Loss", "Weighted Perfect Recovery"] # List of all availible loss function labels
+    availible_loss_functions = [ACBLoss(zero_weighting, nonzero_weighting), ffACBLoss(zero_weighting, nonzero_weighting, fullframe_weighting), torch.nn.MSELoss(), torch.nn.BCELoss(), torch.nn.L1Loss(), ada_SSE_loss, ada_weighted_custom_split_loss, WeightedPerfectRecoveryLoss()]    # List of all availible loss functions
+    loss_function_labels = ["ACB_MSE", "ffACB_MSE", "MSE", "BCE", "MAE", "SSE", "Split Loss", "Weighted Perfect Recovery"] # List of all availible loss function labels
     loss_fn = availible_loss_functions[loss_function_selection]            # Sets loss function based on user input of parameter loss_function_selection
     loss_fn_label = loss_function_labels[loss_function_selection]          # Sets loss function label based on user input of parameter loss_function_selection
 
@@ -1665,7 +1733,7 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
     settings["Val/Test Split"] = val_test_split_ratio   # Adds the val/test split to the settings dictionary
     settings["Dataset"] = dataset_title # Adds the dataset title to the settings dictionary
     settings["Time Dimension"] = time_dimension # Adds the time dimension to the settings dictionary
-    settings["Seed Val"] = seed # Adds the seed value to the settings dictionary
+    settings["Seed Val"] = seeding_value # Adds the seed value to the settings dictionary
     settings["Reconstruction Threshold"] = reconstruction_threshold # Adds the reconstruction threshold to the settings dictionary
     settings["Double Precision"] = double_precision
     settings["shuffle_train_data"] = shuffle_train_data
@@ -1725,6 +1793,7 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
 
     #%% - Data Preparation
 
+    #### NOTE: Would be good to remove the partial library 
     tensor_transform = partial(np_to_tensor, double_precision=double_precision) #using functools partial to bundle the args into np_to_tensor to use in custom torch transform using lambda function
 
     ### Transormations
@@ -1768,8 +1837,8 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
 
     #%% - Setup model, loss criteria and optimiser    
     ### Initialize the encoder and decoder
-    encoder = Encoder(latent_dim, print_encoder_debug)
-    decoder = Decoder(latent_dim, print_decoder_debug)
+    encoder = Encoder(latent_dim, print_encoder_debug, fc_input_dim)
+    decoder = Decoder(latent_dim, print_decoder_debug, fc_input_dim)
 
     # Sets the encoder and decoder to double precision floating point arithmetic (fp64)
     if double_precision:
@@ -2031,18 +2100,17 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
                     for loss_dictionary in comparative_history_da:
                         if epoch > len(loss_dictionary['train_loss']):
                             loss_dictionary['train_loss'].append(np.nan) # protection from surpassing the comaprison data during training. 
-                        y_list.append(loss_dictionary['train_loss'][0:max_epoch_reached])
+                        y_list.append(loss_dictionary['train_loss'])
 
                     for epoch_t_list in comparative_epoch_times:
+                        epoch_t_list = epoch_t_list[1:]   # NOTE: FIX FOR EPOCH LISTS BEING SAVeD INCLUDING 0 time which breaks the plot by having one more value than the hsitory da train loss. INVESTIGATE THIS ERROR ROOT CAUSE
                         if epoch > len(epoch_t_list):
                             epoch_t_list.append(np.nan) # protection from surpassing the comaprison data during training.
-                        x_list.append(epoch_t_list[0:max_epoch_reached])
+                        x_list.append(epoch_t_list)
 
                 comparitive_loss_plot(x_list, y_list, legend_label_list, "Time (s)", "Train loss (ACB-MSE)", "Live Time loss", Out_Label, plot_or_save)
 
-
-
-            #####TESTING NEW TIMEOUT FUNCTIONALITY  
+            ### Training Timeout Check
             if timeout_training:
                 if time.time() - start_time > timeout_time * 60:  #convert timeout time from minuits to seconds
                     print("Training timed out, exiting training loop")
@@ -2065,49 +2133,41 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
 
     # Build Dictionary to collect all output data for .txt file
     full_data_output = {}
-    full_data_output["Train Loss"] = round(history_da['train_loss'][-1], 3)
-    full_data_output["Test Loss"] = round(history_da['test_loss'][-1], 3)   #Val loss calulaton is broken? check it above
+    full_data_output["Train Loss"] = 3#round(history_da['train_loss'][-1], 3)
+    full_data_output["Test Loss"] = 3#round(history_da['test_loss'][-1], 3)   #Val loss calulaton is broken? check it above
 
     encoder.eval()
     decoder.eval()
 
-    #%% NOTE FIX ME!!! 
-    #!!! NOTE HERE BEFORE THE VISULISATIONS WE SHOULD RUN THE RENORAMLISATION TO RETURN THE CORRECT VALUES FOR VISUALS:
-
-    #THEN RECONSTRUCTION CAN HAPPEN LATER???
-
     #%% - Output Visulisations
     ###Loss function plots
     epochs_range = range(1,max_epoch_reached+1) 
-    if save_all_raw_plot_data:
+    if save_all_raw_plot_data:     ##FIND bETTER PLACE FOR THIS
         save_variable(np.array(epochs_range), "epochs_range", raw_plotdata_output_dir)  #!!!!!! testing raw plot outputter!!!!
 
-    if plot_train_loss:
-        plt.plot(epochs_range, history_da['train_loss']) 
-        plt.title("Training loss")   
-        plt.xlabel("Epoch number")
-        plt.ylabel(f"Train loss ({loss_fn_label})")
-        plt.grid(alpha=0.2)
-        Out_Label =  graphics_dir + f'{model_save_name} - Train loss - Epoch {epoch}.png'
-        plot_save_choice(plot_or_save, Out_Label)  
+        detailed_performance_loss_dict={}
+        detailed_performance_loss_dict["epoch_avg_loss_mse"] = epoch_avg_loss_mse
+        detailed_performance_loss_dict["epoch_avg_loss_snr"] = epoch_avg_loss_snr
+        detailed_performance_loss_dict["epoch_avg_loss_psnr"] = epoch_avg_loss_psnr
+        detailed_performance_loss_dict["epoch_avg_loss_ssim"] = epoch_avg_loss_ssim
+        detailed_performance_loss_dict["epoch_avg_loss_nmi"] = epoch_avg_loss_nmi
+        detailed_performance_loss_dict["epoch_avg_loss_cc"] = epoch_avg_loss_cc
+        detailed_performance_loss_dict["epoch_avg_loss_true_positive_xy"] = epoch_avg_loss_true_positive_xy
+        detailed_performance_loss_dict["epoch_avg_loss_true_positive_tof"] = epoch_avg_loss_true_positive_tof
+        detailed_performance_loss_dict["epoch_avg_loss_false_positive_xy"] = epoch_avg_loss_false_positive_xy
+        save_variable(detailed_performance_loss_dict, "detailed_performance_loss_dict", raw_plotdata_output_dir)
 
-    if plot_validation_loss:
-        plt.plot(epochs_range, history_da['test_loss'])   #ERROR SHOULD BE VAL LOSS!
-        plt.title("Test loss") 
-        plt.xlabel("Epoch number")
-        plt.ylabel(f"Test loss ({loss_fn_label})")
-        plt.grid(alpha=0.2)
+    if plot_train_loss:
+        Out_Label =  graphics_dir + f'{model_save_name} - Train loss - Epoch {epoch}.png'
+        loss_plot(epochs_range, history_da['train_loss'], "Epoch number", f"Train loss ({loss_fn_label})", "Training loss", Out_Label, plot_or_save)
+
+    if plot_test_loss:
         Out_Label =  graphics_dir + f'{model_save_name} - Val loss - Epoch {epoch}.png'
-        plot_save_choice(plot_or_save, Out_Label)    
+        loss_plot(epochs_range, history_da['test_loss'], "Epoch number", f"Test loss ({loss_fn_label})", "Test loss", Out_Label, plot_or_save)
 
     if plot_time_loss:
-        plt.plot(epoch_times_list, history_da['train_loss']) 
-        plt.title("Training loss")   
-        plt.xlabel("Training Time (s)")
-        plt.ylabel(f"Train loss ({loss_fn_label})")
-        plt.grid(alpha=0.2)
-        Out_Label =  graphics_dir + f'{model_save_name} - Train loss v Time - Epoch {epoch}.png'
-        plot_save_choice(plot_or_save, Out_Label)      
+        Out_Label = graphics_dir + f'{model_save_name} - Train loss v Time - Epoch {epoch}.png'
+        loss_plot(epoch_times_list, history_da['train_loss'], "Training Time (s)", f"Train loss ({loss_fn_label})", "Training Time v Loss", Out_Label, plot_or_save)
 
     if plot_detailed_performance_loss: 
 
@@ -2255,6 +2315,9 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
     # Save the latent dimesion value for automatic setting when deploying the models
     save_variable(latent_dim, "deployment_variables_ld", model_output_dir)
 
+    # save the fc_input_dim value for automatic setting when deploying the models
+    save_variable(fc_input_dim, "deployment_variables_fc_input_dim", model_output_dir)
+
     # Save the processing precision value for automatic setting when deploying the models
     save_variable(str(double_precision), "deployment_variables_double_precision", model_output_dir)
 
@@ -2284,6 +2347,13 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
         output_file.write(f"Date data taken: {TD_now.strftime('%Y-%m-%d %H:%M:%S')}\n")     # Write the current local date and time to the file
 
         output_file.write(("Model ID: " + model_save_name + f"\nTrained on device: {device}\n"))   # Write the model ID and device used to train the model to the file
+        output_file.write((f"Torch Seed Val to Reproduce: {T_seed}\n")) 
+        output_file.write((f"Numpy Seed Val to Reproduce: {N_seed}\n")) 
+        if seeding_value:
+            output_file.write((f"User Set Seeding: True\n"))
+        else:
+            output_file.write((f"User Set Seeding: False\n"))
+    
         output_file.write((f"\nMax Epoch Reached: {max_epoch_reached}\n"))  # Write the max epoch reached during training to the file
         output_file.write((f"Training Time: {training_time:.2f} seconds\n")) # Write the training time to the file
         
@@ -2349,10 +2419,12 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
         history_da['training_time'].append(training_time)
 
         if print_validation_results:
-            print("\n# VALIDATION RESULTS")
+            print("\n# VALIDATION RESULTS #")
             print(f"{hyperparam_to_optimise} value: ", HTO_val)
+            print("Train loss: ", train_loss)
+            print("Test loss: ", test_loss)
             print("Val loss: ", val_loss)
-            print("Training time: ", training_time)
+            print(f"Total Training time: {training_time} s", )
 
         print("- Completed -\n \n \n \n") 
 
