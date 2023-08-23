@@ -31,6 +31,8 @@ Possible improvements:
 
 ### ~~~~~ clean up the perforance loss plotting metircs calulation section, move to external script?
 
+### ~~~~~ [DONE!] Ground plots and std devs in physical units
+
 ### ~~~~~ Clean up the performance loss plottsing code, it is too long and unwieldy, move it to an external file and load as a function
 
 ### ~~~~~~ [DONE!] Allow normalisation/renorm to be bypassed, to check how it affects results 
@@ -130,21 +132,30 @@ Possible improvements:
 
 #%% - User Inputs
 dataset_title = "RDT 10K MOVE" #'RDT 500K 1000ToF' #"RDT 10K MOVE" #"RDT 50KM"# "Dataset 37_X15K Perfect track recovery" #"Dataset 24_X10Ks"           #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
-model_save_name = 'N' #"T2"#"RDT 500K 1000ToF timed"#"2023 Testing - RDT100K n100"#"2023 Testing - RDT10K NEW" #"RDT 100K 30s 200n Fixed"#"RDT 50KM tdim1000 AE2PROTECT 30 sig 200NP LD10"     #"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
+model_save_name = 'T' #"T2"#"RDT 500K 1000ToF timed"#"2023 Testing - RDT100K n100"#"2023 Testing - RDT10K NEW" #"RDT 100K 30s 200n Fixed"#"RDT 50KM tdim1000 AE2PROTECT 30 sig 200NP LD10"     #"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
 
 xdim = 88   # Currently useless
 ydim = 128  # Currently useless
 time_dimension = 1000                        # User controll to set the number of time steps in the data
 
+### NEW PHYSICAL GROUNDING FOR UNITS
+use_physical_values_for_plot_axis = True
+x_length = 800 #mm
+y_length = 1500 #mm
+time_length = 1000 #ns
+time_scale = time_dimension / time_length # ns per t pixel
+x_scale = xdim / x_length # mm per x pixel
+y_scale = ydim / y_length # mm per y pixel
+
 #%% - Training Hyperparameter Settings
-num_epochs = 20                            # User controll to set number of epochs (Hyperparameter)
+num_epochs = 30                            # User controll to set number of epochs (Hyperparameter)
 batch_size = 10 #6 looks good                              # User controll to set batch size - number of Images to pull per batch (Hyperparameter) 
 learning_rate = 0.0001                       # User controll to set optimiser learning rate (Hyperparameter)
 optim_w_decay = 1e-05                        # User controll to set optimiser weight decay for regularisation (Hyperparameter)
 
 latent_dim = 50     #NOTE: Tested!                         # User controll to set number of nodes in the latent space, the bottleneck layer (Hyperparameter)
 fc_input_dim = 512                         # User controll to set number of nodes in the fc2 layer (Hyperparameter)
-dropout_prob = 0.2                           # [NOTE Not connected yet] User controll to set dropout probability (Hyperparameter)
+dropout_prob = 0.3                           # [NOTE Not connected yet] User controll to set dropout probability (Hyperparameter)
 reconstruction_threshold = 0.5               # MUST BE BETWEEN 0-1  #Threshold for 3d reconstruction, values below this confidence level are discounted
 
 #%% - Dataset Settings
@@ -154,11 +165,11 @@ val_test_split_ratio = 0.9                   # This needs to be better explained
 
 #%% - Loss Function Settings
 loss_vs_sparse_img = False    #NOTE: Tested!                # User controll to set if the loss is calculated against the sparse image or the full image (Hyperparameter)
-loss_function_selection = 1                  # Select loss function (Hyperparameter): 0 = ACBMSE, 1 = ffACBMSE, 2 = ACBMSE3D, 3 = torch.nn.MSELoss(), 4 = torch.nn.BCELoss(), 5 = torch.nn.L1Loss(), 6 = ada_SSE_loss, 7 = ada_weighted_custom_split_loss, 8 = weighted_perfect_reconstruction_loss
+loss_function_selection = 1   #3 #Histogram loss               # Select loss function (Hyperparameter): 0 = ACBMSE, 1 = ffACBMSE, 2 = ACBMSE3D, 3 = torch.nn.MSELoss(), 4 = torch.nn.BCELoss(), 5 = torch.nn.L1Loss(), 6 = ada_SSE_loss, 7 = ada_weighted_custom_split_loss, 8 = weighted_perfect_reconstruction_loss
 
 # Below weights only used if loss func set to 0, 1 or 6 aka ACBMSE or split loss varients
 zero_weighting = 1                        # User controll to set zero weighting for ACBMSE (Hyperparameter)
-nonzero_weighting = 0.2                        # User controll to set non zero weighting for ACBMSE (Hyperparameter)
+nonzero_weighting = 0.4                        # User controll to set non zero weighting for ACBMSE (Hyperparameter)
 # Only used for ffACBMSE along with above two settings
 fullframe_weighting = 1                      # User controll to set full frame weighting for ffACBMSE (Hyperparameter)
 
@@ -170,9 +181,9 @@ nonzero_loss_choice = 1                      # Select loss function for non zero
 signal_points = 30                          # User controll to set the number of signal points to add
 noise_points =  100                         # User controll to set the number of noise points to add
 
-x_std_dev = 0                               # User controll to set the standard deviation of the detectors error in the x axis
-y_std_dev = 0                               # User controll to set the standard deviation of the detectors error in the y axis
-tof_std_dev = 0                             # User controll to set the standard deviation of the detectors error in the time of flight 
+x_std_dev = 0  #mm NOTE ADAPTed TO PHYSICAL                             # User controll to set the standard deviation of the detectors error in the x axis
+y_std_dev = 0  #mm NOTE ADAPTed TO PHYSICAL                             # User controll to set the standard deviation of the detectors error in the y axis
+tof_std_dev = 0  #ns NOTE ADAPTed TO PHYSICAL                           # User controll to set the standard deviation of the detectors error in the time of flight 
 
 #%% - Pretraining settings
 start_from_pretrained_model = False         # If set to true then the model will load the pretrained model and optimiser state dicts from the path below
@@ -223,6 +234,7 @@ plot_pixel_threshold_telemetry = True     # [default = False] # Update name to p
 plot_pixel_difference = False #BROKEN     # [default = True]          
 plot_latent_generations = True            # [default = True]              
 plot_higher_dim = False                   # [default = True]  
+plot_normalised_radar = False
 plot_Graphwiz = True                      # [default = True]       
 
 #%% - Advanced Debugging Settings
@@ -243,7 +255,7 @@ seeding_value = 10 #None                            # [Default = None] None give
 #%% Hyperparameter Optimisation Settings  #######IMPLEMENT!!!
 optimise_hyperparameter = True              # User controll to set if hyperparameter optimisation is used
 hyperparam_to_optimise = 'fullframe_weighting'      # User controll to set which hyperparameter to optimise  - options are: 'batch_size', 'learning_rate', 'optim_w_decay', 'dropout_prob', 'loss_function_selection', 'conv_layers', 'conv_filter_multiplier', 'latent_dim'
-set_optimisiation_list_manually = [0.2, 0.6, 1.0, 1.6]   # (NOTE: Overrides the above) If set false then the above is used to set the list. Otheriwse if wanting to deinfe the list manually then set this param = to your list i.e [[12, 120], [12, 240], [12, 480]]
+set_optimisiation_list_manually = [0.5, 1.0, 1.5]   # (NOTE: Overrides the above) If set false then the above is used to set the list. Otheriwse if wanting to deinfe the list manually then set this param = to your list i.e [[12, 120], [12, 240], [12, 480]]
 
 # Simple Performance Measure
 print_validation_results = True            # User controll to set if the validation results are printed to terminal 
@@ -308,6 +320,8 @@ from torchvision import transforms
 from torch.utils.data import DataLoader, random_split
 from skimage.metrics import normalized_mutual_information, structural_similarity
 import json
+from matplotlib.ticker import FuncFormatter
+
 
 # Imports from our custom scripts
 from Autoencoders.DC3D_Autoencoder_V1_Protected2_2 import Encoder, Decoder              # Imports the autoencoder classes
@@ -345,7 +359,7 @@ if comparative_live_loss:
 def format_time(seconds):
     hours, remainder = divmod(seconds, 3600)
     minutes, seconds = divmod(remainder, 60)
-    return f"{hours}h:{minutes}m:{seconds}s"
+    return f"{int(hours)} h:{int(minutes)} m:{seconds:3f} s"
 
 # Helper function to return the batch learning method string to user
 def batch_learning(training_dataset_size, batch_size):
@@ -401,6 +415,7 @@ def np_to_tensor(np_array, double_precision=False):
     dtype = torch.float64 if double_precision else torch.float32
     tensor = torch.tensor(np_array, dtype=dtype)
     tensor = tensor.unsqueeze(0)        # Append channel dimension to begining of tensor
+    tensor = tensor.to_sparse_coo()
     return(tensor)
 
 # Masking technique
@@ -531,11 +546,16 @@ def create_sparse_signal(input_image_batch, signal_points=2, linear=False):
     return output_image_batch
 
 # Function to add shift in x, y and ToF to a true signal point due to detector resoloution
-def simulate_detector_resolution(input_image_batch, x_std_dev, y_std_dev, tof_std_dev, plot=False):
+def simulate_detector_resolution(input_image_batch, x_std_dev, y_std_dev, tof_std_dev, x_scale, y_scale, time_scale, plot=False):
     """
-    Improve this so it takes pysical values rather than indicies and also so that it uses gaussian to draw randoms from 
-    
+
     """
+
+    # Convert physical values to pixel values
+    x_std_dev_pixels = x_std_dev / x_scale
+    y_std_dev_pixels = y_std_dev / y_scale
+    tof_std_dev_pixels = tof_std_dev / time_scale
+
     # Take as input a torch tensor in form [batch_size, 1, x_dim, y_dim]]
     # Create a copy of the input image batch
     image_batch_all = input_image_batch.clone()
@@ -546,11 +566,11 @@ def simulate_detector_resolution(input_image_batch, x_std_dev, y_std_dev, tof_st
         x, y = image_batch.size()
 
         # For all the values in the tensor that are non zero (all signal points) adda random value drawn from a gaussian distribution with mean of the original value and std dev of ToF_std_dev so simulate ToF resoloution limiting
-        image_batch[image_batch != 0] = image_batch[image_batch != 0] + torch.normal(mean=0, std=tof_std_dev, size=image_batch[image_batch != 0].shape)
+        image_batch[image_batch != 0] = image_batch[image_batch != 0] + torch.normal(mean=0, std=tof_std_dev_pixels, size=image_batch[image_batch != 0].shape)
 
         # Generate random values for shifting the x and y indices
-        x_shift = torch.normal(mean=0, std=x_std_dev, size=(x, y), dtype=torch.float32)
-        y_shift = torch.normal(mean=0, std=y_std_dev, size=(x, y), dtype=torch.float32)
+        x_shift = torch.normal(mean=0, std=x_std_dev_pixels, size=(x, y), dtype=torch.float32)
+        y_shift = torch.normal(mean=0, std=y_std_dev_pixels, size=(x, y), dtype=torch.float32)
 
         # Create a mask for selecting non-zero values in the image tensor
         mask = image_batch != 0
@@ -951,7 +971,7 @@ def train_epoch(encoder, decoder, device, dataloader, loss_fn, optimizer, signal
         # DATA PREPROCESSING
         with torch.no_grad(): # No need to track the gradients
             sparse_output_batch = create_sparse_signal(image_batch, signal_points_r)
-            sparse_and_resolution_limited_batch = simulate_detector_resolution(sparse_output_batch, x_std_dev_r, y_std_dev_r, tof_std_dev_r)
+            sparse_and_resolution_limited_batch = simulate_detector_resolution(sparse_output_batch, x_std_dev_r, y_std_dev_r, tof_std_dev_r, x_scale, y_scale, time_scale)
             noised_sparse_reslimited_batch = add_noise_points_to_batch_prenorm(sparse_and_resolution_limited_batch, noise_points_r, time_dimension)
             
             if masking_optimised_binary_norm:
@@ -1018,7 +1038,7 @@ def test_epoch(encoder, decoder, device, dataloader, loss_fn, signal_points, noi
 
             # Move tensor to the proper device
             sparse_output_batch = create_sparse_signal(image_batch, signal_points_r)
-            sparse_and_resolution_limited_batch = simulate_detector_resolution(sparse_output_batch, x_std_dev_r, y_std_dev_r, tof_std_dev_r)
+            sparse_and_resolution_limited_batch = simulate_detector_resolution(sparse_output_batch, x_std_dev_r, y_std_dev_r, tof_std_dev_r, x_scale, y_scale, time_scale)
             noised_sparse_reslimited_batch = add_noise_points_to_batch_prenorm(sparse_and_resolution_limited_batch, noise_points_r, time_dimension)
             
             if masking_optimised_binary_norm:
@@ -1078,7 +1098,7 @@ def validation_routine(encoder, decoder, device, dataloader, loss_fn, signal_poi
 
             # Move tensor to the proper device
             sparse_output_batch = create_sparse_signal(image_batch, signal_points_r)
-            sparse_and_resolution_limited_batch = simulate_detector_resolution(sparse_output_batch, x_std_dev_r, y_std_dev_r, tof_std_dev_r)
+            sparse_and_resolution_limited_batch = simulate_detector_resolution(sparse_output_batch, x_std_dev_r, y_std_dev_r, tof_std_dev_r, x_scale, y_scale, time_scale)
             noised_sparse_reslimited_batch = add_noise_points_to_batch_prenorm(sparse_and_resolution_limited_batch, noise_points_r, time_dimension)
             
             if masking_optimised_binary_norm:
@@ -1143,7 +1163,7 @@ def plot_epoch_data(encoder, decoder, epoch, model_save_name, time_dimension, re
         
         global image_noisy                                          #'global' means the variable (image_noisy) set inside a function is globally defined, i.e defined also outside the function
         sparse_output_batch = create_sparse_signal(img, signal_points_r)
-        sparse_and_resolution_limited_batch = simulate_detector_resolution(sparse_output_batch, x_std_dev_r, y_std_dev_r, tof_std_dev_r)
+        sparse_and_resolution_limited_batch = simulate_detector_resolution(sparse_output_batch, x_std_dev_r, y_std_dev_r, tof_std_dev_r, x_scale, y_scale, time_scale)
         noised_sparse_reslimited_batch = add_noise_points_to_batch_prenorm(sparse_and_resolution_limited_batch, noise_points_r, time_dimension)
     
         if masking_optimised_binary_norm:
@@ -1179,12 +1199,8 @@ def plot_epoch_data(encoder, decoder, epoch, model_save_name, time_dimension, re
         noise_im = network_input_image
         rec_im = recovered_test_image
 
-        ###################WHY IS NORM HERE IN THE CODE??? shouldent it be directly after output and speed time is saved? (i think this is actually for the plots generated during the testig ratehr than afetr so okay maybe not?)
-        # RENORMALISATIONN
-
         noise_im = gaped_renormalisation(noise_im, reconstruction_threshold, time_dimension)
         rec_im = gaped_renormalisation(rec_im, reconstruction_threshold, time_dimension)
-
         masked_im = masking_recovery(noise_im, rec_im, time_dimension)
 
         #cmap = cm.get_cmap('viridis')
@@ -1291,6 +1307,25 @@ def plot_epoch_data(encoder, decoder, epoch, model_save_name, time_dimension, re
             ax6.set_ylim(0, 88)
         except:
             print("ERROR OCCURED IN MASKING 3D PLOT! INVESTIGATE!")
+
+
+        for ax in [ax1, ax2, ax3, ax4, ax5, ax6]:
+            
+            if use_physical_values_for_plot_axis:
+                # Set axis labels
+                ax.set_xlabel('x (mm)')
+                ax.set_ylabel('y (mm)')
+                ax.set_zlabel('time (ns)')
+                # Apply tick format conversion for x, y, and z axes from 'pixels' to physical values
+                ax.xaxis.set_major_formatter(FuncFormatter(lambda x_scale, tick_number: tick_number * x_scale))
+                ax.yaxis.set_major_formatter(FuncFormatter(lambda y_scale, tick_number: tick_number * y_scale))
+                ax.zaxis.set_major_formatter(FuncFormatter(lambda time_scale, tick_number: tick_number * time_scale))
+            
+            else:
+                # Set axis labels
+                ax.set_xlabel('x (pixels)')
+                ax.set_ylabel('y (pixels)')
+                ax.set_zlabel('time (pixels)')
 
         Out_Label = graphics_dir + f'{model_save_name} 3D Reconstruction - Epoch {epoch}.png' #creates the name of the file to be saved
         plot_save_choice(plot_or_save, Out_Label) #saves the plot if plot_or_save is set to 1, if 0 it displays, if 2 it displays and saves
@@ -1849,6 +1884,29 @@ def ada_SSE_loss(target, input):
     return(loss)
 
 
+class HistogramLoss(torch.nn.Module):
+    def __init__(self, num_bins=256):
+        super(HistogramLoss, self).__init__()
+        self.num_bins = num_bins
+
+    def histogram_intersection(hist1, hist2):
+        min_hist = torch.min(hist1, hist2)
+        return torch.sum(min_hist)
+
+    def forward(self, input_image, target_image):
+        hist_input = torch.histc(input_image.view(-1), bins=self.num_bins, min=0, max=255)
+        hist_target = torch.histc(target_image.view(-1), bins=self.num_bins, min=0, max=255)
+
+        hist_input = hist_input / hist_input.sum()
+        hist_target = hist_target / hist_target.sum()
+
+        loss = 1 - self.histogram_intersection(hist_input, hist_target)
+
+        return loss
+
+
+
+
 #%% - Program begins
 print("\n \nProgram Initalised - Welcome to DC3D Trainer\n")  #prints the welcome message
 # Following section checks if a CUDA enabled GPU is available. If found it is selected as the 'device' to perform the tensor opperations. If no CUDA GPU is found the 'device' is set to CPU (much slower) 
@@ -1937,6 +1995,7 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
     availible_loss_functions = [ACBLoss(zero_weighting, nonzero_weighting), 
                                 ffACBLoss(zero_weighting, nonzero_weighting, fullframe_weighting), 
                                 True3DLoss(zero_weighting=1, nonzero_weighting=1, timesteps=1000), 
+                                HistogramLoss(),
                                 simple3Dloss(zero_weighting=1, nonzero_weighting=1, virtual_t_weighting=1, virtual_x_weighting=1, virtual_y_weighting=1, timesteps=1000), 
                                 ACBLoss3D(zero_weighting=1, nonzero_weighting=1, virtual_t_weighting=1, virtual_x_weighting=None, virtual_y_weighting=None, timesteps=1000), 
                                 torch.nn.MSELoss(), 
@@ -2491,7 +2550,14 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
         plt.grid()
         Out_Label = graphics_dir + f'{model_save_name} - TSNE Epoch {epoch}.png'
         plot_save_choice(plot_or_save, Out_Label)  
-            
+
+    if plot_normalised_radar:
+        # Data for the radar plot
+        categories = list(map(str, detailed_performance_loss_dict.keys())) # Names of each performance measure
+        #data = HARD!!! #np.array(([3, 1, 74, 1, 1], [6, 52, 2, 76, 6], [-4, 272, 2, 1, 6]))  # List of models each with list of values for each measure
+        multi_labels = [f"{model_save_name}"].extend(comparative_loss_titles)  # Labels for each plot
+        #create_radar_plot_multi_model(categories, data, multi_labels)
+           
     if plot_Graphwiz:
         Graphviz_visulisation(encoder, decoder, double_precision, batch_size, xdim, ydim, graphics_dir)
         #Out_Label = graphics_dir + f'{model_save_name} - Graphwiz Epoch {epoch}.png'    
@@ -2626,9 +2692,9 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
             print("Train loss: ", train_loss)
             print("Test loss: ", test_loss)
             print("Val loss: ", val_loss)
-            print(f"Total Training time: {format_time(training_time)} s", )
+            print(f"Total Training time: {format_time(training_time)}", )
 
-        print("- Completed -\n \n \n \n") 
+        print("\n\n- Model Training Completed -\n \n \n \n") 
 
 #%% - Plot the validation loss and training time for each hyperparameter value
 if optimise_hyperparameter:
