@@ -1,4 +1,4 @@
-# DeepClean Trainer v1.2.0
+# DeepClean Trainer v1.2.2
 # Build created on Wednesday May 6th 2023
 # Author: Adill Al-Ashgar
 # University of Bristol
@@ -124,25 +124,26 @@ Possible improvements:
 ### ~~~~~  Label loss plots y axis programatically based on user loss function selection
 """
 
-# NOTE to users: Known good parameters so far (changing these either way damages performance): learning_rate = 0.0001, Batch Size = 10, Latent Dim = 10, Reconstruction Threshold = 0.5, loss_function_selection = 0, loss weighting = 0.9 - 1
+# NOTE to users: Known good parameters so far (changing these either way damages performance): optim_w_decay = 1e-05,  learning_rate = 0.0001, fc_input_dim = 128, Batch Size = 10, Latent Dim = 10, Reconstruction Threshold = 0.5, loss_function_selection = 0, loss weighting = 0.99 - 1
 # NOTE to users: First epoch will always run slower when using a new dataset or after a computer restart as system memory is being trained, subsequent epochs should take ~50% of the time of the first epoch
+# NOTE to users: The 'nonzero_weighting' parameter is a great way to adjust the sensetivity of the training result. Values around 0.1 will be very cautious in predicting hits, whilst moving to around 1.0 will be very confident in predicting hits. This is a great way to adjust the sensetivity of the model to your needs. Low values are better for direct net output, whilst higher values are better for masking output.
 
 #%% - User Inputs
 dataset_title = "RDT 10K MOVE" #'RDT 500K 1000ToF' #"RDT 10K MOVE" #"RDT 50KM"# "Dataset 37_X15K Perfect track recovery" #"Dataset 24_X10Ks"           #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
-model_save_name = 'O'#"T2"#"RDT 500K 1000ToF timed"#"2023 Testing - RDT100K n100"#"2023 Testing - RDT10K NEW" #"RDT 100K 30s 200n Fixed"#"RDT 50KM tdim1000 AE2PROTECT 30 sig 200NP LD10"     #"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
+model_save_name = 'N' #"T2"#"RDT 500K 1000ToF timed"#"2023 Testing - RDT100K n100"#"2023 Testing - RDT10K NEW" #"RDT 100K 30s 200n Fixed"#"RDT 50KM tdim1000 AE2PROTECT 30 sig 200NP LD10"     #"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
 
 xdim = 88   # Currently useless
 ydim = 128  # Currently useless
 time_dimension = 1000                        # User controll to set the number of time steps in the data
 
 #%% - Training Hyperparameter Settings
-num_epochs = 50                            # User controll to set number of epochs (Hyperparameter)
-batch_size = 10                              # User controll to set batch size - number of Images to pull per batch (Hyperparameter) 
+num_epochs = 20                            # User controll to set number of epochs (Hyperparameter)
+batch_size = 10 #6 looks good                              # User controll to set batch size - number of Images to pull per batch (Hyperparameter) 
 learning_rate = 0.0001                       # User controll to set optimiser learning rate (Hyperparameter)
 optim_w_decay = 1e-05                        # User controll to set optimiser weight decay for regularisation (Hyperparameter)
 
 latent_dim = 50     #NOTE: Tested!                         # User controll to set number of nodes in the latent space, the bottleneck layer (Hyperparameter)
-fc_input_dim = 128                         # User controll to set number of nodes in the fc2 layer (Hyperparameter)
+fc_input_dim = 512                         # User controll to set number of nodes in the fc2 layer (Hyperparameter)
 dropout_prob = 0.2                           # [NOTE Not connected yet] User controll to set dropout probability (Hyperparameter)
 reconstruction_threshold = 0.5               # MUST BE BETWEEN 0-1  #Threshold for 3d reconstruction, values below this confidence level are discounted
 
@@ -153,11 +154,11 @@ val_test_split_ratio = 0.9                   # This needs to be better explained
 
 #%% - Loss Function Settings
 loss_vs_sparse_img = False    #NOTE: Tested!                # User controll to set if the loss is calculated against the sparse image or the full image (Hyperparameter)
-loss_function_selection = 0                  # Select loss function (Hyperparameter): 0 = ACBMSE, 1 = torch.nn.MSELoss(), 2 = torch.nn.BCELoss(), 3 = torch.nn.L1Loss(), 4 = ada_SSE_loss, 5 = ada_weighted_custom_split_loss, 6 = weighted_perfect_reconstruction_loss
+loss_function_selection = 1                  # Select loss function (Hyperparameter): 0 = ACBMSE, 1 = ffACBMSE, 2 = ACBMSE3D, 3 = torch.nn.MSELoss(), 4 = torch.nn.BCELoss(), 5 = torch.nn.L1Loss(), 6 = ada_SSE_loss, 7 = ada_weighted_custom_split_loss, 8 = weighted_perfect_reconstruction_loss
 
 # Below weights only used if loss func set to 0, 1 or 6 aka ACBMSE or split loss varients
-zero_weighting = 0.99                        # User controll to set zero weighting for ACBMSE (Hyperparameter)
-nonzero_weighting = 1                        # User controll to set non zero weighting for ACBMSE (Hyperparameter)
+zero_weighting = 1                        # User controll to set zero weighting for ACBMSE (Hyperparameter)
+nonzero_weighting = 0.2                        # User controll to set non zero weighting for ACBMSE (Hyperparameter)
 # Only used for ffACBMSE along with above two settings
 fullframe_weighting = 1                      # User controll to set full frame weighting for ffACBMSE (Hyperparameter)
 
@@ -182,7 +183,7 @@ pretrained_model_path = 'N:/Yr 3 Project Results/RDT 50KMF Base Model 2 - Traini
 masking_optimised_binary_norm = False       # If set to true then the model will use the binary normalisation method optimised for masking output. Otherwise will use the gaped custom normalisation optimised for the direct network output
 
 #%% - Plotting Control Settings
-print_every_other = 5                       # [default = 2] 1 is to save/print all training plots every epoch, 2 is every other epoch, 3 is every 3rd epoch etc
+print_every_other = 1                       # [default = 2] 1 is to save/print all training plots every epoch, 2 is every other epoch, 3 is every 3rd epoch etc
 plot_or_save = 1                            # [default = 1] 0 prints plots to terminal (blocking till closed), If set to 1 then saves all end of epoch printouts to disk (non-blocking), if set to 2 then saves outputs whilst also printing for user (blocking till closed)
 num_to_plot = 10
 save_all_raw_plot_data = True               # [default = False] If set to true then all raw data for plots is saved to disk for replotting and analysis later
@@ -211,10 +212,11 @@ plot_live_training_loss = True              # [default = True] Generate plot of 
 comparative_live_loss = True                # [default = True] Adds comparative lines to the live plots, the models for comparison are selected below
 slide_live_plot_size = 0                    # [default = 0] Number of epochs to show on the live plot (if set to 0 then will show all epochs)
 
-comparative_loss_titles = ["10K 30s 100n", "100K 30s 100n", "500K 30s 100n"]
-comparative_loss_paths = [r'N:\Yr 3 Project Results\RDT 10K 1000ToF timed - Training Results\\',
-                          r'N:\Yr 3 Project Results\RDT 100K 1000ToF timed - Training Results\\',
-                          r'N:\Yr 3 Project Results\RDT 500K 1000ToF timed - Training Results\\',
+comparative_loss_titles = ["S1 10K", "S1 100K", "S1 500K", "S2 10K"]
+comparative_loss_paths = [r'N:\Yr 3 Project Results\RDT 10K 1000ToF timed - Training Results\\',   # Settings V1
+                          r'N:\Yr 3 Project Results\RDT 100K 1000ToF timed - Training Results\\',  # Settings V1
+                          r'N:\Yr 3 Project Results\RDT 500K 1000ToF timed - Training Results\\',  # Settings V1
+                          r'N:\Yr 3 Project Results\RDT 10K S2 - Training Results\\'  # Settings V2
                           ] 
                           
 plot_pixel_threshold_telemetry = True     # [default = False] # Update name to pixel_cuttoff_telemetry    #Very slow, reduces net performance by XXXXXX%
@@ -240,15 +242,15 @@ seeding_value = 10 #None                            # [Default = None] None give
 
 #%% Hyperparameter Optimisation Settings  #######IMPLEMENT!!!
 optimise_hyperparameter = True              # User controll to set if hyperparameter optimisation is used
-hyperparam_to_optimise = 'fc_input_dim'      # User controll to set which hyperparameter to optimise  - options are: 'batch_size', 'learning_rate', 'optim_w_decay', 'dropout_prob', 'loss_function_selection', 'conv_layers', 'conv_filter_multiplier', 'latent_dim'
-set_optimisiation_list_manually = [128, 256, 512, 1024]   # (NOTE: Overrides the above) If set false then the above is used to set the list. Otheriwse if wanting to deinfe the list manually then set this param = to your list i.e [[12, 120], [12, 240], [12, 480]]
+hyperparam_to_optimise = 'fullframe_weighting'      # User controll to set which hyperparameter to optimise  - options are: 'batch_size', 'learning_rate', 'optim_w_decay', 'dropout_prob', 'loss_function_selection', 'conv_layers', 'conv_filter_multiplier', 'latent_dim'
+set_optimisiation_list_manually = [0.2, 0.6, 1.0, 1.6]   # (NOTE: Overrides the above) If set false then the above is used to set the list. Otheriwse if wanting to deinfe the list manually then set this param = to your list i.e [[12, 120], [12, 240], [12, 480]]
 
 # Simple Performance Measure
 print_validation_results = True            # User controll to set if the validation results are printed to terminal 
 plot_training_time = True                   # User controll to set if the training time is plotted 
 
 # Full Performance Analysis - Performed in addition to and seperatly from the validation stage for automatic data analysis
-perf_analysis_num_files = 10000   # number of files to test
+perf_analysis_num_files = 5000   # number of files to test
 perf_analysis_plot = 100       # The number of results to print imshow plots for for each model tested, set to False for none
 perf_analysis_dataset_dir = (r"N:\\Yr 3 Project Datasets\\PERF VALIDATION SETS\\40K 100N 30S\\")   # directory of dataset to test - (Best to use totally unseen data files that are not contianed within the train, test or validation sets)
 debug_hpo_perf_analysis = False
@@ -270,7 +272,24 @@ data_path = "N:\Yr 3 Project Datasets\\"
 results_output_path = "N:\Yr 3 Project Results\\"
 results_output_path_1 = results_output_path  # HACK FOR HYPERPARAM OPTIMISATION FIX IT!!!
 
-#%% - Dependencies
+
+#%% - Create full settings dictionary !!! NEEDS CLEANUP
+
+"""
+if optimise_hyperparameter:
+    settings_path = results_output_path_1 + model_save_name + "_" + hyperparam_to_optimise + f" Optimisation\\"
+else:
+    settings_path = results_output_path + model_save_name + " - Training Results/"
+#create settings path if not exists
+os.makedirs(settings_path, exist_ok=True)
+full_settings_dictionary = create_settings_dict(settings_path + "full_settings_dictionary")
+
+"""
+
+
+
+
+#%% - Load in Dependencies
 # External Libraries
 import os
 import time     # Used to time the training loop
@@ -288,6 +307,7 @@ import matplotlib.pyplot as plt
 from torchvision import transforms  
 from torch.utils.data import DataLoader, random_split
 from skimage.metrics import normalized_mutual_information, structural_similarity
+import json
 
 # Imports from our custom scripts
 from Autoencoders.DC3D_Autoencoder_V1_Protected2_2 import Encoder, Decoder              # Imports the autoencoder classes
@@ -298,23 +318,14 @@ from Helper_files.Dataset_distribution_tester_V1 import dataset_distribution_tes
 from Helper_files.AE_Visulisations import Generative_Latent_information_Visulisation, Reduced_Dimension_Data_Representations, Graphviz_visulisation, AE_visual_difference # Functions to visulise the autoencoders training progression
 from Helper_files.ExcelExtractor import extract_data_to_excel # This is a custom function to extract data from excel files
 from Helper_files.model_perf_analysis2 import run_full_perf_tests
-from Helper_files.Export_User_Settings import create_settings_dict
+from Helper_files.Image_Metrics import MSE, MAE, SNR, PSNR, NMSRE, SSIM, NomalisedMutualInformation, correlation_coeff, compare_images_pixels
+
+#from Helper_files.Export_User_Settings import create_settings_dict
 
 
-#%% - Create full settings dictionary !!! NEEDS CLEANUP
 
-"""
-if optimise_hyperparameter:
-    settings_path = results_output_path_1 + model_save_name + "_" + hyperparam_to_optimise + f" Optimisation\\"
-else:
-    settings_path = results_output_path + model_save_name + " - Training Results/"
-#create settings path if not exists
-os.makedirs(settings_path, exist_ok=True)
-full_settings_dictionary = create_settings_dict(settings_path + "full_settings_dictionary")
 
-"""
-
-#%% - Comparative Live Loss Plotting
+#%% - Load in Comparative Live Loss Data
 if comparative_live_loss:
     comparative_history_da = []
     comparative_epoch_times = []
@@ -331,195 +342,33 @@ if comparative_live_loss:
                 
 
 #%% - Helper functions
-def weighted_perfect_recovery_lossOLD(reconstructed_image, target_image, zero_weighting=1, nonzero_weighting=1):
+def format_time(seconds):
+    hours, remainder = divmod(seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    return f"{hours}h:{minutes}m:{seconds}s"
 
-    # Get the indices of 0 and non 0 values in target_image as a mask for speed
-    zero_mask = (target_image == 0)
-    nonzero_mask = ~zero_mask         # Invert mask
-    
-    # Get the values in target_image
-    values_zero = target_image[zero_mask]
-    values_nonzero = target_image[nonzero_mask]
-
-    #Calualte the number of value sin each of values_zero and values_nonzero for use in the class balancing
-    zero_n = len(values_zero)
-    nonzero_n = len(values_nonzero)
-    
-    # Get the corresponding values in reconstructed_image
-    corresponding_values_zero = reconstructed_image[zero_mask]
-    corresponding_values_nonzero = reconstructed_image[nonzero_mask]
-
-    if zero_n == 0:
-        zero_loss = 0
+# Helper function to return the batch learning method string to user
+def batch_learning(training_dataset_size, batch_size):
+    if batch_size == 1: 
+        output = "Stochastic Gradient Descent"
+    elif batch_size == training_dataset_size:
+        output = "Batch Gradient Descent"        
     else:
-        # Calculate the loss for zero values
-        loss_value_zero = (values_zero != corresponding_values_zero).float().sum() 
-        zero_loss = zero_weighting*( (1/zero_n) * loss_value_zero)
+        output = "Mini-Batch Gradient Descent"
+    return(output)
 
-    if nonzero_n == 0:
-        nonzero_loss = 0
+# Helper function to allow values to be input as a range from which random values are chosen each time unless the input is a single value in which case it is used as the constant value
+def input_range_to_random_value(input_range):
+    # check if input is a single value (int or float) or a range (list or tuple)
+    if isinstance(input_range, (int, float)):
+        return input_range
+    elif isinstance(input_range, (list, tuple)):
+        return torch.randint(input_range[0], input_range[1] + 1, (1,)).item()  # Generate a random integer
     else:
-        # Calculate the loss for non-zero values
-        loss_value_nonzero = (values_nonzero != corresponding_values_nonzero).float().sum() 
-        nonzero_loss = nonzero_weighting*( (1/nonzero_n) * loss_value_nonzero) 
-
-    # Calculate the total loss with automatic class balancing and user class weighting
-    loss_value = zero_loss + nonzero_loss
-
-    return loss_value
-
-# Weighted Custom Split Loss Function
-def ada_weighted_custom_split_loss(reconstructed_image, target_image, zero_weighting=zero_weighting, nonzero_weighting=nonzero_weighting):
-    """
-    Calculates the weighted error loss between target_image and reconstructed_image.
-    The loss for zero pixels in the target_image is weighted by zero_weighting, and the loss for non-zero
-    pixels is weighted by nonzero_weighting and both have loss functions as passed in by user.
-
-    Args:
-    - target_image: a tensor of shape (B, C, H, W) containing the target image
-    - reconstructed_image: a tensor of shape (B, C, H, W) containing the reconstructed image
-    - zero_weighting: a scalar weighting coefficient for the MSE loss of zero pixels
-    - nonzero_weighting: a scalar weighting coefficient for the MSE loss of non-zero pixels
-
-    Returns:
-    - weighted_mse_loss: a scalar tensor containing the weighted MSE loss
-    """
+        print("Error: input_range_to_random_value() input is not a value or pair of values")
+        return None
     
-    # Get the indices of 0 and non 0 values in target_image as a mask for speed
-    zero_mask = (target_image == 0)
-    nonzero_mask = ~zero_mask         # Invert mask
-    
-    # Get the values in target_image
-    values_zero = target_image[zero_mask]
-    values_nonzero = target_image[nonzero_mask]
-    
-    # Get the corresponding values in reconstructed_image
-    corresponding_values_zero = reconstructed_image[zero_mask]
-    corresponding_values_nonzero = reconstructed_image[nonzero_mask]
-    
-    # Get the loss functions
-    loss_func_zeros = split_loss_functions[0]
-    loss_func_nonzeros = split_loss_functions[1]
-    
-    # Compute the MSE losses
-    zero_loss = loss_func_zeros(corresponding_values_zero, values_zero)
-    nonzero_loss = loss_func_nonzeros(corresponding_values_nonzero, values_nonzero)
-
-    # Protection from there being no 0 vals or no non zero vals, which then retunrs nan for MSE and creates a nan overall MSE return (which is error)
-    if torch.isnan(zero_loss):
-        zero_loss = 0
-    if torch.isnan(nonzero_loss):
-        nonzero_loss = 0
-    
-    # Sum losses with weighting coefficiants 
-    weighted_mse_loss = (zero_weighting * zero_loss) + (nonzero_weighting * nonzero_loss) 
-    
-    return weighted_mse_loss
-
-class ACBLoss(torch.nn.Module):
-    def __init__(self, zero_weighting=1, nonzero_weighting=1):
-        """
-        Initializes the ACB-MSE Loss Function class with weighting coefficients.
-
-        Args:
-        - zero_weighting: a scalar weighting coefficient for the MSE loss of zero pixels
-        - nonzero_weighting: a scalar weighting coefficient for the MSE loss of non-zero pixels
-        """
-        super().__init__()   
-        self.zero_weighting = zero_weighting
-        self.nonzero_weighting = nonzero_weighting
-        self.mse_loss = torch.nn.MSELoss(reduction='mean')
-
-    def forward(self, reconstructed_image, target_image):
-        """
-        Calculates the weighted mean squared error (MSE) loss between target_image and reconstructed_image.
-        The loss for zero pixels in the target_image is weighted by zero_weighting, and the loss for non-zero
-        pixels is weighted by nonzero_weighting.
-
-        Args:
-        - target_image: a tensor of shape (B, C, H, W) containing the target image
-        - reconstructed_image: a tensor of shape (B, C, H, W) containing the reconstructed image
-
-        Returns:
-        - weighted_mse_loss: a scalar tensor containing the weighted MSE loss
-        """
-        zero_mask = (target_image == 0)
-        nonzero_mask = ~zero_mask
-
-        values_zero = target_image[zero_mask]
-        values_nonzero = target_image[nonzero_mask]
-
-        corresponding_values_zero = reconstructed_image[zero_mask]
-        corresponding_values_nonzero = reconstructed_image[nonzero_mask]
-
-        zero_loss = self.mse_loss(corresponding_values_zero, values_zero)
-        nonzero_loss = self.mse_loss(corresponding_values_nonzero, values_nonzero)
-
-        if torch.isnan(zero_loss):
-            zero_loss = 0
-        if torch.isnan(nonzero_loss):
-            nonzero_loss = 0
-
-        weighted_mse_loss = (self.zero_weighting * zero_loss) + (self.nonzero_weighting * nonzero_loss)
-
-        return weighted_mse_loss
-
-class ffACBLoss(torch.nn.Module):
-    def __init__(self, zero_weighting=1, nonzero_weighting=1, fullframe_weighting=1):
-        """
-        Initializes the ACB-MSE Loss Function class with weighting coefficients.
-
-        Args:
-        - zero_weighting: a scalar weighting coefficient for the MSE loss of zero pixels
-        - nonzero_weighting: a scalar weighting coefficient for the MSE loss of non-zero pixels
-        """
-        super().__init__()   
-        self.zero_weighting = zero_weighting
-        self.nonzero_weighting = nonzero_weighting
-        self.fullframe_weighting = fullframe_weighting
-        self.mse_loss = torch.nn.MSELoss(reduction='mean')
-
-    def forward(self, reconstructed_image, target_image):
-        """
-        Calculates the weighted mean squared error (MSE) loss between target_image and reconstructed_image.
-        The loss for zero pixels in the target_image is weighted by zero_weighting, and the loss for non-zero
-        pixels is weighted by nonzero_weighting.
-
-        Args:
-        - target_image: a tensor of shape (B, C, H, W) containing the target image
-        - reconstructed_image: a tensor of shape (B, C, H, W) containing the reconstructed image
-
-        Returns:
-        - weighted_mse_loss: a scalar tensor containing the weighted MSE loss
-        """
-        zero_mask = (target_image == 0)
-        nonzero_mask = ~zero_mask
-
-        values_zero = target_image[zero_mask]
-        values_nonzero = target_image[nonzero_mask]
-
-        corresponding_values_zero = reconstructed_image[zero_mask]
-        corresponding_values_nonzero = reconstructed_image[nonzero_mask]
-
-        zero_loss = self.mse_loss(corresponding_values_zero, values_zero)
-        nonzero_loss = self.mse_loss(corresponding_values_nonzero, values_nonzero)
-        full_frame_loss = self.mse_loss(reconstructed_image, target_image)
-
-        if torch.isnan(zero_loss):
-            zero_loss = 0
-        if torch.isnan(nonzero_loss):
-            nonzero_loss = 0
-
-        weighted_mse_loss = (self.zero_weighting * zero_loss) + (self.nonzero_weighting * nonzero_loss) + (self.fullframe_weighting * full_frame_loss)
-
-        return fweighted_mse_loss
-
-#  Adaptive Sum of Squared Errors loss function
-def ada_SSE_loss(target, input):
-    """Adaptive Sum of Squared Errors Loss Function"""
-    loss = ((input-target)**2).sum()
-    return(loss)
-
+#%% DC3D Special Functions
 # Special normalisation for pure masking
 def mask_optimised_normalisation(data):
     data = torch.where(data > 0, 1.0, 0.0)
@@ -544,45 +393,15 @@ def reconstruct_3D(data):
                 data_output.append([cdx,idx,num])
     return np.array(data_output)
 
-# Helper function to clean up repeated plot save/show code
-def plot_save_choice(plot_or_save, output_file_path):
-    if plot_or_save == 0:
-        plt.show()
-    else:
-        plt.savefig(output_file_path, format='png')    
-        if plot_or_save == 1:    
-            plt.close()
-        else:
-            plt.show()
-
-# Helper function to return the batch learning method string to user
-def batch_learning(training_dataset_size, batch_size):
-    if batch_size == 1: 
-        output = "Stochastic Gradient Descent"
-    elif batch_size == training_dataset_size:
-        output = "Batch Gradient Descent"        
-    else:
-        output = "Mini-Batch Gradient Descent"
-    return(output)
-
-# Tracks confidence of each pixel as histogram per epoch with line showing the detection threshold
-def belief_telemetry(data, reconstruction_threshold, epoch, settings, plot_or_save=0):
-    data2 = data.flatten()
-
-    #Plots histogram showing the confidence level of each pixel being a signal point
-    _, _, bars = plt.hist(data2, 10, histtype='bar')
-    plt.axvline(x= reconstruction_threshold, color='red', marker='|', linestyle='dashed', linewidth=2, markersize=12)
-    plt.title("Epoch %s" %epoch)
-    plt.bar_label(bars, fontsize=10, color='navy') 
-    plt.xlabel("Output Values")
-    plt.ylabel("Number of Pixels")
-    plt.grid(alpha=0.2)
-    Out_Label = graphics_dir + f'{model_save_name} - Reconstruction Telemetry Histogram - Epoch {epoch}.png'
-    plot_save_choice(plot_or_save, Out_Label)
-
-    above_threshold = (data2 >= reconstruction_threshold).sum()
-    below_threshold = (data2 < reconstruction_threshold).sum()
-    return (above_threshold, below_threshold)
+def np_to_tensor(np_array, double_precision=False):
+    """
+    Convert np array to torch tensor of user selected precision. 
+    Takes in np array of shape [H, W] and returns torch tensor of shape [C, H, W]
+    """
+    dtype = torch.float64 if double_precision else torch.float32
+    tensor = torch.tensor(np_array, dtype=dtype)
+    tensor = tensor.unsqueeze(0)        # Append channel dimension to begining of tensor
+    return(tensor)
 
 # Masking technique
 def masking_recovery(input_image, recovered_image, time_dimension, print_result=False):
@@ -604,37 +423,8 @@ def masking_recovery(input_image, recovered_image, time_dimension, print_result=
     if result.shape != raw_input_image.shape:
         print("ERROR: Masking has failed, the recovered image is not the same shape as the input image")
     return result
-                
-# Plots the confidence telemetry data
-def plot_telemetry(telemetry, true_num_of_signal_points, plot_or_save=0):
-    tele = np.array(telemetry)
-    #!!! Add labels to lines
-    plt.plot(tele[:,0],tele[:,1], color='r', label="Points above threshold") #red = num of points above threshold
-    plt.plot(tele[:,0],tele[:,2], color='b', label="Points below threshold") #blue = num of points below threshold
-    plt.axhline(y=true_num_of_signal_points, color='g', linestyle='dashed', label="True number of signal points")
-    plt.title("Telemetry over epochs")
-    plt.xlabel("Epoch number")
-    plt.ylabel("Number of Signal Points")
-    plt.legend()
-    Out_Label = graphics_dir + f'{model_save_name} - Reconstruction Telemetry Histogram - Epoch {epoch}.png'
-    plot_save_choice(plot_or_save, Out_Label)
 
-# Helper fucntion that sets RNG Seeding for determinism in debugging
-def Determinism_Seeding(seed):
-    torch.manual_seed(seed)
-    np.random.seed(seed)
-
-# Helper function to allow values to be input as a range from which random values are chosen each time unless the input is a single value in which case it is used as the constant value
-def input_range_to_random_value(input_range):
-    # check if input is a single value (int or float) or a range (list or tuple)
-    if isinstance(input_range, (int, float)):
-        return input_range
-    elif isinstance(input_range, (list, tuple)):
-        return torch.randint(input_range[0], input_range[1] + 1, (1,)).item()  # Generate a random integer
-    else:
-        print("Error: input_range_to_random_value() input is not a value or pair of values")
-        return None
-
+#%% - Data Degradation Functions
 # Function to add n noise points to an image 
 def add_noise_points(image, noise_points=100, reconstruction_threshold=0.5):
 
@@ -780,61 +570,7 @@ def simulate_detector_resolution(input_image_batch, x_std_dev, y_std_dev, tof_st
         
     return image_batch_all
 
-def save_variable(variable, variable_name, path, force_pickle=False):
-
-    if force_pickle:
-        with open(path + variable_name + "_forcepkl.pkl", 'wb') as file:
-            pickle.dump(variable, file)
-    else:
-        if isinstance(variable, dict):
-            with open(path + variable_name + "_dict.pkl", 'wb') as file:
-                pickle.dump(variable, file)
-
-        elif isinstance(variable, np.ndarray):
-            np.save(path + variable_name + "_array.npy", variable)
-
-        elif isinstance(variable, torch.Tensor):
-            torch.save(variable, path + variable_name + "_tensor.pt")
-
-        elif isinstance(variable, list):
-            df = pd.DataFrame(variable)
-            df.to_csv(path + variable_name + "_list.csv", index=False)
-
-        elif isinstance(variable, int):
-            with open(path + variable_name + "_int.pkl", 'wb') as file:
-                pickle.dump(variable, file)
-
-        elif isinstance(variable, float):
-            with open(path + variable_name + "_float.pkl", 'wb') as file:
-                pickle.dump(variable, file)
-
-        elif isinstance(variable, str):
-            with open(path + variable_name + "_str.pkl", 'wb') as file:
-                pickle.dump(variable, file)
-
-        else:
-            raise ValueError("Unsupported variable type.")
-            
-def comparitive_loss_plot(x_list, y_list, legend_label_list, x_label, y_label, title, save_path, plot_or_save):
-    for x, y, legend_label in zip(x_list, y_list, legend_label_list):
-        plt.plot(x, y, label=legend_label)
-    plt.title(title)
-    plt.xlabel(x_label)
-    plt.ylabel(y_label)
-    plt.grid(alpha=0.2)
-    plt.legend()
-    plot_save_choice(plot_or_save, save_path) 
-
-def np_to_tensor(np_array, double_precision=False):
-    """
-    Convert np array to torch tensor of user selected precision. 
-    Takes in np array of shape [H, W] and returns torch tensor of shape [C, H, W]
-    """
-    dtype = torch.float64 if double_precision else torch.float32
-    tensor = torch.tensor(np_array, dtype=dtype)
-    tensor = tensor.unsqueeze(0)        # Append channel dimension to begining of tensor
-    return(tensor)
-
+#%% - Network Hook Functions
 def activation_hook_fn(module, input, output, layer_index):
     """
     This function will be called whenever a layer is called during the forward pass.
@@ -885,6 +621,108 @@ def write_hook_data_to_disk_and_clear(activations, weights_data, biases_data, ep
         # Clear the weights dictionary to free up memory
         biases_data.clear()
 
+#%% - Data Gathering Functions
+# Tracks confidence of each pixel as histogram per epoch with line showing the detection threshold
+def belief_telemetry(data, reconstruction_threshold, epoch, settings, plot_or_save=0):
+    data2 = data.flatten()
+
+    #Plots histogram showing the confidence level of each pixel being a signal point
+    _, _, bars = plt.hist(data2, 10, histtype='bar')
+    plt.axvline(x= reconstruction_threshold, color='red', marker='|', linestyle='dashed', linewidth=2, markersize=12)
+    plt.title("Epoch %s" %epoch)
+    plt.bar_label(bars, fontsize=10, color='navy') 
+    plt.xlabel("Output Values")
+    plt.ylabel("Number of Pixels")
+    plt.grid(alpha=0.2)
+    Out_Label = graphics_dir + f'{model_save_name} - Reconstruction Telemetry Histogram - Epoch {epoch}.png'
+    plot_save_choice(plot_or_save, Out_Label)
+
+    above_threshold = (data2 >= reconstruction_threshold).sum()
+    below_threshold = (data2 < reconstruction_threshold).sum()
+    return (above_threshold, below_threshold)
+                
+#Combine all performance metrics into simple test script
+def quantify_loss_performance(clean_input_batch, noised_target_batch, time_dimension):
+    loss_mse = []
+    loss_mae = []
+    loss_snr = []
+    loss_psnr = []
+    loss_ssim = []
+    loss_nmi = []
+    loss_cc = []
+    loss_true_positive_xy = []
+    loss_true_positive_tof = []
+    loss_false_positive_xy = [] 
+    #loss_nrmse = []
+
+    for i in range(len(clean_input_batch)):
+        clean_input = clean_input_batch[i][0]
+        noised_target = noised_target_batch[i][0]
+
+
+        ### ADD IN!!
+        #loss_nrmse.append(NMSRE(clean_input, noised_target))
+
+        loss_mse.append(MSE(clean_input, noised_target))
+        loss_mae.append(MAE(clean_input, noised_target))
+        loss_snr.append(SNR(clean_input, noised_target))
+        loss_psnr.append(PSNR(clean_input, noised_target, time_dimension))
+        loss_ssim.append(SSIM(clean_input, noised_target, time_dimension))
+        loss_nmi.append(NomalisedMutualInformation(clean_input, noised_target))
+        loss_cc.append(correlation_coeff(clean_input, noised_target))
+        percentage_of_true_positive_xy, percentage_of_true_positive_tof, numof_false_positives_xy = compare_images_pixels(clean_input, noised_target)
+        loss_true_positive_xy.append(percentage_of_true_positive_xy)
+        loss_true_positive_tof.append(percentage_of_true_positive_tof)
+        loss_false_positive_xy.append(numof_false_positives_xy)
+
+    #avg_loss_nrmse.append(np.mean(loss_nrmse))
+    avg_loss_mse.append(np.mean(loss_mse))
+    avg_loss_mae.append(np.mean(loss_mae))
+    avg_loss_snr.append(np.mean(loss_snr))
+    avg_loss_psnr.append(np.mean(loss_psnr))
+    avg_loss_ssim.append(np.mean(loss_ssim))
+    avg_loss_nmi.append(np.mean(loss_nmi))
+    avg_loss_cc.append(np.mean(loss_cc))
+    avg_loss_true_positive_xy.append(np.mean(loss_true_positive_xy))
+    avg_loss_true_positive_tof.append(np.mean(loss_true_positive_tof))
+    avg_loss_false_positive_xy.append(np.mean(loss_false_positive_xy))
+
+#%% - Data Output Functions
+def save_variable(variable, variable_name, path, force_pickle=False):
+
+    if force_pickle:
+        with open(path + variable_name + "_forcepkl.pkl", 'wb') as file:
+            pickle.dump(variable, file)
+    else:
+        if isinstance(variable, dict):
+            with open(path + variable_name + "_dict.pkl", 'wb') as file:
+                pickle.dump(variable, file)
+
+        elif isinstance(variable, np.ndarray):
+            np.save(path + variable_name + "_array.npy", variable)
+
+        elif isinstance(variable, torch.Tensor):
+            torch.save(variable, path + variable_name + "_tensor.pt")
+
+        elif isinstance(variable, list):
+            df = pd.DataFrame(variable)
+            df.to_csv(path + variable_name + "_list.csv", index=False)
+
+        elif isinstance(variable, int):
+            with open(path + variable_name + "_int.pkl", 'wb') as file:
+                pickle.dump(variable, file)
+
+        elif isinstance(variable, float):
+            with open(path + variable_name + "_float.pkl", 'wb') as file:
+                pickle.dump(variable, file)
+
+        elif isinstance(variable, str):
+            with open(path + variable_name + "_str.pkl", 'wb') as file:
+                pickle.dump(variable, file)
+
+        else:
+            raise ValueError("Unsupported variable type.")
+        
 def colour_code_excel_file(file_path):
     import openpyxl
     from openpyxl.utils import get_column_letter
@@ -918,7 +756,94 @@ def colour_code_excel_file(file_path):
     #resave the workbook to the same file
     workbook.save(file_path)
 
-### Loss Plots
+# Define a function to create a dictionary from the given settings
+def create_settings_dict(filename):
+    settings_dict = {
+        "dataset_title": dataset_title,
+        "model_save_name": model_save_name,
+        "xdim": xdim,
+        "ydim": ydim,
+        "time_dimension": time_dimension,
+        "num_epochs": num_epochs,
+        "batch_size": batch_size,
+        "learning_rate": learning_rate,
+        "optim_w_decay": optim_w_decay,
+        "latent_dim": latent_dim,
+        "fc_input_dim": fc_input_dim,
+        "dropout_prob": dropout_prob,
+        "reconstruction_threshold": reconstruction_threshold,
+        "train_test_split_ratio": train_test_split_ratio,
+        "val_set_on": val_set_on,
+        "val_test_split_ratio": val_test_split_ratio,
+        "loss_vs_sparse_img": loss_vs_sparse_img,
+        "loss_function_selection": loss_function_selection,
+        "zero_weighting": zero_weighting,
+        "nonzero_weighting": nonzero_weighting,
+        "fullframe_weighting": fullframe_weighting,
+        "signal_points" : signal_points,
+        "noise_points" : noise_points,
+        "x_std_dev" : x_std_dev,
+        "y_std_dev" : y_std_dev,
+        "tof_std_dev" : tof_std_dev,
+        "start_from_pretrained_model" : start_from_pretrained_model,
+        "load_pretrained_optimser" : load_pretrained_optimser,
+        "pretrained_model_path" : pretrained_model_path,
+        "masking_optimised_binary_norm" : masking_optimised_binary_norm,
+        "print_every_other" : print_every_other,
+        "plot_or_save" : plot_or_save,
+        "num_to_plot" : num_to_plot,
+        "save_all_raw_plot_data" : save_all_raw_plot_data,
+        "double_precision" : double_precision,
+        "shuffle_train_data" : shuffle_train_data,
+        "timeout_training" : timeout_training,
+        "timeout_time" : timeout_time,
+        "record_weights" : record_weights,
+        "record_biases" : record_biases,
+        "record_activity" : record_activity,
+        "compress_activations_npz_output" : compress_activations_npz_output,
+        "plot_train_loss" : plot_train_loss,
+        "plot_validation_loss" : plot_validation_loss,
+        "plot_time_loss" : plot_time_loss,
+        "plot_detailed_performance_loss" : plot_detailed_performance_loss,
+        "plot_live_time_loss" : plot_live_time_loss,
+        "plot_live_training_loss" : plot_live_training_loss,
+        "comparative_live_loss" : comparative_live_loss,
+        "slide_live_plot_size" : slide_live_plot_size,
+        "comparative_loss_titles" : comparative_loss_titles,
+        "comparative_loss_paths" : comparative_loss_paths,
+        "plot_pixel_threshold_telemetry": plot_pixel_threshold_telemetry,
+        "plot_pixel_difference": plot_pixel_difference,  # BROKEN
+        "plot_latent_generations": plot_latent_generations,
+        "plot_higher_dim": plot_higher_dim,
+        "plot_Graphwiz": plot_Graphwiz,
+        "print_encoder_debug": print_encoder_debug,
+        "print_decoder_debug": print_decoder_debug,
+        "print_network_summary": print_network_summary,
+        "print_partial_training_losses": print_partial_training_losses,
+        "debug_noise_function": debug_noise_function,
+        "debug_loader_batch": debug_loader_batch,
+        "debug_model_exporter": debug_model_exporter,
+        "full_dataset_integrity_check": full_dataset_integrity_check,
+        "full_dataset_distribution_check": full_dataset_distribution_check,
+        "seeding_value": seeding_value,
+        "optimise_hyperparameter": optimise_hyperparameter,
+        "hyperparam_to_optimise": hyperparam_to_optimise,
+        "set_optimisiation_list_manually": set_optimisiation_list_manually,
+        "print_validation_results": print_validation_results,
+        "plot_training_time": plot_training_time,
+        "perf_analysis_num_files": perf_analysis_num_files,
+        "perf_analysis_plot": perf_analysis_plot,
+        "perf_analysis_dataset_dir": perf_analysis_dataset_dir,
+        "debug_hpo_perf_analysis": debug_hpo_perf_analysis
+    }
+
+    # Save the settings dictionary to disk
+    with open(filename, "w") as f:
+        json.dump(settings_dict, f)
+
+    return settings_dict
+
+#%% - Plotting Functions
 def loss_plot(x, y, x_label, y_label, title, save_path, plot_or_save):
     plt.plot(x, y)
     plt.title(title)
@@ -927,255 +852,76 @@ def loss_plot(x, y, x_label, y_label, title, save_path, plot_or_save):
     plt.grid(alpha=0.2)
     plot_save_choice(plot_or_save, save_path) 
 
-#%% NEW!! IMAGE METRICS - NEEDS CLEANING UP!!!
+def create_comparison_plot_data(slide_live_plot_size, epoch, max_epoch_reached, comparative_live_loss, comparative_loss_titles, comparative_epoch_times, comparative_history_da, data=history_da['train_loss']):
+    ## Slide View
+    low_lim = 0
+    if slide_live_plot_size > 0:
+        low_lim = max(0, epoch - slide_live_plot_size)
 
-#Signal to Noise Ratio (SNR)
-def SNR(clean_input, noised_target):
-    """
-    Calculates the Signal to Noise Ratio (SNR) of a given signal and noise.
-    SNR is defined as the ratio of the magnitude of the signal and the magnitude of the noise.
+    ## Set data for current training model
+    x_list_epochs = [range(low_lim, epoch)]
+    x_list_time = [epoch_times_list]
+
+    y_list = [data]
+    legend_label_list = ["Training loss"]
+
+    ## Add data for comparative models if user desired
+    if comparative_live_loss:
+        legend_label_list.extend(comparative_loss_titles)
+
+        for loss_dictionary, epoch_t_list in zip(comparative_history_da, comparative_epoch_times):
+            epoch_t_list = epoch_t_list[1:]   # NOTE: FIX FOR EPOCH LISTS BEING SAVeD INCLUDING 0 time which breaks the plot by having one more value than the hsitory da train loss. INVESTIGATE THIS ERROR ROOT CAUSE
+
+            #if epoch > len(loss_dictionary['train_loss']):
+                #print("WARNING: Epoch is greater than the number of epochs in the comparative model, this will cause an error in the live loss plot")
+                #epoch_t_list.append(np.nan) # protection from surpassing the comaprison data during training.
+                #loss_dictionary['train_loss'].append(np.nan) # protection from surpassing the comaprison data during training. 
+            
+            x_list_epochs.append(range(low_lim,len(loss_dictionary['train_loss'])))    
+            x_list_time.append(epoch_t_list)
+            y_list.append(loss_dictionary['train_loss'])
     
-    Args:
-    clean_input (torch.Tensor): The original signal.
-    noised_target (torch.Tensor): The signal with added noise.
-    
-    Returns:
-    The calculated SNR value.    
-    """
-    signal_power = torch.mean(torch.pow(clean_input, 2))
+    ## Create plots
+    # can have if staments here for protin time and epochs etc
+    Out_Label1 = dir + f'{model_save_name} - Live Train loss.png'
+    comparitive_loss_plot(x_list_epochs, y_list, legend_label_list, "Epoch number", "Train loss (ACB-MSE)", "Live Training loss", Out_Label1, plot_or_save)
+    Out_Label2 = dir + f'{model_save_name} - Live time loss.png'
+    comparitive_loss_plot(x_list_time, y_list, legend_label_list, "Time (s)", "Train loss (ACB-MSE)", "Live Time loss", Out_Label2, plot_or_save)
 
-    noise = clean_input - noised_target 
-    noise_power = torch.mean(torch.pow(noise, 2))
+def comparitive_loss_plot(x_list, y_list, legend_label_list, x_label, y_label, title, save_path, plot_or_save):
+    for x, y, legend_label in zip(x_list, y_list, legend_label_list):
+        plt.plot(x, y, label=legend_label)
+    plt.title(title)
+    plt.xlabel(x_label)
+    plt.ylabel(y_label)
+    plt.grid(alpha=0.2)
+    plt.legend()
+    plot_save_choice(plot_or_save, save_path) 
 
-    snr = 10 * torch.log10(signal_power / noise_power)
-       
-    return (float(snr.numpy()))
-
-#Peak Signal-to-Noise Ratio (PSNR):
-def PSNR(clean_input, noised_target, time_dimension):
-    """
-    Calculates the Peak Signal to Noise Ratio (PSNR) of a given image and its recovered version. PSNR is defined as the ratio of 
-    the maximum possible power of a signal and the power of corrupting noise. The measure focuses on how well high-intensity 
-    regions of the image come through the noise, and pays much less attention to low intensity regions.
-
-    Args:
-    clean_input (torch.Tensor): The original image.
-    noised_target (torch.Tensor): The recovered image.
-    
-    Returns:
-    The calculated PSNR value.
-    """
-    mse = torch.mean(torch.pow(clean_input - noised_target, 2))   #Finds the mean square error
-    max_value = time_dimension
-    psnr = 10 * torch.log10((max_value**2) / mse)
-    return (float(psnr.numpy()))
-
-#Mean Squared Error (MSE):
-def MSE(clean_input, noised_target):
-    """
-    Mean Squared Error (MSE)
-
-    Args:
-    clean_input (torch.Tensor): The original image.
-    noised_target (torch.Tensor): The recovered image.
-    
-    Returns:
-    The calculated Mean Squared Error value.
-    """
-    mse = torch.mean((torch.pow(clean_input - noised_target, 2)))
-    return (float(mse.numpy()))
-
-#Mean Absolute Error (MAE):
-def MAE(clean_input, noised_target):
-    """
-    Mean Absolute Error (MAE)
-
-    Args:
-    clean_input (torch.Tensor): The original image.
-    noised_target (torch.Tensor): The recovered image.
-    
-    Returns:
-    The calculated Mean Absolute Error value.
-    """
-    return float((torch.mean(torch.abs(clean_input - noised_target))).numpy())
-
-#Structural Similarity Index (SSIM):
-def SSIM(clean_input, noised_target):
-    """
-    Structural Similarity Index Measure (SSIM), is a perceptual quality index that measures the structural similarity between 
-    two images. SSIM takes into account the structural information of an image, such as luminance, contrast, and structure, 
-    and compares the two images based on these factors. SSIM is based on a three-part similarity metric that considers the 
-    structural information in the image, the dynamic range of the image, and the luminance information of the image. SSIM is 
-    designed to provide a more perceptually relevant measure of image similarity than traditional metrics such as Mean Squared 
-    Error or Peak Signal-to-Noise Ratio.
-
-    Args:
-    clean_input (torch.Tensor): The original image.
-    noised_target (torch.Tensor): The recovered image.
-    
-    Returns:
-    The calculated Structural Similarity Index Measure value.
-    """
-    clean_image = clean_input.detach().cpu().numpy()
-    recovered_image = noised_target.detach().cpu().numpy()
-    return structural_similarity(clean_image, recovered_image, data_range=float(time_dimension))
-
-#Correlation Coefficent
-def correlation_coeff(clean_input, noised_target):
-    
-    """
-    Correlation coefficient is a scalar value that measures the linear relationship between two signals. The correlation 
-    coefficient ranges from -1 to 1, where a value of 1 indicates a perfect positive linear relationship, a value of -1 indicates 
-    a perfect negative linear relationship, and a value of 0 indicates no linear relationship between the two signals. Correlation 
-    coefficient only measures the linear relationship between two signals, and does not take into account the structure of the signals.
-
-    ρ = cov(x,y) / (stddev(x) * stddev(y))
-
-    The function first computes the mean and standard deviation of each tensor, and then subtracts the mean from each element 
-    to get the centered tensors x_center and y_center. The numerator is the sum of the element-wise product of x_center 
-    and y_center, and the denominator is the product of the standard deviations of the two centered tensors multiplied by the 
-    number of elements in the tensor. The function returns the value of the correlation coefficient ρ as the ratio of the numerator 
-    and denominator.
-
-    Args:
-    clean_input (torch.Tensor): The original image.
-    noised_target (torch.Tensor): The recovered image.
-    
-    Returns:
-    The calculated correlation coefficient value.
-    """
-    clean_mean = clean_input.mean()
-    noised_mean = noised_target.mean()
-    clean_std = clean_input.std()
-    noised_std = noised_target.std()
-    clean_center = clean_input - clean_mean
-    noised_center = noised_target - noised_mean
-    numerator = (clean_center * noised_center).sum()
-    denominator = clean_std * noised_std * clean_input.numel()
-    return float((numerator / denominator).numpy())
-
-#Mutual Information:
-def NomalisedMutualInformation(clean_input, noised_target):
-    clean_image = clean_input.detach().cpu().numpy()
-    recovered_image = noised_target.detach().cpu().numpy()
-    return normalized_mutual_information(clean_image, recovered_image)-1
-
-def compare_images_pixels(clean_img, denoised_img, terminal_print=False):   ###!!!INVESTIGATE USING PRINT = TRUE !!!!
-    clean_img = clean_img.detach().cpu().numpy()
-    denoised_img = denoised_img.detach().cpu().numpy()
-    ###TRUE HITS STATS###
-    if terminal_print:
-        print("###TRUE HITS STATS###")
-    
-    ##X,Y##
-    true_hits_indexs = np.nonzero(clean_img)     # Find the indexs of the non zero pixels in clean_img
-    numof_true_hits = len(true_hits_indexs[0])   # Find the number of lit pixels in clean_img
-    if terminal_print:
-        print("numof_true_hits:", numof_true_hits)
-    
-    # Check the values in corresponding indexs in denoised_img, retunr the index's and number of them that are also non zero
-    true_positive_xy_indexs = np.nonzero(denoised_img[true_hits_indexs]) 
-    numof_true_positive_xy = len(true_positive_xy_indexs[0])                     # Calculate the number of pixels in clean_img that are also in denoised_img ###NUMBER OF SUCSESSFUL X,Y RECON PIXELS
-    if terminal_print:
-        print("numof_true_positive_xy:", numof_true_positive_xy)
-
-    # Calculate the number of true hit pixels in clean_img that are not lit at all in denoised_img  ###NUMBER OF LOST TRUE PIXELS
-    false_negative_xy = numof_true_hits - numof_true_positive_xy
-    if terminal_print:
-        print("false_negative_xy:", false_negative_xy)
-    
-    # Calculate the percentage of non zero pixels in clean_img that are also non zero in denoised_img   ###PERCENTAGE OF SUCSESSFUL X,Y RECON PIXELS
-    if numof_true_hits == 0:
-        percentage_of_true_positive_xy = 0
+# Helper function to clean up repeated plot save/show code
+def plot_save_choice(plot_or_save, output_file_path):
+    if plot_or_save == 0:
+        plt.show()
     else:
-        percentage_of_true_positive_xy = (numof_true_positive_xy / numof_true_hits) * 100
-    
-    if terminal_print:
-        print(f"percentage_of_true_positive_xy: {percentage_of_true_positive_xy}%")
-    
+        plt.savefig(output_file_path, format='png')    
+        if plot_or_save == 1:    
+            plt.close()
+        else:
+            plt.show()
 
-    ##TOF##
-    # Calculate the number of pixels in clean_img that are also in denoised_img and have the same TOF value  ###NUMBER OF SUCSESSFUL X,Y,TOF RECON PIXELS
-    num_of_true_positive_tof = np.count_nonzero(np.isclose(clean_img[true_hits_indexs], denoised_img[true_hits_indexs], rtol=1e-6))
-    if terminal_print:
-        print("num_of_true_positive_tof:", num_of_true_positive_tof)
-    
-    # Calculate the percentage of pixels in clean_img that are also in denoised_img and have the same value   ###PERCENTAGE OF SUCSESSFUL X,Y,TOF RECON PIXELS
-    if numof_true_hits == 0:
-        percentage_of_true_positive_tof = 0
-    else:
-        percentage_of_true_positive_tof = (num_of_true_positive_tof / numof_true_hits) * 100
-    if terminal_print:
-        print(f"percentage_of_true_positive_tof: {percentage_of_true_positive_tof}%")    
-    
-
-    ###FALSE HIT STATS###
-    if terminal_print:
-        print("\n###FALSE HIT STATS###")        
-    clean_img_zero_indexs = np.where(clean_img == 0)   # find the index of the 0 valued pixels in clean image 
-    number_of_zero_pixels = np.sum(clean_img_zero_indexs[0])   # Find the number of pixels in clean image that are zero
-    if terminal_print:
-        print("number_of_true_zero_pixels:",number_of_zero_pixels)
-
-    #check the values in corresponding indexs in denoised_img, return the number of them that are non zero
-    denoised_img_false_lit_pixels = np.nonzero(denoised_img[clean_img_zero_indexs])
-    numof_false_positives_xy = len(denoised_img_false_lit_pixels[0])
-    if terminal_print:
-        print("numof_false_positives_xy:",numof_false_positives_xy)
-
-    # Calculate the percentage of pixels in clean_img that are zero and are also non zero in denoised_img   ###PERCENTAGE OF FALSE LIT PIXELS
-
-    if number_of_zero_pixels == 0:
-        percentage_of_false_lit_pixels = 0
-    else:
-        percentage_of_false_lit_pixels = (numof_false_positives_xy / number_of_zero_pixels) * 100
-    
-    
-    if terminal_print:
-        print(f"percentage_of_false_positives_xy: {percentage_of_false_lit_pixels}%")
-    
-    return percentage_of_true_positive_xy, percentage_of_true_positive_tof, numof_false_positives_xy
-
-#Combine all performance metrics into simple test script
-def quantify_loss_performance(clean_input_batch, noised_target_batch, time_dimension):
-    loss_mse = []
-    loss_mae = []
-    loss_snr = []
-    loss_psnr = []
-    loss_ssim = []
-    loss_nmi = []
-    loss_cc = []
-    loss_true_positive_xy = []
-    loss_true_positive_tof = []
-    loss_false_positive_xy = [] 
-
-    for i in range(len(clean_input_batch)):
-        clean_input = clean_input_batch[i][0]
-        noised_target = noised_target_batch[i][0]
-
-        loss_mse.append(MSE(clean_input, noised_target))
-        loss_mae.append(MAE(clean_input, noised_target))
-        loss_snr.append(SNR(clean_input, noised_target))
-        loss_psnr.append(PSNR(clean_input, noised_target, time_dimension))
-        loss_ssim.append(SSIM(clean_input, noised_target))
-        loss_nmi.append(NomalisedMutualInformation(clean_input, noised_target))
-        loss_cc.append(correlation_coeff(clean_input, noised_target))
-        percentage_of_true_positive_xy, percentage_of_true_positive_tof, numof_false_positives_xy = compare_images_pixels(clean_input, noised_target)
-        loss_true_positive_xy.append(percentage_of_true_positive_xy)
-        loss_true_positive_tof.append(percentage_of_true_positive_tof)
-        loss_false_positive_xy.append(numof_false_positives_xy)
-
-    avg_loss_mse.append(np.mean(loss_mse))
-    avg_loss_mae.append(np.mean(loss_mae))
-    avg_loss_snr.append(np.mean(loss_snr))
-    avg_loss_psnr.append(np.mean(loss_psnr))
-    avg_loss_ssim.append(np.mean(loss_ssim))
-    avg_loss_nmi.append(np.mean(loss_nmi))
-    avg_loss_cc.append(np.mean(loss_cc))
-    avg_loss_true_positive_xy.append(np.mean(loss_true_positive_xy))
-    avg_loss_true_positive_tof.append(np.mean(loss_true_positive_tof))
-    avg_loss_false_positive_xy.append(np.mean(loss_false_positive_xy))
-
+# Plots the confidence telemetry data
+def plot_telemetry(telemetry, true_num_of_signal_points, plot_or_save=0):
+    tele = np.array(telemetry)
+    plt.plot(tele[:,0],tele[:,1], color='r', label="Points above threshold") #red = num of points above threshold
+    plt.plot(tele[:,0],tele[:,2], color='b', label="Points below threshold") #blue = num of points below threshold
+    plt.axhline(y=true_num_of_signal_points, color='g', linestyle='dashed', label="True number of signal points")
+    plt.title("Telemetry over epochs")
+    plt.xlabel("Epoch number")
+    plt.ylabel("Number of Signal Points")
+    plt.legend()
+    Out_Label = graphics_dir + f'{model_save_name} - Reconstruction Telemetry Histogram - Epoch {epoch}.png'
+    plot_save_choice(plot_or_save, Out_Label)
+            
 #%% - Train, Test, Val and Plot Functions
 ### Training Function
 def train_epoch(encoder, decoder, device, dataloader, loss_fn, optimizer, signal_points, noise_points=0, x_std_dev=0, y_std_dev=0, tof_std_dev=0, time_dimension=100, reconstruction_threshold=0.5, print_partial_training_losses=False):
@@ -1538,10 +1284,13 @@ def plot_epoch_data(encoder, decoder, epoch, model_save_name, time_dimension, re
         ax5.set_xlim(0, 128)
         ax5.set_ylim(0, 88)
 
-        ax6.scatter(masked_im[:,0], masked_im[:,1], masked_im[:,2]) #plots the 3D scatter plot for masked image
-        ax6.set_zlim(0, time_dimension)
-        ax6.set_xlim(0, 128)
-        ax6.set_ylim(0, 88)
+        try: ## NOTE THIS ERROR NEEDS FIXING. IT IS CAUSED BY A SITUATION WHERE DATA DOES COME BACK THAT IS GREATER THAN THE RECON CUTTOFF SO 3D PLOTS ARE GENERATED HOWVER NO POINTS LIE IN CORRECT PLACE FOR MASKING SO THE MASK CONTAINS NOTHING. THEN THE MASK WILL BE WRONG DIMS AND CASUE THE PLOT ERROR HERE. FIX
+            ax6.scatter(masked_im[:,0], masked_im[:,1], masked_im[:,2]) #plots the 3D scatter plot for masked image
+            ax6.set_zlim(0, time_dimension)
+            ax6.set_xlim(0, 128)
+            ax6.set_ylim(0, 88)
+        except:
+            print("ERROR OCCURED IN MASKING 3D PLOT! INVESTIGATE!")
 
         Out_Label = graphics_dir + f'{model_save_name} 3D Reconstruction - Epoch {epoch}.png' #creates the name of the file to be saved
         plot_save_choice(plot_or_save, Out_Label) #saves the plot if plot_or_save is set to 1, if 0 it displays, if 2 it displays and saves
@@ -1552,7 +1301,7 @@ def plot_epoch_data(encoder, decoder, epoch, model_save_name, time_dimension, re
 
     return(number_of_true_signal_points, number_of_recovered_signal_points, in_im, noise_im, rec_im)        #returns the number of true signal points, number of recovered signal points, input image, noised image and reconstructed image 
 
-#%% - Classes
+#%% - Custom Loss Fn Classes
 class WeightedPerfectRecoveryLoss(torch.nn.Module):
     def __init__(self, zero_weighting=1, nonzero_weighting=1):
         super(WeightedPerfectRecoveryLoss, self).__init__()
@@ -1626,18 +1375,478 @@ class WeightedPerfectRecoveryLoss(torch.nn.Module):
 
         return loss_value
 
+class ACBLoss(torch.nn.Module):
+    def __init__(self, zero_weighting=1, nonzero_weighting=1):
+        """
+        Initializes the ACB-MSE Loss Function class with weighting coefficients.
+
+        Args:
+        - zero_weighting: a scalar weighting coefficient for the MSE loss of zero pixels
+        - nonzero_weighting: a scalar weighting coefficient for the MSE loss of non-zero pixels
+        """
+        super().__init__()   
+        self.zero_weighting = zero_weighting
+        self.nonzero_weighting = nonzero_weighting
+        self.mse_loss = torch.nn.MSELoss(reduction='mean')
+
+    def forward(self, reconstructed_image, target_image):
+        """
+        Calculates the weighted mean squared error (MSE) loss between target_image and reconstructed_image.
+        The loss for zero pixels in the target_image is weighted by zero_weighting, and the loss for non-zero
+        pixels is weighted by nonzero_weighting.
+
+        Args:
+        - target_image: a tensor of shape (B, C, H, W) containing the target image
+        - reconstructed_image: a tensor of shape (B, C, H, W) containing the reconstructed image
+
+        Returns:
+        - weighted_mse_loss: a scalar tensor containing the weighted MSE loss
+        """
+        zero_mask = (target_image == 0)
+        nonzero_mask = ~zero_mask
+
+        values_zero = target_image[zero_mask]
+        values_nonzero = target_image[nonzero_mask]
+
+        corresponding_values_zero = reconstructed_image[zero_mask]
+        corresponding_values_nonzero = reconstructed_image[nonzero_mask]
+
+        zero_loss = self.mse_loss(corresponding_values_zero, values_zero)
+        nonzero_loss = self.mse_loss(corresponding_values_nonzero, values_nonzero)
+
+        if torch.isnan(zero_loss):
+            zero_loss = 0
+        if torch.isnan(nonzero_loss):
+            nonzero_loss = 0
+
+        weighted_mse_loss = (self.zero_weighting * zero_loss) + (self.nonzero_weighting * nonzero_loss)
+
+        return weighted_mse_loss
+
+class ffACBLoss(torch.nn.Module):
+    def __init__(self, zero_weighting=1, nonzero_weighting=1, fullframe_weighting=1):
+        """
+        Initializes the ACB-MSE Loss Function class with weighting coefficients.
+
+        Args:
+        - zero_weighting: a scalar weighting coefficient for the MSE loss of zero pixels
+        - nonzero_weighting: a scalar weighting coefficient for the MSE loss of non-zero pixels
+        """
+        super().__init__()   
+        self.zero_weighting = zero_weighting
+        self.nonzero_weighting = nonzero_weighting
+        self.fullframe_weighting = fullframe_weighting
+        self.mse_loss = torch.nn.MSELoss(reduction='mean')
+
+    def forward(self, reconstructed_image, target_image):
+        """
+        Calculates the weighted mean squared error (MSE) loss between target_image and reconstructed_image.
+        The loss for zero pixels in the target_image is weighted by zero_weighting, and the loss for non-zero
+        pixels is weighted by nonzero_weighting.
+
+        Args:
+        - target_image: a tensor of shape (B, C, H, W) containing the target image
+        - reconstructed_image: a tensor of shape (B, C, H, W) containing the reconstructed image
+
+        Returns:
+        - weighted_mse_loss: a scalar tensor containing the weighted MSE loss
+        """
+        zero_mask = (target_image == 0)
+        nonzero_mask = ~zero_mask
+
+        values_zero = target_image[zero_mask]
+        values_nonzero = target_image[nonzero_mask]
+
+        corresponding_values_zero = reconstructed_image[zero_mask]
+        corresponding_values_nonzero = reconstructed_image[nonzero_mask]
+
+        zero_loss = self.mse_loss(corresponding_values_zero, values_zero)
+        nonzero_loss = self.mse_loss(corresponding_values_nonzero, values_nonzero)
+        full_frame_loss = self.mse_loss(reconstructed_image, target_image)
+
+        if torch.isnan(zero_loss):
+            zero_loss = 0
+        if torch.isnan(nonzero_loss):
+            nonzero_loss = 0
+
+        weighted_mse_loss = (self.zero_weighting * zero_loss) + (self.nonzero_weighting * nonzero_loss) + (self.fullframe_weighting * full_frame_loss)
+
+        return weighted_mse_loss
+
+class ACBLoss3D(torch.nn.Module):
+    def __init__(self, zero_weighting=1, nonzero_weighting=1, virtual_t_weighting=1, virtual_x_weighting=1, virtual_y_weighting=1, timesteps=1000):
+        """
+        Initializes the ACB-MSE-3D Holographic Loss Function class with weighting coefficients.
+
+        Args:
+        - zero_weighting: a scalar weighting coefficient for the MSE loss of zero pixels
+        - nonzero_weighting: a scalar weighting coefficient for the MSE loss of non-zero pixels
+        - virtual_t_weighting: a scalar weighting coefficient for the MSE loss of virtual t pixels
+        - virtual_x_weighting: a scalar weighting coefficient for the MSE loss of virtual x pixels
+        - virtual_y_weighting: a scalar weighting coefficient for the MSE loss of virtual y pixels
+        """
+        super().__init__()   
+        self.zero_weighting = zero_weighting
+        self.nonzero_weighting = nonzero_weighting
+        self.virtual_t_weighting = virtual_t_weighting
+        self.virtual_x_weighting = virtual_x_weighting
+        self.virtual_y_weighting = virtual_y_weighting
+        self.mse_loss = torch.nn.MSELoss(reduction='mean')
+        self.timesteps = timesteps
+
+        if self.timesteps <= 0:
+            raise ValueError("Timesteps to Holographic loss should be a positive integer")
+        
+    def holographic_transform(self, input_image, virtual_dim='y', binary_values=True, debug=False):
+
+        input_batch = input_image.clone()
+        output_batch_1 = torch.zeros((input_batch.shape[0], input_batch.shape[1], input_batch.shape[2], self.timesteps), dtype=input_batch.dtype, requires_grad=True)
+        output_batch = output_batch_1.clone()
+
+        for b in range(input_batch.shape[0]):
+
+            input_tensor = input_batch[b, 0]
+            
+            if virtual_dim == 'x':
+                input_tensor = input_tensor.T
+
+            non_zero_indices_x, non_zero_indices_y = torch.nonzero(input_tensor, as_tuple=True)
+            values = input_tensor[non_zero_indices_x, non_zero_indices_y]
+            quantized_values = (values * self.timesteps).to(torch.int64) - 1                         # Values lie in range 0.0 - 1.0 
+
+            for quantized_value, non_zero_indice_x, non_zero_indice_y in zip(quantized_values, non_zero_indices_x, non_zero_indices_y):
+                output_batch[b, 0, non_zero_indice_x, quantized_value] = non_zero_indice_y
+
+        return output_batch
 
 
-#%% - Initialises seeding values to RNGs
-if seeding_value:
-    Determinism_Seeding(seeding_value)             # Set the seed for the RNGs
-    print("Seeding with value:", seeding_value)
-else:
-    torch.seed()                                    # Set the seed for the RNGs
-    np.random.seed()
+    def ACB_MSE_Loss (self, reconstructed, target):
+        reconstructed_image = reconstructed.clone()
+        target_image = target.clone()
+        """
+        Calculates the weighted mean squared error (MSE) loss between target_image and reconstructed_image.
+        The loss for zero pixels in the target_image is weighted by zero_weighting, and the loss for non-zero
+        pixels is weighted by nonzero_weighting.
 
-T_seed = torch.initial_seed()
-N_seed = np.random.get_state()[1][0]
+        Args:
+        - target_image: a tensor of shape (B, C, H, W) containing the target image
+        - reconstructed_image: a tensor of shape (B, C, H, W) containing the reconstructed image
+
+        Returns:
+        - weighted_mse_loss: a scalar tensor containing the weighted MSE loss
+        """
+        zero_mask = (target_image == 0)
+        nonzero_mask = ~zero_mask
+
+        values_zero = target_image[zero_mask]
+        values_nonzero = target_image[nonzero_mask]
+
+        corresponding_values_zero = reconstructed_image[zero_mask]
+        corresponding_values_nonzero = reconstructed_image[nonzero_mask]
+
+        zero_loss = self.mse_loss(corresponding_values_zero, values_zero)
+        nonzero_loss = self.mse_loss(corresponding_values_nonzero, values_nonzero)
+
+        if torch.isnan(zero_loss):
+            zero_loss = 0
+        if torch.isnan(nonzero_loss):
+            nonzero_loss = 0
+
+        weighted_mse_loss = (self.zero_weighting * zero_loss) + (self.nonzero_weighting * nonzero_loss)
+
+        return weighted_mse_loss
+
+    def forward(self, reconstructed_image, target_image):
+        if self.virtual_t_weighting:
+            vt_loss = (self.ACB_MSE_Loss(reconstructed_image, target_image)) * self.virtual_t_weighting
+        else:
+            vt_loss = torch.tensor(0, dtype=reconstructed_image.dtype, requires_grad=True)
+        
+        if self.virtual_x_weighting:
+            reconstructed_hologram_vx = self.holographic_transform(reconstructed_image, virtual_dim='x')
+            target_hologram_vx = self.holographic_transform(target_image, virtual_dim='x')
+            vx_loss = (self.ACB_MSE_Loss(reconstructed_hologram_vx, target_hologram_vx)) * self.virtual_x_weighting
+        else:
+            vx_loss = torch.tensor(0, dtype=reconstructed_image.dtype, requires_grad=True)
+        
+        if self.virtual_y_weighting:
+            reconstructed_hologram_vy = self.holographic_transform(reconstructed_image)
+            target_hologram_vy = self.holographic_transform(target_image)
+            vy_loss = self.ACB_MSE_Loss(reconstructed_hologram_vy, target_hologram_vy) * self.virtual_y_weighting
+        else:
+            vy_loss = torch.tensor(0, dtype=reconstructed_image.dtype, requires_grad=True)
+
+        return vt_loss + vx_loss + vy_loss
+    
+class simple3Dloss(torch.nn.Module):
+    def __init__(self, zero_weighting=1, nonzero_weighting=1, virtual_t_weighting=1, virtual_x_weighting=1, virtual_y_weighting=1, timesteps=1000):
+        super().__init__()   
+        self.mse_loss = torch.nn.MSELoss(reduction='mean')
+        self.timesteps = timesteps
+
+    def holographic_transform(self, input_image, virtual_dim='y', binary_values=True, debug=False):
+        input_batch = input_image.clone()
+
+        # Create a tensor of zeros with the desired last dimension size
+        new_size = list(input_batch.size())
+        new_size[-1] = self.timesteps
+        output_batch = torch.zeros(new_size, dtype=input_batch.dtype, requires_grad=True)
+
+        for b in range(input_batch.shape[0]):
+            input_tensor = input_batch[b, 0]
+            
+            if virtual_dim == 'x':
+                input_tensor = input_tensor.T
+
+            non_zero_indices_x, non_zero_indices_y = torch.nonzero(input_tensor, as_tuple=True)
+            values = input_tensor[non_zero_indices_x, non_zero_indices_y]
+            quantized_values = (values * self.timesteps).to(torch.int64) - 1
+
+
+            for quantized_value, non_zero_indice_x, non_zero_indice_y in zip(quantized_values, non_zero_indices_x, non_zero_indices_y):
+                #output_batch[b, 0, non_zero_indice_x, quantized_value] = non_zero_indice_y
+
+                new_values = output_batch.clone()  # Create a new tensor with the same values as output_batch
+                new_values[b, 0, non_zero_indice_x, quantized_value] = non_zero_indice_y
+                output_batch = new_values  # Update output_batch with the modified values
+        return output_batch
+
+    def forward(self, reconstructed_image, target_image):
+        reconstructed_hologram_vy = self.holographic_transform(reconstructed_image)
+        target_hologram_vy = self.holographic_transform(target_image)
+        vy_loss = self.mse_loss(reconstructed_hologram_vy, target_hologram_vy)
+        return vy_loss
+    
+class simple3DlossOLD(torch.nn.Module):
+    def __init__(self, zero_weighting=1, nonzero_weighting=1, virtual_t_weighting=1, virtual_x_weighting=1, virtual_y_weighting=1, timesteps=1000):
+        super().__init__()   
+        self.mse_loss = torch.nn.MSELoss(reduction='mean')
+        self.timesteps = timesteps
+
+    def holographic_transform(self, input_image, virtual_dim='y', binary_values=True, debug=False):
+
+        input_batch = input_image.clone()
+        output_batch_1 = torch.zeros((input_batch.shape[0], input_batch.shape[1], input_batch.shape[2], self.timesteps), dtype=input_batch.dtype, requires_grad=True)
+        output_batch = output_batch_1.clone()
+
+        for b in range(input_batch.shape[0]):
+
+            input_tensor = input_batch[b, 0]
+            
+            if virtual_dim == 'x':
+                input_tensor = input_tensor.T
+
+            non_zero_indices_x, non_zero_indices_y = torch.nonzero(input_tensor, as_tuple=True)
+            values = input_tensor[non_zero_indices_x, non_zero_indices_y]
+            quantized_values = (values * self.timesteps).to(torch.int64) - 1                         # Values lie in range 0.0 - 1.0 
+
+            for quantized_value, non_zero_indice_x, non_zero_indice_y in zip(quantized_values, non_zero_indices_x, non_zero_indices_y):
+                output_batch[b, 0, non_zero_indice_x, quantized_value] = non_zero_indice_y
+
+        return output_batch
+
+    def forward(self, reconstructed_image, target_image):
+        reconstructed_hologram_vy = self.holographic_transform(reconstructed_image)
+        target_hologram_vy = self.holographic_transform(target_image)
+        vy_loss = self.mse_loss(reconstructed_hologram_vy, target_hologram_vy)
+        return vy_loss
+    
+class True3DLoss(torch.nn.Module):
+    def __init__(self, zero_weighting=1, nonzero_weighting=1, timesteps=1000):
+        """
+        # Number of dp is related to timestep size. 1,000 = 3dp, 10,000 = 4dp, 100,000 = 5dp, 1,000,000 = 6dp etc
+        
+        """
+        super().__init__()   
+        self.mse_loss = torch.nn.MSELoss(reduction='mean')
+        self.timesteps = timesteps
+        self.zero_weighting = zero_weighting
+        self.nonzero_weighting = nonzero_weighting
+
+    def ACB_MSE_Loss (self, reconstructed, target):
+        reconstructed_image = reconstructed.clone()
+        target_image = target.clone()
+        """
+        Calculates the weighted mean squared error (MSE) loss between target_image and reconstructed_image.
+        The loss for zero pixels in the target_image is weighted by zero_weighting, and the loss for non-zero
+        pixels is weighted by nonzero_weighting.
+
+        Args:
+        - target_image: a tensor of shape (B, C, H, W) containing the target image
+        - reconstructed_image: a tensor of shape (B, C, H, W) containing the reconstructed image
+
+        Returns:
+        - weighted_mse_loss: a scalar tensor containing the weighted MSE loss
+        """
+        zero_mask = (target_image == 0)
+        nonzero_mask = ~zero_mask
+
+        values_zero = target_image[zero_mask]
+        values_nonzero = target_image[nonzero_mask]
+
+        corresponding_values_zero = reconstructed_image[zero_mask]
+        corresponding_values_nonzero = reconstructed_image[nonzero_mask]
+
+        zero_loss = self.mse_loss(corresponding_values_zero, values_zero)
+        nonzero_loss = self.mse_loss(corresponding_values_nonzero, values_nonzero)
+
+        if torch.isnan(zero_loss):
+            zero_loss = 0
+        if torch.isnan(nonzero_loss):
+            nonzero_loss = 0
+
+        weighted_mse_loss = (self.zero_weighting * zero_loss) + (self.nonzero_weighting * nonzero_loss)
+
+        return weighted_mse_loss
+
+    def expand_data_to_new_dimPREFERED(self, input_tensor):
+        """
+        # Number of dp is related to timestep size. 1,000 = 3dp, 10,000 = 4dp, 100,000 = 5dp, 1,000,000 = 6dp etc
+        
+        """
+
+        # QUANITSE VALUES IN THE TENSOR TO steps of (1/timesteps) then multiply by timesteps to arrive at integers (this simplifies to juyt * timestep then round)
+        #quantised_tensor = torch.round(input_tensor * self.timesteps) # / timesteps
+
+        # Determine the number of classes (third dimension size)
+        num_classes = self.timesteps #int(input_tensor.max()) + 1
+
+        # Convert the input tensor to indices
+        indices = input_tensor.long()
+
+        # Create a mask for non-zero values
+        #non_zero_mask = input_tensor != 0
+
+        # Create one-hot encoded tensor
+        one_hot_encoded = torch.nn.functional.one_hot(indices, num_classes=num_classes).float()
+
+        # Apply the mask to exclude zero values
+        #one_hot_encoded = one_hot_encoded * non_zero_mask.unsqueeze(-1)
+
+        # Permute dimensions to move the new dimension to the front
+        #one_hot_encoded = one_hot_encoded.permute(0, 1, 4, 2, 3)
+        
+        return one_hot_encoded
+
+    def expand_data_to_new_dim(self, input_tensor):
+        input_tensor = (input_tensor * self.timesteps) - 1
+
+        input_tensor = torch.where(input_tensor < 0, torch.tensor(0.0), input_tensor)   # could try input_tensor + 1.0 instead of  torch.tensor(0.0)
+
+        # Assuming you have 'indices' and 'num_classes' defined
+        num_classes =  self.timesteps
+        indices = input_tensor.long()
+
+        # Reshape the indices tensor for compatibility with scatter_
+        reshaped_indices = indices.view(indices.size(0), indices.size(1), -1)
+
+        # Create a tensor of zeros with the same shape as 'reshaped_indices'
+        one_hot_encoded = torch.zeros(reshaped_indices.size(0), reshaped_indices.size(1), num_classes, reshaped_indices.size(2), requires_grad=True)
+        
+        # Use scatter to fill the one-hot encoded tensor (without in-place operation)
+        one_hot_encoded = one_hot_encoded.scatter(2, reshaped_indices.unsqueeze(2), 1)
+
+        # Convert the tensor to float
+        one_hot_encoded = one_hot_encoded.float()
+
+        return one_hot_encoded
+
+    def forward(self, reconstructed_image, target_image):
+        reconstructed_3D_view = self.expand_data_to_new_dim(reconstructed_image)
+        target_3D_view = self.expand_data_to_new_dim(target_image)
+        true3d_loss = self.ACB_MSE_Loss(reconstructed_3D_view, target_3D_view)
+        return true3d_loss
+
+def weighted_perfect_recovery_lossOLD(reconstructed_image, target_image, zero_weighting=1, nonzero_weighting=1):
+
+    # Get the indices of 0 and non 0 values in target_image as a mask for speed
+    zero_mask = (target_image == 0)
+    nonzero_mask = ~zero_mask         # Invert mask
+    
+    # Get the values in target_image
+    values_zero = target_image[zero_mask]
+    values_nonzero = target_image[nonzero_mask]
+
+    #Calualte the number of value sin each of values_zero and values_nonzero for use in the class balancing
+    zero_n = len(values_zero)
+    nonzero_n = len(values_nonzero)
+    
+    # Get the corresponding values in reconstructed_image
+    corresponding_values_zero = reconstructed_image[zero_mask]
+    corresponding_values_nonzero = reconstructed_image[nonzero_mask]
+
+    if zero_n == 0:
+        zero_loss = 0
+    else:
+        # Calculate the loss for zero values
+        loss_value_zero = (values_zero != corresponding_values_zero).float().sum() 
+        zero_loss = zero_weighting*( (1/zero_n) * loss_value_zero)
+
+    if nonzero_n == 0:
+        nonzero_loss = 0
+    else:
+        # Calculate the loss for non-zero values
+        loss_value_nonzero = (values_nonzero != corresponding_values_nonzero).float().sum() 
+        nonzero_loss = nonzero_weighting*( (1/nonzero_n) * loss_value_nonzero) 
+
+    # Calculate the total loss with automatic class balancing and user class weighting
+    loss_value = zero_loss + nonzero_loss
+
+    return loss_value
+
+# Weighted Custom Split Loss Function
+def ada_weighted_custom_split_loss(reconstructed_image, target_image, zero_weighting=zero_weighting, nonzero_weighting=nonzero_weighting):
+    """
+    Calculates the weighted error loss between target_image and reconstructed_image.
+    The loss for zero pixels in the target_image is weighted by zero_weighting, and the loss for non-zero
+    pixels is weighted by nonzero_weighting and both have loss functions as passed in by user.
+
+    Args:
+    - target_image: a tensor of shape (B, C, H, W) containing the target image
+    - reconstructed_image: a tensor of shape (B, C, H, W) containing the reconstructed image
+    - zero_weighting: a scalar weighting coefficient for the MSE loss of zero pixels
+    - nonzero_weighting: a scalar weighting coefficient for the MSE loss of non-zero pixels
+
+    Returns:
+    - weighted_mse_loss: a scalar tensor containing the weighted MSE loss
+    """
+    
+    # Get the indices of 0 and non 0 values in target_image as a mask for speed
+    zero_mask = (target_image == 0)
+    nonzero_mask = ~zero_mask         # Invert mask
+    
+    # Get the values in target_image
+    values_zero = target_image[zero_mask]
+    values_nonzero = target_image[nonzero_mask]
+    
+    # Get the corresponding values in reconstructed_image
+    corresponding_values_zero = reconstructed_image[zero_mask]
+    corresponding_values_nonzero = reconstructed_image[nonzero_mask]
+    
+    # Get the loss functions
+    loss_func_zeros = split_loss_functions[0]
+    loss_func_nonzeros = split_loss_functions[1]
+    
+    # Compute the MSE losses
+    zero_loss = loss_func_zeros(corresponding_values_zero, values_zero)
+    nonzero_loss = loss_func_nonzeros(corresponding_values_nonzero, values_nonzero)
+
+    # Protection from there being no 0 vals or no non zero vals, which then retunrs nan for MSE and creates a nan overall MSE return (which is error)
+    if torch.isnan(zero_loss):
+        zero_loss = 0
+    if torch.isnan(nonzero_loss):
+        nonzero_loss = 0
+    
+    # Sum losses with weighting coefficiants 
+    weighted_mse_loss = (zero_weighting * zero_loss) + (nonzero_weighting * nonzero_loss) 
+    
+    return weighted_mse_loss
+
+#  Adaptive Sum of Squared Errors loss function
+def ada_SSE_loss(target, input):
+    """Adaptive Sum of Squared Errors Loss Function"""
+    loss = ((input-target)**2).sum()
+    return(loss)
 
 
 #%% - Program begins
@@ -1709,9 +1918,45 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
     # Initialises pixel belief telemetry
     telemetry = [[0,0.5,0.5]]                # Initalises the telemetry memory, starting values are 0, 0.5, 0.5 which corrspond to epoch(0), above_threshold(0.5), below_threshold(0.5)
 
+    #%% - Initialises seeding values to RNGs
+    if seeding_value:
+        torch.manual_seed(seeding_value)
+        np.random.seed(seeding_value)
+        print("Seeding with value:", seeding_value)
+    else:
+        torch.seed()                                    # Set the seed for the RNGs
+        np.random.seed()
+
+    T_seed = torch.initial_seed()
+    N_seed = np.random.get_state()[1][0]
+
+
     #%% - Set loss function choice
-    availible_loss_functions = [ACBLoss(zero_weighting, nonzero_weighting), ffACBLoss(zero_weighting, nonzero_weighting, fullframe_weighting), torch.nn.MSELoss(), torch.nn.BCELoss(), torch.nn.L1Loss(), ada_SSE_loss, ada_weighted_custom_split_loss, WeightedPerfectRecoveryLoss()]    # List of all availible loss functions
-    loss_function_labels = ["ACB_MSE", "ffACB_MSE", "MSE", "BCE", "MAE", "SSE", "Split Loss", "Weighted Perfect Recovery"] # List of all availible loss function labels
+
+    # List of all availible loss functions
+    availible_loss_functions = [ACBLoss(zero_weighting, nonzero_weighting), 
+                                ffACBLoss(zero_weighting, nonzero_weighting, fullframe_weighting), 
+                                True3DLoss(zero_weighting=1, nonzero_weighting=1, timesteps=1000), 
+                                simple3Dloss(zero_weighting=1, nonzero_weighting=1, virtual_t_weighting=1, virtual_x_weighting=1, virtual_y_weighting=1, timesteps=1000), 
+                                ACBLoss3D(zero_weighting=1, nonzero_weighting=1, virtual_t_weighting=1, virtual_x_weighting=None, virtual_y_weighting=None, timesteps=1000), 
+                                torch.nn.MSELoss(), 
+                                torch.nn.BCELoss(), 
+                                torch.nn.L1Loss(), 
+                                ada_SSE_loss, 
+                                ada_weighted_custom_split_loss, 
+                                WeightedPerfectRecoveryLoss()]    
+   
+    # List of all availible loss function labels
+    loss_function_labels = ["ACB_MSE", 
+                            "ffACB_MSE", 
+                            "ACBLoss3D", 
+                            "MSE", 
+                            "BCE", 
+                            "MAE", 
+                            "SSE", 
+                            "Split Loss", 
+                            "Weighted Perfect Recovery"]
+    
     loss_fn = availible_loss_functions[loss_function_selection]            # Sets loss function based on user input of parameter loss_function_selection
     loss_fn_label = loss_function_labels[loss_function_selection]          # Sets loss function label based on user input of parameter loss_function_selection
 
@@ -1791,29 +2036,19 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
 
 
 
-    #%% - Data Preparation
-
-    #### NOTE: Would be good to remove the partial library 
+    #%% - Data Preparation 
     tensor_transform = partial(np_to_tensor, double_precision=double_precision) #using functools partial to bundle the args into np_to_tensor to use in custom torch transform using lambda function
 
     ### Transormations
-    train_transform = transforms.Compose([                                         #train_transform variable holds the tensor tranformations to be performed on the training data.  transforms.Compose([ ,  , ]) allows multiple transforms to be chained together (in serial?) (#!!! does it do more than this??)
+    train_transform = transforms.Compose([transforms.Lambda(tensor_transform),
                                         #transforms.RandomRotation(30),         #transforms.RandomRotation(angle (degrees?) ) rotates the tensor randomly up to max value of angle argument
                                         #transforms.RandomResizedCrop(224),     #transforms.RandomResizedCrop(pixels) crops the data to 'pixels' in height and width (#!!! and (maybe) chooses a random centre point????)
                                         #transforms.RandomHorizontalFlip(),     #transforms.RandomHorizontalFlip() flips the image data horizontally 
-                                        #transforms.Normalize((0.5), (0.5)),    #transforms.Normalize can be used to normalise the values in the array
-                                        #transforms.Lambda(custom_normalisation_with_args),
-                                        #transforms.Lambda(add_noise_with_Args),        ####USed during debugging, noise adding should be moved to later? or maybe not tbf as this is place to add it if wanting it trained on??
-                                        transforms.Lambda(tensor_transform),
-                                        #transforms.ToTensor(),
-                                        #transforms.RandomRotation(180)
-                                        ])                 #other transforms can be dissabled but to tensor must be left enabled ! it creates a tensor from a numpy array #!!! ?
+                                        ])      
+    ##For info on all transforms check out: https://pytorch.org/vision/0.9/transforms.html
 
-                #other transforms can be dissabled but to tensor must be left enabled !
-
-    # this applies above transforms to dataset (dataset transform = transform above)
-    train_dataset.transform = train_transform       #!!! train_dataset is the class? object 'dataset' it has a subclass called transforms which is the list of transofrms to perform on the dataset when loading it. train_tranforms is the set of chained transofrms we created, this is set to the dataset transforms subclass 
-    #####For info on all transforms check out: https://pytorch.org/vision/0.9/transforms.html
+    # this applies above transforms to dataset 
+    train_dataset.transform = train_transform    
 
     ### Dataset Partitioning
     m = len(train_dataset)  #m is the length of the train_dataset, i.e the number of images in the dataset
@@ -1860,7 +2095,7 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
         decoder.load_state_dict(full_state_dict['decoder_state_dict'])
 
         if load_pretrained_optimser:
-            # load the optimizer state dictionary, if necessary
+            # load the optimizer state dictionary, if user requested
             optim.load_state_dict(full_state_dict['optimizer_state_dict'])
 
     #%% - Initalise Model on compute device
@@ -2006,26 +2241,6 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
                                     reconstruction_threshold=reconstruction_threshold,
                                     print_partial_training_losses = print_partial_training_losses)
             
-            history_da['train_loss'].append(train_loss)
-            history_da['test_loss'].append(test_loss)
-
-            # Update the epoch reached counter  
-            max_epoch_reached = epoch    
-
-            ###CLEAN UP THIS METHOD TO SOMTHING BETTER!!!!!!
-            epoch_avg_loss_mse.append(np.mean(avg_loss_mse))
-            epoch_avg_loss_mae.append(np.mean(avg_loss_mae))
-            epoch_avg_loss_snr.append(np.mean(avg_loss_snr))
-            epoch_avg_loss_psnr.append(np.mean(avg_loss_psnr))
-            epoch_avg_loss_ssim.append(np.mean(avg_loss_ssim))
-            epoch_avg_loss_nmi.append(np.mean(avg_loss_nmi))
-            epoch_avg_loss_cc.append(np.mean(avg_loss_cc))
-            epoch_avg_loss_true_positive_xy.append(np.mean(avg_loss_true_positive_xy))
-            epoch_avg_loss_true_positive_tof.append(np.mean(avg_loss_true_positive_tof))
-            epoch_avg_loss_false_positive_xy.append(np.mean(avg_loss_false_positive_xy))
-
-            write_hook_data_to_disk_and_clear(activations, weights_data, biases_data, epoch, dir)
-
             if print_partial_training_losses:
                 print('\n End of EPOCH {}/{} \t train loss {:.3f} \t val loss {:.3f}'.format(epoch + 1, num_epochs, train_loss, val_loss))     #epoch +1 is to make up for the fact the range spans 0 to epoch-1 but we want to numerate things from 1 upwards for sanity
             
@@ -2061,54 +2276,33 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
             
             epoch_end_time = time.time()
             epoch_time = epoch_end_time - epoch_start_time
-            epoch_times_list.append(epoch_time)        
+            epoch_times_list.append(epoch_time) 
+            #print("EPOCH TIM LIST SIZE", len(epoch_times_list))       
+
+            # Update the epoch reached counter  
+            max_epoch_reached = epoch    
+
+            ###CLEAN UP THIS METHOD TO SOMTHING BETTER!!!!!!
+            epoch_avg_loss_mse.append(np.mean(avg_loss_mse))
+            epoch_avg_loss_mae.append(np.mean(avg_loss_mae))
+            epoch_avg_loss_snr.append(np.mean(avg_loss_snr))
+            epoch_avg_loss_psnr.append(np.mean(avg_loss_psnr))
+            epoch_avg_loss_ssim.append(np.mean(avg_loss_ssim))
+            epoch_avg_loss_nmi.append(np.mean(avg_loss_nmi))
+            epoch_avg_loss_cc.append(np.mean(avg_loss_cc))
+            epoch_avg_loss_true_positive_xy.append(np.mean(avg_loss_true_positive_xy))
+            epoch_avg_loss_true_positive_tof.append(np.mean(avg_loss_true_positive_tof))
+            epoch_avg_loss_false_positive_xy.append(np.mean(avg_loss_false_positive_xy))
+
+            write_hook_data_to_disk_and_clear(activations, weights_data, biases_data, epoch, dir)
+
+            history_da['train_loss'].append(train_loss)
+            history_da['test_loss'].append(test_loss)
+            #print("TRAIN LOSS SIZE", len(history_da['train_loss'])) 
             
-            ### Live Loss vs epoch plot
-            if plot_live_training_loss:
-                Out_Label = dir + f'{model_save_name} - Live Train loss.png'
-
-                low_lim = 0
-                if slide_live_plot_size > 0:
-                    low_lim = max(0, epoch - slide_live_plot_size)
-                    
-                x_list = [range(low_lim, max_epoch_reached)]
-                y_list = [history_da['train_loss']]
-                legend_label_list = ["Training loss"]
-
-                if comparative_live_loss:
-                    legend_label_list.extend(comparative_loss_titles)
-                    
-                    for loss_dictionary in comparative_history_da:
-                        x_list.append(range(low_lim,max_epoch_reached))    
-                        if epoch > len(loss_dictionary['train_loss']):
-                            loss_dictionary['train_loss'].append(np.nan) # protection from surpassing the comaprison data during training. 
-                        y_list.append(loss_dictionary['train_loss'][low_lim:max_epoch_reached])
-
-                comparitive_loss_plot(x_list, y_list, legend_label_list, "Epoch number", "Train loss (ACB-MSE)", "Live Training loss", Out_Label, plot_or_save)
             
-            ### Live Loss vs time plot
-            if plot_live_time_loss:
-                Out_Label = dir + f'{model_save_name} - Live time loss.png'
-                
-                x_list = [epoch_times_list]
-                y_list = [history_da['train_loss']]
-                legend_label_list = ["Training loss"]
-
-                if comparative_live_loss:
-                    legend_label_list.extend(comparative_loss_titles)
-                    
-                    for loss_dictionary in comparative_history_da:
-                        if epoch > len(loss_dictionary['train_loss']):
-                            loss_dictionary['train_loss'].append(np.nan) # protection from surpassing the comaprison data during training. 
-                        y_list.append(loss_dictionary['train_loss'])
-
-                    for epoch_t_list in comparative_epoch_times:
-                        epoch_t_list = epoch_t_list[1:]   # NOTE: FIX FOR EPOCH LISTS BEING SAVeD INCLUDING 0 time which breaks the plot by having one more value than the hsitory da train loss. INVESTIGATE THIS ERROR ROOT CAUSE
-                        if epoch > len(epoch_t_list):
-                            epoch_t_list.append(np.nan) # protection from surpassing the comaprison data during training.
-                        x_list.append(epoch_t_list)
-
-                comparitive_loss_plot(x_list, y_list, legend_label_list, "Time (s)", "Train loss (ACB-MSE)", "Live Time loss", Out_Label, plot_or_save)
+            ### Live Comparison Plots
+            create_comparison_plot_data(slide_live_plot_size, epoch, max_epoch_reached, comparative_live_loss, comparative_loss_titles, comparative_epoch_times, comparative_history_da, data=history_da['train_loss'])
 
             ### Training Timeout Check
             if timeout_training:
@@ -2124,6 +2318,9 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
 
 
     #%% - After Training
+    encoder.eval()
+    decoder.eval()    
+    
     # Stop timing the training process and calculate the total training time
     end_time = time.time()
     training_time = end_time - start_time
@@ -2133,17 +2330,19 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
 
     # Build Dictionary to collect all output data for .txt file
     full_data_output = {}
-    full_data_output["Train Loss"] = 3#round(history_da['train_loss'][-1], 3)
-    full_data_output["Test Loss"] = 3#round(history_da['test_loss'][-1], 3)   #Val loss calulaton is broken? check it above
+    full_data_output["Train Loss"] = round(history_da['train_loss'][-1], 3)
+    full_data_output["Test Loss"] = round(history_da['test_loss'][-1], 3)   #Val loss calulaton is broken? check it above
 
-    encoder.eval()
-    decoder.eval()
-
-    #%% - Output Visulisations
-    ###Loss function plots
-    epochs_range = range(1,max_epoch_reached+1) 
+    #%% - Save any remaining unsaved raw plot data
+    epochs_range = range(1,len(history_da["train_loss"])+1) 
     if save_all_raw_plot_data:     ##FIND bETTER PLACE FOR THIS
         save_variable(np.array(epochs_range), "epochs_range", raw_plotdata_output_dir)  #!!!!!! testing raw plot outputter!!!!
+
+        save_variable(history_da, "history_da", raw_plotdata_output_dir) 
+
+        save_variable(epoch_times_list, "epoch_times_list", raw_plotdata_output_dir) 
+
+        save_variable(settings, "settings", raw_plotdata_output_dir)
 
         detailed_performance_loss_dict={}
         detailed_performance_loss_dict["epoch_avg_loss_mse"] = epoch_avg_loss_mse
@@ -2155,8 +2354,11 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
         detailed_performance_loss_dict["epoch_avg_loss_true_positive_xy"] = epoch_avg_loss_true_positive_xy
         detailed_performance_loss_dict["epoch_avg_loss_true_positive_tof"] = epoch_avg_loss_true_positive_tof
         detailed_performance_loss_dict["epoch_avg_loss_false_positive_xy"] = epoch_avg_loss_false_positive_xy
-        save_variable(detailed_performance_loss_dict, "detailed_performance_loss_dict", raw_plotdata_output_dir)
+        save_variable(detailed_performance_loss_dict, "detailed_performance_loss", raw_plotdata_output_dir)
 
+
+    #%% - Output Visulisations
+    ###Loss function plots
     if plot_train_loss:
         Out_Label =  graphics_dir + f'{model_save_name} - Train loss - Epoch {epoch}.png'
         loss_plot(epochs_range, history_da['train_loss'], "Epoch number", f"Train loss ({loss_fn_label})", "Training loss", Out_Label, plot_or_save)
@@ -2172,7 +2374,7 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
     if plot_detailed_performance_loss: 
 
         fig, axs = plt.subplots(nrows=3, ncols=3, figsize=(15, 15))
-
+        #epochs_range= epochs_range[1:]
         axs[0, 0].plot(epochs_range, epoch_avg_loss_mse)
         axs[0, 0].set_title("MAE loss")
         axs[0, 0].set_xlabel("Epoch number")
@@ -2355,7 +2557,7 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
             output_file.write((f"User Set Seeding: False\n"))
     
         output_file.write((f"\nMax Epoch Reached: {max_epoch_reached}\n"))  # Write the max epoch reached during training to the file
-        output_file.write((f"Training Time: {training_time:.2f} seconds\n")) # Write the training time to the file
+        output_file.write((f"Training Time: {format_time(training_time)} seconds\n")) # Write the training time to the file
         
         output_file.write("Input Settings:\n")  # Write the input settings to the file
         for key, value in settings.items():
@@ -2424,7 +2626,7 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
             print("Train loss: ", train_loss)
             print("Test loss: ", test_loss)
             print("Val loss: ", val_loss)
-            print(f"Total Training time: {training_time} s", )
+            print(f"Total Training time: {format_time(training_time)} s", )
 
         print("- Completed -\n \n \n \n") 
 
@@ -2469,13 +2671,7 @@ if optimise_hyperparameter:
                         pretrained_model_folder_paths=pretrained_model_folder_paths,  
                         debug_mode = debug_hpo_perf_analysis)
 
-#%% - Save any remaining unsaved raw plot data
-if save_all_raw_plot_data:
-    save_variable(history_da, "history_da", raw_plotdata_output_dir) 
 
-    save_variable(epoch_times_list, "epoch_times_list", raw_plotdata_output_dir) 
-
-    save_variable(settings, "settings", raw_plotdata_output_dir)
 
 
 #%% - End of Program - Printing message to notify user!
