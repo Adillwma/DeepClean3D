@@ -8,11 +8,9 @@ xdim = 88
 ydim = 128 
 time_dimension = 1000                      
 
-batch_size = 10                               # User controll to set batch size - number of Images to pull per batch (Hyperparameter) 
 learning_rate = 0.0001                       # User controll to set optimiser learning rate (Hyperparameter)
 optim_w_decay = 1e-05                        # User controll to set optimiser weight decay for regularisation (Hyperparameter)
 
-latent_dim = 10     
 fc_input_dim = 128                         # User controll to set number of nodes in the fc2 layer (Hyperparameter)
 dropout_prob = 0.2                           # [NOTE Not connected yet] User controll to set dropout probability (Hyperparameter)
 reconstruction_threshold = 0.5               # MUST BE BETWEEN 0-1  #Threshold for 3d reconstruction, values below this confidence level are discounted
@@ -27,6 +25,90 @@ loss_function_selection = {ACB-MSE}
 zero_weighting = 1                        # User controll to set zero weighting for ACBMSE (Hyperparameter)
 nonzero_weighting = 1                        # User controll to set non zero weighting for ACBMSE (Hyperparameter)
 
+signal_points = 30                          # User controll to set the number of signal points to add
+noise_points =  100                         # User controll to set the number of noise points to add
+
+x_std_dev = 0            
+y_std_dev = 0                  
+tof_std_dev = 0      
+
+start_from_pretrained_model = False        
+
+masking_optimised_binary_norm = False      
+double_precision = False 
+shuffle_train_data = True 
+seeding_value = 10 
+
+
+
+### Setting Set 002 - [S2]
+MODIFIED: latent_dim = 50
+batch_size = 10
+
+xdim = 88   
+ydim = 128 
+time_dimension = 1000                      
+
+learning_rate = 0.0001                       # User controll to set optimiser learning rate (Hyperparameter)
+optim_w_decay = 1e-05                        # User controll to set optimiser weight decay for regularisation (Hyperparameter)
+
+MODIFIED: fc_input_dim = 512                         # User controll to set number of nodes in the fc2 layer (Hyperparameter)
+dropout_prob = 0.2                           # [NOTE Not connected yet] User controll to set dropout probability (Hyperparameter)
+reconstruction_threshold = 0.5               # MUST BE BETWEEN 0-1  #Threshold for 3d reconstruction, values below this confidence level are discounted
+
+MODIFIED: train_test_split_ratio = 0.9                 # User controll to set the ratio of the dataset to be used for training (Hyperparameter)
+val_set_on = False                           # User controll to set if a validation set is used
+val_test_split_ratio = 0.9                   # This needs to be better explained its actually test_val ration ratehr than oterh way round     # [NOTE LEAVE AT 0.5, is for future update, not working currently] User controll to set the ratio of the non-training data to be used for validation as opposed to testing (Hyperparameter)
+
+loss_vs_sparse_img = False    #NOTE: Tested!                # User controll to set if the loss is calculated against the sparse image or the full image (Hyperparameter)
+loss_function_selection = {ACB-MSE}
+
+zero_weighting = 1                        # User controll to set zero weighting for ACBMSE (Hyperparameter)
+nonzero_weighting = 1                        # User controll to set non zero weighting for ACBMSE (Hyperparameter)
+
+signal_points = 30                          # User controll to set the number of signal points to add
+noise_points =  100                         # User controll to set the number of noise points to add
+
+x_std_dev = 0            
+y_std_dev = 0                  
+tof_std_dev = 0      
+
+start_from_pretrained_model = False        
+
+masking_optimised_binary_norm = False      
+double_precision = False 
+shuffle_train_data = True 
+seeding_value = 10 
+
+
+
+
+
+### Setting Set 003 - [S3]
+latent_dim = 50
+batch_size = 10
+
+xdim = 88   
+ydim = 128 
+time_dimension = 1000                      
+
+learning_rate = 0.0001                       # User controll to set optimiser learning rate (Hyperparameter)
+optim_w_decay = 1e-05                        # User controll to set optimiser weight decay for regularisation (Hyperparameter)
+
+fc_input_dim = 512                         # User controll to set number of nodes in the fc2 layer (Hyperparameter)
+dropout_prob = 0.2                           # [NOTE Not connected yet] User controll to set dropout probability (Hyperparameter)
+reconstruction_threshold = 0.5               # MUST BE BETWEEN 0-1  #Threshold for 3d reconstruction, values below this confidence level are discounted
+
+train_test_split_ratio = 0.9                 # User controll to set the ratio of the dataset to be used for training (Hyperparameter)
+val_set_on = False                           # User controll to set if a validation set is used
+val_test_split_ratio = 0.9                   # This needs to be better explained its actually test_val ration ratehr than oterh way round     # [NOTE LEAVE AT 0.5, is for future update, not working currently] User controll to set the ratio of the non-training data to be used for validation as opposed to testing (Hyperparameter)
+
+loss_vs_sparse_img = False    #NOTE: Tested!                # User controll to set if the loss is calculated against the sparse image or the full image (Hyperparameter)
+MODIFIED: loss_function_selection = {ffACB-MSE}
+
+zero_weighting = 1                        # User controll to set zero weighting for ACBMSE (Hyperparameter)
+MODIFIED: nonzero_weighting = 0.2                        # User controll to set non zero weighting for ACBMSE (Hyperparameter)
+MODIFIED: full_frame_weighting = !!! ???!!                        # User controll to set non zero weighting for ACBMSE (Hyperparameter)
 signal_points = 30                          # User controll to set the number of signal points to add
 noise_points =  100                         # User controll to set the number of noise points to add
 
