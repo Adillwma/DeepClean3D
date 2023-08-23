@@ -61,6 +61,7 @@ class Encoder(nn.Module):
 
         # adding padding
         x = nn.functional.pad(x, (4, 4, 4, 4), mode='constant', value=0)
+        
         if self.encoder_debug == 1:
             print("ENCODER LAYER SIZE DEBUG")
             print("Encoder in", x.size())
