@@ -1,16 +1,9 @@
-
 from tqdm import tqdm
 import torch
 import os
 import torch
 import matplotlib.pyplot as plt
 import numpy as np
-import re
-from torch.utils.data import Dataset
-from scipy.stats import sem
-from tabulate import tabulate
-import datetime
-import matplotlib.colors as mcolors
 import random
 import pickle
 import pandas as pd
@@ -21,7 +14,8 @@ import pandas as pd
 # save is not part of the public API, usage can give unexpected results and will be removed in a future version       excel_writer.save()
 # FIX THE BOXPLOTS X AXIS AND LEGEND NOT BEING FILLED WITH THE LABELS!?
 # ADD TABLE STYLE TO TABLE!!! TABLE STYLE LIGHT 15!!
-
+# Add the radar plots
+ 
 time_dimension = 1000 ### FIX THIS SHOULD BE ARGUMENT FROM MAIN BODY!!!
 
 #%% -  Helper Functions
@@ -334,6 +328,7 @@ def initialise_model(pretrained_model_folder_path, verbose_mode=False): # Define
     intpkl_file_path = None
     strpkl_file_path = None
     pth_model_file_path = None
+    fc2pkl_file_path = None
 
     # Iterate through the files in the folder
     for file_name in os.listdir(pretrained_model_folder_path):
@@ -381,7 +376,10 @@ def initialise_model(pretrained_model_folder_path, verbose_mode=False): # Define
     if fc2pkl_file_path != None:
         with open(fc2pkl_file_path, 'rb') as f:
             fc_layer_size = pickle.load(f)
-        fc_layer_size = int(fc_layer_size)
+    
+    else:
+        fc_layer_size = 128
+    fc_layer_size = int(fc_layer_size)
 
     with open(strpkl_file_path, 'rb') as f:
         double_precision = pickle.load(f)
