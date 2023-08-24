@@ -1,4 +1,4 @@
-# DeepClean Trainer v1.2.2
+# DeepClean Trainer v1.2.3
 # Build created on Wednesday May 6th 2023
 # Author: Adill Al-Ashgar
 # University of Bristol
@@ -6,6 +6,8 @@
 
 """
 Possible improvements:
+
+### ~~~~~ FIX BUG : xlsxwriter.exceptions.InvalidWorksheetName: Excel worksheet name 'T_fullframe_weighting_0.5 direct' must be <= 31 chars.
 
 ### ~~~~~ USe seeding value to controll data spareness and noise addition so that thay can be set to fixed
 
@@ -132,7 +134,7 @@ Possible improvements:
 
 #%% - User Inputs
 dataset_title = "RDT 10K MOVE" #'RDT 500K 1000ToF' #"RDT 10K MOVE" #"RDT 50KM"# "Dataset 37_X15K Perfect track recovery" #"Dataset 24_X10Ks"           #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
-model_save_name = 'T' #"T2"#"RDT 500K 1000ToF timed"#"2023 Testing - RDT100K n100"#"2023 Testing - RDT10K NEW" #"RDT 100K 30s 200n Fixed"#"RDT 50KM tdim1000 AE2PROTECT 30 sig 200NP LD10"     #"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
+model_save_name = 'E' #"T2"#"RDT 500K 1000ToF timed"#"2023 Testing - RDT100K n100"#"2023 Testing - RDT10K NEW" #"RDT 100K 30s 200n Fixed"#"RDT 50KM tdim1000 AE2PROTECT 30 sig 200NP LD10"     #"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
 
 xdim = 88   # Currently useless
 ydim = 128  # Currently useless
@@ -146,16 +148,18 @@ time_length = 1000 #ns
 time_scale = time_dimension / time_length # ns per t pixel
 x_scale = xdim / x_length # mm per x pixel
 y_scale = ydim / y_length # mm per y pixel
+physical_scale_parameters = [x_scale, y_scale, time_scale]
 
 #%% - Training Hyperparameter Settings
 num_epochs = 30                            # User controll to set number of epochs (Hyperparameter)
 batch_size = 10 #6 looks good                              # User controll to set batch size - number of Images to pull per batch (Hyperparameter) 
 learning_rate = 0.0001                       # User controll to set optimiser learning rate (Hyperparameter)
 optim_w_decay = 1e-05                        # User controll to set optimiser weight decay for regularisation (Hyperparameter)
+BOOST = 1000
 
 latent_dim = 50     #NOTE: Tested!                         # User controll to set number of nodes in the latent space, the bottleneck layer (Hyperparameter)
 fc_input_dim = 512                         # User controll to set number of nodes in the fc2 layer (Hyperparameter)
-dropout_prob = 0.3                           # [NOTE Not connected yet] User controll to set dropout probability (Hyperparameter)
+dropout_prob = 0.2                           # [NOTE Not connected yet] User controll to set dropout probability (Hyperparameter)
 reconstruction_threshold = 0.5               # MUST BE BETWEEN 0-1  #Threshold for 3d reconstruction, values below this confidence level are discounted
 
 #%% - Dataset Settings
@@ -165,13 +169,13 @@ val_test_split_ratio = 0.9                   # This needs to be better explained
 
 #%% - Loss Function Settings
 loss_vs_sparse_img = False    #NOTE: Tested!                # User controll to set if the loss is calculated against the sparse image or the full image (Hyperparameter)
-loss_function_selection = 1   #3 #Histogram loss               # Select loss function (Hyperparameter): 0 = ACBMSE, 1 = ffACBMSE, 2 = ACBMSE3D, 3 = torch.nn.MSELoss(), 4 = torch.nn.BCELoss(), 5 = torch.nn.L1Loss(), 6 = ada_SSE_loss, 7 = ada_weighted_custom_split_loss, 8 = weighted_perfect_reconstruction_loss
+loss_function_selection = 3   #3 #Histogram loss               # Select loss function (Hyperparameter): 0 = ACBMSE, 1 = ffACBMSE, 2 = ACBMSE3D, 3 = torch.nn.MSELoss(), 4 = torch.nn.BCELoss(), 5 = torch.nn.L1Loss(), 6 = ada_SSE_loss, 7 = ada_weighted_custom_split_loss, 8 = weighted_perfect_reconstruction_loss
 
 # Below weights only used if loss func set to 0, 1 or 6 aka ACBMSE or split loss varients
 zero_weighting = 1                        # User controll to set zero weighting for ACBMSE (Hyperparameter)
-nonzero_weighting = 0.4                        # User controll to set non zero weighting for ACBMSE (Hyperparameter)
+nonzero_weighting = 0.5 #0.4                        # User controll to set non zero weighting for ACBMSE (Hyperparameter)
 # Only used for ffACBMSE along with above two settings
-fullframe_weighting = 1                      # User controll to set full frame weighting for ffACBMSE (Hyperparameter)
+fullframe_weighting = 1.2 #1.5                      # User controll to set full frame weighting for ffACBMSE (Hyperparameter)
 
 # Below only used if loss func set to 6 aka ada_weighted_custom_split_loss
 zeros_loss_choice = 1                        # Select loss function for zero values (Hyperparameter): 0 = Maxs_Loss_Func, 1 = torch.nn.MSELoss(), 2 = torch.nn.BCELoss(), 3 = torch.nn.L1Loss(), 4 = ada_SSE_loss
@@ -254,8 +258,8 @@ seeding_value = 10 #None                            # [Default = None] None give
 
 #%% Hyperparameter Optimisation Settings  #######IMPLEMENT!!!
 optimise_hyperparameter = True              # User controll to set if hyperparameter optimisation is used
-hyperparam_to_optimise = 'fullframe_weighting'      # User controll to set which hyperparameter to optimise  - options are: 'batch_size', 'learning_rate', 'optim_w_decay', 'dropout_prob', 'loss_function_selection', 'conv_layers', 'conv_filter_multiplier', 'latent_dim'
-set_optimisiation_list_manually = [0.5, 1.0, 1.5]   # (NOTE: Overrides the above) If set false then the above is used to set the list. Otheriwse if wanting to deinfe the list manually then set this param = to your list i.e [[12, 120], [12, 240], [12, 480]]
+hyperparam_to_optimise = 'BOOST'      # User controll to set which hyperparameter to optimise  - options are: 'batch_size', 'learning_rate', 'optim_w_decay', 'dropout_prob', 'loss_function_selection', 'conv_layers', 'conv_filter_multiplier', 'latent_dim'
+set_optimisiation_list_manually = [2.0, 3.0, 4.0]   #  set this param = to your list i.e [[12, 120], 35, 87]
 
 # Simple Performance Measure
 print_validation_results = True            # User controll to set if the validation results are printed to terminal 
@@ -305,6 +309,7 @@ full_settings_dictionary = create_settings_dict(settings_path + "full_settings_d
 # External Libraries
 import os
 import time     # Used to time the training loop
+import json
 import torch
 import pickle
 import datetime 
@@ -317,9 +322,6 @@ from functools import partial
 from torchinfo import summary # function to get the summary of the model layers structure, trainable parameters and memory usage
 import matplotlib.pyplot as plt     
 from torchvision import transforms  
-from torch.utils.data import DataLoader, random_split
-from skimage.metrics import normalized_mutual_information, structural_similarity
-import json
 from matplotlib.ticker import FuncFormatter
 
 
@@ -359,7 +361,7 @@ if comparative_live_loss:
 def format_time(seconds):
     hours, remainder = divmod(seconds, 3600)
     minutes, seconds = divmod(remainder, 60)
-    return f"{int(hours)} h:{int(minutes)} m:{seconds:3f} s"
+    return f"{int(hours)}h :{int(minutes)}m :{seconds:3f}s"
 
 # Helper function to return the batch learning method string to user
 def batch_learning(training_dataset_size, batch_size):
@@ -372,16 +374,54 @@ def batch_learning(training_dataset_size, batch_size):
     return(output)
 
 # Helper function to allow values to be input as a range from which random values are chosen each time unless the input is a single value in which case it is used as the constant value
-def input_range_to_random_value(input_range):
-    # check if input is a single value (int or float) or a range (list or tuple)
-    if isinstance(input_range, (int, float)):
-        return input_range
-    elif isinstance(input_range, (list, tuple)):
-        return torch.randint(input_range[0], input_range[1] + 1, (1,)).item()  # Generate a random integer
-    else:
-        print("Error: input_range_to_random_value() input is not a value or pair of values")
-        return None
+def input_range_to_random_value(*args):
+    """
+    Generate random values based on input ranges or single values.
+
+    This function accepts an arbitrary number of arguments, where each argument
+    can be either a single value (int or float) or a range (list or tuple) of
+    values. For ranges, it generates a random integer if the range consists of
+    integers, or a random float if the range consists of floats.
+
+    Parameters:
+    *args : int, float, list, tuple
+        Arbitrary number of input arguments. Each argument can be a single value
+        or a range represented as a list or tuple of two values.
+
+    Returns:
+    list
+        A list containing the generated random values or the input values if they
+        are already single values. If an input argument is not recognized as a
+        value or range, None is appended to the list and an error message is printed.
+    """
+    results = []
+
+    for input_range in args:
+
+        if isinstance(input_range, (int, float)):
+            ## If input is single value it is not randomised as is manually set
+            results.append(input_range)
+        
+        elif isinstance(input_range, (list, tuple)):
+            ## If input is a list or tuple then it is considered a range of values and is randomised in that range
+            
+            if all(isinstance(x, int) for x in input_range):
+                ## If all values in the list are ints then the whole list is considered to be a range of ints and an int is returned
+                results.append(torch.randint(input_range[0], input_range[1] + 1, (1,)).item())
+
+            elif (isinstance(x, float) for x in input_range):
+                ## Else if any single value in the list is a float then function will return a float
+                results.append(torch.rand(1).item() * (input_range[1] - input_range[0]) + input_range[0])
+            
+            else:
+                print("Error: input_range_to_random_value() input is not a value or pair of values in recognised format, must be float or int")
+                results.append(None)
+        else:
+            print("Error: input_range_to_random_value() input is not a value or pair of values")
+            results.append(None)
     
+    return results
+
 #%% DC3D Special Functions
 # Special normalisation for pure masking
 def mask_optimised_normalisation(data):
@@ -399,13 +439,25 @@ def gaped_renormalisation(data, reconstruction_threshold, time_dimension=100):
     return data
 
 # 3D Reconstruction function
-def reconstruct_3D(data):
+def reconstruct_3DOLD(data):
     data_output = []
     for cdx, row in enumerate(data):
         for idx, num in enumerate(row):
             if num > 0:  
                 data_output.append([cdx,idx,num])
     return np.array(data_output)
+
+def reconstruct_3D(*args):
+    results = []
+    for data in args:
+        data_output = []
+        for cdx, row in enumerate(data):
+            for idx, num in enumerate(row):
+                if num > 0:  
+                    data_output.append([cdx, idx, num])
+        results.append(np.array(data_output))
+
+    return results
 
 def np_to_tensor(np_array, double_precision=False):
     """
@@ -415,7 +467,6 @@ def np_to_tensor(np_array, double_precision=False):
     dtype = torch.float64 if double_precision else torch.float32
     tensor = torch.tensor(np_array, dtype=dtype)
     tensor = tensor.unsqueeze(0)        # Append channel dimension to begining of tensor
-    tensor = tensor.to_sparse_coo()
     return(tensor)
 
 # Masking technique
@@ -589,6 +640,14 @@ def simulate_detector_resolution(input_image_batch, x_std_dev, y_std_dev, tof_st
         image_batch_all[idx,0] = shifted_image_tensor
         
     return image_batch_all
+
+def signal_degredation(signal_settings, image_batch, physical_scale_parameters):
+    x_scale, y_scale, time_scale = physical_scale_parameters
+    signal_points_r, x_std_dev_r, y_std_dev_r, tof_std_dev_r, noise_points_r = signal_settings
+    sparse_output_batch = create_sparse_signal(image_batch, signal_points_r)
+    sparse_and_resolution_limited_batch = simulate_detector_resolution(sparse_output_batch, x_std_dev_r, y_std_dev_r, tof_std_dev_r, x_scale, y_scale, time_scale)
+    noised_sparse_reslimited_batch = add_noise_points_to_batch_prenorm(sparse_and_resolution_limited_batch, noise_points_r, time_dimension)
+    return sparse_output_batch, sparse_and_resolution_limited_batch, noised_sparse_reslimited_batch   
 
 #%% - Network Hook Functions
 def activation_hook_fn(module, input, output, layer_index):
@@ -945,11 +1004,9 @@ def plot_telemetry(telemetry, true_num_of_signal_points, plot_or_save=0):
 #%% - Train, Test, Val and Plot Functions
 ### Training Function
 def train_epoch(encoder, decoder, device, dataloader, loss_fn, optimizer, signal_points, noise_points=0, x_std_dev=0, y_std_dev=0, tof_std_dev=0, time_dimension=100, reconstruction_threshold=0.5, print_partial_training_losses=False):
-    # Set train mode for both the encoder and the decoder
-    # train mode makes the autoencoder know the parameters can change
     encoder.train()   
     decoder.train()   
-    #train_loss = [] # List to store the loss values for each batch
+
     loss_total = 0.0
     batches = 0
 
@@ -962,17 +1019,13 @@ def train_epoch(encoder, decoder, device, dataloader, loss_fn, optimizer, signal
     for image_batch, _ in image_loop: # with "_" we just ignore the labels (the second element of the dataloader tuple
 
         #Select settings randomly from user range
-        signal_points_r = input_range_to_random_value(signal_points)
-        x_std_dev_r = input_range_to_random_value(x_std_dev) 
-        y_std_dev_r = input_range_to_random_value(y_std_dev) 
-        tof_std_dev_r = input_range_to_random_value(tof_std_dev)
-        noise_points_r = input_range_to_random_value(noise_points)
+        signal_settings = input_range_to_random_value(signal_points, x_std_dev, y_std_dev, tof_std_dev, noise_points)
+
+        #signal_settings, image_batch, reconstruction_threshold, time_dimension
 
         # DATA PREPROCESSING
         with torch.no_grad(): # No need to track the gradients
-            sparse_output_batch = create_sparse_signal(image_batch, signal_points_r)
-            sparse_and_resolution_limited_batch = simulate_detector_resolution(sparse_output_batch, x_std_dev_r, y_std_dev_r, tof_std_dev_r, x_scale, y_scale, time_scale)
-            noised_sparse_reslimited_batch = add_noise_points_to_batch_prenorm(sparse_and_resolution_limited_batch, noise_points_r, time_dimension)
+            sparse_output_batch, sparse_and_resolution_limited_batch, noised_sparse_reslimited_batch = signal_degredation(signal_settings, image_batch, physical_scale_parameters)
             
             if masking_optimised_binary_norm:
                 normalised_batch = mask_optimised_normalisation(noised_sparse_reslimited_batch)
@@ -1002,15 +1055,13 @@ def train_epoch(encoder, decoder, device, dataloader, loss_fn, optimizer, signal
         optimizer.zero_grad() # Reset the gradients
         loss.backward() # Compute the gradients
         optimizer.step() # Update the parameters
-        #train_loss.append(loss.detach().cpu().numpy()) # Store the loss value for the batch
         batches = batches + 1
         loss_total = loss_total + loss.detach().cpu().numpy()
 
         if print_partial_training_losses:         # Prints partial train losses per batch
-            
             print('\t partial train loss (single batch): %f' % (loss.data))  # Print batch loss value
+    
     return loss_total/batches
-    #return np.mean(train_loss) # Return the mean loss value for the epoch???
 
 ### Testing Function
 def test_epoch(encoder, decoder, device, dataloader, loss_fn, signal_points, noise_points=0, x_std_dev=0, y_std_dev=0, tof_std_dev=0, time_dimension=100, reconstruction_threshold=0.5, print_partial_training_losses=False):
@@ -1030,17 +1081,9 @@ def test_epoch(encoder, decoder, device, dataloader, loss_fn, signal_points, noi
         for image_batch, _ in image_loop:  
 
             #Select settings randomly from user range
-            signal_points_r = input_range_to_random_value(signal_points)
-            x_std_dev_r = input_range_to_random_value(x_std_dev) 
-            y_std_dev_r =input_range_to_random_value(y_std_dev) 
-            tof_std_dev_r = input_range_to_random_value(tof_std_dev)
-            noise_points_r = input_range_to_random_value(noise_points)
+            signal_settings = input_range_to_random_value(signal_points, x_std_dev, y_std_dev, tof_std_dev, noise_points)
+            sparse_output_batch, sparse_and_resolution_limited_batch, noised_sparse_reslimited_batch = signal_degredation(signal_settings, image_batch, physical_scale_parameters)
 
-            # Move tensor to the proper device
-            sparse_output_batch = create_sparse_signal(image_batch, signal_points_r)
-            sparse_and_resolution_limited_batch = simulate_detector_resolution(sparse_output_batch, x_std_dev_r, y_std_dev_r, tof_std_dev_r, x_scale, y_scale, time_scale)
-            noised_sparse_reslimited_batch = add_noise_points_to_batch_prenorm(sparse_and_resolution_limited_batch, noise_points_r, time_dimension)
-            
             if masking_optimised_binary_norm:
                 normalised_batch = mask_optimised_normalisation(noised_sparse_reslimited_batch)
                 image_batch_norm = mask_optimised_normalisation(image_batch)
@@ -1090,17 +1133,9 @@ def validation_routine(encoder, decoder, device, dataloader, loss_fn, signal_poi
         for image_batch, _ in image_loop:  
 
             #Select settings randomly from user range
-            signal_points_r = input_range_to_random_value(signal_points)
-            x_std_dev_r = input_range_to_random_value(x_std_dev) 
-            y_std_dev_r =input_range_to_random_value(y_std_dev) 
-            tof_std_dev_r = input_range_to_random_value(tof_std_dev)
-            noise_points_r = input_range_to_random_value(noise_points)
+            signal_settings = input_range_to_random_value(signal_points, x_std_dev, y_std_dev, tof_std_dev, noise_points)
+            sparse_output_batch, sparse_and_resolution_limited_batch, noised_sparse_reslimited_batch = signal_degredation(signal_settings, image_batch, physical_scale_parameters)
 
-            # Move tensor to the proper device
-            sparse_output_batch = create_sparse_signal(image_batch, signal_points_r)
-            sparse_and_resolution_limited_batch = simulate_detector_resolution(sparse_output_batch, x_std_dev_r, y_std_dev_r, tof_std_dev_r, x_scale, y_scale, time_scale)
-            noised_sparse_reslimited_batch = add_noise_points_to_batch_prenorm(sparse_and_resolution_limited_batch, noise_points_r, time_dimension)
-            
             if masking_optimised_binary_norm:
                 normalised_batch = mask_optimised_normalisation(noised_sparse_reslimited_batch)
                 image_batch_norm = mask_optimised_normalisation(image_batch)
@@ -1133,74 +1168,64 @@ def validation_routine(encoder, decoder, device, dataloader, loss_fn, signal_poi
     return loss_total/batches
 
 ### Plotting function
-def plot_epoch_data(encoder, decoder, epoch, model_save_name, time_dimension, reconstruction_threshold, signal_points, noise_points=0, x_std_dev=0, y_std_dev=0, tof_std_dev=0, n=10):       #Defines a function for plotting the output of the autoencoder. And also the input + clean training data? Function takes inputs, 'encoder' and 'decoder' which are expected to be classes (defining the encode and decode nets), 'n' which is the number of ?????Images in the batch????, and 'noise_factor' which is a multiplier for the magnitude of the added noise allowing it to be scaled in intensity.  
+def plot_epoch_data(encoder, decoder, epoch, model_save_name, time_dimension, reconstruction_threshold, signal_points, noise_points=0, x_std_dev=0, y_std_dev=0, tof_std_dev=0, physical_scale_parameters=[1,1,1], n=10):       #Defines a function for plotting the output of the autoencoder. And also the input + clean training data? Function takes inputs, 'encoder' and 'decoder' which are expected to be classes (defining the encode and decode nets), 'n' which is the number of ?????Images in the batch????, and 'noise_factor' which is a multiplier for the magnitude of the added noise allowing it to be scaled in intensity.  
+    
     """
     n is the number of images to plot
     """
-    ### 2D Input/Output Comparison Plots 
-    #Initialise lists for true and recovered signal point values 
+    encoder.eval()                                   #.eval() is a kind of switch for some specific layers/parts of the model that behave differently during training and inference (evaluating) time. For example, Dropouts Layers, BatchNorm Layers etc. You need to turn off them during model evaluation, and .eval() will do it for you. In addition, the common practice for evaluating/validation is using torch.no_grad() in pair with model.eval() to turn off gradients computation
+    decoder.eval()                                   #Simarlary as above
+
+    # Unpack physical scale parameters
+    x_scale, y_scale, tof_scale = physical_scale_parameters
+
+    # Initialise lists for true and recovered signal point values 
     number_of_true_signal_points = []
     number_of_recovered_signal_points = []
 
+    # 2D Input/Output Comparison Plots 
     plt.figure(figsize=(16,9))                                      #Sets the figure size
-
     loop = tqdm(range(n), desc='Plotting 2D Comparisons', leave=False, colour="green") 
     for i in loop:                                                #Runs for loop where 'i' itterates over 'n' total values which range from 0 to n-1
 
         #Select settings randomly from user range
-        signal_points_r = input_range_to_random_value(signal_points)
-        x_std_dev_r = input_range_to_random_value(x_std_dev) 
-        y_std_dev_r = input_range_to_random_value(y_std_dev) 
-        tof_std_dev_r = input_range_to_random_value(tof_std_dev)
-        noise_points_r = input_range_to_random_value(noise_points)
+        signal_settings = input_range_to_random_value(signal_points, x_std_dev, y_std_dev, tof_std_dev, noise_points)
 
         # Load input image
-        img = train_dataset[i][0].unsqueeze(0) # [t_idx[i]][0].unsqueeze(0)                    #!!! ????
+        img = train_dataset[i][0].unsqueeze(0) # Unsqueeze to add artificial batch dimension
         
-        #Determine the number of signal points on the input image (have to change this to take it directly from the embeded val in the datsaset as when addig noise this method will break)   
-        int_sig_points = (img >= reconstruction_threshold).sum()
-        number_of_true_signal_points.append(int(int_sig_points.numpy()))
+        # Save the number of true signal points on the input image 
+        number_of_true_signal_points.append(signal_settings[0])  
         
-        global image_noisy                                          #'global' means the variable (image_noisy) set inside a function is globally defined, i.e defined also outside the function
-        sparse_output_batch = create_sparse_signal(img, signal_points_r)
-        sparse_and_resolution_limited_batch = simulate_detector_resolution(sparse_output_batch, x_std_dev_r, y_std_dev_r, tof_std_dev_r, x_scale, y_scale, time_scale)
-        noised_sparse_reslimited_batch = add_noise_points_to_batch_prenorm(sparse_and_resolution_limited_batch, noise_points_r, time_dimension)
-    
+        #global image_noisy   
+              
+        # Create degraded images                     
+        sparse_output_batch, sparse_and_resolution_limited_batch, noised_sparse_reslimited_batch = signal_degredation(signal_settings, img, physical_scale_parameters)
+
+        # Normalise the noised image
         if masking_optimised_binary_norm:
             normalised_batch = mask_optimised_normalisation(noised_sparse_reslimited_batch)
         else:
             normalised_batch = gaped_normalisation(noised_sparse_reslimited_batch, reconstruction_threshold, time_dimension)
-            
-        #image_noisy_list.append(image_noisy)                        #Adds the just generated noise image to the list of all the noisy images
-        #image_noisy = image_noisy_list[i].to(device)                    #moves the list (i think of tensors?) to the device that will process it i.e either cpu or gpu, we have a check elsewhere in the code that detects if gpu is availible and sets the value of 'device' to gpu or cpu depending on availibility (look for the line that says "device = 'cuda' if torch.cuda.is_available() else 'cpu'"). NOTE: this moves the noised images to device, i think that the original images are already moved to device in previous code
-
-        #Following section sets the autoencoder to evaluation mode rather than training (up till line 'with torch.no_grad()')
-        encoder.eval()                                   #.eval() is a kind of switch for some specific layers/parts of the model that behave differently during training and inference (evaluating) time. For example, Dropouts Layers, BatchNorm Layers etc. You need to turn off them during model evaluation, and .eval() will do it for you. In addition, the common practice for evaluating/validation is using torch.no_grad() in pair with model.eval() to turn off gradients computation
-        decoder.eval()                                   #Simarlary as above
-
-        with torch.no_grad():                                               #As mentioned in .eval() comment, the common practice for evaluating/validation is using torch.no_grad() which turns off gradients computation whilst evaluating the model (the opposite of training the model)     
-        #Following line runs the autoencoder on the noised data
-            rec_img = decoder(encoder(normalised_batch))                         #Creates a recovered image (denoised image), by running a noisy image through the encoder and then the output of that through the decoder.
+        
+        # Run the autoencoder on the noised data  
+        with torch.no_grad():                                             
+            rec_img = decoder(encoder(normalised_batch))   
 
         #Determine the number of signal points on the recovered image 
         int_rec_sig_points = (rec_img >= reconstruction_threshold).sum()      
         number_of_recovered_signal_points.append(int(int_rec_sig_points.numpy()))
 
-        test_image = img.squeeze() #.cpu().squeeze().numpy()???????????????????????
-
+        test_image = img.squeeze()
         sparse_im = sparse_output_batch.squeeze()
         reslim_im = sparse_and_resolution_limited_batch.squeeze()
-
-        network_input_image = normalised_batch.squeeze() #.cpu().squeeze().numpy()??????????????????
+        network_input_image = normalised_batch.squeeze() 
         recovered_test_image = rec_img.cpu().squeeze().numpy()
 
         #clean up lines
         in_im = test_image   
-        noise_im = network_input_image
-        rec_im = recovered_test_image
-
-        noise_im = gaped_renormalisation(noise_im, reconstruction_threshold, time_dimension)
-        rec_im = gaped_renormalisation(rec_im, reconstruction_threshold, time_dimension)
+        noise_im = gaped_renormalisation(network_input_image, reconstruction_threshold, time_dimension)
+        rec_im = gaped_renormalisation(recovered_test_image, reconstruction_threshold, time_dimension)
         masked_im = masking_recovery(noise_im, rec_im, time_dimension)
 
         #cmap = cm.get_cmap('viridis')
@@ -1253,7 +1278,6 @@ def plot_epoch_data(encoder, decoder, epoch, model_save_name, time_dimension, re
                     bottom=0.02, 
                     right=0.99, 
                     top=0.95, 
-                    #wspace=0.001,  
                     hspace=0.3
                     )     
 
@@ -1262,55 +1286,41 @@ def plot_epoch_data(encoder, decoder, epoch, model_save_name, time_dimension, re
     plt.close()
 
     # 3D Reconstruction
-    in_im = reconstruct_3D(in_im) #reconstructs the 3D image using the reconstruct_3D function
-    sparse_im = reconstruct_3D(sparse_im)
-    reslim_im = reconstruct_3D(reslim_im)
-    noise_im = reconstruct_3D(noise_im) 
-    rec_im = reconstruct_3D(rec_im)
-    masked_im = reconstruct_3D(masked_im)
+    in_im, sparse_im, reslim_im, noise_im, rec_im, masked_im = reconstruct_3D(in_im, sparse_im, reslim_im, noise_im, rec_im, masked_im) #reconstructs the 3D image using the reconstruct_3D function
 
     # 3D Plottting
     if rec_im.ndim != 1:                       # Checks if there are actually values in the reconstructed image, if not no image is aseved/plotted
-        fig, axs = plt.subplots(2, 3, subplot_kw={'projection': '3d'})
+        fig, axs = plt.subplots(2, 3, figsize=(32,20), subplot_kw={'projection': '3d'})
         ax1, ax2, ax3, ax4, ax5, ax6 = axs.flatten()
         fig.suptitle(f"3D Reconstruction - Epoch {epoch}") #sets the title of the plot
 
+        ax1.set_title("Input Image") #sets the title of the plot
         ax1.scatter(in_im[:,0], in_im[:,1], in_im[:,2]) #plots the 3D scatter plot for input 
-        ax1.set_xlim(0, 128)
-        ax1.set_ylim(0, 88)
-        ax1.set_zlim(0, time_dimension)
 
+        ax2.set_title("Sparse Image") #sets the title of the plot
         ax2.scatter(sparse_im[:,0], sparse_im[:,1], sparse_im[:,2]) #plots the 3D scatter plot for sparse image
-        ax2.set_zlim(0, time_dimension)
-        ax2.set_xlim(0, 128)
-        ax2.set_ylim(0, 88)
     
+        ax3.set_title("Resolution Limited Image") #sets the title of the plot
         ax3.scatter(reslim_im[:,0], reslim_im[:,1], reslim_im[:,2]) #plots the 3D scatter plot for reslim image
-        ax3.set_zlim(0, time_dimension)
-        ax3.set_xlim(0, 128)
-        ax3.set_ylim(0, 88)
 
+        ax4.set_title("Noised Image") #sets the title of the plot
         ax4.scatter(noise_im[:,0], noise_im[:,1], noise_im[:,2]) #plots the 3D scatter plot for noised image
-        ax4.set_zlim(0, time_dimension)
-        ax4.set_xlim(0, 128)
-        ax4.set_ylim(0, 88)
 
+        ax5.set_title("Reconstructed Image") #sets the title of the plot
         ax5.scatter(rec_im[:,0], rec_im[:,1], rec_im[:,2]) #plots the 3D scatter plot for reconstructed image
-        ax5.set_zlim(0, time_dimension)
-        ax5.set_xlim(0, 128)
-        ax5.set_ylim(0, 88)
 
         try: ## NOTE THIS ERROR NEEDS FIXING. IT IS CAUSED BY A SITUATION WHERE DATA DOES COME BACK THAT IS GREATER THAN THE RECON CUTTOFF SO 3D PLOTS ARE GENERATED HOWVER NO POINTS LIE IN CORRECT PLACE FOR MASKING SO THE MASK CONTAINS NOTHING. THEN THE MASK WILL BE WRONG DIMS AND CASUE THE PLOT ERROR HERE. FIX
+            ax6.set_title("Masked Reconstructed Image") #sets the title of the plot
             ax6.scatter(masked_im[:,0], masked_im[:,1], masked_im[:,2]) #plots the 3D scatter plot for masked image
-            ax6.set_zlim(0, time_dimension)
-            ax6.set_xlim(0, 128)
-            ax6.set_ylim(0, 88)
         except:
             print("ERROR OCCURED IN MASKING 3D PLOT! INVESTIGATE!")
 
 
         for ax in [ax1, ax2, ax3, ax4, ax5, ax6]:
-            
+            ax.set_zlim(0, time_dimension)
+            ax.set_xlim(0, 128)
+            ax.set_ylim(0, 88)
+        
             if use_physical_values_for_plot_axis:
                 # Set axis labels
                 ax.set_xlabel('x (mm)')
@@ -1326,6 +1336,8 @@ def plot_epoch_data(encoder, decoder, epoch, model_save_name, time_dimension, re
                 ax.set_xlabel('x (pixels)')
                 ax.set_ylabel('y (pixels)')
                 ax.set_zlabel('time (pixels)')
+
+        fig.tight_layout()
 
         Out_Label = graphics_dir + f'{model_save_name} 3D Reconstruction - Epoch {epoch}.png' #creates the name of the file to be saved
         plot_save_choice(plot_or_save, Out_Label) #saves the plot if plot_or_save is set to 1, if 0 it displays, if 2 it displays and saves
@@ -1507,6 +1519,58 @@ class ffACBLoss(torch.nn.Module):
         weighted_mse_loss = (self.zero_weighting * zero_loss) + (self.nonzero_weighting * nonzero_loss) + (self.fullframe_weighting * full_frame_loss)
 
         return weighted_mse_loss
+
+class boostedffACBLoss(torch.nn.Module):
+    def __init__(self, zero_weighting=1, nonzero_weighting=1, fullframe_weighting=1, boost=1):
+        """
+        Initializes the ACB-MSE Loss Function class with weighting coefficients.
+
+        Args:
+        - zero_weighting: a scalar weighting coefficient for the MSE loss of zero pixels
+        - nonzero_weighting: a scalar weighting coefficient for the MSE loss of non-zero pixels
+        """
+        super().__init__()   
+        self.zero_weighting = zero_weighting
+        self.nonzero_weighting = nonzero_weighting
+        self.fullframe_weighting = fullframe_weighting
+        self.mse_loss = torch.nn.MSELoss(reduction='mean')
+        self.boost = boost
+
+    def forward(self, reconstructed_image, target_image):
+        """
+        Calculates the weighted mean squared error (MSE) loss between target_image and reconstructed_image.
+        The loss for zero pixels in the target_image is weighted by zero_weighting, and the loss for non-zero
+        pixels is weighted by nonzero_weighting.
+
+        Args:
+        - target_image: a tensor of shape (B, C, H, W) containing the target image
+        - reconstructed_image: a tensor of shape (B, C, H, W) containing the reconstructed image
+
+        Returns:
+        - weighted_mse_loss: a scalar tensor containing the weighted MSE loss
+        """
+        zero_mask = (target_image == 0)
+        nonzero_mask = ~zero_mask
+
+        values_zero = target_image[zero_mask]
+        values_nonzero = target_image[nonzero_mask]
+
+        corresponding_values_zero = reconstructed_image[zero_mask]
+        corresponding_values_nonzero = reconstructed_image[nonzero_mask]
+
+        zero_loss = self.mse_loss(corresponding_values_zero * self.boost, values_zero * self.boost)
+        nonzero_loss = self.mse_loss(corresponding_values_nonzero * self.boost, values_nonzero * self.boost)
+        full_frame_loss = self.mse_loss(reconstructed_image * self.boost, target_image * self.boost)
+
+        if torch.isnan(zero_loss):
+            zero_loss = 0
+        if torch.isnan(nonzero_loss):
+            nonzero_loss = 0
+
+        weighted_mse_loss = (self.zero_weighting * zero_loss) + (self.nonzero_weighting * nonzero_loss) + (self.fullframe_weighting * full_frame_loss)
+
+        return weighted_mse_loss
+
 
 class ACBLoss3D(torch.nn.Module):
     def __init__(self, zero_weighting=1, nonzero_weighting=1, virtual_t_weighting=1, virtual_x_weighting=1, virtual_y_weighting=1, timesteps=1000):
@@ -1995,8 +2059,7 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
     availible_loss_functions = [ACBLoss(zero_weighting, nonzero_weighting), 
                                 ffACBLoss(zero_weighting, nonzero_weighting, fullframe_weighting), 
                                 True3DLoss(zero_weighting=1, nonzero_weighting=1, timesteps=1000), 
-                                HistogramLoss(),
-                                simple3Dloss(zero_weighting=1, nonzero_weighting=1, virtual_t_weighting=1, virtual_x_weighting=1, virtual_y_weighting=1, timesteps=1000), 
+                                boostedffACBLoss(zero_weighting, nonzero_weighting, fullframe_weighting, boost=BOOST),                                simple3Dloss(zero_weighting=1, nonzero_weighting=1, virtual_t_weighting=1, virtual_x_weighting=1, virtual_y_weighting=1, timesteps=1000), 
                                 ACBLoss3D(zero_weighting=1, nonzero_weighting=1, virtual_t_weighting=1, virtual_x_weighting=None, virtual_y_weighting=None, timesteps=1000), 
                                 torch.nn.MSELoss(), 
                                 torch.nn.BCELoss(), 
@@ -2112,12 +2175,12 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
     ### Dataset Partitioning
     m = len(train_dataset)  #m is the length of the train_dataset, i.e the number of images in the dataset
     train_split = int(m * train_test_split_ratio) #train_split is the ratio of train images to be used in the training set as opposed to non_training set
-    train_data, non_training_data = random_split(train_dataset, [train_split, m-train_split])    #random_split(data_to_split, [size of output1, size of output2]) just splits the train_dataset into two parts, 4/5 goes to train_data and 1/5 goes to val_data , validation?
+    train_data, non_training_data = torch.utils.data.random_split(train_dataset, [train_split, m-train_split])    #random_split(data_to_split, [size of output1, size of output2]) just splits the train_dataset into two parts, 4/5 goes to train_data and 1/5 goes to val_data , validation?
 
     m2 = len(non_training_data)  #m2 is the length of the non_training_data, i.e the number of images in the dataset
     if val_set_on:
         val_split = int(m2 * val_test_split_ratio) #val_split is the ratio of npon train images to be used in the validation set as opposed to test set
-        test_data, val_data = random_split(non_training_data, [m2 - val_split, val_split])  
+        test_data, val_data = torch.utils.data.random_split(non_training_data, [m2 - val_split, val_split])  
     else:   #this all needs cleaning up, dont need val set in this case bu tnot having one does break other lines
         test_data = non_training_data  
         val_data = non_training_data
@@ -2314,12 +2377,13 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
                                                                         model_save_name, 
                                                                         time_dimension, 
                                                                         reconstruction_threshold,
-                                                                        signal_points=signal_points,
-                                                                        noise_points=noise_points,
-                                                                        x_std_dev = x_std_dev, 
-                                                                        y_std_dev = y_std_dev,
-                                                                        tof_std_dev = tof_std_dev,
-                                                                        n = num_to_plot)
+                                                                        signal_points,
+                                                                        noise_points,
+                                                                        x_std_dev, 
+                                                                        y_std_dev,
+                                                                        tof_std_dev,
+                                                                        physical_scale_parameters,
+                                                                        num_to_plot)
                 
                 number_of_true_signal_points, number_of_recovered_signal_points, in_data, noisy_data, rec_data = returned_data_from_plotting_function
                 
