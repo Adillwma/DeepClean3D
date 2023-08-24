@@ -1,6 +1,10 @@
 ## Model settings optimesed over time
 
-### Setting Set 001 - [S1]
+### Setting Set 001 - [S1 - Sunburst]
+# SSIM (0.824)  Signal Returned (91.48 %)	Non-Signal Pixels Returned (521.91)
+# Initial model attempts to get a good xy signal reconstuction, z reconstruction is poor. Also has a high number of non-signal pixels returned.
+
+
 latent_dim = 10
 batch_size = 10
 
@@ -41,7 +45,10 @@ seeding_value = 10
 
 
 
-### Setting Set 002 - [S2]
+### Setting Set 002 - [S2 - Stormcloud]
+# SSIM (0.867)  Signal Returned (94.65 %)	Non-Signal Pixels Returned (294.24)
+# Model increased signal return performance by 3% and decreased non-signal return by 43% over S1 Sunburst model
+
 MODIFIED: latent_dim = 50
 batch_size = 10
 
@@ -84,7 +91,9 @@ seeding_value = 10
 
 
 
-### Setting Set 003 - [S3]
+### Setting Set 003 - [S3 - Milky Way]
+# SSIM (0.919)  Signal Returned (86.35 %)	Non-Signal Pixels Returned (86.46)
+# Model decreased signal return performance by 8% but decreased non-signal return by 70% over S2 Stormcloud and 80% over S1 Sunburst model
 latent_dim = 50
 batch_size = 10
 
@@ -107,8 +116,8 @@ loss_vs_sparse_img = False    #NOTE: Tested!                # User controll to s
 MODIFIED: loss_function_selection = {ffACB-MSE}
 
 zero_weighting = 1                        # User controll to set zero weighting for ACBMSE (Hyperparameter)
-MODIFIED: nonzero_weighting = 0.2                        # User controll to set non zero weighting for ACBMSE (Hyperparameter)
-MODIFIED: full_frame_weighting = !!! ???!!                        # User controll to set non zero weighting for ACBMSE (Hyperparameter)
+MODIFIED: nonzero_weighting = 0.4                        # User controll to set non zero weighting for ACBMSE (Hyperparameter)
+MODIFIED: full_frame_weighting = 1.5                         # User controll to set non zero weighting for ACBMSE (Hyperparameter)
 signal_points = 30                          # User controll to set the number of signal points to add
 noise_points =  100                         # User controll to set the number of noise points to add
 
