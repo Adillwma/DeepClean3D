@@ -26,6 +26,10 @@ def test_custom_loss(*args):
     input_data = torch.randn(1, 1, 100, 10)
     target_data = torch.randn(1, 1, 100, 1)
 
+    # Normalize the data
+    input_data = input_data / input_data.max()
+    target_data = target_data / target_data.max()
+
     # Initialize the network and loss function
     net = Net()
     optimizer = optim.SGD(net.parameters(), lr=0.01)
@@ -91,17 +95,41 @@ def test_custom_loss(*args):
             print("Gradient computation successful!")
         except:
             print("Gradient computation failed!")
-
+        """
         # Create a plot of loss vs. difference level
-        diff_levels = torch.linspace(-2, 2, 100)
+        x = 10
+        y = 10
+        diff_levels = torch.linspace(-1, 1, x*y*2)
+        loss_values = []
+        dummy_img1 = torch.zeros(1,1,x,y)
+        #set 50% of pixels to hits
+        dummy_img1[:,:,0:5,:] = 0.5
+        dummy_img2 = torch.zeros(1,1,x,y)
+        for rep in range(2):
+            for pixel in range(x*y):
+                dummy_img2[0,0,pixel%x,pixel//x] = dummy_img2[0,0,pixel%x,pixel//x] + 0.5
+                #plt.imshow(dummy_img2[0,0])
+                #plt.show()
+                #plt.imshow(dummy_img1[0,0])
+                #plt.show()
+                loss = criterion(dummy_img1, dummy_img2)
+                loss_values.append(loss.item())
+        loss_labels.append(type(loss_class).__name__)
+        all_loss_values.append(loss_values)
+        """
+        # Create a plot of loss vs. difference level
+        dummy_img1 = torch.randn(1,1,10,10)
+        diff_levels = torch.linspace(-1, 1, 100)
         loss_values = []
         for diff_level in diff_levels:
             dummy_img1 = torch.randn(1,1,10,10)
             dummy_img2 = dummy_img1 + diff_level
-            loss = criterion(net(dummy_img1), net(dummy_img2))
+            loss = criterion(dummy_img1, dummy_img2)
             loss_values.append(loss.item())
         loss_labels.append(type(loss_class).__name__)
         all_loss_values.append(loss_values)
+
+
 
     for lossvals, class_label in zip(all_loss_values, loss_labels):
         plt.plot(diff_levels, lossvals, label=class_label)
