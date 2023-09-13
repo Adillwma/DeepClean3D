@@ -1,6 +1,6 @@
 # DeepClean3D - [Denoising LHCb TORCH at the Large Hadron Collider]
 ### Author: Adill Al-Ashgar
-#### Contributors: Max Carter, Dr. Alex Marshall, Dr. Jonas Radamaker
+#### Contributors: Dr. Jonas Radamaker, Dr. Alex Marshall, Max Carter
 #### Department of Physics - University of Bristol, UK 
 
 <img src="Images/image-20150605-8677-1ykfc31.jpg" alt="LHC" width="300"> 
@@ -265,10 +265,8 @@ Overall including the 2D with embedded ToF technique and the encoder stage the i
 
 
 
-
-
 ## License
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details. The ACB-MSE loss function is licensed under the MIT License and is available at [ACB-MSE repository](https://github.com/Adillwma/ACB_MSE) and via [PyPi](https://pypi.org/project/ACB-MSE/).
+This project is not currently licensed. The ACB-MSE loss function is licensed under the MIT License and is available at [ACB-MSE repository](https://github.com/Adillwma/ACB_MSE) and via [PyPi](https://pypi.org/project/ACB-MSE/).
 
 ## Contributions
 Contributions to this codebase are welcome! If you encounter any issues, bugs or have suggestions for improvements please open an issue or a pull request on the [GitHub repository](https://github.com/Adillwma/DeepClean-Noise-Suppression-for-LHC-B-Torch-Detector).
