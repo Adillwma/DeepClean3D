@@ -127,22 +127,20 @@ Possible improvements:
 
 ### ~~~~~  Label loss plots y axis programatically based on user loss function selection
 """
-
+ 
 # NOTE to users: First epoch will always run slower when using a new dataset or after a computer restart as system memory is being trained, subsequent epochs should take ~50% of the time of the first epoch
 # NOTE to users: The 'nonzero_weighting' parameter is a great way to adjust the sensetivity of the training result. Values around 0.1 will be very cautious in predicting hits, whilst moving to around 1.0 will be very confident in predicting hits. This is a great way to adjust the sensetivity of the model to your needs. Low values are better for direct net output, whilst higher values are better for masking output.
 
 #%% - User Inputs
-dataset_title = "RDT 100 FAST" #"RDT 10K MOVE" #'RDT 500K 1000ToF' #"RDT 10K MOVE" #"RDT 50KM"# "Dataset 37_X15K Perfect track recovery" #"Dataset 24_X10Ks"           #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
-model_save_name = 'TB REMOVE' #"T2"#"RDT 500K 1000ToF timed"#"2023 Testing - RDT100K n100"#"2023 Testing - RDT10K NEW" #"RDT 100K 30s 200n Fixed"#"RDT 50KM tdim1000 AE2PROTECT 30 sig 200NP LD10"     #"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
+dataset_title = "RF_5K"#"PDT 10K" #"RDT 10K MOVE" #'RDT 500K 1000ToF' #"RDT 10K MOVE" #"RDT 50KM"# "Dataset 37_X15K Perfect track recovery" #"Dataset 24_X10Ks"           #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
+model_save_name = "RICHFAST TEST 7 prf 5"#'Parabola6 no norm to loss' #"T2"#"RDT 500K 1000ToF timed"#"2023 Testing - RDT100K n100"#"2023 Testing - RDT10K NEW" #"RDT 100K 30s 200n Fixed"#"RDT 50KM tdim1000 AE2PROTECT 30 sig 200NP LD10"     #"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
 
 xdim = 88   # Currently useless
 ydim = 128  # Currently useless
 time_dimension = 1000                        # User controll to set the number of time steps in the data
 
-
-
 #%% - Training Hyperparameter Settings
-num_epochs = 30                            # User controll to set number of epochs (Hyperparameter)
+num_epochs = 2000                            # User controll to set number of epochs (Hyperparameter)
 batch_size = 10 #6 looks good                              # User controll to set batch size - number of Images to pull per batch (Hyperparameter) 
 learning_rate = 0.0001                       # User controll to set optimiser learning rate (Hyperparameter)
 optim_w_decay = 1e-05                        # User controll to set optimiser weight decay for regularisation (Hyperparameter)
@@ -160,13 +158,13 @@ val_test_split_ratio = 0.9                   # This needs to be better explained
 
 #%% - Loss Function Settings
 loss_vs_sparse_img = False    #NOTE: Tested!                # User controll to set if the loss is calculated against the sparse image or the full image (Hyperparameter)
-loss_function_selection = 3                 # Select loss function (Hyperparameter): 0 = ACBMSE, 1 = ffACBMSE, 2 = ACBMSE3D, 3 = torch.nn.MSELoss(), 4 = torch.nn.BCELoss(), 5 = torch.nn.L1Loss(), 6 = ada_SSE_loss, 7 = ada_weighted_custom_split_loss, 8 = weighted_perfect_reconstruction_loss
+loss_function_selection = 0                  # Select loss function (Hyperparameter): 0 = ACBMSE, 1 = ffACBMSE, 2 = ACBMSE3D, 3 = torch.nn.MSELoss(), 4 = torch.nn.BCELoss(), 5 = torch.nn.L1Loss(), 6 = ada_SSE_loss, 7 = ada_weighted_custom_split_loss, 8 = weighted_perfect_reconstruction_loss
 
 # Below weights only used if loss func set to 0, 1 or 6 aka ACBMSE or split loss varients
 zero_weighting = 1                        # User controll to set zero weighting for ACBMSE (Hyperparameter)
-nonzero_weighting = 0.5 #0.4                        # User controll to set non zero weighting for ACBMSE (Hyperparameter)
+nonzero_weighting = 1#0.4 #0.4                        # User controll to set non zero weighting for ACBMSE (Hyperparameter)
 # Only used for ffACBMSE along with above two settings
-fullframe_weighting = 1.2 #1.5                      # User controll to set full frame weighting for ffACBMSE (Hyperparameter)
+fullframe_weighting = 1.5 #1.5                      # User controll to set full frame weighting for ffACBMSE (Hyperparameter)
 ff_loss = 'mse'
 
 # Below only used if loss func set to 6 aka ada_weighted_custom_split_loss
@@ -174,17 +172,17 @@ zeros_loss_choice = 1                        # Select loss function for zero val
 nonzero_loss_choice = 1                      # Select loss function for non zero values (Hyperparameter): 0 = Maxs_Loss_Func, 1 = torch.nn.MSELoss(), 2 = torch.nn.BCELoss(), 3 = torch.nn.L1Loss(), 4 = ada_SSE_loss
 
 #%% - Image Preprocessing Settings  (when using perfect track images as labels)
-signal_points = 30                          # User controll to set the number of signal points to add
-noise_points =  100                         # User controll to set the number of noise points to add
+signal_points = 200#30                          # User controll to set the number of signal points to add
+noise_points =  200#0#100                         # User controll to set the number of noise points to add
 
 x_std_dev = 0  #mm NOTE ADAPTed TO PHYSICAL                             # User controll to set the standard deviation of the detectors error in the x axis
 y_std_dev = 0  #mm NOTE ADAPTed TO PHYSICAL                             # User controll to set the standard deviation of the detectors error in the y axis
 tof_std_dev = 0  #ns NOTE ADAPTed TO PHYSICAL                           # User controll to set the standard deviation of the detectors error in the time of flight 
 
 #%% - Pretraining settings
-start_from_pretrained_model = False         # If set to true then the model will load the pretrained model and optimiser state dicts from the path below
+start_from_pretrained_model = True         # If set to true then the model will load the pretrained model and optimiser state dicts from the path below
 load_pretrained_optimser = True             # Only availible if above is set to true - (pretrain seems to perform better if this is set to true)
-pretrained_model_path = 'N:/Yr 3 Project Results/RDT 50KMF Base Model 2 - Training Results/RDT 50KMF Base Model 2 - Model + Optimiser State Dicts.pth'      # Specify the path to the saved full state dictionary for pretraining
+pretrained_model_path = 'N:/Yr 3 Project Results/RICHFAST TEST 5 - Training Results/Model_Deployment/RICHFAST TEST 5 - Model + Optimiser State Dicts.pth'      # Specify the path to the saved full state dictionary for pretraining
 
 #%% - Normalisation Settings 
 masking_optimised_binary_norm = False       # If set to true then the model will use the binary normalisation method optimised for masking output. Otherwise will use the gaped custom normalisation optimised for the direct network output
@@ -224,11 +222,12 @@ plot_test_loss = True                       # [default = True]
 plot_validation_loss = True                 # [default = True]               
 plot_time_loss = True                       # [default = True]
 plot_detailed_performance_loss = True       # Plots ssim nmi etc for each epoch 
-
+use_tensorboard = False
 plot_live_time_loss = True                  # [default = True] Generate plot of live training loss vs time during trainig which is overwritten each epoch, this is useful for seeing how the training is progressing
 plot_live_training_loss = True              # [default = True] Generate plot of live training loss vs epoch during trainig which is overwritten each epoch, this is useful for seeing how the training is progressing
 comparative_live_loss = True                # [default = True] Adds comparative lines to the live plots, the models for comparison are selected below
 slide_live_plot_size = 0                    # [default = 0] Number of epochs to show on the live plot (if set to 0 then will show all epochs)
+plot_comparative_loss = True
 
 comparative_loss_titles = ["S1 10K", "S1 100K", "S1 500K", "S2 10K"]
 comparative_loss_paths = [r'N:\Yr 3 Project Results\RDT 10K 1000ToF timed - Training Results\\',   # Settings V1
@@ -438,6 +437,10 @@ def gaped_normalisation(data, reconstruction_threshold, time_dimension=100):
     return data
 
 # Custom renormalisation function
+def gaped_renormalisation_torch(data, reconstruction_threshold, time_dimension=100):
+    data = torch.where(data > reconstruction_threshold, ((data - reconstruction_threshold)*(1/(1-reconstruction_threshold)))*(time_dimension), 0)
+    return data
+
 def gaped_renormalisation(data, reconstruction_threshold, time_dimension=100):
     data = np.where(data > reconstruction_threshold, ((data - reconstruction_threshold)*(1/(1-reconstruction_threshold)))*(time_dimension), 0)
     return data
@@ -1025,21 +1028,22 @@ def train_epoch(encoder, decoder, device, dataloader, loss_fn, optimizer, signal
         #Select settings randomly from user ranges
         signal_settings = input_range_to_random_value(signal_points, x_std_dev, y_std_dev, tof_std_dev, noise_points)
 
-        #signal_settings, image_batch, reconstruction_threshold, time_dimension
-
         # DATA PREPROCESSING
         with torch.no_grad(): # No need to track the gradients
             sparse_output_batch, sparse_and_resolution_limited_batch, noised_sparse_reslimited_batch = signal_degredation(signal_settings, image_batch, physical_scale_parameters)
             
             if masking_optimised_binary_norm:
                 normalised_batch = mask_optimised_normalisation(noised_sparse_reslimited_batch)
+                norm_sparse_output_batch = mask_optimised_normalisation(sparse_output_batch)
                 normalised_inputs = mask_optimised_normalisation(image_batch)
             else:
                 normalised_batch = gaped_normalisation(noised_sparse_reslimited_batch, reconstruction_threshold, time_dimension)
+                norm_sparse_output_batch = gaped_normalisation(sparse_output_batch, reconstruction_threshold, time_dimension)
                 normalised_inputs = gaped_normalisation(image_batch, reconstruction_threshold, time_dimension)
             
         # Move tensor to the proper device
         image_clean = normalised_inputs.to(device) # Move the clean image batch to the device
+        image_sparse = norm_sparse_output_batch.to(device) # Move the sparse image batch to the device
         image_noisy = normalised_batch.to(device) # Move the noised image batch to the device
         
         # Encode data
@@ -1048,23 +1052,28 @@ def train_epoch(encoder, decoder, device, dataloader, loss_fn, optimizer, signal
         decoded_data = decoder(encoded_data) # Decode the encoded image batch
         
         if loss_vs_sparse_img:
-            loss_comparator = sparse_output_batch
+            loss_comparator = image_sparse
         else:
             loss_comparator = image_clean
 
         # Evaluate loss
+        #if renorm_for_loss_calc
+        #decoded_data = gaped_renormalisation_torch(decoded_data, reconstruction_threshold, time_dimension)
+        #loss_comparator = gaped_renormalisation_torch(loss_comparator, reconstruction_threshold, time_dimension)
         loss = loss_fn(decoded_data, loss_comparator)  # Compute the loss between the decoded image batch and the clean image batch
         
         # Backward pass
         optimizer.zero_grad() # Reset the gradients
         loss.backward() # Compute the gradients
 
-        # Add the gradient values to Tensorboard
-        for name, param in encoder.named_parameters():
-            writer.add_histogram(name + '/grad', param.grad, global_step=epoch)
 
-        for name, param in decoder.named_parameters():
-            writer.add_histogram(name + '/grad', param.grad, global_step=epoch)
+        if use_tensorboard:
+            # Add the gradient values to Tensorboard
+            for name, param in encoder.named_parameters():
+                writer.add_histogram(name + '/grad', param.grad, global_step=epoch)
+
+            for name, param in decoder.named_parameters():
+                writer.add_histogram(name + '/grad', param.grad, global_step=epoch)
 
         optimizer.step() # Update the parameters
         batches = batches + 1
@@ -1188,6 +1197,8 @@ def plot_epoch_data(encoder, decoder, epoch, model_save_name, time_dimension, re
     encoder.eval()                                   #.eval() is a kind of switch for some specific layers/parts of the model that behave differently during training and inference (evaluating) time. For example, Dropouts Layers, BatchNorm Layers etc. You need to turn off them during model evaluation, and .eval() will do it for you. In addition, the common practice for evaluating/validation is using torch.no_grad() in pair with model.eval() to turn off gradients computation
     decoder.eval()                                   #Simarlary as above
 
+    encoder.to(device)
+    decoder.to(device)
     # Unpack physical scale parameters
     x_scale, y_scale, tof_scale = physical_scale_parameters
 
@@ -1221,17 +1232,18 @@ def plot_epoch_data(encoder, decoder, epoch, model_save_name, time_dimension, re
             normalised_batch = gaped_normalisation(noised_sparse_reslimited_batch, reconstruction_threshold, time_dimension)
         
         # Run the autoencoder on the noised data  
-        with torch.no_grad():                                             
+        with torch.no_grad():  
+            normalised_batch = normalised_batch.to(device)                                       
             rec_img = decoder(encoder(normalised_batch))   
 
         #Determine the number of signal points on the recovered image 
         int_rec_sig_points = (rec_img >= reconstruction_threshold).sum()      
-        number_of_recovered_signal_points.append(int(int_rec_sig_points.numpy()))
+        number_of_recovered_signal_points.append(int(int_rec_sig_points.cpu().numpy()))
 
-        test_image = img.squeeze()
-        sparse_im = sparse_output_batch.squeeze()
-        reslim_im = sparse_and_resolution_limited_batch.squeeze()
-        network_input_image = normalised_batch.squeeze() 
+        test_image = img.cpu().squeeze()
+        sparse_im = sparse_output_batch.cpu().squeeze()
+        reslim_im = sparse_and_resolution_limited_batch.cpu().squeeze()
+        network_input_image = normalised_batch.cpu().squeeze() 
         recovered_test_image = rec_img.cpu().squeeze().numpy()
 
         #clean up lines
@@ -1992,6 +2004,7 @@ class HistogramLoss(torch.nn.Module):
 
 #%% - Program begins
 print("\n \nProgram Initalised - Welcome to DC3D Trainer\n")  #prints the welcome message
+
 # Following section checks if a CUDA enabled GPU is available. If found it is selected as the 'device' to perform the tensor opperations. If no CUDA GPU is found the 'device' is set to CPU (much slower) 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 print(f'Selected compute device: {device}\n')  #Informs user if running on CPU or GPU
@@ -2082,7 +2095,8 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
     availible_loss_functions = [ACBLoss(zero_weighting, nonzero_weighting), 
                                 ffACBLoss(zero_weighting, nonzero_weighting, fullframe_weighting), 
                                 True3DLoss(zero_weighting=1, nonzero_weighting=1, timesteps=1000), 
-                                boostedffACBLoss(zero_weighting, nonzero_weighting, fullframe_weighting, ff_loss, boost=BOOST),                                simple3Dloss(zero_weighting=1, nonzero_weighting=1, virtual_t_weighting=1, virtual_x_weighting=1, virtual_y_weighting=1, timesteps=1000), 
+                                boostedffACBLoss(zero_weighting, nonzero_weighting, fullframe_weighting, ff_loss, boost=BOOST),                                
+                                simple3Dloss(zero_weighting=1, nonzero_weighting=1, virtual_t_weighting=1, virtual_x_weighting=1, virtual_y_weighting=1, timesteps=1000), 
                                 ACBLoss3D(zero_weighting=1, nonzero_weighting=1, virtual_t_weighting=1, virtual_x_weighting=None, virtual_y_weighting=None, timesteps=1000), 
                                 torch.nn.MSELoss(), 
                                 torch.nn.BCELoss(), 
@@ -2095,6 +2109,7 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
     loss_function_labels = ["ACB_MSE", 
                             "ffACB_MSE", 
                             "ACBLoss3D", 
+                            "boostedffACB_MSE",
                             "MSE", 
                             "BCE", 
                             "MAE", 
@@ -2139,63 +2154,59 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
 
 
     #%% - Dataset Pre-tests
-    # Dataset Integrity Check    #???????? aslso perform on train data dir if ther is one?????? 
+    # Dataset Integrity Check   
     scantype = "quick" #sets the scan type to quick
     if full_dataset_integrity_check: #if full_dataset_integrity_check is set to True, then the scan type is set to full (slow)
         scantype = "full"
 
+    # TERMINAL PRINT: Report test type and result
     print(f"Testing training dataset integrity, with {scantype} scan")  #prints the scan type
+    
+    # CHECK: Dataset Distribution Check
     dataset_integrity_check(train_dir, full_test=full_dataset_integrity_check, print_output=True) #checks the integrity of the training dataset
-    print("Test completed\n")
+    #print("Test completed\n")
 
-    # Dataset Distribution Check
+    # CHECK: Dataset Distribution Check
     if full_dataset_distribution_check: #if full_dataset_distribution_check is set to True, then the dataset distribution is checked
         print("\nTesting training dataset signal distribution")
         dataset_distribution_tester(train_dir, time_dimension, ignore_zero_vals_on_plot=True, output_image_dir=graphics_dir) #checks the distribution of the training dataset
-        print("Test completed\n")
-
-
-        
-
-    #%% - Data Loader
-    def train_loader2d(path): #loads the 2D image from the path
-        sample = (np.load(path))    
-        return (sample) 
-
-    # Calculates the number of files in the path
-    files_in_path = os.listdir(data_path + dataset_title + '/Data/')  #list of files in path
-    num_of_files_in_path = len(files_in_path) #number of files in path
-
-    # TERMINAL PRINT: Report type of gradient descent
-    learning = batch_learning(num_of_files_in_path, batch_size)  #calculates which type of batch learning is being used
-    print("%s files in path." %num_of_files_in_path ,"// Batch size =",batch_size, "\nLearning via: " + learning,"\n") #prints the number of files in the path and the batch size and the resultant type of batch learning
+        #print("Test completed\n")
 
     # CHECK: Num of images in path greater than batch size choice? 
+    num_of_files_in_path = len(os.listdir(data_path + dataset_title + '/Data/')) #number of files in path
     if num_of_files_in_path < batch_size: #if the number of files in the path is less than the batch size, user is promted to input a new batch size
         print("Error, the path selected has", num_of_files_in_path, "image files, which is", (batch_size - num_of_files_in_path) , "less than the chosen batch size. Please select a batch size less than the total number of images in the directory")
         batch_err_message = "Choose new batch size, must be less than total amount of images in directory", (num_of_files_in_path) #creates the error message
         batch_size = int(input(batch_err_message))  #!!! not sure why input message is printing with wierd brakets and speech marks in the terminal? Investigate
 
+    # TERMINAL PRINT: Report type of gradient descent
+    learning = batch_learning(num_of_files_in_path, batch_size)  #calculates which type of batch learning is being used
+    print("%s files in path." %num_of_files_in_path ,"// Batch size =",batch_size, "\nLearning via: " + learning,"\n") #prints the number of files in the path and the batch size and the resultant type of batch learning
+
+    #%% - Data Loader & Preperation
+
+    ### - Dataset
+    # Dataset loading function
+    def train_loader2d(path): #loads the 2D image from the path
+        sample = (np.load(path))    
+        return (sample) 
+    
     # Creates the training dataset using the DatasetFolder function from torchvision.datasets
     train_dataset = torchvision.datasets.DatasetFolder(train_dir, train_loader2d, extensions='.npy') 
 
-
-
-    #%% - Data Preparation 
+    ### - Data Preparation 
     tensor_transform = partial(np_to_tensor, double_precision=double_precision) #using functools partial to bundle the args into np_to_tensor to use in custom torch transform using lambda function
 
-    ### Transormations
+    # Transformations
     train_transform = transforms.Compose([transforms.Lambda(tensor_transform),
                                         #transforms.RandomRotation(30),         #transforms.RandomRotation(angle (degrees?) ) rotates the tensor randomly up to max value of angle argument
                                         #transforms.RandomResizedCrop(224),     #transforms.RandomResizedCrop(pixels) crops the data to 'pixels' in height and width (#!!! and (maybe) chooses a random centre point????)
                                         #transforms.RandomHorizontalFlip(),     #transforms.RandomHorizontalFlip() flips the image data horizontally 
                                         ])      
+    train_dataset.transform = train_transform   
     ##For info on all transforms check out: https://pytorch.org/vision/0.9/transforms.html
 
-    # this applies above transforms to dataset 
-    train_dataset.transform = train_transform    
-
-    ### Dataset Partitioning
+    # Dataset Partitioning
     m = len(train_dataset)  #m is the length of the train_dataset, i.e the number of images in the dataset
     train_split = int(m * train_test_split_ratio) #train_split is the ratio of train images to be used in the training set as opposed to non_training set
     train_data, non_training_data = torch.utils.data.random_split(train_dataset, [train_split, m-train_split])    #random_split(data_to_split, [size of output1, size of output2]) just splits the train_dataset into two parts, 4/5 goes to train_data and 1/5 goes to val_data , validation?
@@ -2208,15 +2219,14 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
         test_data = non_training_data  
         val_data = non_training_data
 
-    ### Following section for Dataloaders, they just pull a random sample of images from each of the datasets we now have, train_data, valid_data, and test_data. the batch size defines how many are taken from each set, shuffle argument shuffles them each time?? #!!!
-    # required to load the data into the endoder/decoder. Combines a dataset and a sampler, and provides an iterable over the given dataset.
-    train_loader = torch.utils.data.DataLoader(train_data, batch_size=batch_size, shuffle=shuffle_train_data)                 #Training data loader, can be run to pull training data as configured  Also is shuffled using parameter shuffle
-    test_loader = torch.utils.data.DataLoader(test_data, batch_size=batch_size)                                 #Testing data loader, can be run to pull training data as configured. 
-    valid_loader = torch.utils.data.DataLoader(val_data, batch_size=batch_size)                                 #Validation data loader, can be run to pull training data as configured
+    # Generating Dataloaders
+    train_loader = torch.utils.data.DataLoader(train_data, batch_size=batch_size, shuffle=shuffle_train_data)   #Training data loader, is shuffled based on parameter 'shuffle_train_data' = True/False
+    test_loader = torch.utils.data.DataLoader(test_data, batch_size=batch_size)                                 #Testing data loader 
+    valid_loader = torch.utils.data.DataLoader(val_data, batch_size=batch_size)                                 #Validation data loader 
 
 
     #%% - Setup model, loss criteria and optimiser    
-    ### Initialize the encoder and decoder
+    # Initialize the encoder and decoder
     encoder = Encoder(latent_dim, print_encoder_debug, fc_input_dim)
     decoder = Decoder(latent_dim, print_decoder_debug, fc_input_dim)
 
@@ -2225,13 +2235,13 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
         encoder.double()   
         decoder.double()
 
-    ### Define the optimizer
+    # Define the optimizer
     params_to_optimize = [{'params': encoder.parameters()} ,{'params': decoder.parameters()}] #Selects what to optimise, 
     optim = torch.optim.Adam(params_to_optimize, lr=learning_rate, weight_decay=optim_w_decay)
 
-
-    #%% - Load in pretrained network if needed 
+    # Load in pretrained weights and biases, if user requested
     if start_from_pretrained_model:
+
         # load the full state dictionary into memory
         full_state_dict = torch.load(pretrained_model_path)
 
@@ -2243,10 +2253,31 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
             # load the optimizer state dictionary, if user requested
             optim.load_state_dict(full_state_dict['optimizer_state_dict'])
 
-    #%% - Initalise Model on compute device
-    # Following section moves both the encoder and the decoder to the selected device i.e detected CUDA enabled GPU or to CPU
+    # Initalise Model on compute device
     encoder.to(device)   #Moves encoder to selected device, CPU/GPU
     decoder.to(device)   #Moves decoder to selected device, CPU/GPU
+
+    #%% - Prepare Network Summary
+    # Set evaluation mode for encoder and decoder
+
+    with torch.no_grad(): # No need to track the gradients
+        
+        # Create dummy input tensor
+        enc_input_tensor = torch.randn(batch_size, 1, ydim, xdim) 
+        if double_precision:
+            enc_input_tensor = enc_input_tensor.double()
+            
+        # Join the encoder and decoder models
+        full_network_model = torch.nn.Sequential(encoder, decoder)   #should this be done with no_grad?
+
+        # Generate network summary and then convert to string
+        model_stats = summary(full_network_model, input_data=enc_input_tensor, device=device, verbose=0)
+        summary_str = str(model_stats)             
+
+        # Print Encoder/Decoder Network Summary to terminal if user requested (Regardless of user setting, network summary is always added to the final .txt output file along with the final model)
+        if print_network_summary:
+            print(summary_str)
+
 
     #%% - Add Activation data hooks to encoder and decoder layers
     if record_activity or record_weights or record_biases:
@@ -2294,26 +2325,6 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
 
 
 
-    #%% - Prepare Network Summary
-    # Set evaluation mode for encoder and decoder
-
-    with torch.no_grad(): # No need to track the gradients
-        
-        # Create dummy input tensor
-        enc_input_tensor = torch.randn(batch_size, 1, ydim, xdim) 
-        if double_precision:
-            enc_input_tensor = enc_input_tensor.double()
-            
-        # Join the encoder and decoder models
-        full_network_model = torch.nn.Sequential(encoder, decoder)   #should this be done with no_grad?
-
-        # Generate network summary and then convert to string
-        model_stats = summary(full_network_model, input_data=enc_input_tensor, device=device, verbose=0)
-        summary_str = str(model_stats)             
-
-        # Print Encoder/Decoder Network Summary to terminal if user requested (Regardless of user setting, network summary is always added to the final .txt output file along with the final model)
-        if print_network_summary:
-            print(summary_str)
 
 
     #%% - Running Training Loop
@@ -2448,7 +2459,8 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
             
             
             ### Live Comparison Plots
-            create_comparison_plot_data(slide_live_plot_size, epoch, max_epoch_reached, comparative_live_loss, comparative_loss_titles, comparative_epoch_times, comparative_history_da, data=history_da['train_loss'])
+            if plot_comparative_loss:
+                create_comparison_plot_data(slide_live_plot_size, epoch, max_epoch_reached, comparative_live_loss, comparative_loss_titles, comparative_epoch_times, comparative_history_da, data=history_da['train_loss'])
 
             ### Training Timeout Check
             if timeout_training:
@@ -2700,19 +2712,18 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
         # Write the local date and time to the file
         TD_now = datetime.datetime.now()         # Get the current local date and time
         output_file.write(f"Date data taken: {TD_now.strftime('%Y-%m-%d %H:%M:%S')}\n")     # Write the current local date and time to the file
-
         output_file.write(("Model ID: " + model_save_name + f"\nTrained on device: {device}\n"))   # Write the model ID and device used to train the model to the file
-        output_file.write((f"Torch Seed Val to Reproduce: {T_seed}\n")) 
-        output_file.write((f"Numpy Seed Val to Reproduce: {N_seed}\n")) 
+        output_file.write((f"Max Epoch Reached: {max_epoch_reached}\n"))  # Write the max epoch reached during training to the file
+        output_file.write((f"Training Time: {format_time(training_time)}\n")) # Write the training time to the file
+
+        output_file.write((f"\nTorch Seed Val to Reproduce Run: {T_seed}\n")) 
+        output_file.write((f"Numpy Seed Val to Reproduce Run: {N_seed}\n")) 
         if seeding_value:
             output_file.write((f"User Set Seeding: True\n"))
         else:
             output_file.write((f"User Set Seeding: False\n"))
-    
-        output_file.write((f"\nMax Epoch Reached: {max_epoch_reached}\n"))  # Write the max epoch reached during training to the file
-        output_file.write((f"Training Time: {format_time(training_time)} seconds\n")) # Write the training time to the file
         
-        output_file.write("Input Settings:\n")  # Write the input settings to the file
+        output_file.write("\nInput Settings:\n")  # Write the input settings to the file
         for key, value in settings.items():
             output_file.write(f"{key}: {value}\n")
         
@@ -2745,12 +2756,13 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
         output_file.write((f"Pandas: {pd.__version__}\n")) 
         #output_file.write((f"MPL: {plt.__version__}\n"))
 
-        system_information = get_system_information()  # Get the system information using helper function
-        output_file.write("\n" + system_information)  # Write the system information to the file
-
         output_file.write("\nAutoencoder Network:\n")  # Write the autoencoder network settings to the file
         output_file.write((f"AE File ID: {AE_file_name}\n"))    # Write the autoencoder network file ID to the file
         output_file.write("\n" + summary_str)   # Write the autoencoder network summary to the file
+
+        output_file.write("\nTraining System Information:\n") 
+        system_information = get_system_information()  # Get the system information using helper function
+        output_file.write("\n" + system_information)  # Write the system information to the file
     print("- Completed -")
 
     if optimise_hyperparameter:

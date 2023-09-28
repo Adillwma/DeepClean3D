@@ -30,7 +30,7 @@ def SNR(clean_input, noised_target):
 
     snr = 10 * torch.log10(signal_power / noise_power)
        
-    return (float(snr.numpy()))
+    return (float(snr.cpu().numpy()))
 
 #Peak Signal-to-Noise Ratio (PSNR):
 def PSNR(clean_input, noised_target, time_dimension):
@@ -49,7 +49,7 @@ def PSNR(clean_input, noised_target, time_dimension):
     mse = torch.mean(torch.pow(clean_input - noised_target, 2))   #Finds the mean square error
     max_value = time_dimension
     psnr = 10 * torch.log10((max_value**2) / mse)
-    return (float(psnr.numpy()))
+    return (float(psnr.cpu().numpy()))
 
 #Mean Squared Error (MSE):
 def MSE(clean_input, noised_target):
@@ -64,7 +64,7 @@ def MSE(clean_input, noised_target):
     The calculated Mean Squared Error value.
     """
     mse = torch.mean((torch.pow(clean_input - noised_target, 2)))
-    return (float(mse.numpy()))
+    return (float(mse.cpu().numpy()))
 
 #Mean Absolute Error (MAE):
 def MAE(clean_input, noised_target):
@@ -78,7 +78,7 @@ def MAE(clean_input, noised_target):
     Returns:
     The calculated Mean Absolute Error value.
     """
-    return float((torch.mean(torch.abs(clean_input - noised_target))).numpy())
+    return float((torch.mean(torch.abs(clean_input - noised_target))).cpu().numpy())
 
 #Structural Similarity Index (SSIM):
 def SSIM(clean_input, noised_target, time_dimension):
@@ -133,7 +133,7 @@ def correlation_coeff(clean_input, noised_target):
     noised_center = noised_target - noised_mean
     numerator = (clean_center * noised_center).sum()
     denominator = clean_std * noised_std * clean_input.numel()
-    return float((numerator / denominator).numpy())
+    return float((numerator / denominator).cpu().numpy())
 
 #Mutual Information:
 def NomalisedMutualInformation(clean_input, noised_target):
