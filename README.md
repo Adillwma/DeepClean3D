@@ -1,9 +1,27 @@
-# DeepClean3D - [Denoising LHCb TORCH at the Large Hadron Collider]
+<div align="center">
+
+#  DeepClean3D
 ### Author: Adill Al-Ashgar
+#### 3D Neural Denoising for LHCb TORCH at the Large Hadron Collider
 #### Contributors: Dr. Jonas Radamaker, Dr. Alex Marshall, Max Carter
 #### Department of Physics - University of Bristol, UK 
 
-<img src="Images/image-20150605-8677-1ykfc31.jpg" alt="LHC" width="300"> 
+<img src="Images/DC3D_sensor_logo3.gif" width=600>
+
+    - Remove uncorrelated photons detected by TORCH
+    - Automatic cherenkov pattern detection in three dimensions (x, y and ToF)
+    - Increase track reconstruction efficiency in preperation for HL-LHC
+
+[![Github Repo](https://img.shields.io/badge/GitHub_Repo-DEEPCLEAN3D-yellow.svg)](https://github.com/Adillwma/DeepClean3D)
+[![Language](https://img.shields.io/badge/language-Python-blue.svg)](https://www.python.org/) 
+[![Published](https://img.shields.io/badge/Published-2023-purple.svg)]()
+</div>
+
+
+
+
+
+
 
 ## Introduction
 One of the four largest experiments on the LHC, the LHCb's main focus is in investigating baryon/anti-baryon asymmetry to explain the matter dominated universe we inhabit today.
@@ -14,7 +32,6 @@ A current challenge is in reconstructing detected photons path data, it is a com
 
 Our desire is to reduce the number of signals that require path reconstruction by using a neural network to detect the signal, only passing these points on to the reconstruction algorithm saving the computation time spent on reconstructing the noise signals only to throw them away. This is critical in the efficiency of the processing pipeline as the LHC moves into its high luminosity upgrade where data rates will be further increased.
 
-[![Language](https://img.shields.io/badge/language-Python-blue.svg)](https://www.python.org/)
 
 
 ## Table of Contents
@@ -152,9 +169,11 @@ Many of the detected photons are detector noise, not correlated to the hadron it
 ### 2D with embedded ToF
 Initially the intention was to use a true 3D autoencoder using 3D convolutional layers to process the data as a 3 dimensional object with x, y and time dimensions. However it was soon found to be very computationally intensive. Using the true x, y dimensions of the detector array, 88 x 128 pixels, and a simplified number of time steps (100) gives 1,126,400 total pixels per 3D image, which results in our autoencoder having 9,341,179 trainable parameters each of which must have its gradient calculated every batch
 
+<div align="center">
 
 ![Left hand image shows one of the simulated crosses in the full three dimensions of x,y and time. The right-hand side shows the same cross image but using our 2D with embedded ToF method, that compresses the three dimensional data to two dimensions to speed up the processing.](images/3d22d.png)
 
+</div>
 
 The solution that was found was to reduce the dimensionality of the input data by squashing the time dimension, leaving a 2D image in X,Y. To retain the time information, we turn the time dimension index of any hit into the value that goes into that x,y position in the 2D array. So instead of a 3D array that has zero values for in place of non hits and 1's for hits we now have a 2D array with 0's still encoding non hits and now values between 1 and 100 indicating a hit and the corresponding ToF. This has the effect of reducing the 1m+ total pixels to a more manageable 11,264 and the trainable parameters in the autoencoder to 1,248,251 (an 86.6% decrease over true 3D) which dramatically sped up the processing and training time of the network. 
 
@@ -194,9 +213,11 @@ The loss functions response curve is demonstrated in fig \ref{fig:losscurves}. T
 
 ### Masking Technique
 
+<div align="center">
 
 ![Illustration of the masking technique developed, shown here for a simple 4x4 input image. The numbers in the centre of the squares indicate the pixel values. The colours just help to visualise these values. The blue arrow path is the standard path for the denosing autoencoder, the red path shows the additional masking steps. the green arrow shows where the mask is taken from the standard autoencoders output and cast over the masking paths input.](images/netpathmask.png)
 
+</div>
 
 In the traditional approach and what shall be referred to as the 'direct' method the final denoised output is obtained by taking a clean input image, adding noise to it to simulate the detector noise, then passing the noised image as input to the DC3D denoiser, which removes the majority of the noise points and produces the finished denoised image. Although the network produces good x, y reconstruction (demonstrated in section \ref{XXXX}RESULTS at 91\%), and visually the ToF reconstruction is improving to the point that the signal can be visually discerned when compared to the original as shown in fig \ref{FIGURE OF VUSAL TOF BAD DIRECT}, quantitative analysis reveals that the direct output of the network achieves on average 0\% accuracy at finding exact ToF values. To address this problem, we introduce a new technique called ‘masking’.  
 
@@ -214,14 +235,17 @@ where $I$ is the input image pixel, $M$ is the corresponding pixel in the mask, 
 ### Supervised Signal Enhancement
 Development was focused on the fully filled out cross patterns with around 200 signal points in this early stage to create a strong proof of concept for the general approach. Feeling like this goal had been achieved the data generator was changed to resemble a more realistic scenario displaying only 30 signal points of the 200 along the cross. The AE developed to this point was not able to learn the sparse patterns.
 
+<div align="center">
 
 ![This series of images shows the degradation steps available to be introduced into the reconstructive learning path, each image is a step on from its left neighbour.](images/preprocess.png)
-
+</div>
 
 Taking inspiration from the the ideas behind the DAE and how the network is fed idealised data as a label whist it has noised data presented to it, a new methodology was trialed. The input data was reverted to the fully filled 200 photon cross paths, and additional signal degradation methods were incorporated into the noising phase. The initial trial added a function to dropout lit pixels from the input at random till 30 remain, the network is therefore presented with inputs that contain 30 hits only but gets the full filled cross as the label to compute loss against. This works spectacularly well with the network able to accurately reconstruct the patterns from only 30 signal points whilst also still performing the denosing role. This method returns the full cross pattern rather than the specific photon hits that were in the spare input, however if the later is desired, then the masking method applied to this path results in just the spares photons that fall underneath it in the sparse input image.
 
+<div align="center">
 
 ![Demonstrating the culmination of the RAE with masking applied to a realistic proportion of 30 signal points and 200 noise points. When using the reconstructive method the direct denoiser output returns the full traced pattern paths which may or may not be of more value then the individual photon hit locations. If this is not the case then the masking method provides a perfect way to recover the exact signal hits only.](images/rl.png)
+</div>
 
 
 ![The results of the RAE applied to the 30 signal and 200 noise points shown in reconstructed 3D. It is important to note that the masked output does not look like the input image because in the case of the reconstructive method the masking recovers only the true signal points incident on the detector not the full pattern, these points are the input image after it has been thinned out by the sparsity function.](images/3d best.png)
@@ -229,14 +253,19 @@ Taking inspiration from the the ideas behind the DAE and how the network is fed 
 
 For a final experiment into the possibilities of this reconstructive methodology another degradation layer was Incorporated that adds a random x and y shift to each photon in the input signal modeled by a Gaussian distribution. This is to simulate the resolution limitations of a detector. The network is passed in as input an image with all the photon hits shifted and has the perfect image as its label data for loss calculation, this again shows to be a highly successful methodology and demonstrated an ability to produce a tighter output cross signal than the smeared input. This has possible application to all detectors and could be used to enhance the physical resolution of a detector through software.   
 
+<div align="center">
 
 ![Image demonstrating the detector resolution recovery. This is not the main application for the program but is presented as an interesting possibility for future follow up.](images/sdevrec.png)
-
+</div>
 
 This takes us beyond the DAE to a new structure that could be thought of as a Reconstructive Autoencoder or RAE. Similar to a DAE it aims to learn the underlying pattern behind a noised set of data and then attempt to recreate the label target from the noised samples, but in addition to this the RAE can also reconstruct the signal from a degraded set of measurements. 
 
 ## The DC3D Pipeline
+
+<div align="center">
+
 ![The DC3D pipeline.](images/ov.png)
+</div>
 
 1) The detector produces 100, 128 x 88 images these are compressed to a single 128 x 88 image using the 2D with embedded ToF technique.
 
@@ -275,4 +304,4 @@ Contributions to this codebase are welcome! If you encounter any issues, bugs or
 For any further inquiries or for assistance in deploying DC3D, please feel free to reach out to me at adillwmaa@gmail.com.
 
 ## Acknowledgments
-Special thanks to Max Carter for his realistic data simulator, Dr. Jonas Radamaker for his expertise on LHCb and TORCH and Dr. Alex Marshal for his support and suggestions.
+Special thanks to Dr. Jonas Radamaker, Dr. Alex Marshall and Max Carter.
