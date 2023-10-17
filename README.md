@@ -19,8 +19,12 @@
 
 
 
+## Usage and Installation 
+This readme explains the technical implementation of DEEPCLEAN3D. For installation and usage instructions there are dedicated manuals availible below:
 
-
+- [Installation Manual](Usage%20Manuals/Installation_Manual.md)
+- [Inference Manual](Usage%20Manuals/Inference_Manual.md)
+- [Training Manual](Usage%20Manuals/Training_Manual.md)
 
 
 ## Introduction
@@ -30,13 +34,7 @@ A current challenge is in reconstructing detected photons path data, it is a com
 
 Our desire is to reduce the number of signals that require path reconstruction by using a neural network to detect the signal, only passing these points on to the reconstruction algorithm saving the computation time spent on reconstructing the noise signals only to throw them away. This is critical in the efficiency of the processing pipeline as the LHC moves into its high luminosity upgrade where data rates will be further increased.
 
-
-
-
-
-    ### NOTE: 
-
-    The DEEPLCEAN3D project focuses on the processing of data once digitised by the TORCH detectors electronics, to retain readbaility of this document the specifics of the detector itself and the physical significance of the data is not discussed in detail here. As part of this project a full physical simulation of a single TORCH module in operation in LHCb was created to generate realistic training data. The simulation is hosted as a standalone repository [TORCHSIM repository](https://github.com/Adillwma/LHCb_TORCH_Simulation) which focuses specifically on the detector and the process that leads to the need for DEEPCLEAN3D. Check it out for a complete breakdown of the TORCH detector and its opperation in the context of the LHCb experiment if you wish to fully understand the workings of TORCH and how the patterns are genrated.
+The DEEPLCEAN3D project focuses on the processing of data once digitised by the TORCH detectors electronics, to retain readbaility of this document the specifics of the detector itself and the physical significance of the data is not discussed in detail here. As part of this project a full physical simulation of a single TORCH module in operation in LHCb was created to generate realistic training data. The simulation is hosted as a standalone repository [TORCHSIM repository](https://github.com/Adillwma/LHCb_TORCH_Simulation) which focuses specifically on the detector and the process that leads to the need for DEEPCLEAN3D. Check it out for a complete breakdown of the TORCH detector and its opperation in the context of the LHCb experiment if you wish to fully understand the workings of TORCH and how the patterns are genrated.
 
 ## Table of Contents
 - [Introduction](#introduction)
@@ -51,10 +49,6 @@ Our desire is to reduce the number of signals that require path reconstruction b
 - [License](#license)
 - [Contributions](#contributions)
 - [Contact](#contact)
-
-
-
-
 
 ## Motivation / Background / Reconstruction:
 To infer the hadrons ToF, the TORCH simulation previously relied upon reconstruction through on a Monte Carlo approach \cite{SIMULATION USED MC}, where many Cherenkov photons are simulated and propagated forward from track to photon detector plane for each particle hypothesis (pion/kaon/proton) to create a probability density function (PDF) \cite{bhasin2020torch} \cite{Jonas_Torch}. Recently a fully analytical PDF reconstruction has been demonstrated as a more efficient alternative to the Monte Carlo method \cite{Jonas_Torch}. The analytical method requires four main computation steps, the total number of iterations and time taken both scale linearly with the number of photons on the detector as demonstrated in fig \ref{fig:reconscale} based on the figures given in \cite{Jonas_Torch}. Whilst the analytical method has been demonstrated to outperform the Monte Carlo \cite{Jonas_Torch}, after the upgrades the LHCb detector is expected to produce up to 500 Tb of data per second, which will have to be processed in real time \cite{bediaga2018physics}.
