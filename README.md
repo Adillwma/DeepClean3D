@@ -5,7 +5,7 @@
 #### 3D Neural Denoising for LHCb TORCH at the Large Hadron Collider
 #### Department of Physics - University of Bristol, UK 
 
-<img src="Images/DC3D_sensor_logo3.gif" width=600>
+<img src="Images/DC3D_sensor_logo.gif" width=600>
 
     - Remove Uncorrelated Photons Detected by TORCH
     - Correct for Chromatic Dispersion and Edge Reflection Effects
@@ -13,8 +13,8 @@
     - Streamline track reconstruction in preperation for HL-LHC
 
 [![Github Repo](https://img.shields.io/badge/GitHub_Repo-DEEPCLEAN3D-yellow.svg)](https://github.com/Adillwma/DeepClean3D)
-[![Language](https://img.shields.io/badge/language-Python_3.12-blue.svg)](https://www.python.org/) 
-[![Library](https://img.shields.io/badge/library-PyTorch_2.01-orange.svg)](https://pytorch.org/)
+[![Language](https://img.shields.io/badge/language-Python_3+-blue.svg)](https://www.python.org/) 
+[![Library](https://img.shields.io/badge/library-PyTorch_2+-orange.svg)](https://pytorch.org/)
 [![Published](https://img.shields.io/badge/Published-2023-purple.svg)]()
 </div>
 
@@ -25,20 +25,16 @@ This readme explains the technical implementation of DEEPCLEAN3D. For installati
 - [Inference Manual](Usage%20Manuals/Inference_Manual.md)
 - [Training Manual](Usage%20Manuals/Training_Manual.md)
 
-Or the full documentation is availible as a downloadable PDF file [here](Usage%20Manuals/DeepClean3D%20Documentation.pdf)?????????????????????????????????????????????????.
+Or the full documentation is availible as a single downloadable PDF file [here](Usage%20Manuals/DeepClean3D%20Documentation.pdf)?????????????????????????????????????????????????.
 
 # Introduction
 As part of a planned upgrade for the Large Hadron Collider (LHC), a new subdetector TORCH (Time Of internally Reflected Cherenkov light) is to be added, combining timing information with DIRC-style reconstruction, aiming for a ToF resolution of 10–15 ps (per track). 
 
 The DEEPLCEAN3D (DC3D) project focuses on the processing of data once digitised by the TORCH detectors electronics, to retain readability of this document the specifics of the detector itself and the origin of the data is not discussed in detail, other than as brief overview. As a part of this project a full physical simulation of a single TORCH module in operation was created to generate realistic training data. The simulation is hosted as a standalone repository, [TORCHSIM on GitHub](https://github.com/Adillwma/LHCb_TORCH_Simulation), which focuses specifically on the detector and the mechanis that produces the data. Check it out for a complete breakdown of the TORCH detector and its opperation in the context of the LHCb experiment, if you are unfamilliar with TORCH then this is recomended to fully understand the rest of this document.
 
-TORCH is made up of a bank of photon-multiplier tubes (PMTs), which are sensetive to incoming photons, aranged in a grid/array format. These opperate similarly to pixels of a cameras CCD only 1000x faster, with time resoloution of aporximatly XXXXXXXXXXXXXXXXXXXXXXX. The PMTs are sensetive to incoming photons, for those that arrive the pixel position and the time-of-arrival is recorded. The purpose of TORCH is to measure the velocity of particles produced in the LHCb experiment from which particle identiy can be infered. To do this the path that each photon took through the detector must be reconstructed from the data recorded, a computationally costly process that scales linearly with the number of photons detected. Once all photon paths are reconstructed, only those that are correlated to a particular event are used, the rest are discarded. The number discarded is expected to be around 80\% of the total number of photons, caused by noise and overlapping tracks. After the planned upgrades the LHCb detector is expected to produce up to 500 Tb of data per second, which will be processed in real time, so streamlining the reconstruction process gains importance. 
+The TORCH subdetector is made up of a bank of photon-multiplier tubes (PMTs), which are sensetive to incoming photons, aranged in a grid/array format. These opperate similarly to pixels of a cameras CCD only 1000x faster, with time resoloution of aporximatly XXXXXXXXXXXXXXXXXXXXXXX. The PMTs are sensetive to incoming photons, for those that arrive the pixel position and the time-of-arrival is recorded. The purpose of TORCH is to measure the velocity of particles produced in the LHCb experiment from which particle identiy can be infered. To do this the path that each photon took through the detector must be reconstructed from the data recorded, a computationally costly process that scales linearly with the number of photons detected. Once all photon paths are reconstructed, only those that are correlated to a particular event are used, the rest are discarded. The number discarded is expected to be around 80\% of the total number of photons, caused by noise and overlapping tracks. After the planned upgrades the LHCb detector is expected to produce up to 500 Tb of data per second, which will be processed in real time, so streamlining the reconstruction process gains importance. 
 
 DC3D aims to remove uncorrelated photons from the PMT array data pre-reconstruction, meaning we do not have the information about each photons path and origin to use in filtering. A neural network was developed in PyTorch to achive this goal The main novel elements presented are in how the data is pre/post-processed, key features and methods employed are outlined in this document. The three main criteria we set out are; decreasing the uncorrelated photons in the data, to not discard or degrade the true correlated photons x,y or ToF values and finally minimal introduction of false positives via processing artefacts that counteract the reduction in noise and could confuse the reconstruction algorithm. So far has demonstrated XXXXXXXXXX sucsess at noise rmeoval whislt retaining xXXXXX percent signal. 
-
-
-
-
 
 # Table of Contents
 - [The DC3D Pipeline](#the-dc3d-pipeline)
@@ -56,25 +52,17 @@ DC3D aims to remove uncorrelated photons from the PMT array data pre-reconstruct
 - [Contact](#contact)
 
 
-
-
-
-
 # The DC3D Pipeline
-
 
 <div align="center">
 
 <img src="Images/ov6.png" width=1500>
 
 *The full DC3D input/output processing pipeline around the central Autoencoder (AE). Data flows from left to right and can take two possible paths, 'Direct Output' and 'Masking Output'. Each stage is numbered and explained below*
-
 </div>
 
 
 <div align="center">
-
-
 
     1) 2D with embedded ToF: The detector produces 100, 128 x 88 images these are compressed to a single 128 x 88 image using the 2D with embedded ToF technique.
 
@@ -97,23 +85,53 @@ DC3D aims to remove uncorrelated photons from the PMT array data pre-reconstruct
     10) Gaped Re-normalisation: Performs the inverse of the gaped normalisation to recover the ToF values.
 
     11) Inverse 2D with embedded ToF: performs the inverse of the 3D to 2D with embedded ToF to recover the 3D data.
+</div>
 
 
 
+## Input Data
+To simulates live readout from the detector, the input data is datset full of 3D arrays of size 128 x 88 x time_step, where time_step is currently 1000. Very detailed physical simulations of TORCH have been conducted during its development cycle by the LHCb collaboration. From these simulation we can see the expected data has the form: 
+
+<div align="center">
+<img src="Images/truesig3.png" width=700>
+
+*Simulated TORCH data. Background noise points are marked in white, signal points are marked in red and lines joining them up demonstrate the charecteristic signal  pattern. The left hand pane shows the simulation without the effects of chromatic dispersion or reflection from the lower edge where the charecteristic pattern becomes visible. The right hand pane shows detector data that includes these effects, the pattern is much harder to make out. TORCH has costly algorithms for correcting for the dispersion and reflection effects but we hope to automatically correct for them in DC3D*
+</div>
+
+During development of DC3D training data was created with signals patterns of varying degrees of simplification. The stages of signal used in the training data are shown below:
+
+
+<div align="center">
+
+<img src="Images/1d.png" height=300>
+<img src="Images/2d.png" height=300>
+<img src="Images/3d.png" height=300>
+
+*Training data shown at various stages of DEEPCLEAN3Ds development.*
+</div>
 
 
 
+More recently having achived a good level of performance on the simplified data i have created a physical simulation of a torcvh mule in the LHCb detector availbe via [TORCHSIM on GitHub](https:/github???????????)??????????????????????, based on the physical specification set out in the current published literature. The simulation includes the effects of chromatic dispersion and reflection from the lower edge so we no longer need to simulate these with the degradation functions. The simulation is also capable of simulating the effects of the detector resolution and noise. The simulation is capable of producing a wide range of data sets with varying levels of simplification, noise and resolution. The data sets used for training are shown below: 
 
 
+<div align="center">
 
+<img src="Images/10K w chromatic dispersion.png" width=1000>
 
-## Stage 1: 2D with embedded ToF
+*Simplified TORCH data derived from our physically modled simualtion. Simulation availible at [TORCHSIM on GitHub](https:github.com/adillwma/TORCHSIM)??????????????????. Two views of the simulated photon hits on the PMT array, photon number artificially inceased to show pattern clearly. The colour of each point shows the time of arival. The yellow grouping at the bottom of the PMT is the reflection from the bottom edge, the width of the pattern is due to the effect of chromatic dispersion. No added background noise is shown.*
 </div>
 
 
 
 
-Initially the intention was to use a true 3D autoencoder using 3D convolutional layers to process the data as a 3 dimensional object with x, y and time dimensions. However it was soon found to be very computationally intensive. Using the true x, y dimensions of the detector array, 88 x 128 pixels, and a simplified number of time steps (100) gives 1,126,400 total pixels per 3D image, which results in our autoencoder having 9,341,179 trainable parameters. This is a very large number of parameters and the training time was found to be prohibitively long. The network was also found to be very sensitive to the number of time steps used, with the number of trainable parameters scaling linearly with the number of time steps. This is a problem as the number of time steps is a key parameter in the TORCH detector design and is not easily changed. The number of time steps is determined by the time resolution of the PMTs and the desired ToF resolution. The number of time steps is currently set to XXXXXXXXXXXXXXX???????????????????????????????????????????????????????????????100, which is the minimum number of time steps that can be used to achieve the desired ToF resolution of 10-15 ps. The number of time steps is therefore fixed and cannot be optimised.XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX????????????????????????????????
+
+<div align="center">
+
+## Stage 1: 2D with embedded ToF
+</div>
+
+The initial intention was to make use of 3D convolutions to process the data as a three dimensional object with x, y and time dimensions. However, it was found to be to computationally intensive. Using the true x, y dimensions of the detector array, 88 x 128 pixels, and a simplified number of time steps (100)?????????????? gives 1,126,400 total pixels per 3D image, which results in our autoencoder having 9,341,179 trainable parameters. This is a very large number of parameters and the training time was found to be prohibitively long. The network was also found to be very sensitive to the number of time steps used, with the number of trainable parameters scaling linearly with the number of time steps. This is a problem as the number of time steps is a key parameter in the TORCH detector design and is not easily changed. The number of time steps is determined by the time resolution of the PMTs and the desired ToF resolution. The number of time steps is currently set to XXXXXXXXXXXXXXX???????????????????????????????????????????????????????????????100, which is the minimum number of time steps that can be used to achieve the desired ToF resolution of 10-15 ps. The number of time steps is therefore fixed and cannot be optimised.XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX????????????????????????????????
 
 <div align="center">
 
@@ -140,11 +158,7 @@ The second issue arising from the 2D with embedded ToF is due to the way the hit
 ## Stage 2: Signal Degradation
 </div>
 
-<div align="center">
-<img src="Images/truesig2.png" width=500>
 
-*Simulated TORCH data. Background noise points are marked in white, signal points are marked in red and lines joining them up demonstrate the charecteristic pattern. The left hand pane shows  simulation without the effects of chromatic dispersion or reflection from the lower edge where the charecteristic pattern becomes visible. The right hand pane shows detector data that includes these effects, the pattern is much harder to make out. TORCH has costly algorithms for correcting for the dispersion and reflection effects but we hope to automatically correct for them in DC3D*
-</div>
 
 
 From the pure label data that is taken as input we create the 'simulated' degraded input data that will actually be recived by the netwrok in deployment. This includes three stages:
@@ -156,7 +170,7 @@ From the pure label data that is taken as input we create the 'simulated' degrad
 
 <div align="center">
 
-<img src="Images/noise1.png" width=800>
+<img src="Images/noise1.png" width=1200>
 
 *Example of user selectable noise profiles. Amount is exagerated for clearer representation of subtle differences. Further description is available in the Noise_Generators.py file in the repository.*
 </div>
@@ -410,3 +424,10 @@ Special thanks to Dr. Jonas Radamaker for his guidance and expertise on LHCb and
 </div>
 
 
+
+<div align="center">
+
+<img src="Images/LHC_Ring.png" width=500>
+
+*LHC Ring with the four main experiments shown. Includes the underground detectors and above ground control stations.*
+</div>
