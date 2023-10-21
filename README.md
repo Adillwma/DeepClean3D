@@ -65,7 +65,7 @@ DC3D aims to remove uncorrelated photons from the PMT array data pre-reconstruct
 
 <div align="center">
 
-<img src="Images/ov5.png" width=1400>
+<img src="Images/ov6.png" width=1500>
 
 *The full DC3D input/output processing pipeline around the central Autoencoder (AE). Data flows from left to right and can take two possible paths, 'Direct Output' and 'Masking Output'. Each stage is numbered and explained below*
 
@@ -73,6 +73,39 @@ DC3D aims to remove uncorrelated photons from the PMT array data pre-reconstruct
 
 
 <div align="center">
+
+
+
+    1) 2D with embedded ToF: The detector produces 100, 128 x 88 images these are compressed to a single 128 x 88 image using the 2D with embedded ToF technique.
+
+    2) Detector Smearing, Signal Sparsity and Noise are added to the image.
+
+    3) Gaped Normalisation: the image is normalised using the gaped normalisation method.
+
+    4) RAE: the image is processed by the DC3D Autoencoder network, shown in more detail in section \ref{AEDEEP}.
+
+    5) Direct Output: The output of the autoencoder produces the denoised image.
+
+    6) if using the direct method this denoised image is the result and is passed to the re-normalisation in step 10.
+
+    7) If using the masking method the input to the autoencoder is used as the input for masking.
+
+    8) The autoencoders output is used as a mask on the input to recover the correct ToF values.
+
+    9) If using the masking method the output of step 8 is the result and is passed to the re-normalisation in step 10.
+
+    10) Gaped Re-normalisation: Performs the inverse of the gaped normalisation to recover the ToF values.
+
+    11) Inverse 2D with embedded ToF: performs the inverse of the 3D to 2D with embedded ToF to recover the 3D data.
+
+
+
+
+
+
+
+
+
 
 ## Stage 1: 2D with embedded ToF
 </div>
@@ -108,7 +141,7 @@ The second issue arising from the 2D with embedded ToF is due to the way the hit
 </div>
 
 <div align="center">
-<img src="Images/truesig2.png" width=600>
+<img src="Images/truesig2.png" width=500>
 
 *Simulated TORCH data. Background noise points are marked in white, signal points are marked in red and lines joining them up demonstrate the charecteristic pattern. The left hand pane shows  simulation without the effects of chromatic dispersion or reflection from the lower edge where the charecteristic pattern becomes visible. The right hand pane shows detector data that includes these effects, the pattern is much harder to make out. TORCH has costly algorithms for correcting for the dispersion and reflection effects but we hope to automatically correct for them in DC3D*
 </div>
@@ -211,7 +244,7 @@ Development was focused on the fully filled out cross patterns with around 200 s
 
 <div align="center">
 
-<img src="Images/preprocess.png" width=600>
+<img src="Images/preprocess.png" width=800>
 
 *This series of images shows the degradation steps available to be introduced into the reconstructive learning path, each image is a step on from its left neighbour.*
 </div>
@@ -220,7 +253,7 @@ Taking inspiration from the the ideas behind the DAE and how the network is fed 
 
 <div align="center">
 
-<img src="Images/rl.png" width=600>
+<img src="Images/rl.png" width=800>
 
 *Demonstrating the culmination of the RAE with masking applied to a realistic proportion of 30 signal points and 200 noise points. When using the reconstructive method the direct denoiser output returns the full traced pattern paths which may or may not be of more value then the individual photon hit locations. If this is not the case then the masking method provides a perfect way to recover the exact signal hits only.*
 </div>
@@ -229,7 +262,7 @@ Taking inspiration from the the ideas behind the DAE and how the network is fed 
 
 <div align="center">
 
-<img src="Images/3d best.png" width=600>
+<img src="Images/3d best.png" width=800>
 
 *The results of the RAE applied to the 30 signal and 200 noise points shown in reconstructed 3D. It is important to note that the masked output does not look like the input image because in the case of the reconstructive method the masking recovers only the true signal points incident on the detector not the full pattern, these points are the input image after it has been thinned out by the sparsity function.*
 </div>
@@ -240,7 +273,7 @@ For a final experiment into the possibilities of this reconstructive methodology
 
 <div align="center">
 
-<img src="Images/sdevrec.png" width=600>
+<img src="Images/sdevrec.png" width=800>
 
 *Image demonstrating the detector resolution recovery. This is not the main application for the program but is presented as an interesting possibility for future follow up.*
 </div>
@@ -276,7 +309,7 @@ The masking technique yields perfect ToF recovery for all true signal pixel foun
 
 <div align="center">
 
-<img src="Images/3d rec hiq.png" width=600>
+<img src="Images/3d rec hiq.png" width=800>
 
 *Shows the 3D reconstruction for the DAE results with masking. The 3D allows the ToF benefits of the masking to be seen properly. This test featured 200 signal points, and a high amount of noise, 1000 points.*
 </div>
@@ -352,30 +385,6 @@ Special thanks to Dr. Jonas Radamaker for his guidance and expertise on LHCb and
 
 
 
-
-
-
-    1) 2D with embedded ToF: The detector produces 100, 128 x 88 images these are compressed to a single 128 x 88 image using the 2D with embedded ToF technique.
-
-    2) Detector Smearing, Signal Sparsity and Noise are added to the image.
-
-    3) Gaped Normalisation: the image is normalised using the gaped normalisation method.
-
-    4) RAE: the image is processed by the DC3D Autoencoder network, shown in more detail in section \ref{AEDEEP}.
-
-    5) Direct Output: The output of the autoencoder produces the denoised image.
-
-    6) if using the direct method this denoised image is the result and is passed to the re-normalisation in step 10.
-
-    7) If using the masking method the input to the autoencoder is used as the input for masking.
-
-    8) The autoencoders output is used as a mask on the input to recover the correct ToF values.
-
-    9) If using the masking method the output of step 8 is the result and is passed to the re-normalisation in step 10.
-
-    10) Gaped Re-normalisation: Performs the inverse of the gaped normalisation to recover the ToF values.
-
-    11) Inverse 2D with embedded ToF: performs the inverse of the 3D to 2D with embedded ToF to recover the 3D data.
 
 
 
