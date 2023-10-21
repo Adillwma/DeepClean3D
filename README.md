@@ -13,7 +13,8 @@
     - Streamline track reconstruction in preperation for HL-LHC
 
 [![Github Repo](https://img.shields.io/badge/GitHub_Repo-DEEPCLEAN3D-yellow.svg)](https://github.com/Adillwma/DeepClean3D)
-[![Language](https://img.shields.io/badge/language-Python-blue.svg)](https://www.python.org/) 
+[![Language](https://img.shields.io/badge/language-Python_3.12-blue.svg)](https://www.python.org/) 
+[![Library](https://img.shields.io/badge/library-PyTorch_2.01-orange.svg)](https://pytorch.org/)
 [![Published](https://img.shields.io/badge/Published-2023-purple.svg)]()
 </div>
 
@@ -23,6 +24,8 @@ This readme explains the technical implementation of DEEPCLEAN3D. For installati
 - [Installation Manual](Usage%20Manuals/Installation_Manual.md)
 - [Inference Manual](Usage%20Manuals/Inference_Manual.md)
 - [Training Manual](Usage%20Manuals/Training_Manual.md)
+
+Or the full documentation is availible as a downloadable PDF file [here](Usage%20Manuals/DeepClean3D%20Documentation.pdf)?????????????????????????????????????????????????.
 
 # Introduction
 As part of a planned upgrade for the Large Hadron Collider (LHC), a new subdetector TORCH (Time Of internally Reflected Cherenkov light) is to be added, combining timing information with DIRC-style reconstruction, aiming for a ToF resolution of 10–15 ps (per track). 
@@ -166,6 +169,13 @@ The reconstruction threshold also allows the data to be reconstructed to 3D with
 
 
 
+<div align="center">
+
+<img src="Images/gn1.png" width=250>
+<img src="Images/gn2.png" width=250>
+
+*The effect of the gaped-normlaisation with a user selected reconstruction threshold $r$ of 0.5.*
+</div>
 
 
 
@@ -188,7 +198,7 @@ where $y_i$ is the true value of the $i$-th pixel in the class, $\hat{y}_i$ is t
 
 <div align="center">
 
-<img src="Images/loss curve 1.png" width=500>
+<img src="Images/loss curve 1.png" width=450>
 
 *Figure that demonstrates how each of the loss functions (ACB-MSE, MSE and MAE) behave based on the number of hits in the true signal. Two dummy images were created, the first image contains some ToF values of 100 the second image is a replica of the first but only containing the Tof values in half of the number of pixels of the first image, this simulates a 50% signal recovery. to generate the plot the first image was filled in two pixel increments with the second image following at a constant 50% recovery, and at each iteration the loss functions are calculated for the pair of images. We can see how the MSE and MAE functions loss varies as the size of the signal is increased. Whereas the ACB-MSE loss stays constant regardless of the frequency of the signal class.*
 </div>
@@ -247,7 +257,7 @@ This takes us beyond the DAE to a new structure that could be thought of as a Re
 
 ## Stage 5 Masking Technique
 
-<img src="Images/netpathmask.png" width=1200>
+<img src="Images/netpathmask.png" width=1400>
 
 *Illustration of the masking technique developed, shown here for a simple 4x4 input image. The numbers in the centre of the squares indicate the pixel values. The colours just help to visualise these values. The blue arrow path is the standard path for the denosing autoencoder, the red path shows the additional masking steps. the green arrow shows where the mask is taken from the standard autoencoders output and cast over the masking paths input.*
 </div>
@@ -294,7 +304,7 @@ In equations \ref{norm eq} and \ref{renorm eq}, $x$ represents the input data th
 
 <div align="center">
 
-<img src="Images/recon cut.png" width=600>
+<img src="Images/recon cut.png" width=450>
 
 *The histogram shows the ToF values for all the pixels in the networks raw output before re-normalisation. Values are between 0 and 1 which is shown on the x axis, the number of pixels in each bin are label on the top of each histogram bin. The red line indicates the reconstruction cutoff value, $r$, All points below this cutoff will be set to 0's in the re-normalisation and all points above it will be spread out into the range 1-100 to return the real ToF value.*
 </div>
