@@ -3,15 +3,14 @@
 #  DeepClean3D
 ### Author: Adill Al-Ashgar
 #### 3D Neural Denoising for LHCb TORCH at the Large Hadron Collider
-#### Contributors: Dr. Jonas Radamaker, Dr. Alex Marshall, Max Carter
 #### Department of Physics - University of Bristol, UK 
 
 <img src="Images/DC3D_sensor_logo3.gif" width=600>
 
     - Remove Uncorrelated Photons Detected by TORCH
     - Correct for Chromatic Dispersion and Edge Reflection Effects
-    - Automatic Cherenkov Pattern Detection in Three Dimensions (x, y and ToF)
-    - Increase track reconstruction efficiency in preperation for HL-LHC
+    - Automatic Cherenkov Pattern Detection in Three Dimensions (X, Y and ToF)
+    - Streamline track reconstruction in preperation for HL-LHC
 
 [![Github Repo](https://img.shields.io/badge/GitHub_Repo-DEEPCLEAN3D-yellow.svg)](https://github.com/Adillwma/DeepClean3D)
 [![Language](https://img.shields.io/badge/language-Python-blue.svg)](https://www.python.org/) 
@@ -34,6 +33,10 @@ TORCH is made up of a bank of photon-multiplier tubes (PMTs), which are sensetiv
 
 DC3D aims to remove uncorrelated photons from the PMT array data pre-reconstruction, meaning we do not have the information about each photons path and origin to use in filtering. A neural network was developed in PyTorch to achive this goal The main novel elements presented are in how the data is pre/post-processed, key features and methods employed are outlined in this document. The three main criteria we set out are; decreasing the uncorrelated photons in the data, to not discard or degrade the true correlated photons x,y or ToF values and finally minimal introduction of false positives via processing artefacts that counteract the reduction in noise and could confuse the reconstruction algorithm. So far has demonstrated XXXXXXXXXX sucsess at noise rmeoval whislt retaining xXXXXX percent signal. 
 
+
+
+
+
 # Table of Contents
 - [The DC3D Pipeline](#the-dc3d-pipeline)
     - [Stage 1: 2D with Embedded ToF](#2d-with-embedded-tof)
@@ -49,29 +52,30 @@ DC3D aims to remove uncorrelated photons from the PMT array data pre-reconstruct
 - [Contributions](#contributions)
 - [Contact](#contact)
 
+
+
+
+
+
 # The DC3D Pipeline
+
 
 <div align="center">
 
-<img src="Images/ov.png" width=1000>
+<img src="Images/ov5.png" width=1400>
 
 *The full DC3D input/output processing pipeline around the central Autoencoder (AE). Data flows from left to right and can take two possible paths, 'Direct Output' and 'Masking Output'. Each stage is numbered and explained below*
 
 </div>
 
 
-
-
-
-
-
-
-
-
 <div align="center">
 
 ## Stage 1: 2D with embedded ToF
 </div>
+
+
+
 
 Initially the intention was to use a true 3D autoencoder using 3D convolutional layers to process the data as a 3 dimensional object with x, y and time dimensions. However it was soon found to be very computationally intensive. Using the true x, y dimensions of the detector array, 88 x 128 pixels, and a simplified number of time steps (100) gives 1,126,400 total pixels per 3D image, which results in our autoencoder having 9,341,179 trainable parameters. This is a very large number of parameters and the training time was found to be prohibitively long. The network was also found to be very sensitive to the number of time steps used, with the number of trainable parameters scaling linearly with the number of time steps. This is a problem as the number of time steps is a key parameter in the TORCH detector design and is not easily changed. The number of time steps is determined by the time resolution of the PMTs and the desired ToF resolution. The number of time steps is currently set to XXXXXXXXXXXXXXX???????????????????????????????????????????????????????????????100, which is the minimum number of time steps that can be used to achieve the desired ToF resolution of 10-15 ps. The number of time steps is therefore fixed and cannot be optimised.XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX????????????????????????????????
 
@@ -98,7 +102,9 @@ The second issue arising from the 2D with embedded ToF is due to the way the hit
 <div align="center">
 
 ## Stage 2: Signal Degradation
+</div>
 
+<div align="center">
 <img src="Images/truesig2.png" width=600>
 
 *Simulated TORCH data. Background noise points are marked in white, signal points are marked in red and lines joining them up demonstrate the charecteristic pattern. The left hand pane shows  simulation without the effects of chromatic dispersion or reflection from the lower edge where the charecteristic pattern becomes visible. The right hand pane shows detector data that includes these effects, the pattern is much harder to make out. TORCH has costly algorithms for correcting for the dispersion and reflection effects but we hope to automatically correct for them in DC3D*
@@ -112,25 +118,27 @@ From the pure label data that is taken as input we create the 'simulated' degrad
 
 - Noise addition - Finally the noise is added to the degraded signal. In more general denoising scenarios the level of noise is sufficently high that the distrubution tends towards a gaussian as described by the central limit thorem. In the case of TORCH the level of noise is much lower and the sources are very tightly controlled. For prudence sake, the training and inference software includes a variety of noise profiles that can be mixed to create realistic scenarios, which also improves the netwroks genralisation ability. The number of noise pixels added is determined by a user input range. The noise is added to the degraded signal to create the final input image that is passed to the network for denoising.
 
+<div align="center">
+
+<img src="Images/noise1.png" width=800>
+
+*Example of user selectable noise profiles. Amount is exagerated for clearer representation of subtle differences. Further description is available in the Noise_Generators.py file in the repository.*
+</div>
+
+
+
+
+
 The way the degradation steps are applied during training is within the main trianing loop. Therfore, randomised values i.e., number of signal and noise points and the choice of photons selected from the filled label are changed each batch, effectivly giving us a near infinate 'virtual dataset' from a small dataset on disk, helping to reduce storage requirments, streamline loading data from disk to memory during training and simplify sending and reciving the datasets during development. This process can also be made fully deterministic is user opts to set a manual seed value in the user settings, and if they have not the random seed values are stored alongside the output so a given virtual dataset can be recalled exactly. This method is possible because each label data file is actually a composite of many thousands of individual results. Just in the signal points variation alone. The number of possible combinations of 30 signal points from a 2000 point pattern is 1.2 x 10^34, giving a probability of 4.7 x 10^-122FORMATTT¬¬!¬!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  for the same set of signal points being chosen twice or more in 1,000,000 attempts. This gives a huge amount of examples of photon locations, however these will all be for one single particle/track and so a dataset larger than one file is required. The datasets used contianed between 10,000 and 250,000 differnt particle/track examples for a broad coverage of possibilities. 
 
 
 
 <div align="center">
 
-<img src="Images/98.png" width=1000>
+<img src="Images/98.png" width=800>
 
 *Example degradation. Exagerated number of photons (~300) retained so that the resoloution limiting is easily visable. Real data has ~ 30 photons, so much more sparse than shown.*
 </div>
-
-
-<div align="center">
-
-<img src="Images/noise1.png" width=1000>
-
-*Example of user selectable noise profiles. Amount is exagerated for clearer representation of subtle differences. Further description is available in the Noise_Generators.py file in the repository.*
-</div>
-
 
 
 
@@ -180,7 +188,7 @@ where $y_i$ is the true value of the $i$-th pixel in the class, $\hat{y}_i$ is t
 
 <div align="center">
 
-<img src="Images/loss curve 1.png" width=600>
+<img src="Images/loss curve 1.png" width=500>
 
 *Figure that demonstrates how each of the loss functions (ACB-MSE, MSE and MAE) behave based on the number of hits in the true signal. Two dummy images were created, the first image contains some ToF values of 100 the second image is a replica of the first but only containing the Tof values in half of the number of pixels of the first image, this simulates a 50% signal recovery. to generate the plot the first image was filled in two pixel increments with the second image following at a constant 50% recovery, and at each iteration the loss functions are calculated for the pair of images. We can see how the MSE and MAE functions loss varies as the size of the signal is increased. Whereas the ACB-MSE loss stays constant regardless of the frequency of the signal class.*
 </div>
@@ -239,7 +247,7 @@ This takes us beyond the DAE to a new structure that could be thought of as a Re
 
 ## Stage 5 Masking Technique
 
-<img src="Images/netpathmask.png" width=1300>
+<img src="Images/netpathmask.png" width=1200>
 
 *Illustration of the masking technique developed, shown here for a simple 4x4 input image. The numbers in the centre of the squares indicate the pixel values. The colours just help to visualise these values. The blue arrow path is the standard path for the denosing autoencoder, the red path shows the additional masking steps. the green arrow shows where the mask is taken from the standard autoencoders output and cast over the masking paths input.*
 </div>
