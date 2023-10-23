@@ -61,38 +61,14 @@ DC3D aims to remove uncorrelated photons from the PMT array data pre-reconstruct
 *The full DC3D input/output processing pipeline around the central Autoencoder (AE). Data flows from left to right and can take two paths, 'Direct Output' and 'Masking Output'. Each stage is numbered and explained below*
 </div>
 
-<div align="center">
 
-1) 2D with embedded ToF: The detector produces 100, 128 x 88 images these are compressed to a single 128 x 88 image using the 2D with embedded ToF technique.
-
-2) Detector Smearing, Signal Sparsity and Noise are added to the image.
-
-3) Gaped Normalisation: the image is normalised using the gaped normalisation method.
-
-4) RAE: the image is processed by the DC3D Autoencoder network, shown in more detail in section \ref{AEDEEP}.
-
-5) Direct Output: The output of the autoencoder produces the denoised image.
-
-6) if using the direct method this denoised image is the result and is passed to the re-normalisation in step 10.
-
-7) If using the masking method the input to the autoencoder is used as the input for masking.
-
-8) The autoencoders output is used as a mask on the input to recover the correct ToF values.
-
-9) If using the masking method the output of step 8 is the result and is passed to the re-normalisation in step 10.
-
-10) Gaped Re-normalisation: Performs the inverse of the gaped normalisation to recover the ToF values.
-
-11) Inverse 2D with embedded ToF: performs the inverse of the 3D to 2D with embedded ToF to recover the 3D data.
-
-</div>
 
 
 ## Input Data
 To simulates live readout from the detector, the input data is dataset full of 3D arrays of size 128 x 88 x time_step, where time_step is currently 1000. Very detailed physical simulations of TORCH have been conducted during its development cycle by the LHCb collaboration. From these simulation we can see the expected data has the form: 
 
 <div align="center">
-<img src="Images/truesig3.png" width=600>
+<img src="Images/truesig3.png" width=500>
 
 *Simulated TORCH data. Background noise points are marked in white, signal points are marked in red and lines joining them up demonstrate the characteristic signal pattern. The left-hand pane shows the simulation without the effects of chromatic dispersion or reflection from the lower edge where the characteristic pattern becomes visible. The right-hand pane shows detector data that includes these effects, the pattern is much harder to make out. TORCH has costly algorithms for correcting for the dispersion and reflection effects, but we hope to automatically correct for them in DC3D*
 </div>
@@ -126,20 +102,18 @@ More recently having achieved a good level of performance on the simplified data
 
 The initial intention was to make use of 3D convolutions to process the data as a three-dimensional object with x, y and time dimensions. However, it was found to be to computationally intensive. Using the true x, y dimensions of the detector array, 88 x 128 pixels, and a simplified number of time steps (100)?????????????? gives 1,126,400 total pixels per 3D image, which results in our autoencoder having 9,341,179 trainable parameters. This is a very large number of parameters, and the training time was found to be prohibitively long. The network was also found to be very sensitive to the number of time steps used, with the number of trainable parameters scaling linearly with the number of time steps. This is a problem as the number of time steps is a key parameter in the TORCH detector design and is not easily changed. The number of time steps is determined by the time resolution of the PMTs and the desired ToF resolution. The number of time steps is currently set to XXXXXXXXXXXXXXX???????????????????????????????????????????????????????????????100, which is the minimum number of time steps that can be used to achieve the desired ToF resolution of 10-15 ps. The number of time steps is therefore fixed and cannot be optimised.XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX????????????????????????????????
 
-<div align="center">
-
-<img src="Images/3d22d.png" width=600>
-
-*Left hand image shows one of the simulated crosses in the full three dimensions of x, y and time. The right-hand side shows the same cross image but using our 2D with embedded ToF method, which compresses the three-dimensional data to two dimensions to speed up the processing.*
-</div>
-
 The solution that was found was to reduce the dimensionality of the input data by squashing the time dimension, leaving a 2D image in X, Y. To retain the time information, we turn the time dimension index of any hit into the value that goes into that x, y position in the 2D array. So instead of a 3D array that has zero values for in place of non-hits and 1's for hits we now have a 2D array with 0's still encoding non hits and now values between 1 and 100 indicating a hit and the corresponding ToF. This has the effect of reducing the 1m+ total pixels to a more manageable 11,264 and the trainable parameters in the autoencoder to 1,248,251 (an 86.6% decrease over true 3D) which dramatically sped up the processing and training time of the network. 
 
 This 2D with embedded ToF approach does introduce two major downsides. Due to the nature of the flattening process it is susceptible to occlusion of pixels, i.e. if there is a noise point with the same x and y position as a signal point but a greater ToF value then it will be the value used in the embedded ToF rather than the signal value behind it. This is not a problem if the amount of noise is not too high. We expect around 30 signal points and 200 noise points distributed over the 11,264 pixels in the squashed 2D image. The probability of a significant portion of the signal being covered up is low, however future improvement and a solution to this occlusion is proposed in section \ref{doublemaskmethod}. Additionally, occlusion effects only the ToF recovery of the signal and not the positional recovery, if a noise point occludes a signal point, then the pattern retains the exact same x, y pixel configuration now with an erroneous ToF value in a pixel. If the signal occludes a noise point it effectively denoises those points. Similarly, if a noise point occludes another noise point this denoises a point. So, the introduced occlusion effect has some possible denoising benefits although they remain unquantified at this time.
 
 The second issue arising from the 2D with embedded ToF is due to the way the hits are now encoded. The input to the neural network must be normalised to between 0 and 1. In the true 3D network where encoding hits as 0's or 1's there is a clear delineation to the loss function between the two cases. In the 2D embedded method the embedded hits values range from 0 to 100 and after normalisation the ToF values end up ranging from $0 < ToF \leq 1$. This creates a situation where very low ToF values are closer to being 'non-hits' than high ToF values in the eyes of the loss function. The loss function is incentivised toward good reconstruction of high ToF part of a signal. To mitigate this, we introduced a method to reinforce the distinction between the non-hits and the low ToF value hits we call gaped normalisation, which is discussed in section three, [Gaped Normalisation](#gaped-normalisation). 
 
+<div align="center">
 
+<img src="Images/3d22d.png" width=600>
+
+*Left hand image shows one of the simulated crosses in the full three dimensions of x, y and time. The right-hand side shows the same cross image but using our 2D with embedded ToF method, which compresses the three-dimensional data to two dimensions to speed up the processing.*
+</div>
 
 
 
@@ -266,7 +240,7 @@ This takes us beyond the DAE to a new structure that could be thought of as a Re
 
 ## Stage 5 Masking Technique
 
-<img src="Images/netpathmask.png" width=1400>
+<img src="Images/netpathmask2.png" width=1000>
 
 *Illustration of the masking technique developed, shown here for a simple 4x4 input image. The numbers in the centre of the squares indicate the pixel values. The colours just help to visualise these values. The blue arrow path is the standard path for the denoising autoencoder, the red path shows the additional masking steps. the green arrow shows where the mask is taken from the standard autoencoders output and cast over the masking paths input.*
 </div>
@@ -387,3 +361,36 @@ Special thanks to Dr. Jonas Radamaker for his guidance and expertise on LHCb and
 *LHC Ring with the four main experiments shown. Includes the underground detectors and above ground control stations.*
 </div>
 
+
+
+
+
+
+
+
+
+<div align="center">
+
+    1) 2D with embedded ToF: The detector produces 100, 128 x 88 images these are compressed to a single 128 x 88 image using the 2D with embedded ToF technique.
+
+    2) Detector Smearing, Signal Sparsity and Noise are added to the image.
+
+    3) Gaped Normalisation: the image is normalised using the gaped normalisation method.
+
+    4) RAE: the image is processed by the DC3D Autoencoder network, shown in more detail in section \ref{AEDEEP}.
+
+    5) Direct Output: The output of the autoencoder produces the denoised image.
+
+    6) if using the direct method this denoised image is the result and is passed to the re-normalisation in step 10.
+
+    7) If using the masking method the input to the autoencoder is used as the input for masking.
+
+    8) The autoencoders output is used as a mask on the input to recover the correct ToF values.
+
+    9) If using the masking method the output of step 8 is the result and is passed to the re-normalisation in step 10.
+
+    10) Gaped Re-normalisation: Performs the inverse of the gaped normalisation to recover the ToF values.
+
+    11) Inverse 2D with embedded ToF: performs the inverse of the 3D to 2D with embedded ToF to recover the 3D data.
+
+</div>
