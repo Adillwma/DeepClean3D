@@ -39,18 +39,24 @@ DC3D aims to remove uncorrelated photons from the PMT array data pre-reconstruct
 # Table of Contents
 - [The DC3D Pipeline](#the-dc3d-pipeline)
     - [Input Data](#input-data)
-    - [Stage 1: 2D with Embedded ToF](#2d-with-embedded-tof)
-    - [Stage 2: Signal Degradation & Virtual Dataset Training](#signal-degradation)
-    - [Stage 3: Gaped Normalisation](#gaped-normalisation)
-    - [Stage 4: DC3D Autoencoder](#dc3d-autoencoder)
-        * [Adaptive Class Balanced MSE Loss](#adaptive-class-balanced-mse-loss)
-        * [Reconstructive Autoencoder](#reconstuctive-autoencoder)
-    - [Stage 5: Masking Technique](#masking-technique)
-    - [Stages 6+: Cutoff Threshold, Renormalisation & 3D Re-encoding](#renomalisation--3d-reconstruction)
-- [Results](#results)
+    - [Stage 1: 2D with embedded ToF](#stage-1-2d-with-embedded-tof)
+    - [Stage 2: Signal Degradation](#stage-2-signal-degradation)
+    - [Stage 3: Gaped Normalisation](#stage-3-gaped-normalisation)
+    - [Stage 4: DC3D Autoencoder](#stage-4-dc3d-autoencoder)
+        - [Adaptive Class Balanced MSE Loss](#adaptive-class-balanced-mse-loss)
+        - [Reconstructive-Autoencoder (RAE)](#reconstructive-autoencoder-rae)
+    - [Stage 5: Masking Technique](#stage-5-masking-technique)
+    - [Stages 6+: Renormalisation & 3D Re-encoding](#stages-6-renormalisation--3d-re-encoding)
+- [Results:](#results)
+    - [Denoising](#denoising)
+    - [Signal Retention](#signal-retention)
+    - [Compression](#compression)
 - [License](#license)
 - [Contributions](#contributions)
 - [Contact](#contact)
+
+
+
 
 # The DC3D Pipeline
 
@@ -61,10 +67,22 @@ DC3D aims to remove uncorrelated photons from the PMT array data pre-reconstruct
 *The full DC3D input/output processing pipeline around the central Autoencoder (AE). Data flows from left to right and can take two paths, 'Direct Output' and 'Masking Output'. Each stage is numbered and explained below*
 </div>
 
-
+6
 
 
 ## Input Data
+
+
+<div align="center">
+
+<img src="Images/2000 scan with 1000 noise points. F keep_photons=True_3d.gif" width=400>
+<img src="Images/30 scan with 1000 noise points. keep_photons=True_3d.gif" width=400>
+
+
+
+*Training data shown at various stages of DEEPCLEAN3Ds development.*
+</div>
+
 To simulates live readout from the detector, the input data is dataset full of 3D arrays of size 128 x 88 x time_step, where time_step is currently 1000. Very detailed physical simulations of TORCH have been conducted during its development cycle by the LHCb collaboration. From these simulation we can see the expected data has the form: 
 
 <div align="center">
@@ -83,13 +101,13 @@ During development of DC3D training data was created with signals patterns of va
 </div>
 
 
-More recently having achieved a good level of performance on the simplified data I have created a physical simulation of a TORCH module in the LHCb detector available via [TORCHSIM on GitHub](https:/github???????????)??????????????????????, based on the physical specification set out in the current published literature. The simulation includes the effects of chromatic dispersion and reflection from the lower edge, so we no longer need to simulate these with the degradation functions.
+More recently having achieved a good level of performance on the simplified data I have created a physical simulation of a TORCH module in the LHCb detector available via [TORCHSIM on GitHub](https://github.com/Adillwma/LHCb_TORCH_Simulation), based on the physical specification set out in the current published literature. The simulation includes the effects of chromatic dispersion and reflection from the lower edge, so we no longer need to simulate these with the degradation functions.
 
 <div align="center">
 
 <img src="Images/10K w chromatic dispersion1.png" width=350>
 
-*Simplified TORCH data derived from our physically modelled simulation. Simulation available at [TORCHSIM on GitHub](https:github.com/adillwma/TORCHSIM)??????????????????. Two views of the simulated photon hits on the PMT array, photon number artificially increased to show pattern clearly. The colour of each point shows the time of arrival. The yellow grouping at the bottom of the PMT is the reflection from the bottom edge, the width of the pattern is because of chromatic dispersion. No added background noise is shown.*
+*Simplified TORCH data derived from our physically modelled simulation. Simulation available at [TORCHSIM on GitHub](https://github.com/Adillwma/LHCb_TORCH_Simulation). Two views of the simulated photon hits on the PMT array, photon number artificially increased to show pattern clearly. The colour of each point shows the time of arrival. The yellow grouping at the bottom of the PMT is the reflection from the bottom edge, the width of the pattern is because of chromatic dispersion. No added background noise is shown.*
 </div>
 
 
@@ -100,7 +118,7 @@ More recently having achieved a good level of performance on the simplified data
 ## Stage 1: 2D with embedded ToF
 </div>
 
-The initial intention was to make use of 3D convolutions to process the data as a three-dimensional object with x, y and time dimensions. However, it was found to be to computationally intensive. Using the true x, y dimensions of the detector array, 88 x 128 pixels, and a simplified number of time steps 1000 gives 11,264,000 total pixels per 3D image, which results in our autoencoder having 93,411,790 trainable parameters. This is a very large number of parameters, and the training time was found to be prohibitively long. The network was also found to be very sensitive to the number of time steps used, with the number of trainable parameters scaling linearly with the number of time steps. This is a problem as the number of time steps is a key parameter in the TORCH detector design and is not easily changed. The number of time steps is determined by the time resolution of the PMTs and the desired ToF resolution. The number of time steps is currently set to XXXXXXXXXXXXXXX???????????????????????????????????????????????????????????????100, which is the minimum number of time steps that can be used to achieve the desired ToF resolution of 10-15 ps. The number of time steps is therefore fixed and cannot be optimised.XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX????????????????????????????????
+The initial intention was to make use of 3D convolutions to process the data as a three-dimensional object with x, y and time dimensions. However, it was found to be to computationally intensive. Using the true x, y dimensions of the detector array, 88 x 128 pixels, and a simplified number of time steps 1000 gives 11,264,000 total pixels per 3D image, which results in our autoencoder having 93,411,790 trainable parameters. This is a very large number of parameters, and the training time was found to be prohibitively long. The network was also found to be very sensitive to the number of time steps used, with the number of trainable parameters scaling linearly with the number of time steps. This is a problem as the number of time steps is a key parameter in the TORCH detector design and is not easily changed. The number of time steps is determined by the time resolution of the PMTs and the desired ToF resolution. The number of time steps is currently set to 1000, which is the minimum number of time steps that can be used to achieve the desired ToF resolution of 10-15 ps. The number of time steps is therefore fixed and cannot be optimised. ????????????????????????????????
 
 The solution that was found was to reduce the dimensionality of the input data by squashing the time dimension, leaving a 2D image in X, Y. To retain the time information, we turn the time dimension index of any hit into the value that goes into that x, y position in the 2D array. So instead of a 3D array that has zero values for in place of non-hits and 1's for hits we now have a 2D array with 0's still encoding non hits and now values between 1 and 1000 indicating a hit and the corresponding ToF. This has the effect of reducing the 11m+ total pixels to a more manageable 11,264 and the trainable parameters in the autoencoder to 1,248,251 (an 86.6% decrease over true 3D) which dramatically sped up the processing and training time of the network. 
 
