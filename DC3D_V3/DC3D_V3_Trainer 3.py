@@ -140,6 +140,7 @@ TORCHSIM_data = True
 xdim = 88   # Currently useless
 ydim = 128  # Currently useless
 time_dimension = 1000                        # User controll to set the number of time steps in the data
+channels = 1                                # User controll to set the number of channels in the data
 
 #%% - Training Hyperparameter Settings
 num_epochs = 2000                            # User controll to set number of epochs (Hyperparameter)
@@ -341,13 +342,34 @@ from Helper_files.ExcelExtractor import extract_data_to_excel # This is a custom
 from Helper_files.model_perf_analysis2 import run_full_perf_tests
 from Helper_files.Image_Metrics import MSE, MAE, SNR, PSNR, NMSRE, SSIM, NomalisedMutualInformation, correlation_coeff, compare_images_pixels
 
+# - Helper functions
+from Helper_files.Helper_Functions import *
+
+
 #from Helper_files.Export_User_Settings import create_settings_dict
+
+from Loss_Functions.ACBLoss import ACBLoss
+from Loss_Functions.ACBLoss3D import ACBLoss3D
+from Loss_Functions.ada_SSE_loss import ada_SSE_loss
+from Loss_Functions.ffACBLoss import ffACBLoss
+from Loss_Functions.HistogramLoss import HistogramLoss
+from Loss_Functions.True3DLoss import True3DLoss
+from Loss_Functions.boostedffACBLoss import boostedffACBLoss
+from Loss_Functions.weighted_perfect_recovery_lossOLD import weighted_perfect_recovery_lossOLD
+from Loss_Functions.WeightedPerfectRecoveryLoss import WeightedPerfectRecoveryLoss
+from Loss_Functions.simple_3d_loss import simple3Dloss
+from Loss_Functions.simple3DlossOLD import simple3DlossOLD
+
 
 
 
 
 #%% - Load in Comparative Live Loss Data
+
 if comparative_live_loss:
+    #history_da, epoch_times = load_comparative_data(comparative_loss_paths, plot_live_training_loss, plot_live_time_loss)
+
+    
     comparative_history_da = []
     comparative_epoch_times = []
     for loss_path in comparative_loss_paths:
@@ -359,73 +381,11 @@ if comparative_live_loss:
             with open(loss_path + '\\Raw_Data_Output\\epoch_times_list_list.csv', 'rb') as f:
                 # load the data from the csv file called f into a list 
                 comparative_epoch_times.append(np.loadtxt(f, delimiter=',').tolist())
-                
-                
+               
 
-#%% - Helper functions
-def format_time(seconds):
-    hours, remainder = divmod(seconds, 3600)
-    minutes, seconds = divmod(remainder, 60)
-    return f"{int(hours)}h :{int(minutes)}m :{seconds:3f}s"
 
-# Helper function to return the batch learning method string to user
-def batch_learning(training_dataset_size, batch_size):
-    if batch_size == 1: 
-        output = "Stochastic Gradient Descent"
-    elif batch_size == training_dataset_size:
-        output = "Batch Gradient Descent"        
-    else:
-        output = "Mini-Batch Gradient Descent"
-    return(output)
+          
 
-# Helper function to allow values to be input as a range from which random values are chosen each time unless the input is a single value in which case it is used as the constant value
-def input_range_to_random_value(*args):
-    """
-    Generate random values based on input ranges or single values.
-
-    This function accepts an arbitrary number of arguments, where each argument
-    can be either a single value (int or float) or a range (list or tuple) of
-    values. For ranges, it generates a random integer if the range consists of
-    integers, or a random float if the range consists of floats.
-
-    Parameters:
-    *args : int, float, list, tuple
-        Arbitrary number of input arguments. Each argument can be a single value
-        or a range represented as a list or tuple of two values.
-
-    Returns:
-    list
-        A list containing the generated random values or the input values if they
-        are already single values. If an input argument is not recognized as a
-        value or range, None is appended to the list and an error message is printed.
-    """
-    results = []
-
-    for input_range in args:
-
-        if isinstance(input_range, (int, float)):
-            ## If input is single value it is not randomised as is manually set
-            results.append(input_range)
-        
-        elif isinstance(input_range, (list, tuple)):
-            ## If input is a list or tuple then it is considered a range of values and is randomised in that range
-            
-            if all(isinstance(x, int) for x in input_range):
-                ## If all values in the list are ints then the whole list is considered to be a range of ints and an int is returned
-                results.append(torch.randint(input_range[0], input_range[1] + 1, (1,)).item())
-
-            elif (isinstance(x, float) for x in input_range):
-                ## Else if any single value in the list is a float then function will return a float
-                results.append(torch.rand(1).item() * (input_range[1] - input_range[0]) + input_range[0])
-            
-            else:
-                print("Error: input_range_to_random_value() input is not a value or pair of values in recognised format, must be float or int")
-                results.append(None)
-        else:
-            print("Error: input_range_to_random_value() input is not a value or pair of values")
-            results.append(None)
-    
-    return results
 
 #%% DC3D Special Functions
 # Special normalisation for pure masking
@@ -467,16 +427,6 @@ def reconstruct_3D(*args):
         results.append(np.array(data_output))
 
     return results
-
-def np_to_tensor(np_array, double_precision=False):
-    """
-    Convert np array to torch tensor of user selected precision. 
-    Takes in np array of shape [H, W] and returns torch tensor of shape [C, H, W]
-    """
-    dtype = torch.float64 if double_precision else torch.float32
-    tensor = torch.tensor(np_array, dtype=dtype)
-    tensor = tensor.unsqueeze(0)        # Append channel dimension to begining of tensor
-    return(tensor)
 
 # Masking technique
 def masking_recovery(input_image, recovered_image, time_dimension, print_result=False):
@@ -776,40 +726,7 @@ def quantify_loss_performance(clean_input_batch, noised_target_batch, time_dimen
     avg_loss_false_positive_xy.append(np.mean(loss_false_positive_xy))
 
 #%% - Data Output Functions
-def save_variable(variable, variable_name, path, force_pickle=False):
 
-    if force_pickle:
-        with open(path + variable_name + "_forcepkl.pkl", 'wb') as file:
-            pickle.dump(variable, file)
-    else:
-        if isinstance(variable, dict):
-            with open(path + variable_name + "_dict.pkl", 'wb') as file:
-                pickle.dump(variable, file)
-
-        elif isinstance(variable, np.ndarray):
-            np.save(path + variable_name + "_array.npy", variable)
-
-        elif isinstance(variable, torch.Tensor):
-            torch.save(variable, path + variable_name + "_tensor.pt")
-
-        elif isinstance(variable, list):
-            df = pd.DataFrame(variable)
-            df.to_csv(path + variable_name + "_list.csv", index=False)
-
-        elif isinstance(variable, int):
-            with open(path + variable_name + "_int.pkl", 'wb') as file:
-                pickle.dump(variable, file)
-
-        elif isinstance(variable, float):
-            with open(path + variable_name + "_float.pkl", 'wb') as file:
-                pickle.dump(variable, file)
-
-        elif isinstance(variable, str):
-            with open(path + variable_name + "_str.pkl", 'wb') as file:
-                pickle.dump(variable, file)
-
-        else:
-            raise ValueError("Unsupported variable type.")
         
 def colour_code_excel_file(file_path):
     import openpyxl
@@ -1375,556 +1292,9 @@ def plot_epoch_data(encoder, decoder, epoch, model_save_name, time_dimension, re
     return(number_of_true_signal_points, number_of_recovered_signal_points, in_im, noise_im, rec_im)        #returns the number of true signal points, number of recovered signal points, input image, noised image and reconstructed image 
 
 #%% - Custom Loss Fn Classes
-class WeightedPerfectRecoveryLoss(torch.nn.Module):
-    def __init__(self, zero_weighting=1, nonzero_weighting=1):
-        super(WeightedPerfectRecoveryLoss, self).__init__()
-        self.zero_weighting = zero_weighting
-        self.nonzero_weighting = nonzero_weighting
 
-    def backward(self, grad_output):
-        # Retrieve the tensors saved in the forward method
-        reconstructed_image, target_image = self.saved_tensors  # <----- Remove this line
 
-        # Get the indices of 0 and non 0 values in target_image as a mask for speed
-        zero_mask = (target_image == 0)
-        nonzero_mask = ~zero_mask         # Invert mask
-
-        # Get the values in target_image
-        values_zero = target_image[zero_mask]
-        values_nonzero = target_image[nonzero_mask]
-
-        #Calualte the number of value sin each of values_zero and values_nonzero for use in the class balancing
-        zero_n = len(values_zero)
-        nonzero_n = len(values_nonzero)
-
-        # Get the corresponding values in reconstructed_image
-        corresponding_values_zero = reconstructed_image[zero_mask]
-        corresponding_values_nonzero = reconstructed_image[nonzero_mask]
-
-        # Calculate the gradients
-        grad_reconstructed_image = torch.zeros_like(reconstructed_image)
-        grad_reconstructed_image[zero_mask] += self.zero_weighting*(1/zero_n)*(corresponding_values_zero != values_zero).float()
-        grad_reconstructed_image[nonzero_mask] += self.nonzero_weighting*(1/nonzero_n)*(corresponding_values_nonzero != values_nonzero).float()
-
-        return grad_reconstructed_image * grad_output.unsqueeze(1).unsqueeze(1).unsqueeze(1)
-    
-    def forward(self, reconstructed_image_in, target_image_in):
-        reconstructed_image = reconstructed_image_in.clone()
-        target_image = target_image_in.clone()
-
-        # Get the indices of 0 and non 0 values in target_image as a mask for speed
-        zero_mask = (target_image == 0)
-        nonzero_mask = ~zero_mask         # Invert mask
-        
-        # Get the values in target_image
-        values_zero = target_image[zero_mask]
-        values_nonzero = target_image[nonzero_mask]
-
-        #Calualte the number of value sin each of values_zero and values_nonzero for use in the class balancing
-        zero_n = len(values_zero)
-        nonzero_n = len(values_nonzero)
-
-        # Get the corresponding values in reconstructed_image
-        corresponding_values_zero = reconstructed_image[zero_mask]
-        corresponding_values_nonzero = reconstructed_image[nonzero_mask]
-
-        if zero_n == 0:
-            zero_loss = 0
-        else:
-            # Calculate the loss for zero values
-            loss_value_zero = (values_zero != corresponding_values_zero).float().sum() 
-            zero_loss = self.zero_weighting*( (1/zero_n) * loss_value_zero)
-
-        if nonzero_n == 0:
-            nonzero_loss = 0
-        else:
-            # Calculate the loss for non-zero values
-            loss_value_nonzero = (values_nonzero != corresponding_values_nonzero).float().sum() 
-            nonzero_loss = self.nonzero_weighting*( (1/nonzero_n) * loss_value_nonzero) 
-
-        # Calculate the total loss with automatic class balancing and user class weighting
-        loss_value = zero_loss + nonzero_loss
-
-
-        return loss_value
-
-class ACBLoss(torch.nn.Module):
-    def __init__(self, zero_weighting=1, nonzero_weighting=1):
-        """
-        Initializes the ACB-MSE Loss Function class with weighting coefficients.
-
-        Args:
-        - zero_weighting: a scalar weighting coefficient for the MSE loss of zero pixels
-        - nonzero_weighting: a scalar weighting coefficient for the MSE loss of non-zero pixels
-        """
-        super().__init__()   
-        self.zero_weighting = zero_weighting
-        self.nonzero_weighting = nonzero_weighting
-        self.mse_loss = torch.nn.MSELoss(reduction='mean')
-
-    def forward(self, reconstructed_image, target_image):
-        """
-        Calculates the weighted mean squared error (MSE) loss between target_image and reconstructed_image.
-        The loss for zero pixels in the target_image is weighted by zero_weighting, and the loss for non-zero
-        pixels is weighted by nonzero_weighting.
-
-        Args:
-        - target_image: a tensor of shape (B, C, H, W) containing the target image
-        - reconstructed_image: a tensor of shape (B, C, H, W) containing the reconstructed image
-
-        Returns:
-        - weighted_mse_loss: a scalar tensor containing the weighted MSE loss
-        """
-        zero_mask = (target_image == 0)
-        nonzero_mask = ~zero_mask
-
-        values_zero = target_image[zero_mask]
-        values_nonzero = target_image[nonzero_mask]
-
-        corresponding_values_zero = reconstructed_image[zero_mask]
-        corresponding_values_nonzero = reconstructed_image[nonzero_mask]
-
-        zero_loss = self.mse_loss(corresponding_values_zero, values_zero)
-        nonzero_loss = self.mse_loss(corresponding_values_nonzero, values_nonzero)
-
-        if torch.isnan(zero_loss):
-            zero_loss = 0
-        if torch.isnan(nonzero_loss):
-            nonzero_loss = 0
-
-        weighted_mse_loss = (self.zero_weighting * zero_loss) + (self.nonzero_weighting * nonzero_loss)
-
-        return weighted_mse_loss
-
-class ffACBLoss(torch.nn.Module):
-    def __init__(self, zero_weighting=1, nonzero_weighting=1, fullframe_weighting=1):
-        """
-        Initializes the ACB-MSE Loss Function class with weighting coefficients.
-
-        Args:
-        - zero_weighting: a scalar weighting coefficient for the MSE loss of zero pixels
-        - nonzero_weighting: a scalar weighting coefficient for the MSE loss of non-zero pixels
-        """
-        super().__init__()   
-        self.zero_weighting = zero_weighting
-        self.nonzero_weighting = nonzero_weighting
-        self.fullframe_weighting = fullframe_weighting
-        self.mse_loss = torch.nn.MSELoss(reduction='mean')
-
-    def forward(self, reconstructed_image, target_image):
-        """
-        Calculates the weighted mean squared error (MSE) loss between target_image and reconstructed_image.
-        The loss for zero pixels in the target_image is weighted by zero_weighting, and the loss for non-zero
-        pixels is weighted by nonzero_weighting.
-
-        Args:
-        - target_image: a tensor of shape (B, C, H, W) containing the target image
-        - reconstructed_image: a tensor of shape (B, C, H, W) containing the reconstructed image
-
-        Returns:
-        - weighted_mse_loss: a scalar tensor containing the weighted MSE loss
-        """
-        zero_mask = (target_image == 0)
-        nonzero_mask = ~zero_mask
-
-        values_zero = target_image[zero_mask]
-        values_nonzero = target_image[nonzero_mask]
-
-        corresponding_values_zero = reconstructed_image[zero_mask]
-        corresponding_values_nonzero = reconstructed_image[nonzero_mask]
-
-        zero_loss = self.mse_loss(corresponding_values_zero, values_zero)
-        nonzero_loss = self.mse_loss(corresponding_values_nonzero, values_nonzero)
-        full_frame_loss = self.mse_loss(reconstructed_image, target_image)
-
-        if torch.isnan(zero_loss):
-            zero_loss = 0
-        if torch.isnan(nonzero_loss):
-            nonzero_loss = 0
-
-        weighted_mse_loss = (self.zero_weighting * zero_loss) + (self.nonzero_weighting * nonzero_loss) + (self.fullframe_weighting * full_frame_loss)
-
-        return weighted_mse_loss
-
-class boostedffACBLoss(torch.nn.Module):
-    def __init__(self, zero_weighting=1, nonzero_weighting=1, fullframe_weighting=1, ff_loss='mse', boost=1):
-        """
-        Initializes the ACB-MSE Loss Function class with weighting coefficients.
-
-        Args:
-        - zero_weighting: a scalar weighting coefficient for the MSE loss of zero pixels
-        - nonzero_weighting: a scalar weighting coefficient for the MSE loss of non-zero pixels
-        """
-        super().__init__()   
-        self.zero_weighting = zero_weighting
-        self.nonzero_weighting = nonzero_weighting
-        self.fullframe_weighting = fullframe_weighting
-        self.mse_loss = torch.nn.MSELoss(reduction='mean')
-        self.boost = boost
-
-        if ff_loss == 'mse':
-            self.ff_loss = torch.nn.MSELoss(reduction='mean')
-        elif ff_loss == 'mae':
-            self.ff_loss = torch.nn.L1Loss(reduction='mean')
-        elif ff_loss == 'bce':
-            self.ff_loss = torch.nn.BCEWithLogitsLoss(reduction='mean')
-
-    def forward(self, reconstructed_image, target_image):
-        """
-        Calculates the weighted mean squared error (MSE) loss between target_image and reconstructed_image.
-        The loss for zero pixels in the target_image is weighted by zero_weighting, and the loss for non-zero
-        pixels is weighted by nonzero_weighting.
-
-        Args:
-        - target_image: a tensor of shape (B, C, H, W) containing the target image
-        - reconstructed_image: a tensor of shape (B, C, H, W) containing the reconstructed image
-
-        Returns:
-        - weighted_mse_loss: a scalar tensor containing the weighted MSE loss
-        """
-        zero_mask = (target_image == 0)
-        nonzero_mask = ~zero_mask
-
-        values_zero = target_image[zero_mask]
-        values_nonzero = target_image[nonzero_mask]
-
-        corresponding_values_zero = reconstructed_image[zero_mask]
-        corresponding_values_nonzero = reconstructed_image[nonzero_mask]
-
-        zero_loss = self.mse_loss(corresponding_values_zero * self.boost, values_zero * self.boost)
-        nonzero_loss = self.mse_loss(corresponding_values_nonzero * self.boost, values_nonzero * self.boost)
-        full_frame_loss = self.ff_loss(reconstructed_image * self.boost, target_image * self.boost)
-
-        if torch.isnan(zero_loss):
-            zero_loss = 0
-        if torch.isnan(nonzero_loss):
-            nonzero_loss = 0
-
-        weighted_mse_loss = (self.zero_weighting * zero_loss) + (self.nonzero_weighting * nonzero_loss) + (self.fullframe_weighting * full_frame_loss)
-
-        return weighted_mse_loss
-
-
-class ACBLoss3D(torch.nn.Module):
-    def __init__(self, zero_weighting=1, nonzero_weighting=1, virtual_t_weighting=1, virtual_x_weighting=1, virtual_y_weighting=1, timesteps=1000):
-        """
-        Initializes the ACB-MSE-3D Holographic Loss Function class with weighting coefficients.
-
-        Args:
-        - zero_weighting: a scalar weighting coefficient for the MSE loss of zero pixels
-        - nonzero_weighting: a scalar weighting coefficient for the MSE loss of non-zero pixels
-        - virtual_t_weighting: a scalar weighting coefficient for the MSE loss of virtual t pixels
-        - virtual_x_weighting: a scalar weighting coefficient for the MSE loss of virtual x pixels
-        - virtual_y_weighting: a scalar weighting coefficient for the MSE loss of virtual y pixels
-        """
-        super().__init__()   
-        self.zero_weighting = zero_weighting
-        self.nonzero_weighting = nonzero_weighting
-        self.virtual_t_weighting = virtual_t_weighting
-        self.virtual_x_weighting = virtual_x_weighting
-        self.virtual_y_weighting = virtual_y_weighting
-        self.mse_loss = torch.nn.MSELoss(reduction='mean')
-        self.timesteps = timesteps
-
-        if self.timesteps <= 0:
-            raise ValueError("Timesteps to Holographic loss should be a positive integer")
-        
-    def holographic_transform(self, input_image, virtual_dim='y', binary_values=True, debug=False):
-
-        input_batch = input_image.clone()
-        output_batch_1 = torch.zeros((input_batch.shape[0], input_batch.shape[1], input_batch.shape[2], self.timesteps), dtype=input_batch.dtype, requires_grad=True)
-        output_batch = output_batch_1.clone()
-
-        for b in range(input_batch.shape[0]):
-
-            input_tensor = input_batch[b, 0]
-            
-            if virtual_dim == 'x':
-                input_tensor = input_tensor.T
-
-            non_zero_indices_x, non_zero_indices_y = torch.nonzero(input_tensor, as_tuple=True)
-            values = input_tensor[non_zero_indices_x, non_zero_indices_y]
-            quantized_values = (values * self.timesteps).to(torch.int64) - 1                         # Values lie in range 0.0 - 1.0 
-
-            for quantized_value, non_zero_indice_x, non_zero_indice_y in zip(quantized_values, non_zero_indices_x, non_zero_indices_y):
-                output_batch[b, 0, non_zero_indice_x, quantized_value] = non_zero_indice_y
-
-        return output_batch
-
-
-    def ACB_MSE_Loss (self, reconstructed, target):
-        reconstructed_image = reconstructed.clone()
-        target_image = target.clone()
-        """
-        Calculates the weighted mean squared error (MSE) loss between target_image and reconstructed_image.
-        The loss for zero pixels in the target_image is weighted by zero_weighting, and the loss for non-zero
-        pixels is weighted by nonzero_weighting.
-
-        Args:
-        - target_image: a tensor of shape (B, C, H, W) containing the target image
-        - reconstructed_image: a tensor of shape (B, C, H, W) containing the reconstructed image
-
-        Returns:
-        - weighted_mse_loss: a scalar tensor containing the weighted MSE loss
-        """
-        zero_mask = (target_image == 0)
-        nonzero_mask = ~zero_mask
-
-        values_zero = target_image[zero_mask]
-        values_nonzero = target_image[nonzero_mask]
-
-        corresponding_values_zero = reconstructed_image[zero_mask]
-        corresponding_values_nonzero = reconstructed_image[nonzero_mask]
-
-        zero_loss = self.mse_loss(corresponding_values_zero, values_zero)
-        nonzero_loss = self.mse_loss(corresponding_values_nonzero, values_nonzero)
-
-        if torch.isnan(zero_loss):
-            zero_loss = 0
-        if torch.isnan(nonzero_loss):
-            nonzero_loss = 0
-
-        weighted_mse_loss = (self.zero_weighting * zero_loss) + (self.nonzero_weighting * nonzero_loss)
-
-        return weighted_mse_loss
-
-    def forward(self, reconstructed_image, target_image):
-        if self.virtual_t_weighting:
-            vt_loss = (self.ACB_MSE_Loss(reconstructed_image, target_image)) * self.virtual_t_weighting
-        else:
-            vt_loss = torch.tensor(0, dtype=reconstructed_image.dtype, requires_grad=True)
-        
-        if self.virtual_x_weighting:
-            reconstructed_hologram_vx = self.holographic_transform(reconstructed_image, virtual_dim='x')
-            target_hologram_vx = self.holographic_transform(target_image, virtual_dim='x')
-            vx_loss = (self.ACB_MSE_Loss(reconstructed_hologram_vx, target_hologram_vx)) * self.virtual_x_weighting
-        else:
-            vx_loss = torch.tensor(0, dtype=reconstructed_image.dtype, requires_grad=True)
-        
-        if self.virtual_y_weighting:
-            reconstructed_hologram_vy = self.holographic_transform(reconstructed_image)
-            target_hologram_vy = self.holographic_transform(target_image)
-            vy_loss = self.ACB_MSE_Loss(reconstructed_hologram_vy, target_hologram_vy) * self.virtual_y_weighting
-        else:
-            vy_loss = torch.tensor(0, dtype=reconstructed_image.dtype, requires_grad=True)
-
-        return vt_loss + vx_loss + vy_loss
-    
-class simple3Dloss(torch.nn.Module):
-    def __init__(self, zero_weighting=1, nonzero_weighting=1, virtual_t_weighting=1, virtual_x_weighting=1, virtual_y_weighting=1, timesteps=1000):
-        super().__init__()   
-        self.mse_loss = torch.nn.MSELoss(reduction='mean')
-        self.timesteps = timesteps
-
-    def holographic_transform(self, input_image, virtual_dim='y', binary_values=True, debug=False):
-        input_batch = input_image.clone()
-
-        # Create a tensor of zeros with the desired last dimension size
-        new_size = list(input_batch.size())
-        new_size[-1] = self.timesteps
-        output_batch = torch.zeros(new_size, dtype=input_batch.dtype, requires_grad=True)
-
-        for b in range(input_batch.shape[0]):
-            input_tensor = input_batch[b, 0]
-            
-            if virtual_dim == 'x':
-                input_tensor = input_tensor.T
-
-            non_zero_indices_x, non_zero_indices_y = torch.nonzero(input_tensor, as_tuple=True)
-            values = input_tensor[non_zero_indices_x, non_zero_indices_y]
-            quantized_values = (values * self.timesteps).to(torch.int64) - 1
-
-
-            for quantized_value, non_zero_indice_x, non_zero_indice_y in zip(quantized_values, non_zero_indices_x, non_zero_indices_y):
-                #output_batch[b, 0, non_zero_indice_x, quantized_value] = non_zero_indice_y
-
-                new_values = output_batch.clone()  # Create a new tensor with the same values as output_batch
-                new_values[b, 0, non_zero_indice_x, quantized_value] = non_zero_indice_y
-                output_batch = new_values  # Update output_batch with the modified values
-        return output_batch
-
-    def forward(self, reconstructed_image, target_image):
-        reconstructed_hologram_vy = self.holographic_transform(reconstructed_image)
-        target_hologram_vy = self.holographic_transform(target_image)
-        vy_loss = self.mse_loss(reconstructed_hologram_vy, target_hologram_vy)
-        return vy_loss
-    
-class simple3DlossOLD(torch.nn.Module):
-    def __init__(self, zero_weighting=1, nonzero_weighting=1, virtual_t_weighting=1, virtual_x_weighting=1, virtual_y_weighting=1, timesteps=1000):
-        super().__init__()   
-        self.mse_loss = torch.nn.MSELoss(reduction='mean')
-        self.timesteps = timesteps
-
-    def holographic_transform(self, input_image, virtual_dim='y', binary_values=True, debug=False):
-
-        input_batch = input_image.clone()
-        output_batch_1 = torch.zeros((input_batch.shape[0], input_batch.shape[1], input_batch.shape[2], self.timesteps), dtype=input_batch.dtype, requires_grad=True)
-        output_batch = output_batch_1.clone()
-
-        for b in range(input_batch.shape[0]):
-
-            input_tensor = input_batch[b, 0]
-            
-            if virtual_dim == 'x':
-                input_tensor = input_tensor.T
-
-            non_zero_indices_x, non_zero_indices_y = torch.nonzero(input_tensor, as_tuple=True)
-            values = input_tensor[non_zero_indices_x, non_zero_indices_y]
-            quantized_values = (values * self.timesteps).to(torch.int64) - 1                         # Values lie in range 0.0 - 1.0 
-
-            for quantized_value, non_zero_indice_x, non_zero_indice_y in zip(quantized_values, non_zero_indices_x, non_zero_indices_y):
-                output_batch[b, 0, non_zero_indice_x, quantized_value] = non_zero_indice_y
-
-        return output_batch
-
-    def forward(self, reconstructed_image, target_image):
-        reconstructed_hologram_vy = self.holographic_transform(reconstructed_image)
-        target_hologram_vy = self.holographic_transform(target_image)
-        vy_loss = self.mse_loss(reconstructed_hologram_vy, target_hologram_vy)
-        return vy_loss
-    
-class True3DLoss(torch.nn.Module):
-    def __init__(self, zero_weighting=1, nonzero_weighting=1, timesteps=1000):
-        """
-        # Number of dp is related to timestep size. 1,000 = 3dp, 10,000 = 4dp, 100,000 = 5dp, 1,000,000 = 6dp etc
-        
-        """
-        super().__init__()   
-        self.mse_loss = torch.nn.MSELoss(reduction='mean')
-        self.timesteps = timesteps
-        self.zero_weighting = zero_weighting
-        self.nonzero_weighting = nonzero_weighting
-
-    def ACB_MSE_Loss (self, reconstructed, target):
-        reconstructed_image = reconstructed.clone()
-        target_image = target.clone()
-        """
-        Calculates the weighted mean squared error (MSE) loss between target_image and reconstructed_image.
-        The loss for zero pixels in the target_image is weighted by zero_weighting, and the loss for non-zero
-        pixels is weighted by nonzero_weighting.
-
-        Args:
-        - target_image: a tensor of shape (B, C, H, W) containing the target image
-        - reconstructed_image: a tensor of shape (B, C, H, W) containing the reconstructed image
-
-        Returns:
-        - weighted_mse_loss: a scalar tensor containing the weighted MSE loss
-        """
-        zero_mask = (target_image == 0)
-        nonzero_mask = ~zero_mask
-
-        values_zero = target_image[zero_mask]
-        values_nonzero = target_image[nonzero_mask]
-
-        corresponding_values_zero = reconstructed_image[zero_mask]
-        corresponding_values_nonzero = reconstructed_image[nonzero_mask]
-
-        zero_loss = self.mse_loss(corresponding_values_zero, values_zero)
-        nonzero_loss = self.mse_loss(corresponding_values_nonzero, values_nonzero)
-
-        if torch.isnan(zero_loss):
-            zero_loss = 0
-        if torch.isnan(nonzero_loss):
-            nonzero_loss = 0
-
-        weighted_mse_loss = (self.zero_weighting * zero_loss) + (self.nonzero_weighting * nonzero_loss)
-
-        return weighted_mse_loss
-
-    def expand_data_to_new_dimPREFERED(self, input_tensor):
-        """
-        # Number of dp is related to timestep size. 1,000 = 3dp, 10,000 = 4dp, 100,000 = 5dp, 1,000,000 = 6dp etc
-        
-        """
-
-        # QUANITSE VALUES IN THE TENSOR TO steps of (1/timesteps) then multiply by timesteps to arrive at integers (this simplifies to juyt * timestep then round)
-        #quantised_tensor = torch.round(input_tensor * self.timesteps) # / timesteps
-
-        # Determine the number of classes (third dimension size)
-        num_classes = self.timesteps #int(input_tensor.max()) + 1
-
-        # Convert the input tensor to indices
-        indices = input_tensor.long()
-
-        # Create a mask for non-zero values
-        #non_zero_mask = input_tensor != 0
-
-        # Create one-hot encoded tensor
-        one_hot_encoded = torch.nn.functional.one_hot(indices, num_classes=num_classes).float()
-
-        # Apply the mask to exclude zero values
-        #one_hot_encoded = one_hot_encoded * non_zero_mask.unsqueeze(-1)
-
-        # Permute dimensions to move the new dimension to the front
-        #one_hot_encoded = one_hot_encoded.permute(0, 1, 4, 2, 3)
-        
-        return one_hot_encoded
-
-    def expand_data_to_new_dim(self, input_tensor):
-        input_tensor = (input_tensor * self.timesteps) - 1
-
-        input_tensor = torch.where(input_tensor < 0, torch.tensor(0.0), input_tensor)   # could try input_tensor + 1.0 instead of  torch.tensor(0.0)
-
-        # Assuming you have 'indices' and 'num_classes' defined
-        num_classes =  self.timesteps
-        indices = input_tensor.long()
-
-        # Reshape the indices tensor for compatibility with scatter_
-        reshaped_indices = indices.view(indices.size(0), indices.size(1), -1)
-
-        # Create a tensor of zeros with the same shape as 'reshaped_indices'
-        one_hot_encoded = torch.zeros(reshaped_indices.size(0), reshaped_indices.size(1), num_classes, reshaped_indices.size(2), requires_grad=True)
-        
-        # Use scatter to fill the one-hot encoded tensor (without in-place operation)
-        one_hot_encoded = one_hot_encoded.scatter(2, reshaped_indices.unsqueeze(2), 1)
-
-        # Convert the tensor to float
-        one_hot_encoded = one_hot_encoded.float()
-
-        return one_hot_encoded
-
-    def forward(self, reconstructed_image, target_image):
-        reconstructed_3D_view = self.expand_data_to_new_dim(reconstructed_image)
-        target_3D_view = self.expand_data_to_new_dim(target_image)
-        true3d_loss = self.ACB_MSE_Loss(reconstructed_3D_view, target_3D_view)
-        return true3d_loss
-
-def weighted_perfect_recovery_lossOLD(reconstructed_image, target_image, zero_weighting=1, nonzero_weighting=1):
-
-    # Get the indices of 0 and non 0 values in target_image as a mask for speed
-    zero_mask = (target_image == 0)
-    nonzero_mask = ~zero_mask         # Invert mask
-    
-    # Get the values in target_image
-    values_zero = target_image[zero_mask]
-    values_nonzero = target_image[nonzero_mask]
-
-    #Calualte the number of value sin each of values_zero and values_nonzero for use in the class balancing
-    zero_n = len(values_zero)
-    nonzero_n = len(values_nonzero)
-    
-    # Get the corresponding values in reconstructed_image
-    corresponding_values_zero = reconstructed_image[zero_mask]
-    corresponding_values_nonzero = reconstructed_image[nonzero_mask]
-
-    if zero_n == 0:
-        zero_loss = 0
-    else:
-        # Calculate the loss for zero values
-        loss_value_zero = (values_zero != corresponding_values_zero).float().sum() 
-        zero_loss = zero_weighting*( (1/zero_n) * loss_value_zero)
-
-    if nonzero_n == 0:
-        nonzero_loss = 0
-    else:
-        # Calculate the loss for non-zero values
-        loss_value_nonzero = (values_nonzero != corresponding_values_nonzero).float().sum() 
-        nonzero_loss = nonzero_weighting*( (1/nonzero_n) * loss_value_nonzero) 
-
-    # Calculate the total loss with automatic class balancing and user class weighting
-    loss_value = zero_loss + nonzero_loss
-
-    return loss_value
+#from Loss_Functions.ada_weighted_custom_split_loss import ada_weighted_custom_split_loss  #NOT YET MOVED, NEEDS DEPEMDECIOES IN THIS CODE SORTED FIRST
 
 # Weighted Custom Split Loss Function
 def ada_weighted_custom_split_loss(reconstructed_image, target_image, zero_weighting=zero_weighting, nonzero_weighting=nonzero_weighting):
@@ -1973,34 +1343,6 @@ def ada_weighted_custom_split_loss(reconstructed_image, target_image, zero_weigh
     weighted_mse_loss = (zero_weighting * zero_loss) + (nonzero_weighting * nonzero_loss) 
     
     return weighted_mse_loss
-
-#  Adaptive Sum of Squared Errors loss function
-def ada_SSE_loss(target, input):
-    """Adaptive Sum of Squared Errors Loss Function"""
-    loss = ((input-target)**2).sum()
-    return(loss)
-
-
-class HistogramLoss(torch.nn.Module):
-    def __init__(self, num_bins=256):
-        super(HistogramLoss, self).__init__()
-        self.num_bins = num_bins
-
-    def histogram_intersection(hist1, hist2):
-        min_hist = torch.min(hist1, hist2)
-        return torch.sum(min_hist)
-
-    def forward(self, input_image, target_image):
-        hist_input = torch.histc(input_image.view(-1), bins=self.num_bins, min=0, max=255)
-        hist_target = torch.histc(target_image.view(-1), bins=self.num_bins, min=0, max=255)
-
-        hist_input = hist_input / hist_input.sum()
-        hist_target = hist_target / hist_target.sum()
-
-        loss = 1 - self.histogram_intersection(hist_input, hist_target)
-
-        return loss
-
 
 
 
@@ -2110,6 +1452,9 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
     # List of all availible loss function labels
     loss_function_labels = ["ACB_MSE", 
                             "ffACB_MSE", 
+                            "True3DLoss",
+                            "boostedffACB_MSE",
+                            "simple3Dloss",
                             "ACBLoss3D", 
                             "boostedffACB_MSE",
                             "MSE", 
@@ -2267,7 +1612,7 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
     with torch.no_grad(): # No need to track the gradients
         
         # Create dummy input tensor
-        enc_input_tensor = torch.randn(batch_size, 1, ydim, xdim) 
+        enc_input_tensor = torch.randn(batch_size, channels, ydim, xdim) 
         if double_precision:
             enc_input_tensor = enc_input_tensor.double()
             
@@ -2284,12 +1629,12 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
 
 
     #%% - Add Activation data hooks to encoder and decoder layers
-    if record_activity or record_weights or record_biases:
+    if record_activity or record_weights or record_biases:   # MOVE TO FUCNTION AND THEN TO HELPER FUCNS FILE FOR CLEANER CODE
 
         # Create a list to store the activations of each layer
-        all_activations = []
-        recorded_weights = [] 
-        recorded_biases = [] 
+        #all_activations = []
+        #recorded_weights = [] 
+        #recorded_biases = [] 
 
         # Loop through all the modules (layers) in the encoder and register the hooks
         for idx, module in enumerate(encoder.encoder_lin.modules()):
