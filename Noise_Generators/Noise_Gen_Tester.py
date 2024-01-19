@@ -115,14 +115,14 @@ def add_saltpepper_impulse_noise(clean_input, time_dimension):
     noise = torch.zeros(*shape)
     num_of_noise_points = np.random.randint(10,10000)
     for i in range (0, num_of_noise_points):
-        noise[np.random.randint(0,int(shape[0]))][np.random.randint(0,int(shape[1]))]  = np.random.randint(0,1) *time_dimension # Noise points are given values of 0 or 1 and then multiplied by time dim so final vals are either 0 or time_dim
+        noise[np.random.randint(0,shape[0])][np.random.randint(0,shape[1])] = np.random.randint(0, time_dimension)    # Noise points are given values of random integers between 0 and time dim
     noisy_images = clean_input + noise
     return noisy_images
 
 def add_periodic_impulse_noise(clean_input, time_dimension, period=10):
     shape = clean_input.shape
     noise = torch.zeros(*shape)
-    num_of_noise_points = np.random.randint(10, 10000)
+    num_of_noise_points = np.random.randint(1000, 10000)
     for i in range(num_of_noise_points):
         t = np.random.randint(0, period) # Choose a random point in the period
         x = np.random.randint(0, shape[0]) # Choose a random x-coordinate
@@ -139,14 +139,14 @@ def noise_tester(clean_image):
     image_masking_noise = add_masking_noise(clean_image, time_dimension)
     image_poisson_noise = add_poisson_noise(clean_image, time_dimension)
     image_rnd_impulse_noise = add_random_impulse_noise(clean_image, time_dimension)
-    image_sp_impulse_noise = add_saltpepper_impulse_noise(clean_image, time_dimension)
     image_periodic_impulse_noise = add_periodic_impulse_noise(clean_image, time_dimension)
     image_gaussian_noise = add_gaussian_noise(clean_image, time_dimension)
     image_lorentzian_noise = add_cauchy_noise(clean_image)
     image_brownian_noise = add_brownian_noise(clean_image, time_dimension)
-    images = [clean_image, image_white_noise, image_masking_noise, image_poisson_noise, image_rnd_impulse_noise, image_sp_impulse_noise, image_periodic_impulse_noise, image_gaussian_noise,  image_brownian_noise, image_lorentzian_noise]
-    titles = ["Clean Image", "White Noise" ,"Masking Noise", "Poisson Noise","Rnd Impulse Noise", "Salt & Pepper Impulse Noise", "Periodic Impulse Noise", "Gaussian Noise", "Brownian Noise", "Lorentzian Noise"]
-
+    images = [clean_image, image_white_noise, image_masking_noise, image_poisson_noise, image_rnd_impulse_noise, image_periodic_impulse_noise, image_gaussian_noise,  image_brownian_noise, image_lorentzian_noise]
+    titles = ["Clean Image", "White Noise" ,"Masking Noise", "Poisson Noise","Rnd Impulse Noise", "Periodic Impulse Noise", "Gaussian Noise", "Brownian Noise", "Lorentzian Noise"]
+    
+    """
     fig, ax = plt.subplots(2, len(images)//2, figsize=(16, 9))
     for i, img in enumerate(images):
         row = i % 2  # calculate the row number
@@ -157,9 +157,17 @@ def noise_tester(clean_image):
     plt.tight_layout()
     plt.subplots_adjust(hspace=0.02)  # add some extra vertical space between the rows
     plt.show()
-                          
+    """                      
 
-        
+    fig, ax = plt.subplots(1, len(images), figsize=(16, 9))
+    for i, img in enumerate(images):
+        row = i  # calculate the row number
+        ax[row].imshow(img, vmin=0, vmax=time_dimension)
+        ax[row].set_title(titles[i])
+        ax[row].axis('off')
+    plt.tight_layout()
+    plt.subplots_adjust(hspace=0.02)  # add some extra vertical space between the rows
+    plt.show()  
 
 
 
@@ -167,8 +175,8 @@ def noise_tester(clean_image):
 EPS = 1e-8  
 time_dimension = 100
 image_raw = np.zeros((128,88), dtype=float)  
-
-image_raw[:64, :] = 100
+image_raw += 50
+#image_raw[:64, :] = 100
 #image_raw = np.load("C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Git Hub Repos/DeepClean Repo/DeepClean-Noise-Suppression-for-LHC-B-Torch-Detector/Datasets/Simple Cross/Data/Simple Cross (flat pixel block data) 5.npy") #np.array([[0,0,9,0,0,0,0],[0,0,5,0,4,0,0],[0,1,4,0,0,6,0],[0,0,0,7,0,0,1],[1,0,1,1,0,7,0]])
 #image_raw[10][10] = time_dimension
 image_test = torch.tensor(image_raw)

@@ -132,8 +132,10 @@ Possible improvements:
 # NOTE to users: The 'nonzero_weighting' parameter is a great way to adjust the sensetivity of the training result. Values around 0.1 will be very cautious in predicting hits, whilst moving to around 1.0 will be very confident in predicting hits. This is a great way to adjust the sensetivity of the model to your needs. Low values are better for direct net output, whilst higher values are better for masking output.
 
 #%% - User Inputs
-dataset_title = "RF_5K"#"PDT 10K" #"RDT 10K MOVE" #'RDT 500K 1000ToF' #"RDT 10K MOVE" #"RDT 50KM"# "Dataset 37_X15K Perfect track recovery" #"Dataset 24_X10Ks"           #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
-model_save_name = "RICHFAST TEST 7 prf 5"#'Parabola6 no norm to loss' #"T2"#"RDT 500K 1000ToF timed"#"2023 Testing - RDT100K n100"#"2023 Testing - RDT10K NEW" #"RDT 100K 30s 200n Fixed"#"RDT 50KM tdim1000 AE2PROTECT 30 sig 200NP LD10"     #"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
+dataset_title = "TORCHSIM_Data\Dataset"# "RF_5K"#"PDT 10K" #"RDT 10K MOVE" #'RDT 500K 1000ToF' #"RDT 10K MOVE" #"RDT 50KM"# "Dataset 37_X15K Perfect track recovery" #"Dataset 24_X10Ks"           #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
+model_save_name = "TORCHSIM_Data TEST4"#'Parabola6 no norm to loss' #"T2"#"RDT 500K 1000ToF timed"#"2023 Testing - RDT100K n100"#"2023 Testing - RDT10K NEW" #"RDT 100K 30s 200n Fixed"#"RDT 50KM tdim1000 AE2PROTECT 30 sig 200NP LD10"     #"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
+
+TORCHSIM_data = True
 
 xdim = 88   # Currently useless
 ydim = 128  # Currently useless
@@ -172,7 +174,7 @@ zeros_loss_choice = 1                        # Select loss function for zero val
 nonzero_loss_choice = 1                      # Select loss function for non zero values (Hyperparameter): 0 = Maxs_Loss_Func, 1 = torch.nn.MSELoss(), 2 = torch.nn.BCELoss(), 3 = torch.nn.L1Loss(), 4 = ada_SSE_loss
 
 #%% - Image Preprocessing Settings  (when using perfect track images as labels)
-signal_points = 200#30                          # User controll to set the number of signal points to add
+signal_points = 30                          # User controll to set the number of signal points to add
 noise_points =  200#0#100                         # User controll to set the number of noise points to add
 
 x_std_dev = 0  #mm NOTE ADAPTed TO PHYSICAL                             # User controll to set the standard deviation of the detectors error in the x axis
@@ -180,7 +182,7 @@ y_std_dev = 0  #mm NOTE ADAPTed TO PHYSICAL                             # User c
 tof_std_dev = 0  #ns NOTE ADAPTed TO PHYSICAL                           # User controll to set the standard deviation of the detectors error in the time of flight 
 
 #%% - Pretraining settings
-start_from_pretrained_model = True         # If set to true then the model will load the pretrained model and optimiser state dicts from the path below
+start_from_pretrained_model = False         # If set to true then the model will load the pretrained model and optimiser state dicts from the path below
 load_pretrained_optimser = True             # Only availible if above is set to true - (pretrain seems to perform better if this is set to true)
 pretrained_model_path = 'N:/Yr 3 Project Results/RICHFAST TEST 5 - Training Results/Model_Deployment/RICHFAST TEST 5 - Model + Optimiser State Dicts.pth'      # Specify the path to the saved full state dictionary for pretraining
 
@@ -2188,7 +2190,9 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
     ### - Dataset
     # Dataset loading function
     def train_loader2d(path): #loads the 2D image from the path
-        sample = (np.load(path))    
+        sample = (np.load(path))
+        if TORCHSIM_data:               ####REMOVE ONCE TSIM IS FIXED!!!
+            sample = sample * 10    
         return (sample) 
     
     # Creates the training dataset using the DatasetFolder function from torchvision.datasets
