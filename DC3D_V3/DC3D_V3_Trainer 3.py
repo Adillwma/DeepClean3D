@@ -131,9 +131,13 @@ Possible improvements:
 # NOTE to users: First epoch will always run slower when using a new dataset or after a computer restart as system memory is being trained, subsequent epochs should take ~50% of the time of the first epoch
 # NOTE to users: The 'nonzero_weighting' parameter is a great way to adjust the sensetivity of the training result. Values around 0.1 will be very cautious in predicting hits, whilst moving to around 1.0 will be very confident in predicting hits. This is a great way to adjust the sensetivity of the model to your needs. Low values are better for direct net output, whilst higher values are better for masking output.
 
+
+
+
+
 #%% - User Inputs
-dataset_title = "TORCHSIM_Data\Dataset"# "RF_5K"#"PDT 10K" #"RDT 10K MOVE" #'RDT 500K 1000ToF' #"RDT 10K MOVE" #"RDT 50KM"# "Dataset 37_X15K Perfect track recovery" #"Dataset 24_X10Ks"           #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
-model_save_name = "TORCHSIM_Data TEST4"#'Parabola6 no norm to loss' #"T2"#"RDT 500K 1000ToF timed"#"2023 Testing - RDT100K n100"#"2023 Testing - RDT10K NEW" #"RDT 100K 30s 200n Fixed"#"RDT 50KM tdim1000 AE2PROTECT 30 sig 200NP LD10"     #"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
+dataset_title = "PDT 1000 FAST"# "RF_5K"#"PDT 10K" #"RDT 10K MOVE" #'RDT 500K 1000ToF' #"RDT 10K MOVE" #"RDT 50KM"# "Dataset 37_X15K Perfect track recovery" #"Dataset 24_X10Ks"           #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
+model_save_name = "FAST3DLOSS TEST2"#'Parabola6 no norm to loss' #"T2"#"RDT 500K 1000ToF timed"#"2023 Testing - RDT100K n100"#"2023 Testing - RDT10K NEW" #"RDT 100K 30s 200n Fixed"#"RDT 50KM tdim1000 AE2PROTECT 30 sig 200NP LD10"     #"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
 
 TORCHSIM_data = True
 
@@ -359,6 +363,7 @@ from Loss_Functions.weighted_perfect_recovery_lossOLD import weighted_perfect_re
 from Loss_Functions.WeightedPerfectRecoveryLoss import WeightedPerfectRecoveryLoss
 from Loss_Functions.simple_3d_loss import simple3Dloss
 from Loss_Functions.simple3DlossOLD import simple3DlossOLD
+
 
 
 
@@ -1435,6 +1440,43 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
 
     #%% - Set loss function choice
 
+
+    class NEWEST3dloss2024(torch.nn.Module):
+        def __init__(self, b, m, n):
+
+            """
+            # Number of dp is related to timestep size. 1,000 = 3dp, 10,000 = 4dp, 100,000 = 5dp, 1,000,000 = 6dp etc
+            
+            """
+            super().__init__()   
+            self.mse_loss = torch.nn.MSELoss(reduction='mean')
+        
+            # create a batches tensor
+            batches = torch.arange(b).repeat_interleave(m*n).view(-1,1)
+
+            # Create indices tensor
+            indices = torch.stack( torch.meshgrid(torch.arange(m), torch.arange(n), indexing='ij'), dim=-1).view(-1, 2) 
+            indices = indices.repeat(b, 1)
+
+            self.batches = batches  
+            self.indices = indices
+
+        def transform_to_3d_coordinates(self, input_tensor):
+            # Reshape the input tensor and concatenate with indices
+            output_tensor = torch.cat((self.batches, self.indices, input_tensor.reshape(-1, 1)), dim=1)
+
+            return output_tensor
+
+
+        def forward(self, reconstructed_image, target_image):
+            reconstructed_image = self.transform_to_3d_coordinates(reconstructed_image)
+            target_image = self.transform_to_3d_coordinates(target_image,)
+            true3d_loss = self.mse_loss(reconstructed_image, target_image)
+
+            return true3d_loss
+
+
+
     # List of all availible loss functions
     availible_loss_functions = [ACBLoss(zero_weighting, nonzero_weighting), 
                                 ffACBLoss(zero_weighting, nonzero_weighting, fullframe_weighting), 
@@ -1464,7 +1506,8 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
                             "Split Loss", 
                             "Weighted Perfect Recovery"]
     
-    loss_fn = availible_loss_functions[loss_function_selection]            # Sets loss function based on user input of parameter loss_function_selection
+    loss_fn = NEWEST3dloss2024(batch_size, 128, 88)
+    #loss_fn = availible_loss_functions[loss_function_selection]            # Sets loss function based on user input of parameter loss_function_selection
     loss_fn_label = loss_function_labels[loss_function_selection]          # Sets loss function label based on user input of parameter loss_function_selection
 
     # Set loss function choice for split loss (if loss function choice is set to ada weighted custom split loss)

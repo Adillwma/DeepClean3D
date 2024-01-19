@@ -42,6 +42,7 @@ def test_custom_loss(*args):
         torch.manual_seed(manual_seed+1)
         
         criterion = loss_class 
+        print("Testing loss function:", type(criterion).__name__)
         
         # Test code runs without errors and check if can work with different common input shapes
         

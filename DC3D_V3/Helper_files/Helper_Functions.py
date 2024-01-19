@@ -2,15 +2,7 @@ import torch
 import numpy as np
 import pickle
 
-def loss_plot(x, y, x_label, y_label, title, save_path, plot_or_save):
-    plt.plot(x, y)
-    plt.title(title)
-    plt.xlabel(x_label)
-    plt.ylabel(y_label)
-    plt.grid(alpha=0.2)
-    plot_save_choice(plot_or_save, save_path) 
 
-    
 def format_time(seconds):
     hours, remainder = divmod(seconds, 3600)
     minutes, seconds = divmod(remainder, 60)
