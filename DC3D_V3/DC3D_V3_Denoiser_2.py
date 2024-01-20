@@ -19,19 +19,7 @@ import importlib.util
 import re
 from tqdm import tqdm
 
-#User Inputs
-input_images_path = "N:\Yr 3 Project Datasets\RDT 50KM\Data\\"      #Dataset 24_X10ks\Data"
-output_images_path = "N:\Year 3 + Project Continued\Results\\"
-time_dimension = 1000
 
-#AE Settings
-reconstruction_threshold = 0.5
-latent_dim = 10
-model_name =  "RDT 10kM tdim1000 AE2PROTECT 30 sig"
-
-#Path settings
-pretrained_model_path = f"N:\\Yr 3 Project Results\\{model_name} - Training Results\\{model_name} - Model + Optimiser State Dicts.pth"
-AE_file_folder_path = f"N:\\Yr 3 Project Results\\{model_name} - Training Results\\"
 
 #%% - Functions
 
@@ -162,9 +150,23 @@ def deepclean_images(input_images_path, output_images_path, time_dimension, reco
     
     print("Program Completed")
 
+if __name__ == "__main__":
 
-#%% - Run the DeepClean3D function on the input data
+    #%% - Run the DeepClean3D function on the input data
+    #User Inputs
+    input_images_path = "N:\Yr 3 Project Datasets\RDT 50KM\Data\\"      #Dataset 24_X10ks\Data"
+    output_images_path = "N:\Year 3 + Project Continued\Results\\"
+    time_dimension = 1000
 
-#Func Driver
-deepclean_images(input_images_path, output_images_path, time_dimension, reconstruction_threshold, latent_dim, pretrained_model_path, AE_file_folder_path)
+    #AE Settings
+    reconstruction_threshold = 0.5
+    latent_dim = 10
+    model_name =  "RDT 10kM tdim1000 AE2PROTECT 30 sig"
+
+    #Path settings
+    pretrained_model_path = f"N:\\Yr 3 Project Results\\{model_name} - Training Results\\{model_name} - Model + Optimiser State Dicts.pth"
+    AE_file_folder_path = f"N:\\Yr 3 Project Results\\{model_name} - Training Results\\"
+
+    #Func Driver
+    deepclean_images(input_images_path, output_images_path, time_dimension, reconstruction_threshold, latent_dim, pretrained_model_path, AE_file_folder_path)
 

@@ -1,4 +1,4 @@
-# DeepClean Trainer v1.2.3
+# DeepClean Trainer v1.2.4
 # Build created on Saterday Jan 20th 2024
 # Author: Adill Al-Ashgar
 # University of Bristol
@@ -28,7 +28,7 @@ Possible improvements:
 ### REFACTOR: func:  ~ 
 
 
-
+### ~~~~~ Connect the inject_seed_each_epoch sytem up 
 
 ### ~~~~~ FIX BUG : xlsxwriter.exceptions.InvalidWorksheetName: Excel worksheet name 'T_fullframe_weighting_0.5 direct' must be <= 31 chars.
 
@@ -163,7 +163,7 @@ dataset_title = "RDT 10K MOVE"# "RF_5K"#"PDT 10K" #"RDT 10K MOVE" #'RDT 500K 100
 model_save_name = "DEEPER AUTOENC TEST"#'Parabola6 no norm to loss' #"T2"#"RDT 500K 1000ToF timed"#"2023 Testing - RDT100K n100"#"2023 Testing - RDT10K NEW" #"RDT 100K 30s 200n Fixed"#"RDT 50KM tdim1000 AE2PROTECT 30 sig 200NP LD10"     #"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
 
 TORCHSIM_data = False #!!!!!!!!!!!!!!!!!!!!!!
-
+inject_seed_each_epoch = True     # 
 xdim = 88   # Currently useless
 ydim = 128  # Currently useless
 time_dimension = 1000                        # User controll to set the number of time steps in the data
@@ -348,7 +348,7 @@ import datetime
 import torchvision 
 import numpy as np  
 import pandas as pd
-from tqdm import tqdm  # Progress bar
+from tqdm.auto import tqdm  # Progress bar, auto automtically selects between normal TQDM or notebook version for running in Jupiter/Google collab style notebooks
 import matplotlib.cm as cm
 from functools import partial
 from torchinfo import summary # function to get the summary of the model layers structure, trainable parameters and memory usage
@@ -945,7 +945,7 @@ def create_comparison_plot_data(slide_live_plot_size, epoch, max_epoch_reached, 
 
 
 # Helper function to clean up repeated plot save/show code
-def plot_save_choice(plot_or_save, output_file_path=none):
+def plot_save_choice(plot_or_save, output_file_path=None):
     """
     Function used to set the save/display behavior for all figures and graphs genrated by the program.
     
@@ -1862,6 +1862,13 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
             if print_partial_training_losses:
                 print(f'\nStart of EPOCH {epoch + 1}/{num_epochs}')
 
+
+
+            #### IMPLEMNT THIS TO INJECT SEED VAULE AGAIN WEACH EPOCH SO THAT  THE TRAINING DATA IS THE DETERMINISTICALLY THE SAME EACH EPOCH NOT FRESH EACH TIME
+            #if inject_seed_each_epoch:
+            #    torch.manual_seed(seeding_value)
+
+
             ###CLEAN UP THIS METHOD TO SOMTHING BETTER!!!!!!
             avg_loss_mse = []
             avg_loss_mae = []
@@ -2324,7 +2331,7 @@ if optimise_hyperparameter:
     #print("directory to grab txt data from, seems not to be working, check dir is correct !!!!!!!: ", netsum_directory)
     excel_output_path = netsum_directory + hyperparam_to_optimise + " Optimisation - Settings.xlsx"    # set the output path for the Excel file
     extract_data_to_excel(netsum_directory, excel_output_path)    
-    colour_code_excel_file(excel_output_path)        
+    colour_code_excel_file(excel_output_path)        # COMINE THE EXCELL CODE TO ONE¬¬¬!!!!
     print("Extraction complete\n \n")
 
     #%% Prepare analysis of output models perfromance

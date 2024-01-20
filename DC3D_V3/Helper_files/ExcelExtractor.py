@@ -42,7 +42,5 @@ def extract_data_to_excel(directory, output_path):
     # convert the data list into a pandas DataFrame
     df = pd.DataFrame(data)
 
-
-
     # save the DataFrame to an Excel file
     df.to_excel(output_path, index=False, engine="xlsxwriter")
