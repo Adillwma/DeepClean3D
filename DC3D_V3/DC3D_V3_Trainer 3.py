@@ -136,10 +136,10 @@ Possible improvements:
 
 
 #%% - User Inputs
-dataset_title = "PDT 1000 FAST"# "RF_5K"#"PDT 10K" #"RDT 10K MOVE" #'RDT 500K 1000ToF' #"RDT 10K MOVE" #"RDT 50KM"# "Dataset 37_X15K Perfect track recovery" #"Dataset 24_X10Ks"           #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
-model_save_name = "FAST3DLOSS TEST2"#'Parabola6 no norm to loss' #"T2"#"RDT 500K 1000ToF timed"#"2023 Testing - RDT100K n100"#"2023 Testing - RDT10K NEW" #"RDT 100K 30s 200n Fixed"#"RDT 50KM tdim1000 AE2PROTECT 30 sig 200NP LD10"     #"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
+dataset_title = "RDT 10K MOVE"# "RF_5K"#"PDT 10K" #"RDT 10K MOVE" #'RDT 500K 1000ToF' #"RDT 10K MOVE" #"RDT 50KM"# "Dataset 37_X15K Perfect track recovery" #"Dataset 24_X10Ks"           #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
+model_save_name = "NEW 3d ACB COMPARISON TEST1"#'Parabola6 no norm to loss' #"T2"#"RDT 500K 1000ToF timed"#"2023 Testing - RDT100K n100"#"2023 Testing - RDT10K NEW" #"RDT 100K 30s 200n Fixed"#"RDT 50KM tdim1000 AE2PROTECT 30 sig 200NP LD10"     #"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
 
-TORCHSIM_data = True
+TORCHSIM_data = False #!!!!!!!!!!!!!!!!!!!!!!
 
 xdim = 88   # Currently useless
 ydim = 128  # Currently useless
@@ -149,7 +149,7 @@ channels = 1                                # User controll to set the number of
 #%% - Training Hyperparameter Settings
 num_epochs = 2000                            # User controll to set number of epochs (Hyperparameter)
 batch_size = 10 #6 looks good                              # User controll to set batch size - number of Images to pull per batch (Hyperparameter) 
-learning_rate = 0.0001                       # User controll to set optimiser learning rate (Hyperparameter)
+learning_rate = 0.0001                           # User controll to set optimiser learning rate (Hyperparameter)
 optim_w_decay = 1e-05                        # User controll to set optimiser weight decay for regularisation (Hyperparameter)
 BOOST = 1
 
@@ -214,7 +214,7 @@ record_activity = False                     # If set to true then the model will
 compress_activations_npz_output = False     # Compresses the activity file above for smaller file size but does increase loading and saving times for the file. (use if low on hdd space)
 
 ### NEW PHYSICAL GROUNDING FOR UNITS
-use_physical_values_for_plot_axis = True    # If false then axis are label by pixel indicies, if true then axis are labelled by physical units
+use_physical_values_for_plot_axis = False    # If false then axis are label by pixel indicies, if true then axis are labelled by physical units
 x_length = 800 #mm
 y_length = 1500 #mm
 time_length = 1000 #ns
@@ -413,14 +413,6 @@ def gaped_renormalisation(data, reconstruction_threshold, time_dimension=100):
     return data
 
 # 3D Reconstruction function
-def reconstruct_3DOLD(data):
-    data_output = []
-    for cdx, row in enumerate(data):
-        for idx, num in enumerate(row):
-            if num > 0:  
-                data_output.append([cdx,idx,num])
-    return np.array(data_output)
-
 def reconstruct_3D(*args):
     results = []
     for data in args:
@@ -982,8 +974,8 @@ def train_epoch(encoder, decoder, device, dataloader, loss_fn, optimizer, signal
 
         # Evaluate loss
         #if renorm_for_loss_calc
-        #decoded_data = gaped_renormalisation_torch(decoded_data, reconstruction_threshold, time_dimension)
-        #loss_comparator = gaped_renormalisation_torch(loss_comparator, reconstruction_threshold, time_dimension)
+            #decoded_data = gaped_renormalisation_torch(decoded_data, reconstruction_threshold, time_dimension)
+            #loss_comparator = gaped_renormalisation_torch(loss_comparator, reconstruction_threshold, time_dimension)
         loss = loss_fn(decoded_data, loss_comparator)  # Compute the loss between the decoded image batch and the clean image batch
         
         # Backward pass
@@ -1441,7 +1433,7 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
     #%% - Set loss function choice
 
 
-    class NEWEST3dloss2024(torch.nn.Module):
+    class NEWESTACB3dloss2024(torch.nn.Module):
         def __init__(self, b, m, n):
 
             """
@@ -1450,7 +1442,10 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
             """
             super().__init__()   
             self.mse_loss = torch.nn.MSELoss(reduction='mean')
-        
+            self.zero_weighting = 1
+            self.nonzero_weighting = 1
+
+
             # create a batches tensor
             batches = torch.arange(b).repeat_interleave(m*n).view(-1,1)
 
@@ -1470,10 +1465,37 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
 
         def forward(self, reconstructed_image, target_image):
             reconstructed_image = self.transform_to_3d_coordinates(reconstructed_image)
-            target_image = self.transform_to_3d_coordinates(target_image,)
-            true3d_loss = self.mse_loss(reconstructed_image, target_image)
+            target_image = self.transform_to_3d_coordinates(target_image)
 
-            return true3d_loss
+
+            # target_image is a tensor of shape (m, 4)
+            # Example:
+            # target_image = np.array([[1, 2, 3, 4],
+            #                         [5, 6, 7, 0],
+            #                         [8, 9, 10, 11]])
+
+            # Identify 0 values in the 4th column of the second dimension
+
+            zero_mask = (target_image[:, 3] == 0)
+            nonzero_mask = ~zero_mask
+
+            values_zero = target_image[zero_mask]
+            values_nonzero = target_image[nonzero_mask]
+
+            corresponding_values_zero = reconstructed_image[zero_mask]
+            corresponding_values_nonzero = reconstructed_image[nonzero_mask]
+
+            zero_loss = self.mse_loss(corresponding_values_zero, values_zero)
+            nonzero_loss = self.mse_loss(corresponding_values_nonzero, values_nonzero)
+
+            if torch.isnan(zero_loss):
+                zero_loss = 0
+            if torch.isnan(nonzero_loss):
+                nonzero_loss = 0
+
+            weighted_mse_loss = (self.zero_weighting * zero_loss) + (self.nonzero_weighting * nonzero_loss)
+
+            return weighted_mse_loss
 
 
 
@@ -1506,7 +1528,7 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
                             "Split Loss", 
                             "Weighted Perfect Recovery"]
     
-    loss_fn = NEWEST3dloss2024(batch_size, 128, 88)
+    loss_fn = NEWESTACB3dloss2024(batch_size, 128, 88)
     #loss_fn = availible_loss_functions[loss_function_selection]            # Sets loss function based on user input of parameter loss_function_selection
     loss_fn_label = loss_function_labels[loss_function_selection]          # Sets loss function label based on user input of parameter loss_function_selection
 
