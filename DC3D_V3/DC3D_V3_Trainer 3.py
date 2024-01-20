@@ -7,6 +7,29 @@
 """
 Possible improvements:
 
+### REFACTOR: func: quantify_loss_performance ~ Appends the average performance metrics for the batch to the corresponding list of average metrics results for each epoch which is tracked eleshwehre in the enhanced performance tracking system and needs simplifying and condensing!!!
+
+### REFACTOR: func: belief_telemetry ~ This function creates histogram plots of the pixel values recorded by the belief telemtry system [which needs renaming and reworking to simplify. (should be reconstruction thresholding telemtetry?)]  whihc records the values directly out of the netwrok before our reconstruction thresholding in the custom renomalisation is applied. This is important to keep ttrack of what is occusring before our iytput processing as it may be hiding errors.
+
+### REFACTOR: func: create_settings_dict ~ Terrible, nneds compleate clean up and overhaul
+
+### REFACTOR: func:  ~ 
+
+### REFACTOR: func:  ~ 
+
+### REFACTOR: func:  ~ 
+
+### REFACTOR: func:  ~ 
+
+### REFACTOR: func:  ~ 
+
+### REFACTOR: func:  ~ 
+
+### REFACTOR: func:  ~ 
+
+
+
+
 ### ~~~~~ FIX BUG : xlsxwriter.exceptions.InvalidWorksheetName: Excel worksheet name 'T_fullframe_weighting_0.5 direct' must be <= 31 chars.
 
 ### ~~~~~ USe seeding value to controll data spareness and noise addition so that thay can be set to fixed
@@ -137,7 +160,7 @@ Possible improvements:
 
 #%% - User Inputs
 dataset_title = "RDT 10K MOVE"# "RF_5K"#"PDT 10K" #"RDT 10K MOVE" #'RDT 500K 1000ToF' #"RDT 10K MOVE" #"RDT 50KM"# "Dataset 37_X15K Perfect track recovery" #"Dataset 24_X10Ks"           #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
-model_save_name = "NEW 3d ACB COMPARISON TEST1"#'Parabola6 no norm to loss' #"T2"#"RDT 500K 1000ToF timed"#"2023 Testing - RDT100K n100"#"2023 Testing - RDT10K NEW" #"RDT 100K 30s 200n Fixed"#"RDT 50KM tdim1000 AE2PROTECT 30 sig 200NP LD10"     #"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
+model_save_name = "DEEPER AUTOENC TEST"#'Parabola6 no norm to loss' #"T2"#"RDT 500K 1000ToF timed"#"2023 Testing - RDT100K n100"#"2023 Testing - RDT10K NEW" #"RDT 100K 30s 200n Fixed"#"RDT 50KM tdim1000 AE2PROTECT 30 sig 200NP LD10"     #"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
 
 TORCHSIM_data = False #!!!!!!!!!!!!!!!!!!!!!!
 
@@ -332,11 +355,11 @@ from torchinfo import summary # function to get the summary of the model layers 
 import matplotlib.pyplot as plt     
 from torchvision import transforms  
 from matplotlib.ticker import FuncFormatter
-from torch.utils.tensorboard import SummaryWriter
+from torch.utils.tensorboard import SummaryWriter, FileWriter 
 
 
-# Imports from our custom scripts
-from Autoencoders.DC3D_Autoencoder_V1_Protected2_2 import Encoder, Decoder              # Imports the autoencoder classes
+# - Helper functions
+from Helper_files.Helper_Functions import *
 from Helper_files.Robust_model_exporter_V1 import Robust_model_export                   # Function to export the raw .py file that contains the autoencoder class
 from Helper_files.System_Information_check import get_system_information                # Function to get the host system performance specs of the training machine
 from Helper_files.Dataset_Integrity_Check_V1 import dataset_integrity_check             # Function to check the integrity of the datasets values
@@ -345,25 +368,13 @@ from Helper_files.AE_Visulisations import Generative_Latent_information_Visulisa
 from Helper_files.ExcelExtractor import extract_data_to_excel # This is a custom function to extract data from excel files
 from Helper_files.model_perf_analysis2 import run_full_perf_tests
 from Helper_files.Image_Metrics import MSE, MAE, SNR, PSNR, NMSRE, SSIM, NomalisedMutualInformation, correlation_coeff, compare_images_pixels
-
-# - Helper functions
-from Helper_files.Helper_Functions import *
-
-
 #from Helper_files.Export_User_Settings import create_settings_dict
 
-from Loss_Functions.ACBLoss import ACBLoss
-from Loss_Functions.ACBLoss3D import ACBLoss3D
-from Loss_Functions.ada_SSE_loss import ada_SSE_loss
-from Loss_Functions.ffACBLoss import ffACBLoss
-from Loss_Functions.HistogramLoss import HistogramLoss
-from Loss_Functions.True3DLoss import True3DLoss
-from Loss_Functions.boostedffACBLoss import boostedffACBLoss
-from Loss_Functions.weighted_perfect_recovery_lossOLD import weighted_perfect_recovery_lossOLD
-from Loss_Functions.WeightedPerfectRecoveryLoss import WeightedPerfectRecoveryLoss
-from Loss_Functions.simple_3d_loss import simple3Dloss
-from Loss_Functions.simple3DlossOLD import simple3DlossOLD
+# - Loss Functions
+from Loss_Functions.Loss_Fn_Classes import *
 
+# - Autoencoder
+from Autoencoders.DC3D_Autoencoder_V1_Protected2_3 import Encoder, Decoder   
 
 
 
@@ -395,25 +406,79 @@ if comparative_live_loss:
 #%% DC3D Special Functions
 # Special normalisation for pure masking
 def mask_optimised_normalisation(data):
+    """
+    Normalisation function for pure masking output, trhe function takes any non zero valu eto 1 and any zero value is left as is. [EXPLAIN WHY!!!!!]
+
+    Args:
+        data (torch tensor): The input data to be normalised.
+
+    Returns:
+        data (torch tensor): The normalised data.
+    
+    """
     data = torch.where(data > 0, 1.0, 0.0)
     return data
 
 # Custom normalisation function
 def gaped_normalisation(data, reconstruction_threshold, time_dimension=100):
-    data = torch.where(data > 0, (((data / time_dimension) / (1/(1-reconstruction_threshold))) + reconstruction_threshold), 0 )
+    """
+    Normalisation function that normalised values in range [0 < value <= 'time_dimension'] to new range of [reconstruction_threshold' < norm_value <= 1], with a gap at the bottom of the range to allow for the reconstruction threshold to be applied later. All zero values are left untouched. This is used for the direct network output.
+    
+    Args:
+        data (torch tensor): The input data to be normalised. [WARNING: the data must be (integer values? and) in the range [0 < value <= 'time_dimension'] or the normalisation will not work correctly]
+        reconstruction_threshold (float): The threshold used in the custom normalisation, used to set the lower limit of the normalised values.
+        time_dimension (int): The number of time steps in the data set, used to set the upper limit of the normalised values. Default = 100  
+
+    Returns:
+        data (torch tensor): The normalised data.
+    """
+    data = torch.where(data > 0, (((data / time_dimension) / (1 / (1 - reconstruction_threshold))) + reconstruction_threshold), 0 )
     return data
 
 # Custom renormalisation function
 def gaped_renormalisation_torch(data, reconstruction_threshold, time_dimension=100):
-    data = torch.where(data > reconstruction_threshold, ((data - reconstruction_threshold)*(1/(1-reconstruction_threshold)))*(time_dimension), 0)
+    """
+    torch version of our Renormalisation function that renormalises values in range [reconstruction_threshold < value <= 1] to new range of [0 < renorm_value <= 'time_dimension'] removing any values that fell below the 'reconstruction_threshold' by setting thwm to zero. All zero values are left untouched. This is used for the direct network output.
+
+    Args:
+        data (torch tensor): The input data to be renormalised. [WARNING: the data must be (float values? and) in the range [reconstruction_threshold < value <= 1] or the renormalisation will not work correctly]
+        reconstruction_threshold (float): The threshold used in the custom normalisation, used to set the lower limit of the normalised values.
+        time_dimension (int): The number of time steps in the data set, used to set the upper limit of the normalised values. Default = 100
+
+    Returns:
+        data (torch tensor): The renormalised data.
+    """
+
+    data = torch.where(data > reconstruction_threshold, ((data - reconstruction_threshold)*(1 / (1 - reconstruction_threshold))) * (time_dimension), 0)
     return data
 
 def gaped_renormalisation(data, reconstruction_threshold, time_dimension=100):
-    data = np.where(data > reconstruction_threshold, ((data - reconstruction_threshold)*(1/(1-reconstruction_threshold)))*(time_dimension), 0)
+    """
+    Numpy version of our Renormalisation function that renormalises values in range [reconstruction_threshold < value <= 1] to new range of [0 < renorm_value <= 'time_dimension'] removing any values that fell below the 'reconstruction_threshold' by setting thwm to zero. All zero values are left untouched. This is used for the direct network output.
+
+    Args:
+        data (np array): The input data to be renormalised. [WARNING: the data must be (float values? and) in the range [reconstruction_threshold < value <= 1] or the renormalisation will not work correctly]
+        reconstruction_threshold (float): The threshold used in the custom normalisation, used to set the lower limit of the normalised values.
+        time_dimension (int): The number of time steps in the data set, used to set the upper limit of the normalised values. Default = 100
+
+    Returns:
+        data (np array): The renormalised data.
+    """
+    data = np.where(data > reconstruction_threshold, ((data - reconstruction_threshold)*(1 / (1 - reconstruction_threshold))) * (time_dimension), 0)
     return data
 
 # 3D Reconstruction function
 def reconstruct_3D(*args):
+    """
+    3D reconstruction function that takes any number of 2D arrays created through our 3D to 2D with embedded ToF method and reconstructs them into a 3D arrays. 
+    
+    Args:
+        *args (np array): Any number of 2D arrays to be reconstructed.
+
+    Returns:
+        results (np array): The reconstructed 3D arrays. Same number of arrays as input.
+    """
+    
     results = []
     for data in args:
         data_output = []
@@ -427,6 +492,19 @@ def reconstruct_3D(*args):
 
 # Masking technique
 def masking_recovery(input_image, recovered_image, time_dimension, print_result=False):
+    """
+    Applies my masking technique to the recovered image, this is essential and and condational for both the input and the recovered image as to weatehr a pixel is allowed to stay in the final output or not, which relies on the differing distortion profiles of the two images.
+
+    Args:
+        input_image (np array): The input image to be masked.
+        recovered_image (np array): The recovered image to be masked.
+        time_dimension (int): The number of time steps in the data set, used to set the upper limit of the normalised values.
+        print_result (bool, optional): If set to true then the function will print a text string reporting the masking usefullness evaluation metrics. Defaults to False.
+
+    Returns:
+        result (np array): The masked recovered image.
+    
+    """
     raw_input_image = input_image.copy()
     net_recovered_image = recovered_image.copy()
     #Evaluate usefullness 
@@ -447,28 +525,21 @@ def masking_recovery(input_image, recovered_image, time_dimension, print_result=
     return result
 
 #%% - Data Degradation Functions
-# Function to add n noise points to an image 
-def add_noise_points(image, noise_points=100, reconstruction_threshold=0.5):
-
-    if noise_points > 0:
-        #Find dimensions of input image 
-        x_dim = image.shape[0]
-        y_dim = image.shape[1]
-
-        #Create a list of random x and y coordinates
-        x_coords = np.random.randint(0, x_dim, noise_points)   ##### NOTE: Change to using a torch random function instead of a numpy one
-        y_coords = np.random.randint(0, y_dim, noise_points)  ##### NOTE: Change to using a torch random function instead of a numpy one
-
-        # Iterate through noise_points number of random pixels to noise
-        for i in range(noise_points):
-
-            # Add a random number between recon_threshold and 1 to the pixel 
-            image[x_coords[i], y_coords[i]] = np.random.uniform(reconstruction_threshold, 1)   ##### NOTE: Change to using a torch random function instead of a numpy one
-
-    return image
 
 # Function to add n noise points to each image in a tensor batch(must be used AFTER custom norm 
 def add_noise_points_to_batch(input_image_batch, noise_points=100, reconstruction_threshold=0.5):
+    """
+    This function will take a batch of images and add noise_points number of random noise points to each image in the batch. Intended use case is adding noise points to the image after the custom normalisation is applied, the noise points added will be floats between recon_threshold and 1.
+
+    Args:
+        input_image_batch (torch tensor): The input image batch to be degraded. Shape [B, C, H, W]  
+        noise_points (int): The number of noise points to add to each image in the batch
+        reconstruction_threshold (float): The threshold used in the custom normalisation, used to set the lower limit of the noise point values. Default = 0.5
+    
+    Returns:
+        image_batch (torch tensor): The degraded image batch. Shape [B, C, H, W]
+    """
+
     image_batch = input_image_batch.clone()
     if noise_points > 0:
         #Find dimensions of input image 
@@ -494,6 +565,18 @@ def add_noise_points_to_batch(input_image_batch, noise_points=100, reconstructio
 
 # Function to add n noise points to each image in a tensor batch 
 def add_noise_points_to_batch_prenorm(input_image_batch, noise_points=100, time_dimension=100):
+    """
+    This function will take a batch of images and add noise_points number of random noise points to each image in the batch. Intended use case is adding noise points to the image before the custom normalisation is applied, the noise points added will be integers between 1 and 'time_dimension' which is the max timestep.
+
+    Args:
+        input_image_batch (torch tensor): The input image batch to be degraded. Shape [B, C, H, W]  
+        noise_points (int): The number of noise points to add to each image in the batch
+        time_dimension (int): The number of time steps in the data set, used to set the upper limit of the noise point values. Default = 100
+
+    Returns:
+        image_batch (torch tensor): The degraded image batch. Shape [B, C, H, W]
+    """
+
     image_batch = input_image_batch.clone()
     if noise_points > 0:
         #Find dimensions of input image 
@@ -519,6 +602,16 @@ def add_noise_points_to_batch_prenorm(input_image_batch, noise_points=100, time_
 
 # Function to create sparse signal from a fully dense signal
 def create_sparse_signal(input_image_batch, signal_points=2, linear=False):
+
+    """
+    This function will take a batch of images and randomly select signal_points number of non-zero values to keep in each image, zeroing out all other values i.e if signal_points = 2 then only 2 non-zero values will be kept in each image and all other non zero values will be zeroed out, effectivly simulating a very sparse signal
+    
+    Args:
+        input_image_batch (torch tensor): The input image batch to be degraded. Shape [B, C, H, W]
+        signal_points (int): The number of non-zero values to keep in each image
+        linear (bool): If set to true then the signal points are linearly spaced across the signal, otherwise they are randomly selected. Default = False
+    """
+
     # Take as input a torch tensor in form [batch_size, 1, x_dim, y_dim]]
     # Create a copy of the input image batch
     image_batch = input_image_batch.clone()
@@ -555,7 +648,19 @@ def create_sparse_signal(input_image_batch, signal_points=2, linear=False):
 # Function to add shift in x, y and ToF to a true signal point due to detector resoloution
 def simulate_detector_resolution(input_image_batch, x_std_dev, y_std_dev, tof_std_dev, x_scale, y_scale, time_scale, plot=False):
     """
+    This function will add a random shift taken from a gaussain std deviation in x, y or ToF to each non-zero pixel in the image tensor to simulate detector resoloution limits
 
+    Args:
+        input_image_batch (torch tensor): The input image batch to be degraded. Shape [B, C, H, W]
+        x_std_dev (float): The standard deviation of the gaussian distribution to draw the x shift from
+        y_std_dev (float): The standard deviation of the gaussian distribution to draw the y shift from
+        tof_std_dev (float): The standard deviation of the gaussian distribution to draw the ToF shift from
+        x_scale (float): The physical scale of the x axis in mm per pixel to convert pixel values to physical values
+        y_scale (float): The physical scale of the y axis in mm per pixel to convert pixel values to physical values
+        time_scale (float): The physical scale of the ToF axis in ns per pixel to convert pixel values to physical values
+
+    Returns:
+        image_batch_all (torch tensor): The degraded image batch. Shape [B, C, H, W]
     """
 
     # Convert physical values to pixel values
@@ -598,6 +703,17 @@ def simulate_detector_resolution(input_image_batch, x_std_dev, y_std_dev, tof_st
     return image_batch_all
 
 def signal_degredation(signal_settings, image_batch, physical_scale_parameters):
+    """
+    Sequentially applies the differnt signal degredation functions to the input image batch and returns the output of each stage
+
+    Args:
+        signal_settings (list): A list of the signal degredation settings to be applied to the input image batch. Contains [signal_points_r, x_std_dev_r, y_std_dev_r, tof_std_dev_r, noise_points_r]
+        image_batch (torch tensor): The input image batch to be degraded. Shape [B, C, H, W]
+        physical_scale_parameters (list): A list of the physical scale parameters to be used to convert pixel values to physical values. Contains [x_scale, y_scale, time_scale]
+            x_scale (float): The physical scale of the x axis in mm per pixel to convert pixel values to physical distance values
+            y_scale (float): The physical scale of the y axis in mm per pixel to convert pixel values to physical distance values
+            time_scale (float): The physical scale of the ToF axis in ns per pixel to convert pixel values to physical time values
+    """
     x_scale, y_scale, time_scale = physical_scale_parameters
     signal_points_r, x_std_dev_r, y_std_dev_r, tof_std_dev_r, noise_points_r = signal_settings
     sparse_output_batch = create_sparse_signal(image_batch, signal_points_r)
@@ -628,6 +744,16 @@ def biases_hook_fn(module, input, output, layer_index):
     biases_data[layer_index] = module.bias.data.clone().detach()
 
 def write_hook_data_to_disk_and_clear(activations, weights_data, biases_data, epoch, output_dir):
+    """
+    This function saves the activation, weights and biases tracking data to disk and then clears the tracking dictionaries to avoid unnecaesary memory usage and potential overflows during longer training runs.
+
+    Args:
+        activations (dict): A dictionary containing the activations of each layer in the network
+        weights_data (dict): A dictionary containing the weights of each layer in the network
+        biases_data (dict): A dictionary containing the biases of each layer in the network
+        epoch (int): The current epoch number
+        output_dir (str): The path to the directory to save the data to
+    """
 
     if len(activations) != 0:
         activ_path = output_dir + "Activation Data/"
@@ -659,6 +785,27 @@ def write_hook_data_to_disk_and_clear(activations, weights_data, biases_data, ep
 #%% - Data Gathering Functions
 # Tracks confidence of each pixel as histogram per epoch with line showing the detection threshold
 def belief_telemetry(data, reconstruction_threshold, epoch, settings, plot_or_save=0):
+
+    """
+    This function creates histogram plots of the pixel values recorded by the belief telemtry system [which needs renaming and reworking to simplify. (should be reconstruction thresholding telemtetry?)]  whihc records the values directly out of the netwrok before our reconstruction thresholding in the custom renomalisation is applied. This is important to keep ttrack of what is occusring before our iytput processing as it may be hiding errors.
+    The histogram also shows the reconstruction threshold to show the distribution of values above and below the threshold.
+
+    Args:
+        data (torch tensor): The image batch. Shape [B, C, H, W]?????????????????????????
+        reconstruction_threshold (float): The threshold used in the custom normalisation, used to set the lower limit of the noise point values. Default = 0.5
+        epoch (int): The current epoch number
+        settings (dict): A dictionary containing the settings for the current training run
+        plot_or_save (int): A flag to set if the plot is printed to terminal or saved to disk. 0 prints plots to terminal (blocking till closed), If set to 1 then saves all end of epoch printouts to disk (non-blocking), if set to 2 then saves outputs whilst also printing for user (blocking till closed)
+
+    Generates: 
+        A histogram plot saved to disk
+
+    Returns:
+        above_threshold (int): The number of pixels in the image above the reconstruction threshold
+        below_threshold (int): The number of pixels in the image below the reconstruction threshold
+    """
+    
+
     data2 = data.flatten()
 
     #Plots histogram showing the confidence level of each pixel being a signal point
@@ -678,6 +825,18 @@ def belief_telemetry(data, reconstruction_threshold, epoch, settings, plot_or_sa
                 
 #Combine all performance metrics into simple test script
 def quantify_loss_performance(clean_input_batch, noised_target_batch, time_dimension):
+    """
+    This function compares each image in the batch to its corresponding target image and calculates a range of enhanced performance metrics for each. The results for each metric are then avaeraged over the batch and this average is appended to the corresponding list of average metrics results for each epoch which is tracked eleshwehre in the enhanced performance tracking system
+
+    Args:
+        clean_input_batch (torch tensor): The input image batch. Shape [B, C, H, W]
+        noised_target_batch (torch tensor): The target image batch. Shape [B, C, H, W]
+        time_dimension (int): The number of time steps in the data set, used to set the upper limit of the noise point values. Default = 100  
+    
+    Generates:
+        Appends the average performance metrics for the batch to the corresponding list of average metrics results for each epoch which is tracked eleshwehre in the enhanced performance tracking system and needs simplifying and condensing!!!
+
+    """
     loss_mse = []
     loss_mae = []
     loss_snr = []
@@ -726,6 +885,16 @@ def quantify_loss_performance(clean_input_batch, noised_target_batch, time_dimen
 
         
 def colour_code_excel_file(file_path):
+    """
+
+    This function will take an excel file and colour code the cells based on the value of the cell. The colour coding is based on a colour scale from blue to red with blue being the lowest value and red being the highest value. The colour scale is applied to each column individually.
+
+    Args:
+        file_path (str): The path to the excel file to be colour coded
+    
+    Generates:
+        Color coding in the excel file which is then saved back to disk in place of the original file
+    """
     import openpyxl
     from openpyxl.utils import get_column_letter
     from openpyxl.formatting.rule import DataBarRule
@@ -760,6 +929,14 @@ def colour_code_excel_file(file_path):
 
 # Define a function to create a dictionary from the given settings
 def create_settings_dict(filename):
+    """
+    This fucntion will create a dictionary of the settings used in the current training run and save it to disk as a json file.
+
+    Args:
+        filename (str): The path to the directory to save the settings dictionary to
+    """
+
+
     settings_dict = {
         "dataset_title": dataset_title,
         "model_save_name": model_save_name,
@@ -847,6 +1024,22 @@ def create_settings_dict(filename):
 
 #%% - Plotting Functions
 def loss_plot(x, y, x_label, y_label, title, save_path, plot_or_save):
+    """
+    Creates a simple line plot of the given data and saves it to disk
+
+    Args:
+        x (list): The x axis data
+        y (list): The y axis data
+        x_label (str): The label for the x axis
+        y_label (str): The label for the y axis
+        title (str): The title of the plot
+        save_path (str): The path to save the plot to
+        plot_or_save (int): A flag to set if the plot is printed to terminal or saved to disk. 0 prints plots to terminal (blocking till closed), If set to 1 then saves all end of epoch printouts to disk (non-blocking), if set to 2 then saves outputs whilst also printing for user (blocking till closed)
+
+    Generates:
+        A simple line plot saved to disk
+    """
+
     plt.plot(x, y)
     plt.title(title)
     plt.xlabel(x_label)
@@ -854,7 +1047,54 @@ def loss_plot(x, y, x_label, y_label, title, save_path, plot_or_save):
     plt.grid(alpha=0.2)
     plot_save_choice(plot_or_save, save_path) 
 
+def comparitive_loss_plot(x_list, y_list, legend_label_list, x_label, y_label, title, save_path, plot_or_save):
+    """
+    Creates a comparative line plot of the given sets of data and saves it to disk
+
+    Args:
+        x_list (list): A list of the x axis data
+        y_list (list): A list of the y axis data
+        legend_label_list (list): A list of the labels for the legend
+        x_label (str): The label for the x axis
+        y_label (str): The label for the y axis
+        title (str): The title of the plot
+        save_path (str): The path to save the plot to
+        plot_or_save (int): A flag to set if the plot is printed to terminal or saved to disk. 0 prints plots to terminal (blocking till closed), If set to 1 then saves all end of epoch printouts to disk (non-blocking), if set to 2 then saves outputs whilst also printing for user (blocking till closed)
+
+    Generates:
+        A comparative line plot saved to disk
+    """
+
+
+    for x, y, legend_label in zip(x_list, y_list, legend_label_list):
+        plt.plot(x, y, label=legend_label)
+    plt.title(title)
+    plt.xlabel(x_label)
+    plt.ylabel(y_label)
+    plt.grid(alpha=0.2)
+    plt.legend()
+    plot_save_choice(plot_or_save, save_path) 
+
 def create_comparison_plot_data(slide_live_plot_size, epoch, max_epoch_reached, comparative_live_loss, comparative_loss_titles, comparative_epoch_times, comparative_history_da, data=history_da['train_loss']):
+
+    """
+    This function creates the comparative live loss plot data that updates during training. It takes the data from the current training model and the comparative models and creates the data lists for the live loss plots then calls the comparative_loss_plot fucntion to create the plots.
+
+    Args:
+        slide_live_plot_size (int): The number of epochs to show on the live loss plots
+        epoch (int): The current epoch number
+        max_epoch_reached (int): The maximum epoch number reached by the current training model
+        comparative_live_loss (bool): A flag to set if the comparative live loss plots are enabled
+        comparative_loss_titles (list): A list of the titles of the comparative models
+        comparative_epoch_times (list): A list of the epoch times of the comparative models
+        comparative_history_da (list): A list of the history_da dictionaries of the comparative models
+        data (list): The data to be plotted on the live loss plots. Default = history_da['train_loss']
+    
+    Generates:
+        A plot of the live loss data vs epoch number, saved to disk
+        A plot of the live loss data vs train time elapsed, saved to disk
+    """
+
     ## Slide View
     low_lim = 0
     if slide_live_plot_size > 0:
@@ -890,29 +1130,44 @@ def create_comparison_plot_data(slide_live_plot_size, epoch, max_epoch_reached, 
     Out_Label2 = dir + f'{model_save_name} - Live time loss.png'
     comparitive_loss_plot(x_list_time, y_list, legend_label_list, "Time (s)", "Train loss (ACB-MSE)", "Live Time loss", Out_Label2, plot_or_save)
 
-def comparitive_loss_plot(x_list, y_list, legend_label_list, x_label, y_label, title, save_path, plot_or_save):
-    for x, y, legend_label in zip(x_list, y_list, legend_label_list):
-        plt.plot(x, y, label=legend_label)
-    plt.title(title)
-    plt.xlabel(x_label)
-    plt.ylabel(y_label)
-    plt.grid(alpha=0.2)
-    plt.legend()
-    plot_save_choice(plot_or_save, save_path) 
+
 
 # Helper function to clean up repeated plot save/show code
-def plot_save_choice(plot_or_save, output_file_path):
+def plot_save_choice(plot_or_save, output_file_path=none):
+    """
+    Function used to set the save/display behavior for all figures and graphs genrated by the program.
+    
+    Args:
+        plot_or_save (int): A flag to set if the plot is printed to terminal or saved to disk. 0 prints plots to terminal (blocking till closed), If set to 1 then saves all end of epoch printouts to disk (non-blocking), if set to 2 then saves outputs whilst also printing for user (blocking till closed)
+        output_file_path (str): The path to save the plot to. Only needed if plot_or_save is set to 1 or 2. 
+    """
     if plot_or_save == 0:
         plt.show()
+    elif plot_or_save == 1:  
+        plt.savefig(output_file_path, format='png')     
+        plt.close()
+    elif plot_or_save == 2:
+        plt.savefig(output_file_path, format='png')   
+        plt.show()
+    elif plot_or_save == 3:
+        plt.close()
     else:
-        plt.savefig(output_file_path, format='png')    
-        if plot_or_save == 1:    
-            plt.close()
-        else:
-            plt.show()
-
+        print("ERROR: Invalid 'plot_or_save' value set for 'plot_save_choice' function call, please set to 0, 1, 2 or 3\n0 prints plots to terminal (blocking till closed).\n1 saves all plots to disk (non-blocking).\n2 prints to terminal and saves to disk (blocking till closed).\n3 will neither save nor show any plots, they will be immidetly closed, usefull for debugging.")
+        exit()
+    
 # Plots the confidence telemetry data
 def plot_telemetry(telemetry, true_num_of_signal_points, plot_or_save=0):
+    """
+    Plots the 'lit pixel count' and 'unlit pixel count' telemetry data over time, compared to true number of signal points for comparison. Used to track the recovery performance.
+
+    Args:
+        telemetry (list): A list of the telemetry data to be plotted
+        true_num_of_signal_points (int): The true number of signal points in the data set
+        plot_or_save (int): A flag to set if the plot is printed to terminal or saved to disk. 0 prints plots to terminal (blocking till closed), If set to 1 then saves all end of epoch printouts to disk (non-blocking), if set to 2 then saves outputs whilst also printing for user (blocking till closed)
+
+    Generates:
+        A plot of the telemetry data, saved to disk or shown depending on program wide 'plot_or_save' setting
+    """
     tele = np.array(telemetry)
     plt.plot(tele[:,0],tele[:,1], color='r', label="Points above threshold") #red = num of points above threshold
     plt.plot(tele[:,0],tele[:,2], color='b', label="Points below threshold") #blue = num of points below threshold
@@ -926,7 +1181,32 @@ def plot_telemetry(telemetry, true_num_of_signal_points, plot_or_save=0):
             
 #%% - Train, Test, Val and Plot Functions
 ### Training Function
-def train_epoch(encoder, decoder, device, dataloader, loss_fn, optimizer, signal_points, noise_points=0, x_std_dev=0, y_std_dev=0, tof_std_dev=0, time_dimension=100, reconstruction_threshold=0.5, print_partial_training_losses=False):
+def train_epoch(encoder, decoder, device, dataloader, loss_fn, optimizer, signal_points, noise_points=0, x_std_dev=0, y_std_dev=0, tof_std_dev=0, time_dimension=100, reconstruction_threshold=0.5, print_partial_training_losses=False, masking_optimised_binary_norm=False, loss_vs_sparse_img=False):
+    """
+    Training loop for a single epoch
+
+    Args:
+        encoder (torch model): The encoder model
+        decoder (torch model): The decoder model
+        device (torch device): The device to run the training on
+        dataloader (torch dataloader): The dataloader to iterate over
+        loss_fn (torch loss function): The loss function to use
+        optimizer (torch optimizer): The optimizer to use
+        signal_points (int) or (tuple): The number of signal points to retain in the signal sparsification preprocess. If given as int then number will be constant over training, if given as tuple then a random value will be selected from the range given for each batch
+        noise_points (int) or (tuple): The number of noise points to add in the preprocessing. If given as int then number will be constant over training, if given as tuple then a random value will be selected from the range given for each batch. Default = 0
+        x_std_dev (float) or (tuple): The standard deviation of the gaussian distribution to draw the x shift from. If given as float then number will be constant over training, if given as tuple then a random value will be selected from the range given for each batch. Default = 0
+        y_std_dev (float) or (tuple): The standard deviation of the gaussian distribution to draw the y shift from. If given as float then number will be constant over training, if given as tuple then a random value will be selected from the range given for each batch. Default = 0
+        tof_std_dev (float) or (tuple): The standard deviation of the gaussian distribution to draw the ToF shift from. If given as float then number will be constant over training, if given as tuple then a random value will be selected from the range given for each batch. Default = 0
+        time_dimension (int): The number of time steps in the data set, used to set the upper limit of the noise point values amonst other things. Default = 100
+        reconstruction_threshold (float): The threshold used in the custom normalisation, also used to set the lower limit of the noise point values. Default = 0.5
+        print_partial_training_losses (bool): A flag to set if the partial training losses are printed to terminal. If set to true partial loss is printed to termial whilst training. If set to false the a TQDM progress bar is used to show processing progress. Default = False
+        masking_optimised_binary_norm (bool): A flag to set if the masking optimised binary normalisation is used. If set to true the masking optimised binary normalisation is used, if set to false the gaped normalisation is used. Default = False  [EXPLAIN IN MORE DETAIL!!!!!]
+        loss_vs_sparse_img (bool): A flag to set if the loss is calculated against the sparse image or the clean image. If set to true the loss is calculated against the sparse image, if set to false the loss is calculated against the clean image. Default = False
+
+    Returns:
+        loss_total/batches (float): The average loss over the epoch calulated by dividing the total sum of loss by the number of batches !! EXPLAIN THIS SIMPLER !!! 
+
+    """
     encoder.train()   
     decoder.train()   
 
@@ -1001,7 +1281,32 @@ def train_epoch(encoder, decoder, device, dataloader, loss_fn, optimizer, signal
     return loss_total/batches
 
 ### Testing Function
-def test_epoch(encoder, decoder, device, dataloader, loss_fn, signal_points, noise_points=0, x_std_dev=0, y_std_dev=0, tof_std_dev=0, time_dimension=100, reconstruction_threshold=0.5, print_partial_training_losses=False):
+def test_epoch(encoder, decoder, device, dataloader, loss_fn, signal_points, noise_points=0, x_std_dev=0, y_std_dev=0, tof_std_dev=0, time_dimension=100, reconstruction_threshold=0.5, print_partial_training_losses=False, masking_optimised_binary_norm=False, loss_vs_sparse_img=False):
+    """
+    Testing (Evaluation) loop for a single epoch. This function is identical to the training loop except that it does not perform the backward pass and parameter update steps and the model is run in eval mode. Additionaly the dataset used is the test dataset rather than the training dataset so that the data is unseen by the model.
+
+    Args:
+
+        encoder (torch model): The encoder model
+        decoder (torch model): The decoder model
+        device (torch device): The device to run the training on
+        dataloader (torch dataloader): The dataloader to iterate over
+        loss_fn (torch loss function): The loss function to use
+        signal_points (int) or (tuple): The number of signal points to retain in the signal sparsification preprocess. If given as int then number will be constant over training, if given as tuple then a random value will be selected from the range given for each batch
+        noise_points (int) or (tuple): The number of noise points to add in the preprocessing. If given as int then number will be constant over training, if given as tuple then a random value will be selected from the range given for each batch. Default = 0
+        x_std_dev (float) or (tuple): The standard deviation of the gaussian distribution to draw the x shift from. If given as float then number will be constant over training, if given as tuple then a random value will be selected from the range given for each batch. Default = 0
+        y_std_dev (float) or (tuple): The standard deviation of the gaussian distribution to draw the y shift from. If given as float then number will be constant over training, if given as tuple then a random value will be selected from the range given for each batch. Default = 0
+        tof_std_dev (float) or (tuple): The standard deviation of the gaussian distribution to draw the ToF shift from. If given as float then number will be constant over training, if given as tuple then a random value will be selected from the range given for each batch. Default = 0
+        time_dimension (int): The number of time steps in the data set, used to set the upper limit of the noise point values amonst other things. Default = 100
+        reconstruction_threshold (float): The threshold used in the custom normalisation, also used to set the lower limit of the noise point values. Default = 0.5
+        print_partial_training_losses (bool): A flag to set if the partial training losses are printed to terminal. If set to true partial loss is printed to termial whilst training. If set to false the a TQDM progress bar is used to show processing progress. Default = False
+        masking_optimised_binary_norm (bool): A flag to set if the masking optimised binary normalisation is used. If set to true the masking optimised binary normalisation is used, if set to false the gaped normalisation is used. Default = False  [EXPLAIN IN MORE DETAIL!!!!!]
+        loss_vs_sparse_img (bool): A flag to set if the loss is calculated against the sparse image or the clean image. If set to true the loss is calculated against the sparse image, if set to false the loss is calculated against the clean image. Default = False
+
+    Returns:
+        loss_total/batches (float): The average loss over the epoch calulated by dividing the total sum of loss by the number of batches !! EXPLAIN THIS SIMPLER !!!
+
+    """
     # Set evaluation mode for encoder and decoder
     encoder.eval() # Evaluation mode for the encoder
     decoder.eval() # Evaluation mode for the decoder
@@ -1053,7 +1358,31 @@ def test_epoch(encoder, decoder, device, dataloader, loss_fn, signal_points, noi
     return loss_total/batches
 
 ### Validation Function
-def validation_routine(encoder, decoder, device, dataloader, loss_fn, signal_points, noise_points=0, x_std_dev=0, y_std_dev=0, tof_std_dev=0, time_dimension=100, reconstruction_threshold=0.5, print_partial_training_losses=False):
+def validation_routine(encoder, decoder, device, dataloader, loss_fn, signal_points, noise_points=0, x_std_dev=0, y_std_dev=0, tof_std_dev=0, time_dimension=100, reconstruction_threshold=0.5, print_partial_training_losses=False, masking_optimised_binary_norm=False, loss_vs_sparse_img=False):
+    """
+    Validation loop for a single epoch. This function is identical to the test/evaluation loop except that it is used for hyperparamter evaluation to evaluate between differnt models. This function is not used during training, only for hyperparameter evaluation. Again it uses a previosuly unseen dataset howevr this one is fixed and not randomly selected from the dataset so as to provide a fixed point of reference for direct model comparison.
+    
+    Args:
+        encoder (torch model): The encoder model
+        decoder (torch model): The decoder model
+        device (torch device): The device to run the training on
+        dataloader (torch dataloader): The dataloader to iterate over
+        loss_fn (torch loss function): The loss function to use
+        signal_points (int) or (tuple): The number of signal points to retain in the signal sparsification preprocess. If given as int then number will be constant over training, if given as tuple then a random value will be selected from the range given for each batch
+        noise_points (int) or (tuple): The number of noise points to add in the preprocessing. If given as int then number will be constant over training, if given as tuple then a random value will be selected from the range given for each batch. Default = 0
+        x_std_dev (float) or (tuple): The standard deviation of the gaussian distribution to draw the x shift from. If given as float then number will be constant over training, if given as tuple then a random value will be selected from the range given for each batch. Default = 0
+        y_std_dev (float) or (tuple): The standard deviation of the gaussian distribution to draw the y shift from. If given as float then number will be constant over training, if given as tuple then a random value will be selected from the range given for each batch. Default = 0
+        tof_std_dev (float) or (tuple): The standard deviation of the gaussian distribution to draw the ToF shift from. If given as float then number will be constant over training, if given as tuple then a random value will be selected from the range given for each batch. Default = 0
+        time_dimension (int): The number of time steps in the data set, used to set the upper limit of the noise point values amonst other things. Default = 100
+        reconstruction_threshold (float): The threshold used in the custom normalisation, also used to set the lower limit of the noise point values. Default = 0.5
+        print_partial_training_losses (bool): A flag to set if the partial training losses are printed to terminal. If set to true partial loss is printed to termial whilst training. If set to false the a TQDM progress bar is used to show processing progress. Default = False
+        masking_optimised_binary_norm (bool): A flag to set if the masking optimised binary normalisation is used. If set to true the masking optimised binary normalisation is used, if set to false the gaped normalisation is used. Default = False  [EXPLAIN IN MORE DETAIL!!!!!]
+        loss_vs_sparse_img (bool): A flag to set if the loss is calculated against the sparse image or the clean image. If set to true the loss is calculated against the sparse image, if set to false the loss is calculated against the clean image. Default = False
+
+    Returns:
+        loss_total/batches (float): The average loss over the epoch calulated by dividing the total sum of loss by the number of batches !! EXPLAIN THIS SIMPLER !!!
+
+    """
     # Set evaluation mode for encoder and decoder
     encoder.eval() # Evaluation mode for the encoder
     decoder.eval() # Evaluation mode for the decoder
@@ -1108,7 +1437,26 @@ def validation_routine(encoder, decoder, device, dataloader, loss_fn, signal_poi
 def plot_epoch_data(encoder, decoder, epoch, model_save_name, time_dimension, reconstruction_threshold, signal_points, noise_points=0, x_std_dev=0, y_std_dev=0, tof_std_dev=0, physical_scale_parameters=[1,1,1], n=10):       #Defines a function for plotting the output of the autoencoder. And also the input + clean training data? Function takes inputs, 'encoder' and 'decoder' which are expected to be classes (defining the encode and decode nets), 'n' which is the number of ?????Images in the batch????, and 'noise_factor' which is a multiplier for the magnitude of the added noise allowing it to be scaled in intensity.  
     
     """
-    n is the number of images to plot
+    Plots the output of the autoencoder in a variety of ways to track its perfromance and abilities during the training cycle. 
+
+    Args:
+        encoder (torch model): The encoder model
+        decoder (torch model): The decoder model
+        epoch (int): The current epoch number
+        model_save_name (str): The name of the model being trained
+        time_dimension (int): The number of time steps in the data set, used to set the upper limit of the noise point values amonst other things. Default = 100
+        reconstruction_threshold (float): The threshold used in the custom normalisation, also used to set the lower limit of the noise point values. Default = 0.5
+        signal_points (int) or (tuple): The number of signal points to retain in the signal sparsification preprocess. If given as int then number will be constant over training, if given as tuple then a random value will be selected from the range given for each batch
+        noise_points (int) or (tuple): The number of noise points to add in the preprocessing. If given as int then number will be constant over training, if given as tuple then a random value will be selected from the range given for each batch. Default = 0
+        x_std_dev (float) or (tuple): The standard deviation of the gaussian distribution to draw the x shift from. If given as float then number will be constant over training, if given as tuple then a random value will be selected from the range given for each batch. Default = 0
+        y_std_dev (float) or (tuple): The standard deviation of the gaussian distribution to draw the y shift from. If given as float then number will be constant over training, if given as tuple then a random value will be selected from the range given for each batch. Default = 0
+        tof_std_dev (float) or (tuple): The standard deviation of the gaussian distribution to draw the ToF shift from. If given as float then number will be constant over training, if given as tuple then a random value will be selected from the range given for each batch. Default = 0
+        physical_scale_parameters (list): A list of the physical scale parameters for the data set. Default = [1,1,1]
+        n is the number of images to plot in the 2d comparison. Default = 10
+
+    Generates:
+        A variety of plots showing the output of the autoencoder
+    
     """
     encoder.eval()                                   #.eval() is a kind of switch for some specific layers/parts of the model that behave differently during training and inference (evaluating) time. For example, Dropouts Layers, BatchNorm Layers etc. You need to turn off them during model evaluation, and .eval() will do it for you. In addition, the common practice for evaluating/validation is using torch.no_grad() in pair with model.eval() to turn off gradients computation
     decoder.eval()                                   #Simarlary as above
@@ -1432,73 +1780,6 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
 
     #%% - Set loss function choice
 
-
-    class NEWESTACB3dloss2024(torch.nn.Module):
-        def __init__(self, b, m, n):
-
-            """
-            # Number of dp is related to timestep size. 1,000 = 3dp, 10,000 = 4dp, 100,000 = 5dp, 1,000,000 = 6dp etc
-            
-            """
-            super().__init__()   
-            self.mse_loss = torch.nn.MSELoss(reduction='mean')
-            self.zero_weighting = 1
-            self.nonzero_weighting = 1
-
-
-            # create a batches tensor
-            batches = torch.arange(b).repeat_interleave(m*n).view(-1,1)
-
-            # Create indices tensor
-            indices = torch.stack( torch.meshgrid(torch.arange(m), torch.arange(n), indexing='ij'), dim=-1).view(-1, 2) 
-            indices = indices.repeat(b, 1)
-
-            self.batches = batches  
-            self.indices = indices
-
-        def transform_to_3d_coordinates(self, input_tensor):
-            # Reshape the input tensor and concatenate with indices
-            output_tensor = torch.cat((self.batches, self.indices, input_tensor.reshape(-1, 1)), dim=1)
-
-            return output_tensor
-
-
-        def forward(self, reconstructed_image, target_image):
-            reconstructed_image = self.transform_to_3d_coordinates(reconstructed_image)
-            target_image = self.transform_to_3d_coordinates(target_image)
-
-
-            # target_image is a tensor of shape (m, 4)
-            # Example:
-            # target_image = np.array([[1, 2, 3, 4],
-            #                         [5, 6, 7, 0],
-            #                         [8, 9, 10, 11]])
-
-            # Identify 0 values in the 4th column of the second dimension
-
-            zero_mask = (target_image[:, 3] == 0)
-            nonzero_mask = ~zero_mask
-
-            values_zero = target_image[zero_mask]
-            values_nonzero = target_image[nonzero_mask]
-
-            corresponding_values_zero = reconstructed_image[zero_mask]
-            corresponding_values_nonzero = reconstructed_image[nonzero_mask]
-
-            zero_loss = self.mse_loss(corresponding_values_zero, values_zero)
-            nonzero_loss = self.mse_loss(corresponding_values_nonzero, values_nonzero)
-
-            if torch.isnan(zero_loss):
-                zero_loss = 0
-            if torch.isnan(nonzero_loss):
-                nonzero_loss = 0
-
-            weighted_mse_loss = (self.zero_weighting * zero_loss) + (self.nonzero_weighting * nonzero_loss)
-
-            return weighted_mse_loss
-
-
-
     # List of all availible loss functions
     availible_loss_functions = [ACBLoss(zero_weighting, nonzero_weighting), 
                                 ffACBLoss(zero_weighting, nonzero_weighting, fullframe_weighting), 
@@ -1511,7 +1792,8 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
                                 torch.nn.L1Loss(), 
                                 ada_SSE_loss, 
                                 ada_weighted_custom_split_loss, 
-                                WeightedPerfectRecoveryLoss()]    
+                                WeightedPerfectRecoveryLoss(),
+                                NEWESTACB3dloss2024(batch_size, ydim, xdim)]    
    
     # List of all availible loss function labels
     loss_function_labels = ["ACB_MSE", 
@@ -1526,10 +1808,11 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
                             "MAE", 
                             "SSE", 
                             "Split Loss", 
-                            "Weighted Perfect Recovery"]
+                            "Weighted Perfect Recovery",
+                            "2024 - 3D LOSS"]
     
-    loss_fn = NEWESTACB3dloss2024(batch_size, 128, 88)
-    #loss_fn = availible_loss_functions[loss_function_selection]            # Sets loss function based on user input of parameter loss_function_selection
+    #loss_fn = 
+    loss_fn = availible_loss_functions[loss_function_selection]            # Sets loss function based on user input of parameter loss_function_selection
     loss_fn_label = loss_function_labels[loss_function_selection]          # Sets loss function label based on user input of parameter loss_function_selection
 
     # Set loss function choice for split loss (if loss function choice is set to ada weighted custom split loss)
@@ -1567,9 +1850,10 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
 
     #%% - Dataset Pre-tests
     # Dataset Integrity Check   
-    scantype = "quick" #sets the scan type to quick
     if full_dataset_integrity_check: #if full_dataset_integrity_check is set to True, then the scan type is set to full (slow)
         scantype = "full"
+    else:
+        scantype = "quick"
 
     # TERMINAL PRINT: Report test type and result
     print(f"Testing training dataset integrity, with {scantype} scan")  #prints the scan type
@@ -1779,37 +2063,39 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
             avg_loss_false_positive_xy = []
 
             ### Training (use the training function)
-            train_loss=train_epoch(
-                                    encoder, 
+            train_loss=train_epoch(encoder, 
                                     decoder, 
                                     device, 
-                                    dataloader=train_loader, 
-                                    loss_fn=loss_fn, 
-                                    optimizer=optim,
-                                    signal_points=signal_points,
-                                    noise_points=noise_points,
-                                    x_std_dev = x_std_dev, 
-                                    y_std_dev = y_std_dev,
-                                    tof_std_dev = tof_std_dev,
-                                    time_dimension=time_dimension,
-                                    reconstruction_threshold=reconstruction_threshold,
-                                    print_partial_training_losses = print_partial_training_losses)
+                                    train_loader, 
+                                    loss_fn, 
+                                    optim,
+                                    signal_points,
+                                    noise_points,
+                                    x_std_dev, 
+                                    y_std_dev,
+                                    tof_std_dev,
+                                    time_dimension,
+                                    reconstruction_threshold,
+                                    print_partial_training_losses,
+                                    masking_optimised_binary_norm,
+                                    loss_vs_sparse_img)
 
             ### Testing (use the testing function)
-            test_loss = test_epoch(
-                                    encoder, 
+            test_loss = test_epoch(encoder, 
                                     decoder, 
                                     device, 
-                                    dataloader=test_loader, 
-                                    loss_fn=loss_fn,
-                                    signal_points=signal_points,
-                                    noise_points=noise_points,
-                                    x_std_dev = x_std_dev, 
-                                    y_std_dev = y_std_dev,
-                                    tof_std_dev = tof_std_dev,
-                                    time_dimension=time_dimension,
-                                    reconstruction_threshold=reconstruction_threshold,
-                                    print_partial_training_losses = print_partial_training_losses)
+                                    test_loader, 
+                                    loss_fn,
+                                    signal_points,
+                                    noise_points,
+                                    x_std_dev, 
+                                    y_std_dev,
+                                    tof_std_dev,
+                                    time_dimension,
+                                    reconstruction_threshold,
+                                    print_partial_training_losses,
+                                    masking_optimised_binary_norm,
+                                    loss_vs_sparse_img)
             
             if print_partial_training_losses:
                 print('\n End of EPOCH {}/{} \t train loss {:.3f} \t val loss {:.3f}'.format(epoch + 1, num_epochs, train_loss, val_loss))     #epoch +1 is to make up for the fact the range spans 0 to epoch-1 but we want to numerate things from 1 upwards for sanity
@@ -2180,20 +2466,21 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
     print("- Completed -")
 
     if optimise_hyperparameter:
-
         val_loss = validation_routine(  encoder, 
                                         decoder, 
                                         device, 
-                                        dataloader=valid_loader, 
-                                        loss_fn=loss_fn,
-                                        signal_points=signal_points,
-                                        noise_points=noise_points,
-                                        x_std_dev = x_std_dev, 
-                                        y_std_dev = y_std_dev,
-                                        tof_std_dev = tof_std_dev,
-                                        time_dimension=time_dimension,
-                                        reconstruction_threshold=reconstruction_threshold,
-                                        print_partial_training_losses = print_partial_training_losses)
+                                        valid_loader, 
+                                        loss_fn,
+                                        signal_points,
+                                        noise_points,
+                                        x_std_dev, 
+                                        y_std_dev,
+                                        tof_std_dev,
+                                        time_dimension,
+                                        reconstruction_threshold,
+                                        print_partial_training_losses,
+                                        masking_optimised_binary_norm,
+                                        loss_vs_sparse_img)
                 
         history_da['val_loss'].append(val_loss)
         history_da['HTO_val'].append(HTO_val)
