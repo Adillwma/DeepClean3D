@@ -7,13 +7,13 @@
 """
 Possible improvements:
 
-### REFACTOR: func: quantify_loss_performance ~ Appends the average performance metrics for the batch to the corresponding list of average metrics results for each epoch which is tracked eleshwehre in the enhanced performance tracking system and needs simplifying and condensing!!!
+### REFACTOR: func: quantify_loss_performance~ Appends the average performance metrics for the batch to the corresponding list of average metrics results for each epoch which is tracked eleshwehre in the enhanced performance tracking system and needs simplifying and condensing!!!
 
 ### REFACTOR: func: belief_telemetry ~ This function creates histogram plots of the pixel values recorded by the belief telemtry system [which needs renaming and reworking to simplify. (should be reconstruction thresholding telemtetry?)]  whihc records the values directly out of the netwrok before our reconstruction thresholding in the custom renomalisation is applied. This is important to keep ttrack of what is occusring before our iytput processing as it may be hiding errors.
 
 ### REFACTOR: func: create_settings_dict ~ Terrible, nneds compleate clean up and overhaul
 
-### REFACTOR: func:  ~ 
+### REFACTOR: func: plot_detailed_performance_loss etc  ~ PART OF THE LOSS PERFORMANCE SYSTEM NEEDEING OVERHAUL SIMPLIFICATION MODUIOARISATION AND THEN MOVING TO SEPERATE FILE 
 
 ### REFACTOR: func:  ~ 
 
@@ -159,8 +159,11 @@ Possible improvements:
 
 
 #%% - User Inputs
-dataset_title = "RDT 10K MOVE"# "RF_5K"#"PDT 10K" #"RDT 10K MOVE" #'RDT 500K 1000ToF' #"RDT 10K MOVE" #"RDT 50KM"# "Dataset 37_X15K Perfect track recovery" #"Dataset 24_X10Ks"           #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
-model_save_name = "DEEPER AUTOENC TEST"#'Parabola6 no norm to loss' #"T2"#"RDT 500K 1000ToF timed"#"2023 Testing - RDT100K n100"#"2023 Testing - RDT10K NEW" #"RDT 100K 30s 200n Fixed"#"RDT 50KM tdim1000 AE2PROTECT 30 sig 200NP LD10"     #"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
+dataset_title = "PDT 100 fast"# "RF_5K"#"PDT 10K" #"RDT 10K MOVE" #'RDT 500K 1000ToF' #"RDT 10K MOVE" #"RDT 50KM"# "Dataset 37_X15K Perfect track recovery" #"Dataset 24_X10Ks"           #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
+model_save_name = "fast test2"#'Parabola6 no norm to loss' #"T2"#"RDT 500K 1000ToF timed"#"2023 Testing - RDT100K n100"#"2023 Testing - RDT10K NEW" #"RDT 100K 30s 200n Fixed"#"RDT 50KM tdim1000 AE2PROTECT 30 sig 200NP LD10"     #"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
+model_checkpointing = True                # If set to true then the model will save a checkpoint of the model and optimiser state dicts at the end of each 'model_checkpointing_interval' epochs
+model_checkpoint_interval = 5          # Number of epochs between each model checkpoint save
+
 
 TORCHSIM_data = False #!!!!!!!!!!!!!!!!!!!!!!
 inject_seed_each_epoch = True     # 
@@ -381,10 +384,10 @@ from Helper_files.AE_Visulisations import *
 from Loss_Functions.Loss_Fn_Classes import *
 
 # Data Degredation Functions
-from Helper_files.Data_Degredation_Functions import *
+from Helper_files.Data_Degradation_Functions import *
 
 # - Autoencoder
-from Autoencoders.DC3D_Autoencoder_V1_Protected2_3 import Encoder, Decoder   
+from Autoencoders.DC3D_Autoencoder_V1_Protected2_2 import Encoder, Decoder   
 
 
 #%% - Load in Comparative Live Loss Data
@@ -530,6 +533,86 @@ def masking_recovery(input_image, recovered_image, time_dimension, print_result=
     if result.shape != raw_input_image.shape:
         print("ERROR: Masking has failed, the recovered image is not the same shape as the input image")
     return result
+
+
+
+
+### CLEAN UP THIS FUCNTION !!!!!!!!!!!!
+def full_model_export(checkpoint, model_output_dir, model_checkpoints_dir, epoch, encoder, decoder, optim, latent_dim, fc_input_dim, double_precision, Encoder, debug_model_exporter=False):
+    
+    if checkpoint:
+
+        model_checkpoints_path = model_checkpoints_dir + f"Epoch_{epoch}\\"
+        os.makedirs(model_checkpoints_path, exist_ok=True)
+        
+        # Joins up the parts of the differnt output files save paths
+        full_model_path = model_checkpoints_path + f"Model_checkpoint_epoch_{epoch}.pth"
+        full_statedict_path = model_checkpoints_path + f"Statedicts_checkpoint_epoch_{epoch}.pth"
+
+        # Save and export trained model to user output dir
+        torch.save((encoder, decoder), full_model_path)
+
+        # Save the state dictionary
+        torch.save({'encoder_state_dict': encoder.state_dict(),   
+                    'decoder_state_dict': decoder.state_dict(),   
+                    'optimizer_state_dict': optim.state_dict()},  
+                    full_statedict_path)  
+
+        # Save the latent dimesion value for automatic setting when deploying the models
+        save_variable(latent_dim, "deployment_variables_ld", model_checkpoints_path)
+
+        # save the fc_input_dim value for automatic setting when deploying the models
+        save_variable(fc_input_dim, "deployment_variables_fc_input_dim", model_checkpoints_path)
+
+        # Save the processing precision value for automatic setting when deploying the models
+        save_variable(str(double_precision), "deployment_variables_double_precision", model_checkpoints_path)
+
+        # Get the directory name of the current Python file for the autoencoder export
+        search_dir = os.path.abspath(__file__)
+        search_dir = os.path.dirname(search_dir)
+
+        # Locate .py file that defines the Encoder and Decoder and copies it to the model save dir, due to torch.save model save issues
+        AE_file_name = Robust_model_export(Encoder, search_dir, model_checkpoints_path, debug=debug_model_exporter) #Only need to run on encoder as encoder and decoder are both in the same file so both get saved this way
+
+    else:
+        # Joins up the parts of the differnt output files save paths
+        full_model_path = model_output_dir + model_save_name + " - Model.pth"
+        full_statedict_path = model_output_dir + model_save_name + " - Model + Optimiser State Dicts.pth"
+
+        print("\nSaving model to .pth file...")
+        # Save and export trained model to user output dir
+        torch.save((encoder, decoder), full_model_path)
+        print("- Completed -")
+
+        print("\nSaving model state dictionary...")
+        # Save the state dictionary
+        torch.save({'encoder_state_dict': encoder.state_dict(),   
+                    'decoder_state_dict': decoder.state_dict(),   
+                    'optimizer_state_dict': optim.state_dict()},  
+                    full_statedict_path)  
+        print("- Completed -") 
+
+        print("\nSaving Autoencoder python file and user variables for recall...")
+
+        # Save the latent dimesion value for automatic setting when deploying the models
+        save_variable(latent_dim, "deployment_variables_ld", model_output_dir)
+
+        # save the fc_input_dim value for automatic setting when deploying the models
+        save_variable(fc_input_dim, "deployment_variables_fc_input_dim", model_output_dir)
+
+        # Save the processing precision value for automatic setting when deploying the models
+        save_variable(str(double_precision), "deployment_variables_double_precision", model_output_dir)
+
+        # Get the directory name of the current Python file for the autoencoder export
+        search_dir = os.path.abspath(__file__)
+        search_dir = os.path.dirname(search_dir)
+
+        # Locate .py file that defines the Encoder and Decoder and copies it to the model save dir, due to torch.save model save issues
+        AE_file_name = Robust_model_export(Encoder, search_dir, model_output_dir, debug=debug_model_exporter) #Only need to run on encoder as encoder and decoder are both in the same file so both get saved this way
+        return AE_file_name
+
+        print("- Completed -")
+
 
 
 
@@ -947,11 +1030,15 @@ def create_comparison_plot_data(slide_live_plot_size, epoch, max_epoch_reached, 
 # Helper function to clean up repeated plot save/show code
 def plot_save_choice(plot_or_save, output_file_path=None):
     """
-    Function used to set the save/display behavior for all figures and graphs genrated by the program.
-    
+    Function used to set the save/display behavior for all figures and graphs generated by the program.
+
     Args:
-        plot_or_save (int): A flag to set if the plot is printed to terminal or saved to disk. 0 prints plots to terminal (blocking till closed), If set to 1 then saves all end of epoch printouts to disk (non-blocking), if set to 2 then saves outputs whilst also printing for user (blocking till closed)
-        output_file_path (str): The path to save the plot to. Only needed if plot_or_save is set to 1 or 2. 
+        plot_or_save (int): A flag to set if the plot is printed to terminal or saved to disk. 
+            0 prints plots to the terminal (blocking till closed).
+            1 saves all end-of-epoch printouts to disk (non-blocking).
+            2 saves outputs while also printing for the user (blocking till closed).
+            3 neither saves nor shows any plots, immediately closed (useful for debugging).
+        output_file_path (str): The path to save the plot to. Only needed if plot_or_save is set to 1 or 2.
     """
     if plot_or_save == 0:
         plt.show()
@@ -964,8 +1051,13 @@ def plot_save_choice(plot_or_save, output_file_path=None):
     elif plot_or_save == 3:
         plt.close()
     else:
-        print("ERROR: Invalid 'plot_or_save' value set for 'plot_save_choice' function call, please set to 0, 1, 2 or 3\n0 prints plots to terminal (blocking till closed).\n1 saves all plots to disk (non-blocking).\n2 prints to terminal and saves to disk (blocking till closed).\n3 will neither save nor show any plots, they will be immidetly closed, usefull for debugging.")
-        exit()
+        raise ValueError("Invalid 'plot_or_save' value set for 'plot_save_choice' function call. "
+                         "Please set to 0, 1, 2, or 3.\n"
+                         "0 prints plots to terminal (blocking till closed).\n"
+                         "1 saves all plots to disk (non-blocking).\n"
+                         "2 prints to terminal and saves to disk (blocking till closed).\n"
+                         "3 will neither save nor show any plots, they will be immediately closed, useful for debugging.")
+
     
 # Plots the confidence telemetry data
 def plot_telemetry(telemetry, true_num_of_signal_points, plot_or_save=0):
@@ -1038,7 +1130,7 @@ def train_epoch(encoder, decoder, device, dataloader, loss_fn, optimizer, signal
 
         # DATA PREPROCESSING
         with torch.no_grad(): # No need to track the gradients
-            sparse_output_batch, sparse_and_resolution_limited_batch, noised_sparse_reslimited_batch = signal_degredation(signal_settings, image_batch, physical_scale_parameters)
+            sparse_output_batch, sparse_and_resolution_limited_batch, noised_sparse_reslimited_batch = signal_degredation(signal_settings, image_batch, physical_scale_parameters, time_dimension)
             
             if masking_optimised_binary_norm:
                 normalised_batch = mask_optimised_normalisation(noised_sparse_reslimited_batch)
@@ -1136,7 +1228,7 @@ def test_epoch(encoder, decoder, device, dataloader, loss_fn, signal_points, noi
 
             #Select settings randomly from user range
             signal_settings = input_range_to_random_value(signal_points, x_std_dev, y_std_dev, tof_std_dev, noise_points)
-            sparse_output_batch, sparse_and_resolution_limited_batch, noised_sparse_reslimited_batch = signal_degredation(signal_settings, image_batch, physical_scale_parameters)
+            sparse_output_batch, sparse_and_resolution_limited_batch, noised_sparse_reslimited_batch = signal_degredation(signal_settings, image_batch, physical_scale_parameters, time_dimension)
 
             if masking_optimised_binary_norm:
                 normalised_batch = mask_optimised_normalisation(noised_sparse_reslimited_batch)
@@ -1212,7 +1304,7 @@ def validation_routine(encoder, decoder, device, dataloader, loss_fn, signal_poi
 
             #Select settings randomly from user range
             signal_settings = input_range_to_random_value(signal_points, x_std_dev, y_std_dev, tof_std_dev, noise_points)
-            sparse_output_batch, sparse_and_resolution_limited_batch, noised_sparse_reslimited_batch = signal_degredation(signal_settings, image_batch, physical_scale_parameters)
+            sparse_output_batch, sparse_and_resolution_limited_batch, noised_sparse_reslimited_batch = signal_degredation(signal_settings, image_batch, physical_scale_parameters, time_dimension)
 
             if masking_optimised_binary_norm:
                 normalised_batch = mask_optimised_normalisation(noised_sparse_reslimited_batch)
@@ -1299,7 +1391,7 @@ def plot_epoch_data(encoder, decoder, epoch, model_save_name, time_dimension, re
         #global image_noisy   
               
         # Create degraded images                     
-        sparse_output_batch, sparse_and_resolution_limited_batch, noised_sparse_reslimited_batch = signal_degredation(signal_settings, img, physical_scale_parameters)
+        sparse_output_batch, sparse_and_resolution_limited_batch, noised_sparse_reslimited_batch = signal_degredation(signal_settings, img, physical_scale_parameters, time_dimension)
 
         # Normalise the noised image
         if masking_optimised_binary_norm:
@@ -1546,13 +1638,11 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
     model_output_dir = dir + "Model_Deployment/"
     os.makedirs(model_output_dir, exist_ok=True)
 
-    # Joins up the parts of the differnt output files save paths
-    full_model_path = model_output_dir + model_save_name + " - Model.pth"
-    full_statedict_path = model_output_dir + model_save_name + " - Model + Optimiser State Dicts.pth"
+    model_checkpoints_dir = dir + "Model_Checkpoints/"
+    os.makedirs(model_checkpoints_dir, exist_ok=True)
 
     full_activity_filepath = dir + model_save_name + " - Activity.npz"
     full_netsum_filepath = dir + model_save_name + " - Network Summary.txt"
-
 
     # Joins up the parts of the differnt input dataset load paths
     train_dir = data_path + dataset_title
@@ -1957,6 +2047,11 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
 
             # Update the epoch reached counter  
             max_epoch_reached = epoch    
+                
+            # check if current epoch is a multiple of 'model_checkpoint_interval' and if so save the model
+            if epoch % model_checkpoint_interval == 0 and epoch != 0:
+                full_model_export(True, model_output_dir, model_checkpoints_dir, epoch, encoder, decoder, optim, latent_dim, fc_input_dim, double_precision, Encoder, debug_model_exporter=False)
+
 
             ###CLEAN UP THIS METHOD TO SOMTHING BETTER!!!!!!
             epoch_avg_loss_mse.append(np.mean(avg_loss_mse))
@@ -1975,7 +2070,6 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
             history_da['train_loss'].append(train_loss)
             history_da['test_loss'].append(test_loss)
             #print("TRAIN LOSS SIZE", len(history_da['train_loss'])) 
-            
             
             ### Live Comparison Plots
             if plot_comparative_loss:
@@ -2180,40 +2274,8 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
         Graphviz_visulisation(encoder, decoder, double_precision, batch_size, xdim, ydim, graphics_dir)
         #Out_Label = graphics_dir + f'{model_save_name} - Graphwiz Epoch {epoch}.png'    
         #plot_save_choice(plot_or_save, Out_Label)  
-    #%% - Export models
-    print("\nSaving model to .pth file in output dir...")
-    # Save and export trained model to user output dir
-    torch.save((encoder, decoder), full_model_path)
-    print("- Completed -")
-
-    print("\nSaving model state dictionary to output dir...")
-    # Save the state dictionary
-    torch.save({'encoder_state_dict': encoder.state_dict(),   
-                'decoder_state_dict': decoder.state_dict(),   
-                'optimizer_state_dict': optim.state_dict()},  
-                full_statedict_path)  
-    print("- Completed -") 
-
-
-
-    print("\nSaving Autoencoder python file to output dir...")
-
-    # Save the latent dimesion value for automatic setting when deploying the models
-    save_variable(latent_dim, "deployment_variables_ld", model_output_dir)
-
-    # save the fc_input_dim value for automatic setting when deploying the models
-    save_variable(fc_input_dim, "deployment_variables_fc_input_dim", model_output_dir)
-
-    # Save the processing precision value for automatic setting when deploying the models
-    save_variable(str(double_precision), "deployment_variables_double_precision", model_output_dir)
-
-    # Get the directory name of the current Python file for the autoencoder export
-    search_dir = os.path.abspath(__file__)
-    search_dir = os.path.dirname(search_dir)
-
-    # Locate .py file that defines the Encoder and Decoder and copies it to the model save dir, due to torch.save model save issues
-    AE_file_name = Robust_model_export(Encoder, search_dir, model_output_dir, debug=debug_model_exporter) #Only need to run on encoder as encoder and decoder are both in the same file so both get saved this way
-    print("- Completed -")
+    #%% - Export model, statedicts and required variables for inference to disk    
+    AE_file_name = full_model_export(False, model_output_dir, model_checkpoints_dir, epoch, encoder, decoder, optim, latent_dim, fc_input_dim, double_precision, Encoder, debug_model_exporter=False)
 
     #%% - Export all data logged to disk in form of .txt file in the output dir
     print("\nSaving inputs, model stats and results to .txt file in output dir...")

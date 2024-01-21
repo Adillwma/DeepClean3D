@@ -188,7 +188,7 @@ def simulate_detector_resolution(input_image_batch, x_std_dev, y_std_dev, tof_st
         
     return image_batch_all
 
-def signal_degredation(signal_settings, image_batch, physical_scale_parameters):
+def signal_degredation(signal_settings, image_batch, physical_scale_parameters, time_dimension):
     """
     Sequentially applies the differnt signal degredation functions to the input image batch and returns the output of each stage
 
