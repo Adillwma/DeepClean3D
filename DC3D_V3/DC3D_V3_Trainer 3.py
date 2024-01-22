@@ -28,7 +28,7 @@ Possible improvements:
 ### REFACTOR: func:  ~ 
 
 
-### ~~~~~ Connect the inject_seed_each_epoch sytem up 
+### ~~~~~ [DONE!] Connect the inject_seed sytem up and add an interval
 
 ### ~~~~~ FIX BUG : xlsxwriter.exceptions.InvalidWorksheetName: Excel worksheet name 'T_fullframe_weighting_0.5 direct' must be <= 31 chars.
 
@@ -156,21 +156,20 @@ Possible improvements:
 
 
 
-
-
 #%% - User Inputs
 dataset_title = "PDT 100 fast"# "RF_5K"#"PDT 10K" #"RDT 10K MOVE" #'RDT 500K 1000ToF' #"RDT 10K MOVE" #"RDT 50KM"# "Dataset 37_X15K Perfect track recovery" #"Dataset 24_X10Ks"           #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
-model_save_name = "fast test2"#'Parabola6 no norm to loss' #"T2"#"RDT 500K 1000ToF timed"#"2023 Testing - RDT100K n100"#"2023 Testing - RDT10K NEW" #"RDT 100K 30s 200n Fixed"#"RDT 50KM tdim1000 AE2PROTECT 30 sig 200NP LD10"     #"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
+model_save_name = "fast test3"#'Parabola6 no norm to loss' #"T2"#"RDT 500K 1000ToF timed"#"2023 Testing - RDT100K n100"#"2023 Testing - RDT10K NEW" #"RDT 100K 30s 200n Fixed"#"RDT 50KM tdim1000 AE2PROTECT 30 sig 200NP LD10"     #"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
 model_checkpointing = True                # If set to true then the model will save a checkpoint of the model and optimiser state dicts at the end of each 'model_checkpointing_interval' epochs
-model_checkpoint_interval = 5          # Number of epochs between each model checkpoint save
-
+model_checkpoint_interval = 20          # Number of epochs between each model checkpoint save
+inject_seed = True     # 
+inject_seed_interval = 1          # Number of epochs between each seed injection
 
 TORCHSIM_data = False #!!!!!!!!!!!!!!!!!!!!!!
-inject_seed_each_epoch = True     # 
+
 xdim = 88   # Currently useless
 ydim = 128  # Currently useless
 time_dimension = 1000                        # User controll to set the number of time steps in the data
-channels = 1                                # User controll to set the number of channels in the data
+channels = 1      #CONNECT                          # User controll to set the number of channels in the data
 
 #%% - Training Hyperparameter Settings
 num_epochs = 2000                            # User controll to set number of epochs (Hyperparameter)
@@ -1936,12 +1935,10 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
     history_da['train_loss']  = []
     history_da['test_loss'] = []                   #Just creates a variable called history_da which contains two lists, 'train_loss' and 'val_loss' which are both empty to start with. value are latter appeneded to the two lists by way of history_da['val_loss'].append(x)
 
-
     print("\nTraining Initiated\nPress Ctr + c to exit and save the model during training.\n")
     start_time = time.time()                     # Begin the training timer
 
     try:    # Try except clause allows user to exit training gracefully whilst still retaiing a saved model and ouput plots
-
         if print_partial_training_losses:        # Prints partial train losses per batch
             loop_range = range(1, num_epochs+1)
         else:                                    # No print partial train losses per batch, instead create progress bar
@@ -1952,11 +1949,10 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
             if print_partial_training_losses:
                 print(f'\nStart of EPOCH {epoch + 1}/{num_epochs}')
 
-
-
             #### IMPLEMNT THIS TO INJECT SEED VAULE AGAIN WEACH EPOCH SO THAT  THE TRAINING DATA IS THE DETERMINISTICALLY THE SAME EACH EPOCH NOT FRESH EACH TIME
-            #if inject_seed_each_epoch:
-            #    torch.manual_seed(seeding_value)
+            if inject_seed and epoch % inject_seed_interval == 0:
+                torch.manual_seed(T_seed)
+                np.random.seed(N_seed)
 
 
             ###CLEAN UP THIS METHOD TO SOMTHING BETTER!!!!!!
