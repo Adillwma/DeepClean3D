@@ -154,7 +154,16 @@ Possible improvements:
 # NOTE to users: First epoch will always run slower when using a new dataset or after a computer restart as system memory is being trained, subsequent epochs should take ~50% of the time of the first epoch
 # NOTE to users: The 'nonzero_weighting' parameter is a great way to adjust the sensetivity of the training result. Values around 0.1 will be very cautious in predicting hits, whilst moving to around 1.0 will be very confident in predicting hits. This is a great way to adjust the sensetivity of the model to your needs. Low values are better for direct net output, whilst higher values are better for masking output.
 
-#%% - User Inputs
+#%% - First time setup
+
+# NOTE: This section should be set when running on a new machine or when first setting up the program, once set it should not need to be changed again unless you want to change the default paths for the datasets and results folders
+data_path = "N:\Yr 3 Project Datasets\\"                      # Path to the dataset folder, this is the folder that contains your dataset folders, not a dataset folder itself. This allows fast switching between datasets by changing just the dataset title below without having to change the full path each time
+results_output_path = "N:\Yr 3 Project Results\\"             # Path to the results output folder, this is the folder that will contains all your results folders, not the results folder for a particular run.
+
+
+
+
+#%% - Data Path Settings
 dataset_title = "RDT 50KM Fix" # "RF_5K"#"PDT 10K" #"RDT 10K MOVE" #'RDT 500K 1000ToF' #"RDT 10K MOVE" #"RDT 50KM"# "Dataset 37_X15K Perfect track recovery" #"Dataset 24_X10Ks"           #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
 model_save_name = "fast test16 100K" #'Parabola6 no norm to loss' #"T2"#"RDT 500K 1000ToF timed"#"2023 Testing - RDT100K n100"#"2023 Testing - RDT10K NEW" #"RDT 100K 30s 200n Fixed"#"RDT 50KM tdim1000 AE2PROTECT 30 sig 200NP LD10"     #"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
 
@@ -164,13 +173,14 @@ model_checkpoint_interval = 5               # Number of epochs between each mode
 inject_seed = True                           # Reinjects the original seeding value to deterministically recreate the same noise and signal points each epoch, this is useful for testing the effect of different hyperparameters on the same data or for allowing the training to see same images multiple times to improve performance
 inject_seed_interval = 1                    # Number of epochs between each seed injection
 
+# Data Loader Settings
 precision = 32                               # User controll to set the precision of the model (16f, 32f or 64f) (Hyperparameter)
 preprocess_on_gpu = True                     # Only woirks if cuda gpu is found, else will defulat back to cpu preprocess
 store_full_dataset_in_memory = True          # If set to true then the full dataset will be loaded into memory at the start of training, otherwise will load each batch from disk as needed (WARNING: Setting this to true will use a lot of memory, only use if you have enough system RAM to hold entire dataset)
 data_loader_workers = 0                      # Number of workers to use for the data loader, 0 means all data loading will be done on the main thread, 1 means one worker will be used to load data in the background, 2 means two workers will be used etc. 
 
+# Input Data Settings
 TORCHSIM_data = False                        #!!!!!!!!!!!!!!!!!!!!!!
-
 xdim = 88                                    # Currently useless
 ydim = 128                                   # Currently useless
 time_dimension = 1000                        # User controll to set the number of time steps in the data
@@ -308,6 +318,8 @@ debug_hpo_perf_analysis = False
 if print_every_other > num_epochs:                                                                   # Protection from audio data not being there to save if plot not genrated - Can fix by moving audio genration out of the plotting function entirely and only perform it once at the end wher eit is actually saved.
     print_every_other = num_epochs
 
+results_output_path_1 = results_output_path  # HACK FOR HYPERPARAM OPTIMISATION FIX IT!!!
+
 history_da = {'train_loss':[], 'test_loss':[], 'val_loss':[], 'HTO_val':[], 'training_time':[]}      # Needs better placement???
 max_epoch_reached = 0                                                                                # In case user exits before end of first epoch 
 
@@ -323,31 +335,12 @@ activations = {}
 weights_data = {}
 biases_data = {}
 
-#%% - Data Path Settings
-data_path = "N:\Yr 3 Project Datasets\\"
-results_output_path = "N:\Yr 3 Project Results\\"
-results_output_path_1 = results_output_path  # HACK FOR HYPERPARAM OPTIMISATION FIX IT!!!
-
-
-#%% - Create full settings dictionary !!! NEEDS CLEANUP
-"""
-if optimise_hyperparameter:
-    settings_path = results_output_path_1 + model_save_name + "_" + hyperparam_to_optimise + f" Optimisation\\"
-else:
-    settings_path = results_output_path + model_save_name + " - Training Results/"
-#create settings path if not exists
-os.makedirs(settings_path, exist_ok=True)
-full_settings_dictionary = create_settings_dict(settings_path + "full_settings_dictionary")
-
-"""
-
 
 
 #%% - Load in Dependencies
 # External Libraries
 import os
 import time     # Used to time the training loop
-import json
 import torch
 import datetime 
 import torchvision 
@@ -385,11 +378,11 @@ if run_profiler:
     # Create a cProfile object
     profiler = cProfile.Profile()
 
-
 #%% - Load in Comparative Live Loss Data
 if comparative_live_loss:
     comparative_history_da, comparative_epoch_times = load_comparative_data(comparative_loss_paths, plot_live_training_loss, plot_live_time_loss)
 
+#%% - Data Gathering Functions
 ### CLEAN UP THIS FUCNTION !!!!!!!!!!!!
 def full_model_export(checkpoint, model_output_dir, model_checkpoints_dir, epoch, encoder, decoder, optim, latent_dim, fc_input_dim, double_precision, Encoder, debug_model_exporter=False):
     
@@ -465,9 +458,7 @@ def full_model_export(checkpoint, model_output_dir, model_checkpoints_dir, epoch
         return AE_file_name
 
         print("- Completed -")
-
-
-#%% - Data Gathering Functions
+    
 # Tracks network output pixel value distribution as histogram pre-reconstruction threshold and renomalisation to understand the effect of the reconstruction thresholding
 def belief_telemetry(data, reconstruction_threshold, epoch, settings, plot_or_save=0):
 
@@ -564,101 +555,6 @@ def quantify_loss_performance(clean_input_batch, noised_target_batch, time_dimen
     avg_loss_true_positive_tof.append(np.mean(loss_true_positive_tof))
     avg_loss_false_positive_xy.append(np.mean(loss_false_positive_xy))
 
-# Define a function to create a dictionary from the given settings
-def create_settings_dict(filename):
-    """
-    This fucntion will create a dictionary of the settings used in the current training run and save it to disk as a json file.
-
-    Args:
-        filename (str): The path to the directory to save the settings dictionary to
-    """
-
-
-    settings_dict = {
-        "dataset_title": dataset_title,
-        "model_save_name": model_save_name,
-        "xdim": xdim,
-        "ydim": ydim,
-        "time_dimension": time_dimension,
-        "num_epochs": num_epochs,
-        "batch_size": batch_size,
-        "learning_rate": learning_rate,
-        "optim_w_decay": optim_w_decay,
-        "latent_dim": latent_dim,
-        "fc_input_dim": fc_input_dim,
-        "dropout_prob": dropout_prob,
-        "reconstruction_threshold": reconstruction_threshold,
-        "train_test_split_ratio": train_test_split_ratio,
-        "val_set_on": val_set_on,
-        "val_test_split_ratio": val_test_split_ratio,
-        "loss_vs_sparse_img": loss_vs_sparse_img,
-        "loss_function_selection": loss_function_selection,
-        "zero_weighting": zero_weighting,
-        "nonzero_weighting": nonzero_weighting,
-        "fullframe_weighting": fullframe_weighting,
-        "signal_points" : signal_points,
-        "noise_points" : noise_points,
-        "x_std_dev" : x_std_dev,
-        "y_std_dev" : y_std_dev,
-        "tof_std_dev" : tof_std_dev,
-        "start_from_pretrained_model" : start_from_pretrained_model,
-        "load_pretrained_optimser" : load_pretrained_optimser,
-        "pretrained_model_path" : pretrained_model_path,
-        "masking_optimised_binary_norm" : masking_optimised_binary_norm,
-        "print_every_other" : print_every_other,
-        "plot_or_save" : plot_or_save,
-        "num_to_plot" : num_to_plot,
-        "save_all_raw_plot_data" : save_all_raw_plot_data,
-        "double_precision" : double_precision,
-        "shuffle_train_data" : shuffle_train_data,
-        "timeout_training" : timeout_training,
-        "timeout_time" : timeout_time,
-        "record_weights" : record_weights,
-        "record_biases" : record_biases,
-        "record_activity" : record_activity,
-        "plot_train_loss" : plot_train_loss,
-        "plot_validation_loss" : plot_validation_loss,
-        "plot_time_loss" : plot_time_loss,
-        "plot_detailed_performance_loss" : plot_detailed_performance_loss,
-        "plot_live_time_loss" : plot_live_time_loss,
-        "plot_live_training_loss" : plot_live_training_loss,
-        "comparative_live_loss" : comparative_live_loss,
-        "slide_live_plot_size" : slide_live_plot_size,
-        "comparative_loss_titles" : comparative_loss_titles,
-        "comparative_loss_paths" : comparative_loss_paths,
-        "plot_pixel_threshold_telemetry": plot_pixel_threshold_telemetry,
-        "plot_pixel_difference": plot_pixel_difference,  # BROKEN
-        "plot_latent_generations": plot_latent_generations,
-        "plot_higher_dim": plot_higher_dim,
-        "plot_Graphwiz": plot_Graphwiz,
-        "print_encoder_debug": print_encoder_debug,
-        "print_decoder_debug": print_decoder_debug,
-        "print_network_summary": print_network_summary,
-        "print_partial_training_losses": print_partial_training_losses,
-        "debug_noise_function": debug_noise_function,
-        "debug_loader_batch": debug_loader_batch,
-        "debug_model_exporter": debug_model_exporter,
-        "full_dataset_integrity_check": full_dataset_integrity_check,
-        "full_dataset_distribution_check": full_dataset_distribution_check,
-        "seeding_value": seeding_value,
-        "optimise_hyperparameter": optimise_hyperparameter,
-        "hyperparam_to_optimise": hyperparam_to_optimise,
-        "set_optimisiation_list_manually": set_optimisiation_list_manually,
-        "print_validation_results": print_validation_results,
-        "plot_training_time": plot_training_time,
-        "perf_analysis_num_files": perf_analysis_num_files,
-        "perf_analysis_plot": perf_analysis_plot,
-        "perf_analysis_dataset_dir": perf_analysis_dataset_dir,
-        "debug_hpo_perf_analysis": debug_hpo_perf_analysis
-    }
-
-    # Save the settings dictionary to disk
-    with open(filename, "w") as f:
-        json.dump(settings_dict, f)
-
-    return settings_dict
-
-#%% - Plotting Functions
 def create_comparison_plot_data(slide_live_plot_size, epoch, max_epoch_reached, comparative_live_loss, comparative_loss_titles, comparative_epoch_times, comparative_history_da, data=history_da['train_loss']):
 
     """
