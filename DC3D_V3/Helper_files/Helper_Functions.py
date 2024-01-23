@@ -26,16 +26,6 @@ def batch_learning(training_dataset_size, batch_size):
         output = "Mini-Batch Gradient Descent"
     return(output)
 
-def np_to_tensor(np_array, double_precision=False):
-    """
-    Convert np array to torch tensor of user selected precision. 
-    Takes in np array of shape [H, W] and returns torch tensor of shape [C, H, W]
-    """
-    dtype = torch.float64 if double_precision else torch.float32
-    tensor = torch.tensor(np_array, dtype=dtype)
-    tensor = tensor.unsqueeze(0)        # Append channel dimension to begining of tensor
-    return(tensor)
-
 def load_comparative_data(comparative_loss_paths, plot_live_training_loss=False, plot_live_time_loss=False):
     comparative_history_da = []
     comparative_epoch_times = []

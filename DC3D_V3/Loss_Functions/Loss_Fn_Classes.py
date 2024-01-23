@@ -1,4 +1,7 @@
 import torch
+
+
+
 ##### NEW NEW NEW !!!
 class NEWESTACB3dloss2024(torch.nn.Module):
     def __init__(self, b, m, n):
@@ -69,7 +72,59 @@ class NEWESTACB3dloss2024(torch.nn.Module):
 ###### OLD AFTER THIS!!"!"
 
 
+# Weighted Custom Split Loss Function
 
+class ada_weighted_custom_split_loss(torch.nn.Module):
+    """
+    Calculates the weighted error loss between target_image and reconstructed_image.
+    The loss for zero pixels in the target_image is weighted by zero_weighting, and the loss for non-zero
+    pixels is weighted by nonzero_weighting and both have loss functions as passed in by user.
+
+    Args:
+    - target_image: a tensor of shape (B, C, H, W) containing the target image
+    - reconstructed_image: a tensor of shape (B, C, H, W) containing the reconstructed image
+    - zero_weighting: a scalar weighting coefficient for the MSE loss of zero pixels
+    - nonzero_weighting: a scalar weighting coefficient for the MSE loss of non-zero pixels
+
+    Returns:
+    - weighted_mse_loss: a scalar tensor containing the weighted MSE loss
+    """
+
+
+    def __init__(self, split_loss_functions, zero_weighting=1, nonzero_weighting=1):
+        super().__init__()   
+        self.zero_weighting = zero_weighting
+        self.nonzero_weighting = nonzero_weighting
+        self.loss_func_zeros = split_loss_functions[0]
+        self.loss_func_nonzeros = split_loss_functions[1]
+
+
+    def forward(self, reconstructed_image, target_image):
+        # Get the indices of 0 and non 0 values in target_image as a mask for speed
+        zero_mask = (target_image == 0)
+        nonzero_mask = ~zero_mask         # Invert mask
+        
+        # Get the values in target_image
+        values_zero = target_image[zero_mask]
+        values_nonzero = target_image[nonzero_mask]
+        
+        # Get the corresponding values in reconstructed_image
+        corresponding_values_zero = reconstructed_image[zero_mask]
+        corresponding_values_nonzero = reconstructed_image[nonzero_mask]
+        
+        zero_loss = self.loss_func_zeros(corresponding_values_zero, values_zero)
+        nonzero_loss = self.loss_func_nonzeros(corresponding_values_nonzero, values_nonzero)
+
+        # Protection from there being no 0 vals or no non zero vals, which then retunrs nan for MSE and creates a nan overall MSE return (which is error)
+        if torch.isnan(zero_loss):
+            zero_loss = 0
+        if torch.isnan(nonzero_loss):
+            nonzero_loss = 0
+        
+        # Sum losses with weighting coefficiants 
+        weighted_split_loss = (zero_weighting * zero_loss) + (nonzero_weighting * nonzero_loss) 
+        
+        return weighted_split_loss
 
 
 class ACBLoss(torch.nn.Module):
@@ -230,71 +285,13 @@ class ACBLoss3D(torch.nn.Module):
     
 
 #  Adaptive Sum of Squared Errors loss function
-def ada_SSE_loss(target, input):
-    """Adaptive Sum of Squared Errors Loss Function"""
-    loss = ((input-target)**2).sum()
-    return(loss)
-
-
-
-
-class boostedffACBLoss(torch.nn.Module):
-    def __init__(self, zero_weighting=1, nonzero_weighting=1, fullframe_weighting=1, ff_loss='mse', boost=1):
-        """
-        Initializes the ACB-MSE Loss Function class with weighting coefficients.
-
-        Args:
-        - zero_weighting: a scalar weighting coefficient for the MSE loss of zero pixels
-        - nonzero_weighting: a scalar weighting coefficient for the MSE loss of non-zero pixels
-        """
-        super().__init__()   
-        self.zero_weighting = zero_weighting
-        self.nonzero_weighting = nonzero_weighting
-        self.fullframe_weighting = fullframe_weighting
-        self.mse_loss = torch.nn.MSELoss(reduction='mean')
-        self.boost = boost
-
-        if ff_loss == 'mse':
-            self.ff_loss = torch.nn.MSELoss(reduction='mean')
-        elif ff_loss == 'mae':
-            self.ff_loss = torch.nn.L1Loss(reduction='mean')
-        elif ff_loss == 'bce':
-            self.ff_loss = torch.nn.BCEWithLogitsLoss(reduction='mean')
-
-    def forward(self, reconstructed_image, target_image):
-        """
-        Calculates the weighted mean squared error (MSE) loss between target_image and reconstructed_image.
-        The loss for zero pixels in the target_image is weighted by zero_weighting, and the loss for non-zero
-        pixels is weighted by nonzero_weighting.
-
-        Args:
-        - target_image: a tensor of shape (B, C, H, W) containing the target image
-        - reconstructed_image: a tensor of shape (B, C, H, W) containing the reconstructed image
-
-        Returns:
-        - weighted_mse_loss: a scalar tensor containing the weighted MSE loss
-        """
-        zero_mask = (target_image == 0)
-        nonzero_mask = ~zero_mask
-
-        values_zero = target_image[zero_mask]
-        values_nonzero = target_image[nonzero_mask]
-
-        corresponding_values_zero = reconstructed_image[zero_mask]
-        corresponding_values_nonzero = reconstructed_image[nonzero_mask]
-
-        zero_loss = self.mse_loss(corresponding_values_zero * self.boost, values_zero * self.boost)
-        nonzero_loss = self.mse_loss(corresponding_values_nonzero * self.boost, values_nonzero * self.boost)
-        full_frame_loss = self.ff_loss(reconstructed_image * self.boost, target_image * self.boost)
-
-        if torch.isnan(zero_loss):
-            zero_loss = 0
-        if torch.isnan(nonzero_loss):
-            nonzero_loss = 0
-
-        weighted_mse_loss = (self.zero_weighting * zero_loss) + (self.nonzero_weighting * nonzero_loss) + (self.fullframe_weighting * full_frame_loss)
-
-        return weighted_mse_loss
+def ada_SSE_loss(reconstructed_image, target_image):
+    """
+    Sum Squared Error Loss
+    """
+    sse_loss = ((reconstructed_image-target_image)**2).sum()
+    
+    return sse_loss
 
 
 

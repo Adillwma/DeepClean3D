@@ -4,6 +4,13 @@
 # University of Bristol
 # adill@neuralworkx.com
 
+import cProfile
+
+
+
+
+
+
 """
 Possible improvements:
 
@@ -157,12 +164,17 @@ Possible improvements:
 
 
 #%% - User Inputs
-dataset_title = "PDT 100 fast"# "RF_5K"#"PDT 10K" #"RDT 10K MOVE" #'RDT 500K 1000ToF' #"RDT 10K MOVE" #"RDT 50KM"# "Dataset 37_X15K Perfect track recovery" #"Dataset 24_X10Ks"           #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
-model_save_name = "fast test3"#'Parabola6 no norm to loss' #"T2"#"RDT 500K 1000ToF timed"#"2023 Testing - RDT100K n100"#"2023 Testing - RDT10K NEW" #"RDT 100K 30s 200n Fixed"#"RDT 50KM tdim1000 AE2PROTECT 30 sig 200NP LD10"     #"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
+dataset_title = "PDT 10K"# "RF_5K"#"PDT 10K" #"RDT 10K MOVE" #'RDT 500K 1000ToF' #"RDT 10K MOVE" #"RDT 50KM"# "Dataset 37_X15K Perfect track recovery" #"Dataset 24_X10Ks"           #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
+model_save_name = "fast test10"#'Parabola6 no norm to loss' #"T2"#"RDT 500K 1000ToF timed"#"2023 Testing - RDT100K n100"#"2023 Testing - RDT10K NEW" #"RDT 100K 30s 200n Fixed"#"RDT 50KM tdim1000 AE2PROTECT 30 sig 200NP LD10"     #"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
 model_checkpointing = True                # If set to true then the model will save a checkpoint of the model and optimiser state dicts at the end of each 'model_checkpointing_interval' epochs
 model_checkpoint_interval = 20          # Number of epochs between each model checkpoint save
 inject_seed = True     # 
-inject_seed_interval = 1          # Number of epochs between each seed injection
+inject_seed_interval = 20          # Number of epochs between each seed injection
+
+precision = 32                             # User controll to set the precision of the model (16f, 32f or 64f) (Hyperparameter)
+preprocess_on_gpu = True   # Only woirks if cuda gpu is found, else will defulat back to cpu preprocess
+store_full_dataset_in_memory = True         # If set to true then the full dataset will be loaded into memory at the start of training, otherwise will load each batch from disk as needed (WARNING: Setting this to true will use a lot of memory, only use if you have enough system RAM to hold entire dataset)
+data_loader_workers = 0 
 
 TORCHSIM_data = False #!!!!!!!!!!!!!!!!!!!!!!
 
@@ -176,7 +188,7 @@ num_epochs = 2000                            # User controll to set number of ep
 batch_size = 10 #6 looks good                              # User controll to set batch size - number of Images to pull per batch (Hyperparameter) 
 learning_rate = 0.0001                           # User controll to set optimiser learning rate (Hyperparameter)
 optim_w_decay = 1e-05                        # User controll to set optimiser weight decay for regularisation (Hyperparameter)
-BOOST = 1
+
 
 latent_dim = 50     #NOTE: Tested!                         # User controll to set number of nodes in the latent space, the bottleneck layer (Hyperparameter)
 fc_input_dim = 512                         # User controll to set number of nodes in the fc2 layer (Hyperparameter)
@@ -190,7 +202,7 @@ val_test_split_ratio = 0.9                   # This needs to be better explained
 
 #%% - Loss Function Settings
 loss_vs_sparse_img = False    #NOTE: Tested!                # User controll to set if the loss is calculated against the sparse image or the full image (Hyperparameter)
-loss_function_selection = 0                  # Select loss function (Hyperparameter): 0 = ACBMSE, 1 = ffACBMSE, 2 = ACBMSE3D, 3 = torch.nn.MSELoss(), 4 = torch.nn.BCELoss(), 5 = torch.nn.L1Loss(), 6 = ada_SSE_loss, 7 = ada_weighted_custom_split_loss, 8 = weighted_perfect_reconstruction_loss
+loss_function_selection = "ACB_MSE"                 # Select loss function (string):# "MAE", "MSE", "SSE", "BCE", "ACB_MSE", "ffACB_MSE", "Split_Loss", "True3D", "Simple3D", "ACB3D", "Fast3D", "WPR_Loss"
 
 # Below weights only used if loss func set to 0, 1 or 6 aka ACBMSE or split loss varients
 zero_weighting = 1                        # User controll to set zero weighting for ACBMSE (Hyperparameter)
@@ -204,8 +216,8 @@ zeros_loss_choice = 1                        # Select loss function for zero val
 nonzero_loss_choice = 1                      # Select loss function for non zero values (Hyperparameter): 0 = Maxs_Loss_Func, 1 = torch.nn.MSELoss(), 2 = torch.nn.BCELoss(), 3 = torch.nn.L1Loss(), 4 = ada_SSE_loss
 
 #%% - Image Preprocessing Settings  (when using perfect track images as labels)
-signal_points = 30                          # User controll to set the number of signal points to add
-noise_points =  200#0#100                         # User controll to set the number of noise points to add
+signal_points = 100 #30                          # User controll to set the number of signal points to add
+noise_points =  0 #200#0#100                         # User controll to set the number of noise points to add
 
 x_std_dev = 0  #mm NOTE ADAPTed TO PHYSICAL                             # User controll to set the standard deviation of the detectors error in the x axis
 y_std_dev = 0  #mm NOTE ADAPTed TO PHYSICAL                             # User controll to set the standard deviation of the detectors error in the y axis
@@ -246,7 +258,6 @@ time_length = 1000 #ns
 time_scale = time_dimension / time_length # ns per t pixel   # MOVE THESE LINES ELSEWHERE TO CLEAN UP
 x_scale = xdim / x_length # mm per x pixel
 y_scale = ydim / y_length # mm per y pixel
-physical_scale_parameters = [x_scale, y_scale, time_scale]
 
 #%% - Advanced Visulisation Settings
 plot_train_loss = True                      # [default = True]       
@@ -289,6 +300,7 @@ full_dataset_integrity_check = False            # [Default = False] V slow  #Che
 full_dataset_distribution_check = False         # [Default = False] V slow  #Checks the distribution of the dataset , false maesn no distributionn check is done
 
 seeding_value = 10 #None                            # [Default = None] None gives no seeeding to RNG, if the value is set this is used for the RNG seeding for numpy, and torch libraries
+run_profiler = False                            # [Default = False] Runs the cProfiler on the training loop to check for bottlenecks and slow functions
 
 #%% Hyperparameter Optimisation Settings  #######IMPLEMENT!!!
 optimise_hyperparameter = False              # User controll to set if hyperparameter optimisation is used
@@ -311,6 +323,10 @@ if print_every_other > num_epochs:   #protection from audio data not being there
 
 history_da = {'train_loss':[], 'test_loss':[], 'val_loss':[], 'HTO_val':[], 'training_time':[]} # needs better placement???
 max_epoch_reached = 0 # in case user exits before end of first epoch 
+
+physical_scale_parameters = [x_scale, y_scale, time_scale]
+input_signal_settings = [signal_points, x_std_dev, y_std_dev, tof_std_dev, noise_points] #move!
+
 
 # Create a dictionary to store the activations
 activations = {}
@@ -336,6 +352,9 @@ full_settings_dictionary = create_settings_dict(settings_path + "full_settings_d
 
 """
 
+if run_profiler:
+    # Create a cProfile object
+    profiler = cProfile.Profile()
 
 
 
@@ -384,6 +403,8 @@ from Loss_Functions.Loss_Fn_Classes import *
 
 # Data Degredation Functions
 from Helper_files.Data_Degradation_Functions import *
+
+from Dataloader import *
 
 # - Autoencoder
 from Autoencoders.DC3D_Autoencoder_V1_Protected2_2 import Encoder, Decoder   
@@ -533,9 +554,6 @@ def masking_recovery(input_image, recovered_image, time_dimension, print_result=
         print("ERROR: Masking has failed, the recovered image is not the same shape as the input image")
     return result
 
-
-
-
 ### CLEAN UP THIS FUCNTION !!!!!!!!!!!!
 def full_model_export(checkpoint, model_output_dir, model_checkpoints_dir, epoch, encoder, decoder, optim, latent_dim, fc_input_dim, double_precision, Encoder, debug_model_exporter=False):
     
@@ -613,8 +631,6 @@ def full_model_export(checkpoint, model_output_dir, model_checkpoints_dir, epoch
         print("- Completed -")
 
 
-
-
 #%% - Network Hook Functions
 def activation_hook_fn(module, input, output, layer_index):
     """
@@ -626,16 +642,48 @@ def activation_hook_fn(module, input, output, layer_index):
 def weights_hook_fn(module, input, output, layer_index):
     """
     This function will be called whenever a layer is called during the forward pass.
-    It records the activations and saves them in the specified dictionary.
+    It records the weights and saves them in the specified dictionary.
     """
     weights_data[layer_index] = module.weight.data.clone().detach()
 
 def biases_hook_fn(module, input, output, layer_index):
     """
     This function will be called whenever a layer is called during the forward pass.
-    It records the activations and saves them in the specified dictionary.
+    It records the biases and saves them in the specified dictionary.
     """
     biases_data[layer_index] = module.bias.data.clone().detach()
+
+def register_network_hooks(encoder, decoder, record_activity, record_weights, record_biases):
+    # Loop through all the modules (layers) in the encoder and register the hooks
+    for idx, module in enumerate(encoder.encoder_lin.modules()):
+        if isinstance(module, torch.nn.Linear):
+            print("Registering hooks for encoder layer: ", idx)
+            if record_activity:
+                # Register the hook with the layer_index as the key to identify activations for this layer
+                module.register_forward_hook(partial(activation_hook_fn, layer_index=idx))
+            if record_weights:
+                # Register the hook with the layer_index as the key to identify activations for this layer
+                module.register_forward_hook(partial(weights_hook_fn, layer_index=idx))
+            if record_biases:
+                # Register the hook with the layer_index as the key to identify activations for this layer
+                module.register_forward_hook(partial(biases_hook_fn, layer_index=idx))
+
+    enc_max_idx = idx
+    # Loop through all the modules (layers) in the decoder and register the hooks
+    for idx, module in enumerate(decoder.decoder_lin.modules()):
+        if isinstance(module, torch.nn.Linear):
+            print("Registering hooks for decoder layer: ", enc_max_idx + idx)
+            if record_activity:
+                # Register the hook with the layer_index as the key to identify activations for this layer
+                module.register_forward_hook(partial(activation_hook_fn, layer_index = enc_max_idx + idx))
+            if record_weights:
+                # Register the hook with the layer_index as the key to identify activations for this layer
+                module.register_forward_hook(partial(weights_hook_fn, layer_index = enc_max_idx + idx))
+            if record_biases:
+                # Register the hook with the layer_index as the key to identify activations for this layer
+                module.register_forward_hook(partial(biases_hook_fn, layer_index = enc_max_idx + idx))
+
+    print("All hooks registered\n")
 
 def write_hook_data_to_disk_and_clear(activations, weights_data, biases_data, epoch, output_dir):
     """
@@ -776,8 +824,6 @@ def quantify_loss_performance(clean_input_batch, noised_target_batch, time_dimen
     avg_loss_false_positive_xy.append(np.mean(loss_false_positive_xy))
 
 #%% - Data Output Functions
-
-        
 def colour_code_excel_file(file_path):
     """
 
@@ -1024,8 +1070,6 @@ def create_comparison_plot_data(slide_live_plot_size, epoch, max_epoch_reached, 
     Out_Label2 = dir + f'{model_save_name} - Live time loss.png'
     comparitive_loss_plot(x_list_time, y_list, legend_label_list, "Time (s)", "Train loss (ACB-MSE)", "Live Time loss", Out_Label2, plot_or_save)
 
-
-
 # Helper function to clean up repeated plot save/show code
 def plot_save_choice(plot_or_save, output_file_path=None):
     """
@@ -1056,7 +1100,6 @@ def plot_save_choice(plot_or_save, output_file_path=None):
                          "1 saves all plots to disk (non-blocking).\n"
                          "2 prints to terminal and saves to disk (blocking till closed).\n"
                          "3 will neither save nor show any plots, they will be immediately closed, useful for debugging.")
-
     
 # Plots the confidence telemetry data
 def plot_telemetry(telemetry, true_num_of_signal_points, plot_or_save=0):
@@ -1121,16 +1164,10 @@ def train_epoch(encoder, decoder, device, dataloader, loss_fn, optimizer, signal
     else:                              # Rather than print partial train losses per batch, instead create progress bar
         image_loop  = tqdm(dataloader, desc='Batches', leave=False) # Creates a progress bar for the batches
 
-    # Iterate the dataloader (we do not need the label values, this is unsupervised learning)
-    for image_batch, _ in image_loop: # with "_" we just ignore the labels (the second element of the dataloader tuple
-
-        #Select settings randomly from user ranges
-        signal_settings = input_range_to_random_value(signal_points, x_std_dev, y_std_dev, tof_std_dev, noise_points)
+    for image_batch, sparse_output_batch, sparse_and_resolution_limited_batch, noised_sparse_reslimited_batch in image_loop: 
 
         # DATA PREPROCESSING
         with torch.no_grad(): # No need to track the gradients
-            sparse_output_batch, sparse_and_resolution_limited_batch, noised_sparse_reslimited_batch = signal_degredation(signal_settings, image_batch, physical_scale_parameters, time_dimension)
-            
             if masking_optimised_binary_norm:
                 normalised_batch = mask_optimised_normalisation(noised_sparse_reslimited_batch)
                 norm_sparse_output_batch = mask_optimised_normalisation(sparse_output_batch)
@@ -1175,8 +1212,8 @@ def train_epoch(encoder, decoder, device, dataloader, loss_fn, optimizer, signal
                 writer.add_histogram(name + '/grad', param.grad, global_step=epoch)
 
         optimizer.step() # Update the parameters
-        batches = batches + 1
-        loss_total = loss_total + loss.detach().cpu().numpy()
+        batches += 1
+        loss_total += loss.item()
 
         if print_partial_training_losses:         # Prints partial train losses per batch
             print('\t partial train loss (single batch): %f' % (loss.data))  # Print batch loss value
@@ -1223,11 +1260,7 @@ def test_epoch(encoder, decoder, device, dataloader, loss_fn, signal_points, noi
         else:                              # Rather than print partial train losses per batch, instead create progress bar
             image_loop = tqdm(dataloader, desc='Testing', leave=False, colour="yellow") # Creates a progress bar for the batches
 
-        for image_batch, _ in image_loop:  
-
-            #Select settings randomly from user range
-            signal_settings = input_range_to_random_value(signal_points, x_std_dev, y_std_dev, tof_std_dev, noise_points)
-            sparse_output_batch, sparse_and_resolution_limited_batch, noised_sparse_reslimited_batch = signal_degredation(signal_settings, image_batch, physical_scale_parameters, time_dimension)
+        for image_batch, sparse_output_batch, sparse_and_resolution_limited_batch, noised_sparse_reslimited_batch in image_loop: 
 
             if masking_optimised_binary_norm:
                 normalised_batch = mask_optimised_normalisation(noised_sparse_reslimited_batch)
@@ -1251,9 +1284,8 @@ def test_epoch(encoder, decoder, device, dataloader, loss_fn, signal_points, noi
 
             # Evaluate loss
             loss = loss_fn(decoded_data, loss_comparator)  # Compute the loss between the decoded image batch and the clean image batch
-            
-            batches = batches + 1
-            loss_total = loss_total + loss.detach().cpu().numpy()
+            batches += 1
+            loss_total += loss.item()
 
             #Run additional perfomrnace metric loss functions for final plots, this needs cleaning up!!!!!
             quantify_loss_performance(loss_comparator, decoded_data, time_dimension)
@@ -1299,11 +1331,7 @@ def validation_routine(encoder, decoder, device, dataloader, loss_fn, signal_poi
         else:                              # Rather than print partial train losses per batch, instead create progress bar
             image_loop = tqdm(dataloader, desc='Validation', leave=False, colour="green") # Creates a progress bar for the batches
 
-        for image_batch, _ in image_loop:  
-
-            #Select settings randomly from user range
-            signal_settings = input_range_to_random_value(signal_points, x_std_dev, y_std_dev, tof_std_dev, noise_points)
-            sparse_output_batch, sparse_and_resolution_limited_batch, noised_sparse_reslimited_batch = signal_degredation(signal_settings, image_batch, physical_scale_parameters, time_dimension)
+        for image_batch, sparse_output_batch, sparse_and_resolution_limited_batch, noised_sparse_reslimited_batch in image_loop: 
 
             if masking_optimised_binary_norm:
                 normalised_batch = mask_optimised_normalisation(noised_sparse_reslimited_batch)
@@ -1327,9 +1355,8 @@ def validation_routine(encoder, decoder, device, dataloader, loss_fn, signal_poi
 
             # Evaluate loss
             loss = loss_fn(decoded_data, loss_comparator)  # Compute the loss between the decoded image batch and the clean image batch
-            
-            batches = batches + 1
-            loss_total = loss_total + loss.detach().cpu().numpy()
+            batches += 1
+            loss_total += loss.item()
 
             #Run additional perfomrnace metric loss functions for final plots, this needs cleaning up!!!!!
             #quantify_loss_performance(loss_comparator, decoded_data, time_dimension)
@@ -1337,7 +1364,7 @@ def validation_routine(encoder, decoder, device, dataloader, loss_fn, signal_poi
     return loss_total/batches
 
 ### Plotting function
-def plot_epoch_data(encoder, decoder, epoch, model_save_name, time_dimension, reconstruction_threshold, signal_points, noise_points=0, x_std_dev=0, y_std_dev=0, tof_std_dev=0, physical_scale_parameters=[1,1,1], n=10):       #Defines a function for plotting the output of the autoencoder. And also the input + clean training data? Function takes inputs, 'encoder' and 'decoder' which are expected to be classes (defining the encode and decode nets), 'n' which is the number of ?????Images in the batch????, and 'noise_factor' which is a multiplier for the magnitude of the added noise allowing it to be scaled in intensity.  
+def plot_epoch_data(encoder, decoder, dataloader, epoch, model_save_name, time_dimension, reconstruction_threshold, signal_points, noise_points=0, x_std_dev=0, y_std_dev=0, tof_std_dev=0, physical_scale_parameters=[1,1,1], n=10):       #Defines a function for plotting the output of the autoencoder. And also the input + clean training data? Function takes inputs, 'encoder' and 'decoder' which are expected to be classes (defining the encode and decode nets), 'n' which is the number of ?????Images in the batch????, and 'noise_factor' which is a multiplier for the magnitude of the added noise allowing it to be scaled in intensity.  
     
     """
     Plots the output of the autoencoder in a variety of ways to track its perfromance and abilities during the training cycle. 
@@ -1376,21 +1403,26 @@ def plot_epoch_data(encoder, decoder, epoch, model_save_name, time_dimension, re
     # 2D Input/Output Comparison Plots 
     plt.figure(figsize=(16,9))                                      #Sets the figure size
     loop = tqdm(range(n), desc='Plotting 2D Comparisons', leave=False, colour="green") 
-    for i in loop:                                                #Runs for loop where 'i' itterates over 'n' total values which range from 0 to n-1
 
-        #Select settings randomly from user range
-        signal_settings = input_range_to_random_value(signal_points, x_std_dev, y_std_dev, tof_std_dev, noise_points)
+    for i, (img_batch, sparse_output_batch, sparse_and_resolution_limited_batch, noised_sparse_reslimited_batch) in enumerate(dataloader):     # CLEAN UP START 
+        if i >= n:
+            break
+        # Update tqdm bar
+        loop.update(1)
 
-        # Load input image
-        img = train_dataset[i][0].unsqueeze(0) # Unsqueeze to add artificial batch dimension
-        
+        img = img_batch[0] # Get the first image in the batch
+        sparse_output_batch = sparse_output_batch[0] # Get the first image in the batch
+        sparse_and_resolution_limited_batch = sparse_and_resolution_limited_batch[0] # Get the first image in the batch
+        noised_sparse_reslimited_batch = noised_sparse_reslimited_batch[0] # Get the first image in the batch
+
+        img.unsqueeze_(0) # Add a dimension to the image batch
+        sparse_output_batch.unsqueeze_(0) # Add a dimension to the image batch
+        sparse_and_resolution_limited_batch.unsqueeze_(0) # Add a dimension to the image batch
+        noised_sparse_reslimited_batch.unsqueeze_(0) # Add a dimension to the image batch
+
         # Save the number of true signal points on the input image 
-        number_of_true_signal_points.append(signal_settings[0])  
+        number_of_true_signal_points.append(signal_points)  
         
-        #global image_noisy   
-              
-        # Create degraded images                     
-        sparse_output_batch, sparse_and_resolution_limited_batch, noised_sparse_reslimited_batch = signal_degredation(signal_settings, img, physical_scale_parameters, time_dimension)
 
         # Normalise the noised image
         if masking_optimised_binary_norm:
@@ -1539,60 +1571,6 @@ def plot_epoch_data(encoder, decoder, epoch, model_save_name, time_dimension, re
 
     return(number_of_true_signal_points, number_of_recovered_signal_points, in_im, noise_im, rec_im)        #returns the number of true signal points, number of recovered signal points, input image, noised image and reconstructed image 
 
-#%% - Custom Loss Fn Classes
-
-
-#from Loss_Functions.ada_weighted_custom_split_loss import ada_weighted_custom_split_loss  #NOT YET MOVED, NEEDS DEPEMDECIOES IN THIS CODE SORTED FIRST
-
-# Weighted Custom Split Loss Function
-def ada_weighted_custom_split_loss(reconstructed_image, target_image, zero_weighting=zero_weighting, nonzero_weighting=nonzero_weighting):
-    """
-    Calculates the weighted error loss between target_image and reconstructed_image.
-    The loss for zero pixels in the target_image is weighted by zero_weighting, and the loss for non-zero
-    pixels is weighted by nonzero_weighting and both have loss functions as passed in by user.
-
-    Args:
-    - target_image: a tensor of shape (B, C, H, W) containing the target image
-    - reconstructed_image: a tensor of shape (B, C, H, W) containing the reconstructed image
-    - zero_weighting: a scalar weighting coefficient for the MSE loss of zero pixels
-    - nonzero_weighting: a scalar weighting coefficient for the MSE loss of non-zero pixels
-
-    Returns:
-    - weighted_mse_loss: a scalar tensor containing the weighted MSE loss
-    """
-    
-    # Get the indices of 0 and non 0 values in target_image as a mask for speed
-    zero_mask = (target_image == 0)
-    nonzero_mask = ~zero_mask         # Invert mask
-    
-    # Get the values in target_image
-    values_zero = target_image[zero_mask]
-    values_nonzero = target_image[nonzero_mask]
-    
-    # Get the corresponding values in reconstructed_image
-    corresponding_values_zero = reconstructed_image[zero_mask]
-    corresponding_values_nonzero = reconstructed_image[nonzero_mask]
-    
-    # Get the loss functions
-    loss_func_zeros = split_loss_functions[0]
-    loss_func_nonzeros = split_loss_functions[1]
-    
-    # Compute the MSE losses
-    zero_loss = loss_func_zeros(corresponding_values_zero, values_zero)
-    nonzero_loss = loss_func_nonzeros(corresponding_values_nonzero, values_nonzero)
-
-    # Protection from there being no 0 vals or no non zero vals, which then retunrs nan for MSE and creates a nan overall MSE return (which is error)
-    if torch.isnan(zero_loss):
-        zero_loss = 0
-    if torch.isnan(nonzero_loss):
-        nonzero_loss = 0
-    
-    # Sum losses with weighting coefficiants 
-    weighted_mse_loss = (zero_weighting * zero_loss) + (nonzero_weighting * nonzero_loss) 
-    
-    return weighted_mse_loss
-
-
 
 #%% - Program begins
 print("\n \nProgram Initalised - Welcome to DC3D Trainer\n")  #prints the welcome message
@@ -1600,6 +1578,10 @@ print("\n \nProgram Initalised - Welcome to DC3D Trainer\n")  #prints the welcom
 # Following section checks if a CUDA enabled GPU is available. If found it is selected as the 'device' to perform the tensor opperations. If no CUDA GPU is found the 'device' is set to CPU (much slower) 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 print(f'Selected compute device: {device}\n')  #Informs user if running on CPU or GPU
+
+if run_profiler:
+    # Start profiling
+    profiler.enable()
 
 
 #%% - # Hyperparameter Optimiser
@@ -1681,44 +1663,34 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
 
     #%% - Set loss function choice
 
-    # List of all availible loss functions
-    availible_loss_functions = [ACBLoss(zero_weighting, nonzero_weighting), 
-                                ffACBLoss(zero_weighting, nonzero_weighting, fullframe_weighting), 
-                                True3DLoss(zero_weighting=1, nonzero_weighting=1, timesteps=1000), 
-                                boostedffACBLoss(zero_weighting, nonzero_weighting, fullframe_weighting, ff_loss, boost=BOOST),                                
-                                simple3Dloss(zero_weighting=1, nonzero_weighting=1, virtual_t_weighting=1, virtual_x_weighting=1, virtual_y_weighting=1, timesteps=1000), 
-                                ACBLoss3D(zero_weighting=1, nonzero_weighting=1, virtual_t_weighting=1, virtual_x_weighting=None, virtual_y_weighting=None, timesteps=1000), 
-                                torch.nn.MSELoss(), 
-                                torch.nn.BCELoss(), 
-                                torch.nn.L1Loss(), 
-                                ada_SSE_loss, 
-                                ada_weighted_custom_split_loss, 
-                                WeightedPerfectRecoveryLoss(),
-                                NEWESTACB3dloss2024(batch_size, ydim, xdim)]    
-   
-    # List of all availible loss function labels
-    loss_function_labels = ["ACB_MSE", 
-                            "ffACB_MSE", 
-                            "True3DLoss",
-                            "boostedffACB_MSE",
-                            "simple3Dloss",
-                            "ACBLoss3D", 
-                            "boostedffACB_MSE",
-                            "MSE", 
-                            "BCE", 
-                            "MAE", 
-                            "SSE", 
-                            "Split Loss", 
-                            "Weighted Perfect Recovery",
-                            "2024 - 3D LOSS"]
-    
-    #loss_fn = 
-    loss_fn = availible_loss_functions[loss_function_selection]            # Sets loss function based on user input of parameter loss_function_selection
-    loss_fn_label = loss_function_labels[loss_function_selection]          # Sets loss function label based on user input of parameter loss_function_selection
-
     # Set loss function choice for split loss (if loss function choice is set to ada weighted custom split loss)
     availible_split_loss_functions = [torch.nn.MSELoss(), torch.nn.BCELoss(), torch.nn.L1Loss(), ada_SSE_loss]    # List of all availible loss functions is set to ada_weighted_custom_split_loss
     split_loss_functions = [availible_split_loss_functions[zeros_loss_choice], availible_split_loss_functions[nonzero_loss_choice]] # Sets loss functions based on user input
+
+
+    # List of all availible loss functions - add new loss functions here by adding name and function to dictionary as key and value. Code is her so that falls inside the hyperparam optimser loop so the loss function init params can also be optimised, i.e weights for ACB loss etc.
+    availible_loss_functions_dict = {
+        "MAE": torch.nn.L1Loss(),                                                                      # Mean Absolute Error Loss from PyTorch Library
+        "MSE": torch.nn.MSELoss(),                                                                     # Mean Squared Error Loss from PyTorch Library
+        "SSE": ada_SSE_loss,                                                                           # Sum of Squared Error Loss (Custom)
+        "BCE": torch.nn.BCELoss(),                                                                     # Binary Cross Entropy Loss from PyTorch Library
+
+        "ACB_MSE": ACBLoss(zero_weighting, nonzero_weighting),                                                                # My Original Automatically Class Balanced MSE Loss using Class balancing by frequency
+        "ffACB_MSE": ffACBLoss(zero_weighting, nonzero_weighting, fullframe_weighting),                                       # Update to ACB_MSE, adds new term to the loss function that calulates mse over the full frame with its own weighting
+        "Split_Loss": ada_weighted_custom_split_loss(split_loss_functions, zero_weighting, nonzero_weighting),                # Uses my automatic class balancing to split the loss function into two parts, one for zero values and one for non-zero values but instead of using MSE as my ACBMSE implementation this just leaves the loss function open to user setting, and uniquly allows user to select differnt loss fucntion for each class.
+
+        "True3D": True3DLoss(zero_weighting=1, nonzero_weighting=1, timesteps=1000),                                                                          # 3D Loss function that uses the true 3D image as the target, rather than the 2D projection, (Warning: Very Slow)
+        "Simple3D": simple3Dloss(zero_weighting=1, nonzero_weighting=1, virtual_t_weighting=1, virtual_x_weighting=1, virtual_y_weighting=1, timesteps=1000), # Simplified 3D loss function (Warning: Very Slow)
+        "ACB3D": ACBLoss3D(zero_weighting, nonzero_weighting, virtual_t_weighting=1, virtual_x_weighting=None, virtual_y_weighting=None, timesteps=1000), # Adds my automatic class balancing to the 3D loss function (Warning: Very Slow)
+        "Fast3D": NEWESTACB3dloss2024(batch_size, ydim, xdim),                                                                                             # Fast 3D loss method that instea of projecting 2D back to 3D and filling the cube with the values, it unravels the 2D back to an array of 3D coordinates (4D if counting the batch dim) then compares these directly ratehr than taking the next step to fill the cube. This is much faster than the other 3D loss functions and is the current prefered method for 3D loss, although has not demonstared benefits above the 2D ACB loss functions so far.
+
+        "WPR_Loss": WeightedPerfectRecoveryLoss(),           # Custom loss function that contains a weighting term that encorages the network to have points follow the correct gradient ??? 
+    }
+
+    # Accessing the selected loss function and label
+    loss_fn_label = loss_function_selection                    # Sets loss function label, used on plots and data to clearly identify loss function
+    loss_fn = availible_loss_functions_dict[loss_fn_label]       # Sets loss function based on user input of parameter loss_function_selection
+
 
 
     #%% - Create record of all user input settings, to add to output data for testing and keeping track of settings
@@ -1750,59 +1722,44 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
 
 
     #%% - Dataset Pre-tests
-    # Dataset Integrity Check   
     if full_dataset_integrity_check: #if full_dataset_integrity_check is set to True, then the scan type is set to full (slow)
         scantype = "full"
     else:
         scantype = "quick"
 
-    # TERMINAL PRINT: Report test type and result
-    print(f"Testing training dataset integrity, with {scantype} scan")  #prints the scan type
-    
-    # CHECK: Dataset Distribution Check
-    dataset_integrity_check(train_dir, full_test=full_dataset_integrity_check, print_output=True) #checks the integrity of the training dataset
-    #print("Test completed\n")
+    # CHECK: Dataset Integrity Check
+    print(f"Testing training dataset integrity, with {scantype} scan")                                 # Prints the scan type
+    dataset_integrity_check(train_dir, full_test=full_dataset_integrity_check, print_output=True)      # Checks the integrity of the training dataset
 
     # CHECK: Dataset Distribution Check
-    if full_dataset_distribution_check: #if full_dataset_distribution_check is set to True, then the dataset distribution is checked
+    if full_dataset_distribution_check:                                                                                         # If full_dataset_distribution_check is set to True, then the dataset distribution is checked
         print("\nTesting training dataset signal distribution")
-        dataset_distribution_tester(train_dir, time_dimension, ignore_zero_vals_on_plot=True, output_image_dir=graphics_dir) #checks the distribution of the training dataset
-        #print("Test completed\n")
+        dataset_distribution_tester(train_dir, time_dimension, ignore_zero_vals_on_plot=True, output_image_dir=graphics_dir)    # Checks the distribution of the training dataset
 
     # CHECK: Num of images in path greater than batch size choice? 
-    num_of_files_in_path = len(os.listdir(data_path + dataset_title + '/Data/')) #number of files in path
-    if num_of_files_in_path < batch_size: #if the number of files in the path is less than the batch size, user is promted to input a new batch size
+    num_of_files_in_path = len(os.listdir(data_path + dataset_title + '/Data/'))                                                       # Number of files in path
+    if num_of_files_in_path < batch_size:                                                                                              # If the number of files in the path is less than the batch size, user is promted to input a new batch size
         print("Error, the path selected has", num_of_files_in_path, "image files, which is", (batch_size - num_of_files_in_path) , "less than the chosen batch size. Please select a batch size less than the total number of images in the directory")
-        batch_err_message = "Choose new batch size, must be less than total amount of images in directory", (num_of_files_in_path) #creates the error message
-        batch_size = int(input(batch_err_message))  #!!! not sure why input message is printing with wierd brakets and speech marks in the terminal? Investigate
+        batch_err_message = "Choose new batch size, must be less than total amount of images in directory", (num_of_files_in_path)                               # Creates the error message
+        batch_size = int(input(batch_err_message))                                                                                                               # NOTE: Not sure why input message is printing with wierd brakets and speech marks in the terminal? Investigate???
 
-    # TERMINAL PRINT: Report type of gradient descent
-    learning = batch_learning(num_of_files_in_path, batch_size)  #calculates which type of batch learning is being used
-    print("%s files in path." %num_of_files_in_path ,"// Batch size =",batch_size, "\nLearning via: " + learning,"\n") #prints the number of files in the path and the batch size and the resultant type of batch learning
+    # Report type of gradient descent to user
+    print("%s files in path." %num_of_files_in_path ,"// Batch size =",batch_size, "\nLearning via: " + batch_learning(num_of_files_in_path, batch_size),"\n")   # Prints the number of files in the path and the batch size and the resultant type of batch learning
 
     #%% - Data Loader & Preperation
 
-    ### - Dataset
-    # Dataset loading function
-    def train_loader2d(path): #loads the 2D image from the path
-        sample = (np.load(path))
-        if TORCHSIM_data:               ####REMOVE ONCE TSIM IS FIXED!!!
-            sample = sample * 10    
-        return (sample) 
     
     # Creates the training dataset using the DatasetFolder function from torchvision.datasets
-    train_dataset = torchvision.datasets.DatasetFolder(train_dir, train_loader2d, extensions='.npy') 
+    train_dataset = CustomDataset(train_dir, precision, store_full_dataset_in_memory)
 
     ### - Data Preparation 
-    tensor_transform = partial(np_to_tensor, double_precision=double_precision) #using functools partial to bundle the args into np_to_tensor to use in custom torch transform using lambda function
 
     # Transformations
-    train_transform = transforms.Compose([transforms.Lambda(tensor_transform),
-                                        #transforms.RandomRotation(30),         #transforms.RandomRotation(angle (degrees?) ) rotates the tensor randomly up to max value of angle argument
-                                        #transforms.RandomResizedCrop(224),     #transforms.RandomResizedCrop(pixels) crops the data to 'pixels' in height and width (#!!! and (maybe) chooses a random centre point????)
-                                        #transforms.RandomHorizontalFlip(),     #transforms.RandomHorizontalFlip() flips the image data horizontally 
-                                        ])      
-    train_dataset.transform = train_transform   
+    #train_transform = transforms.Compose(#transforms.RandomRotation(30),         #transforms.RandomRotation(angle (degrees?) ) rotates the tensor randomly up to max value of angle argument
+    #                                    #transforms.RandomResizedCrop(224),     #transforms.RandomResizedCrop(pixels) crops the data to 'pixels' in height and width (#!!! and (maybe) chooses a random centre point????)
+    #                                    #transforms.RandomHorizontalFlip(),     #transforms.RandomHorizontalFlip() flips the image data horizontally 
+    #                                    ])      
+    #train_dataset.transform = train_transform   
     ##For info on all transforms check out: https://pytorch.org/vision/0.9/transforms.html
 
     # Dataset Partitioning
@@ -1819,9 +1776,10 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
         val_data = non_training_data
 
     # Generating Dataloaders
-    train_loader = torch.utils.data.DataLoader(train_data, batch_size=batch_size, shuffle=shuffle_train_data)   #Training data loader, is shuffled based on parameter 'shuffle_train_data' = True/False
-    test_loader = torch.utils.data.DataLoader(test_data, batch_size=batch_size)                                 #Testing data loader 
-    valid_loader = torch.utils.data.DataLoader(val_data, batch_size=batch_size)                                 #Validation data loader 
+    train_loader = CustomDataLoader(input_signal_settings, physical_scale_parameters, time_dimension, device, preprocess_on_gpu, precision, dataset=train_data, batch_size=batch_size, shuffle=shuffle_train_data, num_workers=data_loader_workers) #Training data loader, is shuffled based on parameter 'shuffle_train_data' = True/False
+    test_loader = CustomDataLoader(input_signal_settings, physical_scale_parameters, time_dimension, device, preprocess_on_gpu, precision, dataset=test_data, batch_size=batch_size, shuffle=False, num_workers=data_loader_workers) # Test/Eval data loader 
+    valid_loader = CustomDataLoader(input_signal_settings, physical_scale_parameters, time_dimension, device, preprocess_on_gpu, precision, dataset=val_data, batch_size=batch_size, shuffle=False, num_workers=data_loader_workers) # Model Validation data loader 
+    
 
 
     #%% - Setup model, loss criteria and optimiser    
@@ -1829,10 +1787,24 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
     encoder = Encoder(latent_dim, print_encoder_debug, fc_input_dim)
     decoder = Decoder(latent_dim, print_decoder_debug, fc_input_dim)
 
+    if precision == 16: # Set encoder and decoder to half precision floating point arithmetic (fp16)
+        encoder.half()
+        decoder.half()
+        dtype = torch.float16
+
+    elif precision == 32: # Sets the encoder and decoder to single precision floating point arithmetic (fp32)
+        encoder.float()
+        decoder.float()
+        dtype = torch.float32
+
     # Sets the encoder and decoder to double precision floating point arithmetic (fp64)
-    if double_precision:
+    elif precision == 64:
         encoder.double()   
         decoder.double()
+        dtype = torch.float64
+
+    else:
+        raise ValueError("Error: Precision not set correctly, please set precision to 16, 32, or 64")
 
     # Define the optimizer
     params_to_optimize = [{'params': encoder.parameters()} ,{'params': decoder.parameters()}] #Selects what to optimise, 
@@ -1862,9 +1834,7 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
     with torch.no_grad(): # No need to track the gradients
         
         # Create dummy input tensor
-        enc_input_tensor = torch.randn(batch_size, channels, ydim, xdim) 
-        if double_precision:
-            enc_input_tensor = enc_input_tensor.double()
+        enc_input_tensor = torch.randn(batch_size, channels, ydim, xdim, dtype=dtype) 
             
         # Join the encoder and decoder models
         full_network_model = torch.nn.Sequential(encoder, decoder)   #should this be done with no_grad?
@@ -1880,50 +1850,12 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
 
     #%% - Add Activation data hooks to encoder and decoder layers
     if record_activity or record_weights or record_biases:   # MOVE TO FUCNTION AND THEN TO HELPER FUCNS FILE FOR CLEANER CODE
+        register_network_hooks(encoder, decoder, record_activity, record_weights, record_biases)
 
         # Create a list to store the activations of each layer
         #all_activations = []
         #recorded_weights = [] 
         #recorded_biases = [] 
-
-        # Loop through all the modules (layers) in the encoder and register the hooks
-        for idx, module in enumerate(encoder.encoder_lin.modules()):
-            if isinstance(module, torch.nn.Linear):
-                print("Registering hooks for encoder layer: ", idx)
-                if record_activity:
-                    # Register the hook with the layer_index as the key to identify activations for this layer
-                    module.register_forward_hook(partial(activation_hook_fn, layer_index=idx))
-                if record_weights:
-                    # Register the hook with the layer_index as the key to identify activations for this layer
-                    module.register_forward_hook(partial(weights_hook_fn, layer_index=idx))
-                if record_biases:
-                    # Register the hook with the layer_index as the key to identify activations for this layer
-                    module.register_forward_hook(partial(biases_hook_fn, layer_index=idx))
-
-        enc_max_idx = idx
-        # Loop through all the modules (layers) in the decoder and register the hooks
-        for idx, module in enumerate(decoder.decoder_lin.modules()):
-            if isinstance(module, torch.nn.Linear):
-                print("Registering hooks for decoder layer: ", enc_max_idx + idx)
-                if record_activity:
-                    # Register the hook with the layer_index as the key to identify activations for this layer
-                    module.register_forward_hook(partial(activation_hook_fn, layer_index = enc_max_idx + idx))
-                if record_weights:
-                    # Register the hook with the layer_index as the key to identify activations for this layer
-                    module.register_forward_hook(partial(weights_hook_fn, layer_index = enc_max_idx + idx))
-                if record_biases:
-                    # Register the hook with the layer_index as the key to identify activations for this layer
-                    module.register_forward_hook(partial(biases_hook_fn, layer_index = enc_max_idx + idx))
-
-        print("All hooks registered\n")
-
-
-
-
-            
-
-
-
 
 
     #%% - Running Training Loop
@@ -2012,6 +1944,7 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
 
                 returned_data_from_plotting_function = plot_epoch_data(encoder, 
                                                                         decoder, 
+                                                                        test_loader,
                                                                         epoch, 
                                                                         model_save_name, 
                                                                         time_dimension, 
@@ -2022,7 +1955,8 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
                                                                         y_std_dev,
                                                                         tof_std_dev,
                                                                         physical_scale_parameters,
-                                                                        num_to_plot)
+                                                                        num_to_plot, 
+                                                                        )
                 
                 number_of_true_signal_points, number_of_recovered_signal_points, in_data, noisy_data, rec_data = returned_data_from_plotting_function
                 
@@ -2045,7 +1979,7 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
             max_epoch_reached = epoch    
                 
             # check if current epoch is a multiple of 'model_checkpoint_interval' and if so save the model
-            if epoch % model_checkpoint_interval == 0 and epoch != 0:
+            if model_checkpointing and epoch % model_checkpoint_interval == 0 and epoch != 0:
                 full_model_export(True, model_output_dir, model_checkpoints_dir, epoch, encoder, decoder, optim, latent_dim, fc_input_dim, double_precision, Encoder, debug_model_exporter=False)
 
 
@@ -2082,6 +2016,11 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
     # If user presses Ctr + c to exit training loop, this handles the exception and allows the code to run its final data and model saving etc before exiting        
     except KeyboardInterrupt:
         print("Keyboard interrupt detected. Exiting training gracefully...")
+
+    if run_profiler:
+        # Stop profiling
+        profiler.disable()
+
 
 
     #%% - After Training
@@ -2419,4 +2358,22 @@ if optimise_hyperparameter:
 
 #%% - End of Program - Printing message to notify user!
 print("\nProgram Complete - Shutting down...\n")    
-    
+
+
+if run_profiler:
+
+
+    # Print the profiling results
+    profiler.print_stats(sort='cumulative')
+
+    # save the profiling results to a file
+    profiler.dump_stats('profiler_results.prof')
+
+    # use snakeviz to view the profiling results in a browser
+
+    command = "snakeviz -s profiler_results.prof"
+    os.system(command)
+
+
+
+

@@ -11,6 +11,7 @@ import torch.optim as optim
 
 
 #%% - DC3D Data Degradation Functions
+#%% - DC3D Data Degradation Functions
 
 # Function to add n noise points to each image in a tensor batch(must be used AFTER custom norm 
 def add_noise_points_to_batch(input_image_batch, noise_points=100, reconstruction_threshold=0.5):
@@ -132,7 +133,7 @@ def create_sparse_signal(input_image_batch, signal_points=2, linear=False):
     return output_image_batch
 
 # Function to add shift in x, y and ToF to a true signal point due to detector resoloution
-def simulate_detector_resolution(input_image_batch, x_std_dev, y_std_dev, tof_std_dev, x_scale, y_scale, time_scale, plot=False):
+def simulate_detector_resolution(input_image_batch, x_std_dev, y_std_dev, tof_std_dev, x_scale, y_scale, time_scale, device, dtype, plot=False):
     """
     This function will add a random shift taken from a gaussain std deviation in x, y or ToF to each non-zero pixel in the image tensor to simulate detector resoloution limits
 
@@ -158,24 +159,25 @@ def simulate_detector_resolution(input_image_batch, x_std_dev, y_std_dev, tof_st
     # Create a copy of the input image batch
     image_batch_all = input_image_batch.clone()
 
+
     for idx, image_batch_andc in enumerate(image_batch_all):
         image_batch = image_batch_andc.squeeze()
         # Assume that the S2 image is stored in a variable called "image_tensor"
         x, y = image_batch.size()
 
         # For all the values in the tensor that are non zero (all signal points) adda random value drawn from a gaussian distribution with mean of the original value and std dev of ToF_std_dev so simulate ToF resoloution limiting
-        image_batch[image_batch != 0] = image_batch[image_batch != 0] + torch.normal(mean=0, std=tof_std_dev_pixels, size=image_batch[image_batch != 0].shape)
+        image_batch[image_batch != 0] = image_batch[image_batch != 0] + torch.normal(mean=0, std=tof_std_dev_pixels, size=image_batch[image_batch != 0].shape, device=device, dtype=dtype)
 
         # Generate random values for shifting the x and y indices
-        x_shift = torch.normal(mean=0, std=x_std_dev_pixels, size=(x, y), dtype=torch.float32)
-        y_shift = torch.normal(mean=0, std=y_std_dev_pixels, size=(x, y), dtype=torch.float32)
+        x_shift = torch.normal(mean=0, std=x_std_dev_pixels, size=(x, y), dtype=torch.float32, device=device)
+        y_shift = torch.normal(mean=0, std=y_std_dev_pixels, size=(x, y), dtype=torch.float32,  device=device)
 
         # Create a mask for selecting non-zero values in the image tensor
         mask = image_batch != 0
 
         # Apply the x and y shifts to the non-zero pixel locations
-        new_x_indices = torch.clamp(torch.round(torch.arange(x).unsqueeze(1) + x_shift), 0, x - 1).long()
-        new_y_indices = torch.clamp(torch.round(torch.arange(y).unsqueeze(0) + y_shift), 0, y - 1).long()
+        new_x_indices = torch.clamp(torch.round(torch.arange(x, device=device).unsqueeze(1) + x_shift), 0, x - 1).long()
+        new_y_indices = torch.clamp(torch.round(torch.arange(y, device=device).unsqueeze(0) + y_shift), 0, y - 1).long()
         shifted_image_tensor = torch.zeros_like(image_batch)
         shifted_image_tensor[new_x_indices[mask], new_y_indices[mask]] = image_batch[mask]
 
@@ -188,7 +190,7 @@ def simulate_detector_resolution(input_image_batch, x_std_dev, y_std_dev, tof_st
         
     return image_batch_all
 
-def signal_degredation(signal_settings, image_batch, physical_scale_parameters, time_dimension):
+def signal_degredation(signal_settings, image_batch, physical_scale_parameters, time_dimension, device, dtype):
     """
     Sequentially applies the differnt signal degredation functions to the input image batch and returns the output of each stage
 
@@ -203,6 +205,6 @@ def signal_degredation(signal_settings, image_batch, physical_scale_parameters, 
     x_scale, y_scale, time_scale = physical_scale_parameters
     signal_points_r, x_std_dev_r, y_std_dev_r, tof_std_dev_r, noise_points_r = signal_settings
     sparse_output_batch = create_sparse_signal(image_batch, signal_points_r)
-    sparse_and_resolution_limited_batch = simulate_detector_resolution(sparse_output_batch, x_std_dev_r, y_std_dev_r, tof_std_dev_r, x_scale, y_scale, time_scale)
+    sparse_and_resolution_limited_batch = simulate_detector_resolution(sparse_output_batch, x_std_dev_r, y_std_dev_r, tof_std_dev_r, x_scale, y_scale, time_scale, device, dtype)
     noised_sparse_reslimited_batch = add_noise_points_to_batch_prenorm(sparse_and_resolution_limited_batch, noise_points_r, time_dimension)
     return sparse_output_batch, sparse_and_resolution_limited_batch, noised_sparse_reslimited_batch   
