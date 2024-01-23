@@ -217,9 +217,10 @@ def Reduced_Dimension_Data_Representations2(encoder, device, test_dataset, plot_
 # result_df, tsne_results = Reduced_Dimension_Data_Representations(encoder, device, test_dataset)
 
 
+from Helper_files.Helper_Functions import plot_save_choice
 
 
-def Reduced_Dimension_Data_Representations(encoder, device, test_dataset, plot_or_save=0):
+def Reduced_Dimension_Data_Representations(encoder, device, test_dataset, save_path_1, save_path_2, plot_or_save):
     """
     Display the input data samples as a XXXXX
 
@@ -253,10 +254,22 @@ def Reduced_Dimension_Data_Representations(encoder, device, test_dataset, plot_o
         tsne = TSNE(n_components=2)
         tsne_results = tsne.fit_transform(encoded_samples.drop(['label'],axis=1))
 
-        return(encoded_samples, tsne_results)
+        # Higher dim
+        plt.scatter(encoded_samples['Enc. Variable 0'], encoded_samples['Enc. Variable 1'],
+                c=encoded_samples['label'], alpha=0.7)
+        plt.grid()
+        plot_save_choice(plot_or_save, save_path_1)  
 
+        # TSNE of Higher dim
+        plt.scatter(tsne_results[:, 0], tsne_results[:, 1], c=encoded_samples['label'])
+        plt.xlabel('tsne-2d-one')
+        plt.ylabel('tsne-2d-two')
+        plt.grid()
+        plot_save_choice(plot_or_save, save_path_2)  
     except:
-        return(None)
+        print("A non fatal error occured when generating TSNE visulisation, visulisation skipped")
+        pass
+        
 
 """
 This code is performing the following operations:

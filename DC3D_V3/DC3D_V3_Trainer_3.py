@@ -4,13 +4,6 @@
 # University of Bristol
 # adill@neuralworkx.com
 
-import cProfile
-
-
-
-
-
-
 """
 Possible improvements:
 
@@ -161,39 +154,37 @@ Possible improvements:
 # NOTE to users: First epoch will always run slower when using a new dataset or after a computer restart as system memory is being trained, subsequent epochs should take ~50% of the time of the first epoch
 # NOTE to users: The 'nonzero_weighting' parameter is a great way to adjust the sensetivity of the training result. Values around 0.1 will be very cautious in predicting hits, whilst moving to around 1.0 will be very confident in predicting hits. This is a great way to adjust the sensetivity of the model to your needs. Low values are better for direct net output, whilst higher values are better for masking output.
 
-
-
 #%% - User Inputs
-dataset_title = "PDT 10K"# "RF_5K"#"PDT 10K" #"RDT 10K MOVE" #'RDT 500K 1000ToF' #"RDT 10K MOVE" #"RDT 50KM"# "Dataset 37_X15K Perfect track recovery" #"Dataset 24_X10Ks"           #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
-model_save_name = "fast test10"#'Parabola6 no norm to loss' #"T2"#"RDT 500K 1000ToF timed"#"2023 Testing - RDT100K n100"#"2023 Testing - RDT10K NEW" #"RDT 100K 30s 200n Fixed"#"RDT 50KM tdim1000 AE2PROTECT 30 sig 200NP LD10"     #"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
+dataset_title = "RDT 50KM Fix" # "RF_5K"#"PDT 10K" #"RDT 10K MOVE" #'RDT 500K 1000ToF' #"RDT 10K MOVE" #"RDT 50KM"# "Dataset 37_X15K Perfect track recovery" #"Dataset 24_X10Ks"           #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
+model_save_name = "fast test16 100K" #'Parabola6 no norm to loss' #"T2"#"RDT 500K 1000ToF timed"#"2023 Testing - RDT100K n100"#"2023 Testing - RDT10K NEW" #"RDT 100K 30s 200n Fixed"#"RDT 50KM tdim1000 AE2PROTECT 30 sig 200NP LD10"     #"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
 
-model_checkpointing = True                # If set to true then the model will save a checkpoint of the model and optimiser state dicts at the end of each 'model_checkpointing_interval' epochs
-model_checkpoint_interval = 20          # Number of epochs between each model checkpoint save
+model_checkpointing = True                   # If set to true then the model will save a checkpoint of the model and optimiser state dicts at the end of each 'model_checkpointing_interval' epochs
+model_checkpoint_interval = 5               # Number of epochs between each model checkpoint save
 
-inject_seed = True     # 
-inject_seed_interval = 20          # Number of epochs between each seed injection
+inject_seed = True                           # Reinjects the original seeding value to deterministically recreate the same noise and signal points each epoch, this is useful for testing the effect of different hyperparameters on the same data or for allowing the training to see same images multiple times to improve performance
+inject_seed_interval = 1                    # Number of epochs between each seed injection
 
-precision = 32                             # User controll to set the precision of the model (16f, 32f or 64f) (Hyperparameter)
-preprocess_on_gpu = True   # Only woirks if cuda gpu is found, else will defulat back to cpu preprocess
-store_full_dataset_in_memory = True         # If set to true then the full dataset will be loaded into memory at the start of training, otherwise will load each batch from disk as needed (WARNING: Setting this to true will use a lot of memory, only use if you have enough system RAM to hold entire dataset)
-data_loader_workers = 0 
+precision = 32                               # User controll to set the precision of the model (16f, 32f or 64f) (Hyperparameter)
+preprocess_on_gpu = True                     # Only woirks if cuda gpu is found, else will defulat back to cpu preprocess
+store_full_dataset_in_memory = True          # If set to true then the full dataset will be loaded into memory at the start of training, otherwise will load each batch from disk as needed (WARNING: Setting this to true will use a lot of memory, only use if you have enough system RAM to hold entire dataset)
+data_loader_workers = 0                      # Number of workers to use for the data loader, 0 means all data loading will be done on the main thread, 1 means one worker will be used to load data in the background, 2 means two workers will be used etc. 
 
-TORCHSIM_data = False #!!!!!!!!!!!!!!!!!!!!!!
+TORCHSIM_data = False                        #!!!!!!!!!!!!!!!!!!!!!!
 
-xdim = 88   # Currently useless
-ydim = 128  # Currently useless
+xdim = 88                                    # Currently useless
+ydim = 128                                   # Currently useless
 time_dimension = 1000                        # User controll to set the number of time steps in the data
-channels = 1      #CONNECT                          # User controll to set the number of channels in the data
+channels = 1      #CONNECT                   # User controll to set the number of channels in the data
 
 #%% - Training Hyperparameter Settings
 num_epochs = 2000                            # User controll to set number of epochs (Hyperparameter)
-batch_size = 10 #6 looks good                              # User controll to set batch size - number of Images to pull per batch (Hyperparameter) 
-learning_rate = 0.0001                           # User controll to set optimiser learning rate (Hyperparameter)
+batch_size = 10 #6 looks good                # User controll to set batch size - number of Images to pull per batch (Hyperparameter) 
+learning_rate = 0.0001                       # User controll to set optimiser learning rate (Hyperparameter)
 optim_w_decay = 1e-05                        # User controll to set optimiser weight decay for regularisation (Hyperparameter)
 
-
-latent_dim = 50     #NOTE: Tested!                         # User controll to set number of nodes in the latent space, the bottleneck layer (Hyperparameter)
-fc_input_dim = 512                         # User controll to set number of nodes in the fc2 layer (Hyperparameter)
+# Architecture Settings
+latent_dim = 50                              # User controll to set number of nodes in the latent space, the bottleneck layer (Hyperparameter)
+fc_input_dim = 512                           # User controll to set number of nodes in the fc2 layer (Hyperparameter)
 dropout_prob = 0.2                           # [NOTE Not connected yet] User controll to set dropout probability (Hyperparameter)
 reconstruction_threshold = 0.5               # MUST BE BETWEEN 0-1  #Threshold for 3d reconstruction, values below this confidence level are discounted
 
@@ -203,90 +194,84 @@ val_set_on = False                           # User controll to set if a validat
 val_test_split_ratio = 0.9                   # This needs to be better explained its actually test_val ration ratehr than oterh way round     # [NOTE LEAVE AT 0.5, is for future update, not working currently] User controll to set the ratio of the non-training data to be used for validation as opposed to testing (Hyperparameter)
 
 #%% - Loss Function Settings
-loss_vs_sparse_img = False    #NOTE: Tested!                # User controll to set if the loss is calculated against the sparse image or the full image (Hyperparameter)
-loss_function_selection = "ACB_MSE"                 # Select loss function (string):# "MAE", "MSE", "SSE", "BCE", "ACB_MSE", "ffACB_MSE", "Split_Loss", "True3D", "Simple3D", "ACB3D", "Fast3D", "WPR_Loss"
+loss_vs_sparse_img = False    #NOTE: Tested!                 # User controll to set if the loss is calculated against the sparse image or the full image (Hyperparameter)
+loss_function_selection = "Fast3D"                           # Select loss function (string):# "MAE", "MSE", "SSE", "BCE", "ACB_MSE", "ffACB_MSE", "Split_Loss", "True3D", "Simple3D", "ACB3D", "Fast3D", "WPR_Loss"
 
-# Below weights only used if loss func set to 0, 1 or 6 aka ACBMSE or split loss varients
-zero_weighting = 1                        # User controll to set zero weighting for ACBMSE (Hyperparameter)
-nonzero_weighting = 1#0.4 #0.4                        # User controll to set non zero weighting for ACBMSE (Hyperparameter)
-# Only used for ffACBMSE along with above two settings
-fullframe_weighting = 1.5 #1.5                      # User controll to set full frame weighting for ffACBMSE (Hyperparameter)
-ff_loss = 'mse'
+# Weights used for ACBMSE and varients
+zero_weighting = 1                                           # User controll to set zero weighting for ACBMSE or ffACBMSE (Hyperparameter)
+nonzero_weighting = 1#0.4 #0.4                               # User controll to set non zero weighting for ACBMSE or ffACBMSE  (Hyperparameter)
+fullframe_weighting = 1.5 #1.5                               # User controll to set full frame weighting for ffACBMSE (Hyperparameter) [# Only used for ffACBMSE loss function]
+ff_loss = 'mse'                                              # User controll to set loss function for full frame loss (Hyperparameter) [# Only used for ffACBMSE loss function] # "MAE", "MSE", "SSE", "BCE"
 
-# Below only used if loss func set to 6 aka ada_weighted_custom_split_loss
-zeros_loss_choice = 1                        # Select loss function for zero values (Hyperparameter): 0 = Maxs_Loss_Func, 1 = torch.nn.MSELoss(), 2 = torch.nn.BCELoss(), 3 = torch.nn.L1Loss(), 4 = ada_SSE_loss
-nonzero_loss_choice = 1                      # Select loss function for non zero values (Hyperparameter): 0 = Maxs_Loss_Func, 1 = torch.nn.MSELoss(), 2 = torch.nn.BCELoss(), 3 = torch.nn.L1Loss(), 4 = ada_SSE_loss
+# Selections for split loss function
+zeros_loss_choice = 1                                        # Select loss function for zero values (Hyperparameter): 0 = Maxs_Loss_Func, 1 = torch.nn.MSELoss(), 2 = torch.nn.BCELoss(), 3 = torch.nn.L1Loss(), 4 = ada_SSE_loss
+nonzero_loss_choice = 1                                      # Select loss function for non zero values (Hyperparameter): 0 = Maxs_Loss_Func, 1 = torch.nn.MSELoss(), 2 = torch.nn.BCELoss(), 3 = torch.nn.L1Loss(), 4 = ada_SSE_loss
 
-#%% - Image Preprocessing Settings  (when using perfect track images as labels)
-signal_points = 100 #30                          # User controll to set the number of signal points to add
-noise_points =  0 #200#0#100                         # User controll to set the number of noise points to add
-
-x_std_dev = 0  #mm NOTE ADAPTed TO PHYSICAL                             # User controll to set the standard deviation of the detectors error in the x axis
-y_std_dev = 0  #mm NOTE ADAPTed TO PHYSICAL                             # User controll to set the standard deviation of the detectors error in the y axis
-tof_std_dev = 0  #ns NOTE ADAPTed TO PHYSICAL                           # User controll to set the standard deviation of the detectors error in the time of flight 
+#%% - Image Preprocessing Settings
+signal_points = 100 #30                                      # User controll to set the number of signal points to add
+noise_points =  0 #200#0#100                                 # User controll to set the number of noise points to add
+x_std_dev = 0                                                # (mm) User controll to set the standard deviation of the detectors error in the x axis
+y_std_dev = 0                                                # (mm) User controll to set the standard deviation of the detectors error in the y axis
+tof_std_dev = 0                                              # (ns) User controll to set the standard deviation of the detectors error in the time of flight 
 
 #%% - Pretraining settings
-start_from_pretrained_model = False         # If set to true then the model will load the pretrained model and optimiser state dicts from the path below
-load_pretrained_optimser = True             # Only availible if above is set to true - (pretrain seems to perform better if this is set to true)
+start_from_pretrained_model = False          # If set to true then the model will load the pretrained model and optimiser state dicts from the path below
+load_pretrained_optimser = True              # Only availible if above is set to true - (pretrain seems to perform better if this is set to true)
 pretrained_model_path = 'N:/Yr 3 Project Results/RICHFAST TEST 5 - Training Results/Model_Deployment/RICHFAST TEST 5 - Model + Optimiser State Dicts.pth'      # Specify the path to the saved full state dictionary for pretraining
 
 #%% - Normalisation Settings 
-masking_optimised_binary_norm = False       # If set to true then the model will use the binary normalisation method optimised for masking output. Otherwise will use the gaped custom normalisation optimised for the direct network output
+masking_optimised_binary_norm = False        # If set to true then the model will use the binary normalisation method optimised for masking output. Otherwise will use the gaped custom normalisation optimised for the direct network output
 
 #%% - Plotting Control Settings
-print_every_other = 1                       # [default = 2] 1 is to save/print all training plots every epoch, 2 is every other epoch, 3 is every 3rd epoch etc
-plot_or_save = 1                            # [default = 1] 0 prints plots to terminal (blocking till closed), If set to 1 then saves all end of epoch printouts to disk (non-blocking), if set to 2 then saves outputs whilst also printing for user (blocking till closed)
+print_every_other = 1                        # [default = 2] 1 is to save/print all training plots every epoch, 2 is every other epoch, 3 is every 3rd epoch etc
+plot_or_save = 1                             # [default = 1] 0 prints plots to terminal (blocking till closed), If set to 1 then saves all end of epoch printouts to disk (non-blocking), if set to 2 then saves outputs whilst also printing for user (blocking till closed)
 num_to_plot = 10
-save_all_raw_plot_data = True               # [default = False] If set to true then all raw data for plots is saved to disk for replotting and analysis later
+save_all_raw_plot_data = True                # [default = False] If set to true then all raw data for plots is saved to disk for replotting and analysis later
 
 #%% - New beta feature settings 
-double_precision = False #NOTE: Tested!     # [default = False] If set to true then the model will use double precision floating point numbers for all calculations, otherwise will use single precision
-shuffle_train_data = True #NOTE: Tested!    # If set to true then the model will shuffle the training data each epoch, otherwise will not shuffle
+double_precision = False #NOTE: Tested!      # [default = False] If set to true then the model will use double precision floating point numbers for all calculations, otherwise will use single precision
+shuffle_train_data = True #NOTE: Tested!     # If set to true then the model will shuffle the training data each epoch, otherwise will not shuffle
 
 # TRUN THESE TWO FLAGS INTO ONE SINGLE VARIABLE WHERE None WILL HAVE NO TIMEOUT AND A VALUE WILL SET THE TIMEOUT
-timeout_training = False                    # If set to true then the model will stop training after the timeout time has been reached
-timeout_time = 720                          # Time in minuits to wait before stopping training if timeout_training is set to true`
+timeout_training = False                     # If set to true then the model will stop training after the timeout time has been reached
+timeout_time = 720                           # Time in minuits to wait before stopping training if timeout_training is set to true`
 
-record_weights = False                      # If set to true then the model will record the weights of the network at the end of each epoch
-record_biases = False                       # If set to true then the model will record the biases of the network at the end of each epoch
-record_activity = False                     # If set to true then the model will record the activations of the network at the end of each epoch
-compress_activations_npz_output = False     # Compresses the activity file above for smaller file size but does increase loading and saving times for the file. (use if low on hdd space)
+record_weights = False                       # If set to true then the model will record the weights of the network at the end of each epoch
+record_biases = False                        # If set to true then the model will record the biases of the network at the end of each epoch
+record_activity = False                      # If set to true then the model will record the activations of the network at the end of each epoch
 
 ### NEW PHYSICAL GROUNDING FOR UNITS
 use_physical_values_for_plot_axis = False    # If false then axis are label by pixel indicies, if true then axis are labelled by physical units
-x_length = 800 #mm
-y_length = 1500 #mm
-time_length = 1000 #ns
-time_scale = time_dimension / time_length # ns per t pixel   # MOVE THESE LINES ELSEWHERE TO CLEAN UP
-x_scale = xdim / x_length # mm per x pixel
-y_scale = ydim / y_length # mm per y pixel
+x_length = 800                               # mm
+y_length = 1500                              # mm
+time_length = 1000                           # ns
 
 #%% - Advanced Visulisation Settings
-plot_train_loss = True                      # [default = True]       
-plot_test_loss = True                       # [default = True]
-plot_validation_loss = True                 # [default = True]               
-plot_time_loss = True                       # [default = True]
-plot_detailed_performance_loss = True       # Plots ssim nmi etc for each epoch 
+plot_train_loss = True                       # [default = True]       
+plot_test_loss = True                        # [default = True]
+plot_validation_loss = True                  # [default = True]               
+plot_time_loss = True                        # [default = True]
+plot_detailed_performance_loss = True        # Plots ssim nmi etc for each epoch 
 use_tensorboard = False
-plot_live_time_loss = True                  # [default = True] Generate plot of live training loss vs time during trainig which is overwritten each epoch, this is useful for seeing how the training is progressing
-plot_live_training_loss = True              # [default = True] Generate plot of live training loss vs epoch during trainig which is overwritten each epoch, this is useful for seeing how the training is progressing
-comparative_live_loss = True                # [default = True] Adds comparative lines to the live plots, the models for comparison are selected below
-slide_live_plot_size = 0                    # [default = 0] Number of epochs to show on the live plot (if set to 0 then will show all epochs)
+plot_live_time_loss = True                   # [default = True] Generate plot of live training loss vs time during trainig which is overwritten each epoch, this is useful for seeing how the training is progressing
+plot_live_training_loss = True               # [default = True] Generate plot of live training loss vs epoch during trainig which is overwritten each epoch, this is useful for seeing how the training is progressing
+comparative_live_loss = True                 # [default = True] Adds comparative lines to the live plots, the models for comparison are selected below
+slide_live_plot_size = 0                     # [default = 0] Number of epochs to show on the live plot (if set to 0 then will show all epochs)
 plot_comparative_loss = True
 
 comparative_loss_titles = ["S1 10K", "S1 100K", "S1 500K", "S2 10K"]
 comparative_loss_paths = [r'N:\Yr 3 Project Results\RDT 10K 1000ToF timed - Training Results\\',   # Settings V1
                           r'N:\Yr 3 Project Results\RDT 100K 1000ToF timed - Training Results\\',  # Settings V1
                           r'N:\Yr 3 Project Results\RDT 500K 1000ToF timed - Training Results\\',  # Settings V1
-                          r'N:\Yr 3 Project Results\RDT 10K S2 - Training Results\\'  # Settings V2
+                          r'N:\Yr 3 Project Results\RDT 10K S2 - Training Results\\'               # Settings V2
                           ] 
                           
-plot_pixel_threshold_telemetry = True     # [default = False] # Update name to pixel_cuttoff_telemetry    #Very slow, reduces net performance by XXXXXX%
-plot_pixel_difference = False #BROKEN     # [default = True]          
-plot_latent_generations = False            # [default = True]              
-plot_higher_dim = False                   # [default = True]  
-plot_normalised_radar = False
-plot_Graphwiz = True                      # [default = True]       
+plot_pixel_threshold_telemetry = True        # [default = False] # Update name to pixel_cuttoff_telemetry    #Very slow, reduces net performance by XXXXXX%
+plot_pixel_difference = False #BROKEN        # [default = True]          
+plot_latent_generations = False              # [default = True]              
+plot_higher_dim = False                      # [default = True]  
+plot_normalised_radar = False                # [default = True]
+plot_Graphwiz = True                         # [default = True]       
 
 #%% - Advanced Debugging Settings
 print_encoder_debug = False                     # [default = False]  
@@ -301,34 +286,37 @@ debug_model_exporter  = False                   # [default = False]
 full_dataset_integrity_check = False            # [Default = False] V slow  #Checks the integrity of the dataset by checking shape of each item as opposed to when set to false which only checks one single random file in the dataset
 full_dataset_distribution_check = False         # [Default = False] V slow  #Checks the distribution of the dataset , false maesn no distributionn check is done
 
-seeding_value = 10 #None                            # [Default = None] None gives no seeeding to RNG, if the value is set this is used for the RNG seeding for numpy, and torch libraries
+seeding_value = 10 #None                        # [Default = None] None gives no seeeding to RNG, if the value is set this is used for the RNG seeding for numpy, and torch libraries
 run_profiler = False                            # [Default = False] Runs the cProfiler on the training loop to check for bottlenecks and slow functions
 
 #%% Hyperparameter Optimisation Settings  #######IMPLEMENT!!!
-optimise_hyperparameter = False              # User controll to set if hyperparameter optimisation is used
-hyperparam_to_optimise = 'zero_weighting'      # User controll to set which hyperparameter to optimise  - options are: 'batch_size', 'learning_rate', 'optim_w_decay', 'dropout_prob', 'loss_function_selection', 'conv_layers', 'conv_filter_multiplier', 'latent_dim'
-set_optimisiation_list_manually = [0.3, 0.5, 0.7, 1.0, 1.3]   #  set this param = to your list i.e [[12, 120], 35, 87]
+optimise_hyperparameter = False                               # User controll to set if hyperparameter optimisation is used
+hyperparam_to_optimise = 'zero_weighting'                     # User controll to set which hyperparameter to optimise  - options are: 'batch_size', 'learning_rate', 'optim_w_decay', 'dropout_prob', 'loss_function_selection', 'conv_layers', 'conv_filter_multiplier', 'latent_dim'
+set_optimisiation_list_manually = [0.3, 0.5, 0.7, 1.0, 1.3]   # Set this param = to your list i.e [[12, 120], 35, 87]
 
 # Simple Performance Measure
-print_validation_results = True            # User controll to set if the validation results are printed to terminal 
-plot_training_time = True                   # User controll to set if the training time is plotted 
+print_validation_results = True                               # User controll to set if the validation results are printed to terminal 
+plot_training_time = True                                     # User controll to set if the training time is plotted 
 
 # Full Performance Analysis - Performed in addition to and seperatly from the validation stage for automatic data analysis
-perf_analysis_num_files = 5000   # number of files to test
-perf_analysis_plot = 100       # The number of results to print imshow plots for for each model tested, set to False for none
-perf_analysis_dataset_dir = (r"N:\\Yr 3 Project Datasets\\PERF VALIDATION SETS\\40K 100N 30S\\")   # directory of dataset to test - (Best to use totally unseen data files that are not contianed within the train, test or validation sets)
+perf_analysis_num_files = 5000                                                                     # Number of files to test
+perf_analysis_plot = 100                                                                           # The number of results to print imshow plots for for each model tested, set to False for none
+perf_analysis_dataset_dir = (r"N:\\Yr 3 Project Datasets\\PERF VALIDATION SETS\\40K 100N 30S\\")   # Directory of dataset to test - (Best to use totally unseen data files that are not contianed within the train, test or validation sets)
 debug_hpo_perf_analysis = False
 
 #%% - HACKS NEED FIXING!!!
-if print_every_other > num_epochs:   #protection from audio data not being there to save if plot not genrated - Can fix by moving audio genration out of the plotting function entirely and only perform it once at the end wher eit is actually saved.
+if print_every_other > num_epochs:                                                                   # Protection from audio data not being there to save if plot not genrated - Can fix by moving audio genration out of the plotting function entirely and only perform it once at the end wher eit is actually saved.
     print_every_other = num_epochs
 
-history_da = {'train_loss':[], 'test_loss':[], 'val_loss':[], 'HTO_val':[], 'training_time':[]} # needs better placement???
-max_epoch_reached = 0 # in case user exits before end of first epoch 
+history_da = {'train_loss':[], 'test_loss':[], 'val_loss':[], 'HTO_val':[], 'training_time':[]}      # Needs better placement???
+max_epoch_reached = 0                                                                                # In case user exits before end of first epoch 
 
+time_scale = time_dimension / time_length    # ns per t pixel   # MOVE THESE LINES ELSEWHERE TO CLEAN UP
+x_scale = xdim / x_length                    # mm per x pixel
+y_scale = ydim / y_length                    # mm per y pixel
 physical_scale_parameters = [x_scale, y_scale, time_scale]
-input_signal_settings = [signal_points, x_std_dev, y_std_dev, tof_std_dev, noise_points] #move!
 
+input_signal_settings = [signal_points, x_std_dev, y_std_dev, tof_std_dev, noise_points] #move!
 
 # Create a dictionary to store the activations
 activations = {}
@@ -342,7 +330,6 @@ results_output_path_1 = results_output_path  # HACK FOR HYPERPARAM OPTIMISATION 
 
 
 #%% - Create full settings dictionary !!! NEEDS CLEANUP
-
 """
 if optimise_hyperparameter:
     settings_path = results_output_path_1 + model_save_name + "_" + hyperparam_to_optimise + f" Optimisation\\"
@@ -354,10 +341,6 @@ full_settings_dictionary = create_settings_dict(settings_path + "full_settings_d
 
 """
 
-if run_profiler:
-    # Create a cProfile object
-    profiler = cProfile.Profile()
-
 
 
 #%% - Load in Dependencies
@@ -366,20 +349,17 @@ import os
 import time     # Used to time the training loop
 import json
 import torch
-import pickle
 import datetime 
 import torchvision 
 import numpy as np  
 import pandas as pd
 from tqdm.auto import tqdm  # Progress bar, auto automtically selects between normal TQDM or notebook version for running in Jupiter/Google collab style notebooks
-import matplotlib.cm as cm
-from functools import partial
 from torchinfo import summary # function to get the summary of the model layers structure, trainable parameters and memory usage
 import matplotlib.pyplot as plt     
 from torchvision import transforms  
 from matplotlib.ticker import FuncFormatter
 from torch.utils.tensorboard import SummaryWriter, FileWriter 
-
+import cProfile
 
 # - General Functions
 from Helper_files.Robust_model_exporter_V1 import Robust_model_export                   # Function to export the raw .py file that contains the autoencoder class
@@ -390,171 +370,25 @@ from Helper_files.ExcelExtractor import extract_data_to_excel # This is a custom
 from Helper_files.model_perf_analysis2 import run_full_perf_tests
 
 #from Helper_files.Export_User_Settings import create_settings_dict
-
-# - Helper functions
-from Helper_files.Helper_Functions import *
-
-# - Image metrics
-from Helper_files.Image_Metrics import *
-
-# - Visulisations 
-from Helper_files.AE_Visulisations import * 
-
-# - Loss Functions
-from Loss_Functions.Loss_Fn_Classes import *
-
-# Data Degredation Functions
-from Helper_files.Data_Degradation_Functions import *
-
+from Helper_files.Helper_Functions import *   # - Helper functions
+from Helper_files.Image_Metrics import *    # - Image metrics
+from Helper_files.AE_Visulisations import *   # - Visulisations 
+from Loss_Functions.Loss_Fn_Classes import *   # - Loss Functions
+from Helper_files.Data_Degradation_Functions import *   # Data Degredation Functions
 from Dataloader import *
+from DC3D_Core_Functions import *
+from Helper_files.Network_Hooks import *
+from Helper_files.Plotting_Helpers import *
+from Autoencoders.DC3D_Autoencoder_V1_Protected2_2 import Encoder, Decoder    # - Autoencoder
 
-# - Autoencoder
-from Autoencoders.DC3D_Autoencoder_V1_Protected2_2 import Encoder, Decoder   
+if run_profiler:
+    # Create a cProfile object
+    profiler = cProfile.Profile()
 
 
 #%% - Load in Comparative Live Loss Data
-
 if comparative_live_loss:
-    #history_da, epoch_times = load_comparative_data(comparative_loss_paths, plot_live_training_loss, plot_live_time_loss)
-
-    
-    comparative_history_da = []
-    comparative_epoch_times = []
-    for loss_path in comparative_loss_paths:
-        #load pkl file into dictionary
-        if plot_live_training_loss or plot_live_time_loss:
-            with open(loss_path + '\\Raw_Data_Output\\history_da_dict.pkl', 'rb') as f:
-                comparative_history_da.append(pickle.load(f))
-        if plot_live_time_loss:
-            with open(loss_path + '\\Raw_Data_Output\\epoch_times_list_list.csv', 'rb') as f:
-                # load the data from the csv file called f into a list 
-                comparative_epoch_times.append(np.loadtxt(f, delimiter=',').tolist())
-               
-
-
-          
-
-
-#%% DC3D Special Functions
-# Special normalisation for pure masking
-def mask_optimised_normalisation(data):
-    """
-    Normalisation function for pure masking output, trhe function takes any non zero valu eto 1 and any zero value is left as is. [EXPLAIN WHY!!!!!]
-
-    Args:
-        data (torch tensor): The input data to be normalised.
-
-    Returns:
-        data (torch tensor): The normalised data.
-    
-    """
-    data = torch.where(data > 0, 1.0, 0.0)
-    return data
-
-# Custom normalisation function
-def gaped_normalisation(data, reconstruction_threshold, time_dimension=100):
-    """
-    Normalisation function that normalised values in range [0 < value <= 'time_dimension'] to new range of [reconstruction_threshold' < norm_value <= 1], with a gap at the bottom of the range to allow for the reconstruction threshold to be applied later. All zero values are left untouched. This is used for the direct network output.
-    
-    Args:
-        data (torch tensor): The input data to be normalised. [WARNING: the data must be (integer values? and) in the range [0 < value <= 'time_dimension'] or the normalisation will not work correctly]
-        reconstruction_threshold (float): The threshold used in the custom normalisation, used to set the lower limit of the normalised values.
-        time_dimension (int): The number of time steps in the data set, used to set the upper limit of the normalised values. Default = 100  
-
-    Returns:
-        data (torch tensor): The normalised data.
-    """
-    data = torch.where(data > 0, (((data / time_dimension) / (1 / (1 - reconstruction_threshold))) + reconstruction_threshold), 0 )
-    return data
-
-# Custom renormalisation function
-def gaped_renormalisation_torch(data, reconstruction_threshold, time_dimension=100):
-    """
-    torch version of our Renormalisation function that renormalises values in range [reconstruction_threshold < value <= 1] to new range of [0 < renorm_value <= 'time_dimension'] removing any values that fell below the 'reconstruction_threshold' by setting thwm to zero. All zero values are left untouched. This is used for the direct network output.
-
-    Args:
-        data (torch tensor): The input data to be renormalised. [WARNING: the data must be (float values? and) in the range [reconstruction_threshold < value <= 1] or the renormalisation will not work correctly]
-        reconstruction_threshold (float): The threshold used in the custom normalisation, used to set the lower limit of the normalised values.
-        time_dimension (int): The number of time steps in the data set, used to set the upper limit of the normalised values. Default = 100
-
-    Returns:
-        data (torch tensor): The renormalised data.
-    """
-
-    data = torch.where(data > reconstruction_threshold, ((data - reconstruction_threshold)*(1 / (1 - reconstruction_threshold))) * (time_dimension), 0)
-    return data
-
-def gaped_renormalisation(data, reconstruction_threshold, time_dimension=100):
-    """
-    Numpy version of our Renormalisation function that renormalises values in range [reconstruction_threshold < value <= 1] to new range of [0 < renorm_value <= 'time_dimension'] removing any values that fell below the 'reconstruction_threshold' by setting thwm to zero. All zero values are left untouched. This is used for the direct network output.
-
-    Args:
-        data (np array): The input data to be renormalised. [WARNING: the data must be (float values? and) in the range [reconstruction_threshold < value <= 1] or the renormalisation will not work correctly]
-        reconstruction_threshold (float): The threshold used in the custom normalisation, used to set the lower limit of the normalised values.
-        time_dimension (int): The number of time steps in the data set, used to set the upper limit of the normalised values. Default = 100
-
-    Returns:
-        data (np array): The renormalised data.
-    """
-    data = np.where(data > reconstruction_threshold, ((data - reconstruction_threshold)*(1 / (1 - reconstruction_threshold))) * (time_dimension), 0)
-    return data
-
-# 3D Reconstruction function
-def reconstruct_3D(*args):
-    """
-    3D reconstruction function that takes any number of 2D arrays created through our 3D to 2D with embedded ToF method and reconstructs them into a 3D arrays. 
-    
-    Args:
-        *args (np array): Any number of 2D arrays to be reconstructed.
-
-    Returns:
-        results (np array): The reconstructed 3D arrays. Same number of arrays as input.
-    """
-    
-    results = []
-    for data in args:
-        data_output = []
-        for cdx, row in enumerate(data):
-            for idx, num in enumerate(row):
-                if num > 0:  
-                    data_output.append([cdx, idx, num])
-        results.append(np.array(data_output))
-
-    return results
-
-# Masking technique
-def masking_recovery(input_image, recovered_image, time_dimension, print_result=False):
-    """
-    Applies my masking technique to the recovered image, this is essential and and condational for both the input and the recovered image as to weatehr a pixel is allowed to stay in the final output or not, which relies on the differing distortion profiles of the two images.
-
-    Args:
-        input_image (np array): The input image to be masked.
-        recovered_image (np array): The recovered image to be masked.
-        time_dimension (int): The number of time steps in the data set, used to set the upper limit of the normalised values.
-        print_result (bool, optional): If set to true then the function will print a text string reporting the masking usefullness evaluation metrics. Defaults to False.
-
-    Returns:
-        result (np array): The masked recovered image.
-    
-    """
-    raw_input_image = input_image.copy()
-    net_recovered_image = recovered_image.copy()
-    #Evaluate usefullness 
-    # count the number of non-zero values
-    masking_pixels = np.count_nonzero(net_recovered_image)
-    image_shape = net_recovered_image.shape
-    total_pixels = image_shape[0] * image_shape[1] * time_dimension
-    # print the count
-    if print_result:
-        print(f"Total number of pixels in the timescan: {format(total_pixels, ',')}\nNumber of pixels returned by the masking: {format(masking_pixels, ',')}\nNumber of pixels removed from reconstruction by masking: {format(total_pixels - masking_pixels, ',')}")
-
-    # use np.where and boolean indexing to update values in a
-    mask_indexs = np.where(net_recovered_image != 0)
-    net_recovered_image[mask_indexs] = raw_input_image[mask_indexs]
-    result = net_recovered_image
-    if result.shape != raw_input_image.shape:
-        print("ERROR: Masking has failed, the recovered image is not the same shape as the input image")
-    return result
+    comparative_history_da, comparative_epoch_times = load_comparative_data(comparative_loss_paths, plot_live_training_loss, plot_live_time_loss)
 
 ### CLEAN UP THIS FUCNTION !!!!!!!!!!!!
 def full_model_export(checkpoint, model_output_dir, model_checkpoints_dir, epoch, encoder, decoder, optim, latent_dim, fc_input_dim, double_precision, Encoder, debug_model_exporter=False):
@@ -633,99 +467,6 @@ def full_model_export(checkpoint, model_output_dir, model_checkpoints_dir, epoch
         print("- Completed -")
 
 
-#%% - Network Hook Functions
-def activation_hook_fn(module, input, output, layer_index):
-    """
-    This function will be called whenever a layer is called during the forward pass.
-    It records the activations and saves them in the specified dictionary.
-    """
-    activations[layer_index] = output.detach()
-
-def weights_hook_fn(module, input, output, layer_index):
-    """
-    This function will be called whenever a layer is called during the forward pass.
-    It records the weights and saves them in the specified dictionary.
-    """
-    weights_data[layer_index] = module.weight.data.clone().detach()
-
-def biases_hook_fn(module, input, output, layer_index):
-    """
-    This function will be called whenever a layer is called during the forward pass.
-    It records the biases and saves them in the specified dictionary.
-    """
-    biases_data[layer_index] = module.bias.data.clone().detach()
-
-def register_network_hooks(encoder, decoder, record_activity, record_weights, record_biases):
-    # Loop through all the modules (layers) in the encoder and register the hooks
-    for idx, module in enumerate(encoder.encoder_lin.modules()):
-        if isinstance(module, torch.nn.Linear):
-            print("Registering hooks for encoder layer: ", idx)
-            if record_activity:
-                # Register the hook with the layer_index as the key to identify activations for this layer
-                module.register_forward_hook(partial(activation_hook_fn, layer_index=idx))
-            if record_weights:
-                # Register the hook with the layer_index as the key to identify activations for this layer
-                module.register_forward_hook(partial(weights_hook_fn, layer_index=idx))
-            if record_biases:
-                # Register the hook with the layer_index as the key to identify activations for this layer
-                module.register_forward_hook(partial(biases_hook_fn, layer_index=idx))
-
-    enc_max_idx = idx
-    # Loop through all the modules (layers) in the decoder and register the hooks
-    for idx, module in enumerate(decoder.decoder_lin.modules()):
-        if isinstance(module, torch.nn.Linear):
-            print("Registering hooks for decoder layer: ", enc_max_idx + idx)
-            if record_activity:
-                # Register the hook with the layer_index as the key to identify activations for this layer
-                module.register_forward_hook(partial(activation_hook_fn, layer_index = enc_max_idx + idx))
-            if record_weights:
-                # Register the hook with the layer_index as the key to identify activations for this layer
-                module.register_forward_hook(partial(weights_hook_fn, layer_index = enc_max_idx + idx))
-            if record_biases:
-                # Register the hook with the layer_index as the key to identify activations for this layer
-                module.register_forward_hook(partial(biases_hook_fn, layer_index = enc_max_idx + idx))
-
-    print("All hooks registered\n")
-
-def write_hook_data_to_disk_and_clear(activations, weights_data, biases_data, epoch, output_dir):
-    """
-    This function saves the activation, weights and biases tracking data to disk and then clears the tracking dictionaries to avoid unnecaesary memory usage and potential overflows during longer training runs.
-
-    Args:
-        activations (dict): A dictionary containing the activations of each layer in the network
-        weights_data (dict): A dictionary containing the weights of each layer in the network
-        biases_data (dict): A dictionary containing the biases of each layer in the network
-        epoch (int): The current epoch number
-        output_dir (str): The path to the directory to save the data to
-    """
-
-    if len(activations) != 0:
-        activ_path = output_dir + "Activation Data/"
-        os.makedirs(activ_path, exist_ok=True)
-        # Save the activations to a file named 'activations_epoch_{epoch}.pt'
-        torch.save(activations, activ_path + f'activations_epoch_{epoch}.pt')
-
-        # Clear the activations dictionary to free up memory
-        activations.clear()
-
-    if len(weights_data) != 0:
-        weight_path = output_dir + "Weights Data/"
-        os.makedirs(weight_path, exist_ok=True)
-        # Save the weights to a file named 'weights_epoch_{epoch}.pt'
-        torch.save(weights_data, weight_path + f'weights_epoch_{epoch}.pt')
-
-        # Clear the weights dictionary to free up memory
-        weights_data.clear()
-
-    if len(biases_data) != 0:
-        bias_path = output_dir + "Biases Data/"
-        os.makedirs(bias_path, exist_ok=True)
-        # Save the weights to a file named 'weights_epoch_{epoch}.pt'
-        torch.save(biases_data, bias_path + f'biases_epoch_{epoch}.pt')
-
-        # Clear the weights dictionary to free up memory
-        biases_data.clear()
-
 #%% - Data Gathering Functions
 # Tracks network output pixel value distribution as histogram pre-reconstruction threshold and renomalisation to understand the effect of the reconstruction thresholding
 def belief_telemetry(data, reconstruction_threshold, epoch, settings, plot_or_save=0):
@@ -797,10 +538,8 @@ def quantify_loss_performance(clean_input_batch, noised_target_batch, time_dimen
         clean_input = clean_input_batch[i][0]
         noised_target = noised_target_batch[i][0]
 
-
         ### ADD IN!!
         #loss_nrmse.append(NMSRE(clean_input, noised_target))
-
         loss_mse.append(MSE(clean_input, noised_target))
         loss_mae.append(MAE(clean_input, noised_target))
         loss_snr.append(SNR(clean_input, noised_target))
@@ -824,50 +563,6 @@ def quantify_loss_performance(clean_input_batch, noised_target_batch, time_dimen
     avg_loss_true_positive_xy.append(np.mean(loss_true_positive_xy))
     avg_loss_true_positive_tof.append(np.mean(loss_true_positive_tof))
     avg_loss_false_positive_xy.append(np.mean(loss_false_positive_xy))
-
-#%% - Data Output Functions
-def colour_code_excel_file(file_path):
-    """
-
-    This function will take an excel file and colour code the cells based on the value of the cell. The colour coding is based on a colour scale from blue to red with blue being the lowest value and red being the highest value. The colour scale is applied to each column individually.
-
-    Args:
-        file_path (str): The path to the excel file to be colour coded
-    
-    Generates:
-        Color coding in the excel file which is then saved back to disk in place of the original file
-    """
-    import openpyxl
-    from openpyxl.utils import get_column_letter
-    from openpyxl.formatting.rule import DataBarRule
-
-    # Load the Excel file
-    workbook = openpyxl.load_workbook(file_path)
-    sheet = workbook.active
-
-    # Define the color scale rule for the conditional formatting
-    color_scale = DataBarRule(
-        start_type='num',
-        start_value=0,
-        end_type='num',
-        end_value=1,
-        color='0000FF',
-        showValue=True,
-    )
-
-    # Apply the color scale rule to each column
-    for column in sheet.columns:
-        column_letter = get_column_letter(column[0].column)
-        column_range = f'{column_letter}2:{column_letter}{sheet.max_row}'  # Assuming data starts from row 2
-        column_cells = list(column)[1:]  # Skip the header cell
-
-        for cell in column_cells:
-            cell.number_format = '0.00'  # Optional: Format the cell as desired
-
-        sheet.conditional_formatting.add(column_range, color_scale)
-
-    #resave the workbook to the same file
-    workbook.save(file_path)
 
 # Define a function to create a dictionary from the given settings
 def create_settings_dict(filename):
@@ -921,7 +616,6 @@ def create_settings_dict(filename):
         "record_weights" : record_weights,
         "record_biases" : record_biases,
         "record_activity" : record_activity,
-        "compress_activations_npz_output" : compress_activations_npz_output,
         "plot_train_loss" : plot_train_loss,
         "plot_validation_loss" : plot_validation_loss,
         "plot_time_loss" : plot_time_loss,
@@ -965,58 +659,6 @@ def create_settings_dict(filename):
     return settings_dict
 
 #%% - Plotting Functions
-def loss_plot(x, y, x_label, y_label, title, save_path, plot_or_save):
-    """
-    Creates a simple line plot of the given data and saves it to disk
-
-    Args:
-        x (list): The x axis data
-        y (list): The y axis data
-        x_label (str): The label for the x axis
-        y_label (str): The label for the y axis
-        title (str): The title of the plot
-        save_path (str): The path to save the plot to
-        plot_or_save (int): A flag to set if the plot is printed to terminal or saved to disk. 0 prints plots to terminal (blocking till closed), If set to 1 then saves all end of epoch printouts to disk (non-blocking), if set to 2 then saves outputs whilst also printing for user (blocking till closed)
-
-    Generates:
-        A simple line plot saved to disk
-    """
-
-    plt.plot(x, y)
-    plt.title(title)
-    plt.xlabel(x_label)
-    plt.ylabel(y_label)
-    plt.grid(alpha=0.2)
-    plot_save_choice(plot_or_save, save_path) 
-
-def comparitive_loss_plot(x_list, y_list, legend_label_list, x_label, y_label, title, save_path, plot_or_save):
-    """
-    Creates a comparative line plot of the given sets of data and saves it to disk
-
-    Args:
-        x_list (list): A list of the x axis data
-        y_list (list): A list of the y axis data
-        legend_label_list (list): A list of the labels for the legend
-        x_label (str): The label for the x axis
-        y_label (str): The label for the y axis
-        title (str): The title of the plot
-        save_path (str): The path to save the plot to
-        plot_or_save (int): A flag to set if the plot is printed to terminal or saved to disk. 0 prints plots to terminal (blocking till closed), If set to 1 then saves all end of epoch printouts to disk (non-blocking), if set to 2 then saves outputs whilst also printing for user (blocking till closed)
-
-    Generates:
-        A comparative line plot saved to disk
-    """
-
-
-    for x, y, legend_label in zip(x_list, y_list, legend_label_list):
-        plt.plot(x, y, label=legend_label)
-    plt.title(title)
-    plt.xlabel(x_label)
-    plt.ylabel(y_label)
-    plt.grid(alpha=0.2)
-    plt.legend()
-    plot_save_choice(plot_or_save, save_path) 
-
 def create_comparison_plot_data(slide_live_plot_size, epoch, max_epoch_reached, comparative_live_loss, comparative_loss_titles, comparative_epoch_times, comparative_history_da, data=history_da['train_loss']):
 
     """
@@ -1072,62 +714,8 @@ def create_comparison_plot_data(slide_live_plot_size, epoch, max_epoch_reached, 
     Out_Label2 = dir + f'{model_save_name} - Live time loss.png'
     comparitive_loss_plot(x_list_time, y_list, legend_label_list, "Time (s)", "Train loss (ACB-MSE)", "Live Time loss", Out_Label2, plot_or_save)
 
-# Helper function to clean up repeated plot save/show code
-def plot_save_choice(plot_or_save, output_file_path=None):
-    """
-    Function used to set the save/display behavior for all figures and graphs generated by the program.
-
-    Args:
-        plot_or_save (int): A flag to set if the plot is printed to terminal or saved to disk. 
-            0 prints plots to the terminal (blocking till closed).
-            1 saves all end-of-epoch printouts to disk (non-blocking).
-            2 saves outputs while also printing for the user (blocking till closed).
-            3 neither saves nor shows any plots, immediately closed (useful for debugging).
-        output_file_path (str): The path to save the plot to. Only needed if plot_or_save is set to 1 or 2.
-    """
-    if plot_or_save == 0:
-        plt.show()
-    elif plot_or_save == 1:  
-        plt.savefig(output_file_path, format='png')     
-        plt.close()
-    elif plot_or_save == 2:
-        plt.savefig(output_file_path, format='png')   
-        plt.show()
-    elif plot_or_save == 3:
-        plt.close()
-    else:
-        raise ValueError("Invalid 'plot_or_save' value set for 'plot_save_choice' function call. "
-                         "Please set to 0, 1, 2, or 3.\n"
-                         "0 prints plots to terminal (blocking till closed).\n"
-                         "1 saves all plots to disk (non-blocking).\n"
-                         "2 prints to terminal and saves to disk (blocking till closed).\n"
-                         "3 will neither save nor show any plots, they will be immediately closed, useful for debugging.")
-    
-# Plots the confidence telemetry data
-def plot_telemetry(telemetry, true_num_of_signal_points, plot_or_save=0):
-    """
-    Plots the 'lit pixel count' and 'unlit pixel count' telemetry data over time, compared to true number of signal points for comparison. Used to track the recovery performance.
-
-    Args:
-        telemetry (list): A list of the telemetry data to be plotted
-        true_num_of_signal_points (int): The true number of signal points in the data set
-        plot_or_save (int): A flag to set if the plot is printed to terminal or saved to disk. 0 prints plots to terminal (blocking till closed), If set to 1 then saves all end of epoch printouts to disk (non-blocking), if set to 2 then saves outputs whilst also printing for user (blocking till closed)
-
-    Generates:
-        A plot of the telemetry data, saved to disk or shown depending on program wide 'plot_or_save' setting
-    """
-    tele = np.array(telemetry)
-    plt.plot(tele[:,0],tele[:,1], color='r', label="Points above threshold") #red = num of points above threshold
-    plt.plot(tele[:,0],tele[:,2], color='b', label="Points below threshold") #blue = num of points below threshold
-    plt.axhline(y=true_num_of_signal_points, color='g', linestyle='dashed', label="True number of signal points")
-    plt.title("Telemetry over epochs")
-    plt.xlabel("Epoch number")
-    plt.ylabel("Number of Signal Points")
-    plt.legend()
-    Out_Label = graphics_dir + f'{model_save_name} - Reconstruction Telemetry Histogram - Epoch {epoch}.png'
-    plot_save_choice(plot_or_save, Out_Label)
-            
 #%% - Train, Test, Val and Plot Functions
+    
 ### Training Function
 def train_epoch(encoder, decoder, device, dataloader, loss_fn, optimizer, signal_points, noise_points=0, x_std_dev=0, y_std_dev=0, tof_std_dev=0, time_dimension=100, reconstruction_threshold=0.5, print_partial_training_losses=False, masking_optimised_binary_norm=False, loss_vs_sparse_img=False):
     """
@@ -1393,11 +981,6 @@ def plot_epoch_data(encoder, decoder, dataloader, epoch, model_save_name, time_d
     encoder.eval()                                   #.eval() is a kind of switch for some specific layers/parts of the model that behave differently during training and inference (evaluating) time. For example, Dropouts Layers, BatchNorm Layers etc. You need to turn off them during model evaluation, and .eval() will do it for you. In addition, the common practice for evaluating/validation is using torch.no_grad() in pair with model.eval() to turn off gradients computation
     decoder.eval()                                   #Simarlary as above
 
-    encoder.to(device)
-    decoder.to(device)
-    # Unpack physical scale parameters
-    x_scale, y_scale, tof_scale = physical_scale_parameters
-
     # Initialise lists for true and recovered signal point values 
     number_of_true_signal_points = []
     number_of_recovered_signal_points = []
@@ -1425,7 +1008,6 @@ def plot_epoch_data(encoder, decoder, dataloader, epoch, model_save_name, time_d
         # Save the number of true signal points on the input image 
         number_of_true_signal_points.append(signal_points)  
         
-
         # Normalise the noised image
         if masking_optimised_binary_norm:
             normalised_batch = mask_optimised_normalisation(noised_sparse_reslimited_batch)
@@ -1715,7 +1297,6 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
     settings["record_weights"] = record_weights
     settings["record_biases"] = record_biases
     settings["record_activity"] = record_activity
-    settings["compress_activations_npz_output"] = compress_activations_npz_output
     settings["timeout_training"] = timeout_training
     settings["timeout_time"] = timeout_time
  
@@ -1852,27 +1433,17 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
 
     #%% - Add Activation data hooks to encoder and decoder layers
     if record_activity or record_weights or record_biases:   # MOVE TO FUCNTION AND THEN TO HELPER FUCNS FILE FOR CLEANER CODE
-        register_network_hooks(encoder, decoder, record_activity, record_weights, record_biases)
-
-        # Create a list to store the activations of each layer
-        #all_activations = []
-        #recorded_weights = [] 
-        #recorded_biases = [] 
-
+        register_network_hooks(encoder, decoder, record_activity, record_weights, record_biases, activations, weights_data, biases_data)
 
     #%% - Running Training Loop
-    # this is a dictionary ledger of train val loss history
-    #history_da={'train_loss':[], 'test_loss':[], 'val_loss':[]}   # Creates a variable called history_da which contains two lists, 'train_loss' and 'val_loss' which are both empty to start with. value are latter appeneded to the two lists by way of history_da['val_loss'].append(x)
-    epoch_times_list = []                        # Creates a variable called epoch_times_list which is an empty list. values are latter appeneded to the list by way of epoch_times_list.append(x)
-
-    # this is a dictionary ledger of train val loss history
-    history_da['train_loss']  = []
-    history_da['test_loss'] = []                   #Just creates a variable called history_da which contains two lists, 'train_loss' and 'val_loss' which are both empty to start with. value are latter appeneded to the two lists by way of history_da['val_loss'].append(x)
-
     print("\nTraining Initiated\nPress Ctr + c to exit and save the model during training.\n")
     start_time = time.time()                     # Begin the training timer
 
-    try:    # Try except clause allows user to exit training gracefully whilst still retaiing a saved model and ouput plots
+    epoch_times_list = []                        # Creates a variable called epoch_times_list which is an empty list. values are latter appeneded to the list by way of epoch_times_list.append(x)
+    history_da['train_loss']  = []
+    history_da['test_loss'] = []                 # Just creates a variable called history_da which contains two lists, 'train_loss' and 'val_loss' which are both empty to start with. value are latter appeneded to the two lists by way of history_da['val_loss'].append(x)
+
+    try:                                         # Try except clause allows user to exit training gracefully whilst still retaiing a saved model and ouput plots
         if print_partial_training_losses:        # Prints partial train losses per batch
             loop_range = range(1, num_epochs+1)
         else:                                    # No print partial train losses per batch, instead create progress bar
@@ -1887,7 +1458,6 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
             if inject_seed and epoch % inject_seed_interval == 0:
                 torch.manual_seed(T_seed)
                 np.random.seed(N_seed)
-
 
             ###CLEAN UP THIS METHOD TO SOMTHING BETTER!!!!!!
             avg_loss_mse = []
@@ -1986,7 +1556,6 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
             if model_checkpointing and epoch % model_checkpoint_interval == 0 and epoch != 0:
                 full_model_export(True, model_output_dir, model_checkpoints_dir, epoch, encoder, decoder, optim, latent_dim, fc_input_dim, double_precision, Encoder, debug_model_exporter=False)
 
-
             ###CLEAN UP THIS METHOD TO SOMTHING BETTER!!!!!!
             epoch_avg_loss_mse.append(np.mean(avg_loss_mse))
             epoch_avg_loss_mae.append(np.mean(avg_loss_mae))
@@ -2020,8 +1589,6 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
     if run_profiler:
         # Stop profiling
         profiler.disable()
-
-
 
     #%% - After Training
     encoder.eval()
@@ -2078,70 +1645,12 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
         loss_plot(epoch_times_list, history_da['train_loss'], "Training Time (s)", f"Train loss ({loss_fn_label})", "Training Time v Loss", Out_Label, plot_or_save)
 
     if plot_detailed_performance_loss: 
-
-        fig, axs = plt.subplots(nrows=3, ncols=3, figsize=(15, 15))
-        #epochs_range= epochs_range[1:]
-        axs[0, 0].plot(epochs_range, epoch_avg_loss_mse)
-        axs[0, 0].set_title("MAE loss")
-        axs[0, 0].set_xlabel("Epoch number")
-        axs[0, 0].set_ylabel("Loss (MAE)")
-        axs[0, 0].grid(alpha=0.2) 
-
-        axs[0, 1].plot(epochs_range, epoch_avg_loss_snr)
-        axs[0, 1].set_title("SNR loss")
-        axs[0, 1].set_xlabel("Epoch number")
-        axs[0, 1].set_ylabel("Loss (SNR)")
-        axs[0, 1].grid(alpha=0.2) 
-
-        axs[0, 2].plot(epochs_range, epoch_avg_loss_psnr)
-        axs[0, 2].set_title("PSNR loss")
-        axs[0, 2].set_xlabel("Epoch number")
-        axs[0, 2].set_ylabel("Loss (PSNR)")
-        axs[0, 2].grid(alpha=0.2) 
-
-        axs[1, 0].plot(epochs_range, epoch_avg_loss_ssim)
-        axs[1, 0].set_title("SSIM loss")
-        axs[1, 0].set_xlabel("Epoch number")
-        axs[1, 0].set_ylabel("Loss (SSIM)")
-        axs[1, 0].grid(alpha=0.2) 
-
-        axs[1, 1].plot(epochs_range, epoch_avg_loss_nmi)
-        axs[1, 1].set_title("NMI loss")
-        axs[1, 1].set_xlabel("Epoch number")
-        axs[1, 1].set_ylabel("Loss (NMI)")
-        axs[1, 1].grid(alpha=0.2) 
-
-        axs[1, 2].plot(epochs_range, epoch_avg_loss_cc)
-        axs[1, 2].set_title("Coreelation Coefficent? loss")
-        axs[1, 2].set_xlabel("Epoch number")
-        axs[1, 2].set_ylabel("Loss (CC)")
-        axs[1, 2].grid(alpha=0.2) 
-
-        axs[2, 0].plot(epochs_range, epoch_avg_loss_true_positive_xy)
-        axs[2, 0].set_title("True Positive XY loss")
-        axs[2, 0].set_xlabel("Epoch number")
-        axs[2, 0].set_ylabel("Loss (True Positive XY %)")
-        axs[2, 0].set_ylim(-5 ,105)
-        axs[2, 0].grid(alpha=0.2) 
-
-        axs[2, 1].plot(epochs_range, epoch_avg_loss_true_positive_tof)
-        axs[2, 1].set_title("True Positive TOF loss")
-        axs[2, 1].set_xlabel("Epoch number")
-        axs[2, 1].set_ylabel("Loss (True Positive TOF %)")
-        axs[2, 1].set_ylim(-5 ,105)
-        axs[2, 1].grid(alpha=0.2) 
-
-        axs[2, 2].plot(epochs_range, epoch_avg_loss_false_positive_xy)
-        axs[2, 2].set_title("False Positive XY loss BROKEN?")
-        axs[2, 2].set_xlabel("Epoch number")
-        axs[2, 2].set_ylabel("Loss (False Positive XY)")
-        axs[2, 2].grid(alpha=0.2)
-
         Out_Label = graphics_dir + f'{model_save_name} - Detailed Performance loss - Epoch {epoch}.png'
-        plot_save_choice(plot_or_save, Out_Label)
+        draw_detailed_performance_loss_plots(epochs_range, epoch_avg_loss_mse, epoch_avg_loss_snr, epoch_avg_loss_psnr, epoch_avg_loss_ssim, epoch_avg_loss_nmi, epoch_avg_loss_cc, epoch_avg_loss_true_positive_xy, epoch_avg_loss_true_positive_tof, epoch_avg_loss_false_positive_xy, Out_Label, plot_or_save)
 
     if plot_pixel_threshold_telemetry:
-        plot_telemetry(telemetry, signal_points, plot_or_save=plot_or_save)
+        Out_Label = graphics_dir + f'{model_save_name} - Reconstruction Telemetry Histogram - Epoch {epoch}.png'
+        plot_telemetry(telemetry, signal_points, Out_Label, plot_or_save=plot_or_save)
 
     if plot_pixel_difference:
         num_diff_noised, num_same_noised, num_diff_cleaned, num_same_cleaned, im_diff_noised, im_diff_cleaned = AE_visual_difference(in_data, noisy_data, rec_data)
@@ -2181,23 +1690,10 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
         plot_save_choice(plot_or_save, Out_Label)  
 
     if plot_higher_dim:
-        encoded_samples, tsne_results = Reduced_Dimension_Data_Representations(encoder, device, train_dataset, plot_or_save=plot_or_save)
+        Out_Label_1 = graphics_dir + f'{model_save_name} - Higher Dimensisions Epoch {epoch}.png'
+        Out_Label_2 = graphics_dir + f'{model_save_name} - TSNE Epoch {epoch}.png'
+        Reduced_Dimension_Data_Representations(encoder, device, train_dataset, plot_or_save)
         
-        # Higher dim
-        plt.scatter(encoded_samples['Enc. Variable 0'], encoded_samples['Enc. Variable 1'],
-                c=encoded_samples['label'], alpha=0.7)
-        plt.grid()
-        Out_Label = graphics_dir + f'{model_save_name} - Higher Dimensisions Epoch {epoch}.png'
-        plot_save_choice(plot_or_save, Out_Label)  
-
-        # TSNE of Higher dim
-        plt.scatter(tsne_results[:, 0], tsne_results[:, 1], c=encoded_samples['label'])
-        plt.xlabel('tsne-2d-one')
-        plt.ylabel('tsne-2d-two')
-        plt.grid()
-        Out_Label = graphics_dir + f'{model_save_name} - TSNE Epoch {epoch}.png'
-        plot_save_choice(plot_or_save, Out_Label)  
-
     if plot_normalised_radar:
         # Data for the radar plot
         categories = list(map(str, detailed_performance_loss_dict.keys())) # Names of each performance measure
@@ -2207,8 +1703,7 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
            
     if plot_Graphwiz:
         Graphviz_visulisation(encoder, decoder, double_precision, batch_size, xdim, ydim, graphics_dir)
-        #Out_Label = graphics_dir + f'{model_save_name} - Graphwiz Epoch {epoch}.png'    
-        #plot_save_choice(plot_or_save, Out_Label)  
+
     #%% - Export model, statedicts and required variables for inference to disk    
     AE_file_name = full_model_export(False, model_output_dir, model_checkpoints_dir, epoch, encoder, decoder, optim, latent_dim, fc_input_dim, double_precision, Encoder, debug_model_exporter=False)
 
@@ -2361,16 +1856,13 @@ print("\nProgram Complete - Shutting down...\n")
 
 
 if run_profiler:
-
-
     # Print the profiling results
-    profiler.print_stats(sort='cumulative')
+    profiler.print_stats(sort='total')
 
     # save the profiling results to a file
     profiler.dump_stats('profiler_results.prof')
 
     # use snakeviz to view the profiling results in a browser
-
     command = "snakeviz -s profiler_results.prof"
     os.system(command)
 

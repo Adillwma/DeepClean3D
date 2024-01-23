@@ -4,7 +4,7 @@ import numpy as np
 from functools import partial
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
-
+from tqdm.auto import tqdm
 from Helper_files.Data_Degradation_Functions import *
 from Helper_files.Helper_Functions import input_range_to_random_value
 
@@ -20,7 +20,7 @@ class CustomDataset(Dataset):
 
     def load_data_into_memory(self):
         self.data = []  # List to hold all the data
-        for file_name in self.file_list:
+        for file_name in tqdm(self.file_list, desc="Loading data into memory", leave=False, unit="files", color="pink"):
             sample = np.load(self.data_dir + file_name)
             sample = self.tensor_transform(sample)
             self.data.append(sample)
