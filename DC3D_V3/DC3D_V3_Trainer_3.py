@@ -40,13 +40,13 @@ Possible improvements:
 
 ### ~~~~~ [DONE!] Add user controll to overide double precision processing
 
-### ~~~~~ [DONE!] Improve the pixel telemtry per epoch by adding a dotted green li9ne indicating the true number of signal points\
+### ~~~~~ [DONE!] Improve the pixel telemtry per epoch by adding a dotted green line indicating the true number of signal points\
 
 ### ~~~~~ Attach the new masking optimised normalisation check if it need a corresponding renorm
 
 ### ~~~~~ [DONE!] Make sure that autoecoder Encoder and Decoder are saved along with model in the models folder 
 
-### ~~~~~ Add the new performance metrics per epoch tot he history da dictionary to clean up??
+### ~~~~~ Add the new performance metrics per epoch to the history da dictionary to clean up??
 
 ### ~~~~~ [DONE!] Fix memory leak in testing function loss calulation
 
@@ -106,7 +106,7 @@ Possible improvements:
     
 ### ~~~~~ adapt new version for masking - DeepMask3D 
 
-### ~~~~~ sort out val, test and train properly
+### ~~~~~ [DONE!] sort out val, test and train properly
 
 ### ~~~~~ FC2_INPUT_DIM IS NOT USED!! This would be extremely useful. ?? is this for dynamic layer sizing?
 
@@ -170,14 +170,15 @@ model_save_name = "fast test16 100K" #'Parabola6 no norm to loss' #"T2"#"RDT 500
 model_checkpointing = True                   # If set to true then the model will save a checkpoint of the model and optimiser state dicts at the end of each 'model_checkpointing_interval' epochs
 model_checkpoint_interval = 5               # Number of epochs between each model checkpoint save
 
-inject_seed = True                           # Reinjects the original seeding value to deterministically recreate the same noise and signal points each epoch, this is useful for testing the effect of different hyperparameters on the same data or for allowing the training to see same images multiple times to improve performance
-inject_seed_interval = 1                    # Number of epochs between each seed injection
 
 # Data Loader Settings
 precision = 32                               # User controll to set the precision of the model (16f, 32f or 64f) (Hyperparameter)
 preprocess_on_gpu = True                     # Only woirks if cuda gpu is found, else will defulat back to cpu preprocess
 store_full_dataset_in_memory = True          # If set to true then the full dataset will be loaded into memory at the start of training, otherwise will load each batch from disk as needed (WARNING: Setting this to true will use a lot of memory, only use if you have enough system RAM to hold entire dataset)
 data_loader_workers = 0                      # Number of workers to use for the data loader, 0 means all data loading will be done on the main thread, 1 means one worker will be used to load data in the background, 2 means two workers will be used etc. 
+inject_seed = True                           # Reinjects the original seeding value to deterministically recreate the same noise and signal points each epoch, this is useful for testing the effect of different hyperparameters on the same data or for allowing the training to see same images multiple times to improve performance
+inject_seed_interval = 1                    # Number of epochs between each seed injection
+shuffle_train_data = True #NOTE: Tested!     # If set to true then the model will shuffle the training data each epoch, otherwise will not shuffle
 
 # Input Data Settings
 TORCHSIM_data = False                        #!!!!!!!!!!!!!!!!!!!!!!
@@ -206,6 +207,7 @@ val_test_split_ratio = 0.9                   # This needs to be better explained
 #%% - Loss Function Settings
 loss_vs_sparse_img = False    #NOTE: Tested!                 # User controll to set if the loss is calculated against the sparse image or the full image (Hyperparameter)
 loss_function_selection = "Fast3D"                           # Select loss function (string):# "MAE", "MSE", "SSE", "BCE", "ACB_MSE", "ffACB_MSE", "Split_Loss", "True3D", "Simple3D", "ACB3D", "Fast3D", "WPR_Loss"
+renorm_for_loss_calc = True                                   # User controll to set if the loss is calculated against the renormalised image or the network output data (Hyperparameter)
 
 # Weights used for ACBMSE and varients
 zero_weighting = 1                                           # User controll to set zero weighting for ACBMSE or ffACBMSE (Hyperparameter)
@@ -240,15 +242,17 @@ save_all_raw_plot_data = True                # [default = False] If set to true 
 
 #%% - New beta feature settings 
 double_precision = False #NOTE: Tested!      # [default = False] If set to true then the model will use double precision floating point numbers for all calculations, otherwise will use single precision
-shuffle_train_data = True #NOTE: Tested!     # If set to true then the model will shuffle the training data each epoch, otherwise will not shuffle
 
 # TRUN THESE TWO FLAGS INTO ONE SINGLE VARIABLE WHERE None WILL HAVE NO TIMEOUT AND A VALUE WILL SET THE TIMEOUT
 timeout_training = False                     # If set to true then the model will stop training after the timeout time has been reached
 timeout_time = 720                           # Time in minuits to wait before stopping training if timeout_training is set to true`
 
+# Neural Net Telemetry
 record_weights = False                       # If set to true then the model will record the weights of the network at the end of each epoch
 record_biases = False                        # If set to true then the model will record the biases of the network at the end of each epoch
 record_activity = False                      # If set to true then the model will record the activations of the network at the end of each epoch
+flush_network_hooks = True                   # If set to true then the model will flush the network hooks to disk periodically, this is useful for reducing memory usage but will slow down training due to the time taken to flush the hooks
+hook_flush_interval = 1                      # Number of epochs between each flush of the network hooks to disk, larger values will consume more memory but will reduce the overhead of flushing the hooks to disk
 
 ### NEW PHYSICAL GROUNDING FOR UNITS
 use_physical_values_for_plot_axis = False    # If false then axis are label by pixel indicies, if true then axis are labelled by physical units
@@ -261,8 +265,10 @@ plot_train_loss = True                       # [default = True]
 plot_test_loss = True                        # [default = True]
 plot_validation_loss = True                  # [default = True]               
 plot_time_loss = True                        # [default = True]
+
 plot_detailed_performance_loss = True        # Plots ssim nmi etc for each epoch 
-use_tensorboard = False
+plot_normalised_radar = False                # [default = True]
+
 plot_live_time_loss = True                   # [default = True] Generate plot of live training loss vs time during trainig which is overwritten each epoch, this is useful for seeing how the training is progressing
 plot_live_training_loss = True               # [default = True] Generate plot of live training loss vs epoch during trainig which is overwritten each epoch, this is useful for seeing how the training is progressing
 comparative_live_loss = True                 # [default = True] Adds comparative lines to the live plots, the models for comparison are selected below
@@ -280,8 +286,10 @@ plot_pixel_threshold_telemetry = True        # [default = False] # Update name t
 plot_pixel_difference = False #BROKEN        # [default = True]          
 plot_latent_generations = False              # [default = True]              
 plot_higher_dim = False                      # [default = True]  
-plot_normalised_radar = False                # [default = True]
 plot_Graphwiz = True                         # [default = True]       
+
+use_tensorboard = False
+
 
 #%% - Advanced Debugging Settings
 print_encoder_debug = False                     # [default = False]  
@@ -613,7 +621,7 @@ def create_comparison_plot_data(slide_live_plot_size, epoch, max_epoch_reached, 
 #%% - Train, Test, Val and Plot Functions
     
 ### Training Function
-def train_epoch(encoder, decoder, device, dataloader, loss_fn, optimizer, signal_points, noise_points=0, x_std_dev=0, y_std_dev=0, tof_std_dev=0, time_dimension=100, reconstruction_threshold=0.5, print_partial_training_losses=False, masking_optimised_binary_norm=False, loss_vs_sparse_img=False):
+def train_epoch(encoder, decoder, device, dataloader, loss_fn, optimizer, time_dimension=100, reconstruction_threshold=0.5, print_partial_training_losses=False, masking_optimised_binary_norm=False, loss_vs_sparse_img=False):
     """
     Training loop for a single epoch
 
@@ -645,12 +653,8 @@ def train_epoch(encoder, decoder, device, dataloader, loss_fn, optimizer, signal
     loss_total = 0.0
     batches = 0
 
-    if print_partial_training_losses:  # Prints partial train losses per batch
-        image_loop  = (dataloader)     # No progress bar for the batches
-    else:                              # Rather than print partial train losses per batch, instead create progress bar
-        image_loop  = tqdm(dataloader, desc='Batches', leave=False) # Creates a progress bar for the batches
-
-    for image_batch, sparse_output_batch, sparse_and_resolution_limited_batch, noised_sparse_reslimited_batch in image_loop: 
+    iterator = (dataloader) if print_partial_training_losses else tqdm(dataloader, desc='Batches', leave=False)                  # If print_partial_training_losses is true then we just iterate the dataloder without genrating a progress bar as partial losses will be printed instead. If set to 'False' use the tqdm progress bar wrapper for the dataset for user feedback on progress
+    for image_batch, sparse_output_batch, sparse_and_resolution_limited_batch, noised_sparse_reslimited_batch in iterator: 
 
         # DATA PREPROCESSING
         with torch.no_grad(): # No need to track the gradients
@@ -679,16 +683,23 @@ def train_epoch(encoder, decoder, device, dataloader, loss_fn, optimizer, signal
             loss_comparator = image_clean
 
         # Evaluate loss
-        #if renorm_for_loss_calc
-            #decoded_data = gaped_renormalisation_torch(decoded_data, reconstruction_threshold, time_dimension)
-            #loss_comparator = gaped_renormalisation_torch(loss_comparator, reconstruction_threshold, time_dimension)
+        if renorm_for_loss_calc:
+            decoded_data = gaped_renormalisation_torch(decoded_data, reconstruction_threshold, time_dimension)
+            loss_comparator = gaped_renormalisation_torch(loss_comparator, reconstruction_threshold, time_dimension)
+        
         loss = loss_fn(decoded_data, loss_comparator)  # Compute the loss between the decoded image batch and the clean image batch
         
         # Backward pass
         optimizer.zero_grad() # Reset the gradients
         loss.backward() # Compute the gradients
+        optimizer.step() # Update the parameters
+        batches += 1
+        loss_total += loss.item()
+        avg_epoch_loss = loss_total/batches
 
-
+        if print_partial_training_losses:         # Prints partial train losses per batch
+            print('\t partial train loss (single batch): %f' % (loss.data))  # Print batch loss value
+    
         if use_tensorboard:
             # Add the gradient values to Tensorboard
             for name, param in encoder.named_parameters():
@@ -697,17 +708,12 @@ def train_epoch(encoder, decoder, device, dataloader, loss_fn, optimizer, signal
             for name, param in decoder.named_parameters():
                 writer.add_histogram(name + '/grad', param.grad, global_step=epoch)
 
-        optimizer.step() # Update the parameters
-        batches += 1
-        loss_total += loss.item()
+            writer.add_scalar('Loss/train', avg_epoch_loss, epoch)
 
-        if print_partial_training_losses:         # Prints partial train losses per batch
-            print('\t partial train loss (single batch): %f' % (loss.data))  # Print batch loss value
-    
-    return loss_total/batches
+    return avg_epoch_loss
 
 ### Testing Function
-def test_epoch(encoder, decoder, device, dataloader, loss_fn, signal_points, noise_points=0, x_std_dev=0, y_std_dev=0, tof_std_dev=0, time_dimension=100, reconstruction_threshold=0.5, print_partial_training_losses=False, masking_optimised_binary_norm=False, loss_vs_sparse_img=False):
+def test_epoch(encoder, decoder, device, dataloader, loss_fn, time_dimension=100, reconstruction_threshold=0.5, print_partial_training_losses=False, masking_optimised_binary_norm=False, loss_vs_sparse_img=False):
     """
     Testing (Evaluation) loop for a single epoch. This function is identical to the training loop except that it does not perform the backward pass and parameter update steps and the model is run in eval mode. Additionaly the dataset used is the test dataset rather than the training dataset so that the data is unseen by the model.
 
@@ -740,13 +746,9 @@ def test_epoch(encoder, decoder, device, dataloader, loss_fn, signal_points, noi
 
         loss_total = 0.0
         batches = 0
-
-        if print_partial_training_losses:  # Prints partial train losses per batch
-            image_loop = (dataloader)     # No progress bar for the batches
-        else:                              # Rather than print partial train losses per batch, instead create progress bar
-            image_loop = tqdm(dataloader, desc='Testing', leave=False, colour="yellow") # Creates a progress bar for the batches
-
-        for image_batch, sparse_output_batch, sparse_and_resolution_limited_batch, noised_sparse_reslimited_batch in image_loop: 
+        
+        iterator = (dataloader) if print_partial_training_losses else tqdm(dataloader, desc='Testing', leave=False, colour="yellow")                  # If print_partial_training_losses is true then we just iterate the dataloder without genrating a progress bar as partial losses will be printed instead. If set to 'False' use the tqdm progress bar wrapper for the dataset for user feedback on progress
+        for image_batch, sparse_output_batch, sparse_and_resolution_limited_batch, noised_sparse_reslimited_batch in iterator: 
 
             if masking_optimised_binary_norm:
                 normalised_batch = mask_optimised_normalisation(noised_sparse_reslimited_batch)
@@ -779,7 +781,7 @@ def test_epoch(encoder, decoder, device, dataloader, loss_fn, signal_points, noi
     return loss_total/batches
 
 ### Validation Function
-def validation_routine(encoder, decoder, device, dataloader, loss_fn, signal_points, noise_points=0, x_std_dev=0, y_std_dev=0, tof_std_dev=0, time_dimension=100, reconstruction_threshold=0.5, print_partial_training_losses=False, masking_optimised_binary_norm=False, loss_vs_sparse_img=False):
+def validation_routine(encoder, decoder, device, dataloader, loss_fn, time_dimension=100, reconstruction_threshold=0.5, print_partial_training_losses=False, masking_optimised_binary_norm=False, loss_vs_sparse_img=False):
     """
     Validation loop for a single epoch. This function is identical to the test/evaluation loop except that it is used for hyperparamter evaluation to evaluate between differnt models. This function is not used during training, only for hyperparameter evaluation. Again it uses a previosuly unseen dataset howevr this one is fixed and not randomly selected from the dataset so as to provide a fixed point of reference for direct model comparison.
     
@@ -812,12 +814,8 @@ def validation_routine(encoder, decoder, device, dataloader, loss_fn, signal_poi
         loss_total = 0.0
         batches = 0
 
-        if print_partial_training_losses:  # Prints partial train losses per batch
-            image_loop = (dataloader)     # No progress bar for the batches
-        else:                              # Rather than print partial train losses per batch, instead create progress bar
-            image_loop = tqdm(dataloader, desc='Validation', leave=False, colour="green") # Creates a progress bar for the batches
-
-        for image_batch, sparse_output_batch, sparse_and_resolution_limited_batch, noised_sparse_reslimited_batch in image_loop: 
+        iterator = (dataloader) if print_partial_training_losses else tqdm(dataloader, desc='Validation', leave=False, colour="green")                  # If print_partial_training_losses is true then we just iterate the dataloder without genrating a progress bar as partial losses will be printed instead. If set to 'False' use the tqdm progress bar wrapper for the dataset for user feedback on progress
+        for image_batch, sparse_output_batch, sparse_and_resolution_limited_batch, noised_sparse_reslimited_batch in iterator: 
 
             if masking_optimised_binary_norm:
                 normalised_batch = mask_optimised_normalisation(noised_sparse_reslimited_batch)
@@ -850,7 +848,7 @@ def validation_routine(encoder, decoder, device, dataloader, loss_fn, signal_poi
     return loss_total/batches
 
 ### Plotting function
-def plot_epoch_data(encoder, decoder, dataloader, epoch, model_save_name, time_dimension, reconstruction_threshold, signal_points, noise_points=0, x_std_dev=0, y_std_dev=0, tof_std_dev=0, physical_scale_parameters=[1,1,1], n=10):       #Defines a function for plotting the output of the autoencoder. And also the input + clean training data? Function takes inputs, 'encoder' and 'decoder' which are expected to be classes (defining the encode and decode nets), 'n' which is the number of ?????Images in the batch????, and 'noise_factor' which is a multiplier for the magnitude of the added noise allowing it to be scaled in intensity.  
+def plot_epoch_data(encoder, decoder, dataloader, epoch, model_save_name, time_dimension, reconstruction_threshold, signal_points, n=10):       #Defines a function for plotting the output of the autoencoder. And also the input + clean training data? Function takes inputs, 'encoder' and 'decoder' which are expected to be classes (defining the encode and decode nets), 'n' which is the number of ?????Images in the batch????, and 'noise_factor' which is a multiplier for the magnitude of the added noise allowing it to be scaled in intensity.  
     
     """
     Plots the output of the autoencoder in a variety of ways to track its perfromance and abilities during the training cycle. 
@@ -1125,7 +1123,8 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
     telemetry = [[0,0.5,0.5]]                # Initalises the telemetry memory, starting values are 0, 0.5, 0.5 which corrspond to epoch(0), above_threshold(0.5), below_threshold(0.5)
     
     # Create a summary writer
-    writer = SummaryWriter()
+    if use_tensorboard:
+        writer = SummaryWriter()
 
 
     #%% - Initialises seeding values to RNGs
@@ -1374,11 +1373,6 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
                                     train_loader, 
                                     loss_fn, 
                                     optim,
-                                    signal_points,
-                                    noise_points,
-                                    x_std_dev, 
-                                    y_std_dev,
-                                    tof_std_dev,
                                     time_dimension,
                                     reconstruction_threshold,
                                     print_partial_training_losses,
@@ -1391,11 +1385,6 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
                                     device, 
                                     test_loader, 
                                     loss_fn,
-                                    signal_points,
-                                    noise_points,
-                                    x_std_dev, 
-                                    y_std_dev,
-                                    tof_std_dev,
                                     time_dimension,
                                     reconstruction_threshold,
                                     print_partial_training_losses,
@@ -1418,11 +1407,6 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
                                                                         time_dimension, 
                                                                         reconstruction_threshold,
                                                                         signal_points,
-                                                                        noise_points,
-                                                                        x_std_dev, 
-                                                                        y_std_dev,
-                                                                        tof_std_dev,
-                                                                        physical_scale_parameters,
                                                                         num_to_plot, 
                                                                         )
                 
@@ -1448,10 +1432,6 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
             history_da['train_loss'].append(train_loss)
             history_da['test_loss'].append(test_loss)
 
-            # check if current epoch is a multiple of 'model_checkpoint_interval' and if so save the model
-            if model_checkpointing and epoch % model_checkpoint_interval == 0 and epoch != 0:
-                full_model_export(True, model_output_dir, model_checkpoints_dir, epoch, encoder, decoder, optim, latent_dim, fc_input_dim, double_precision, Encoder, debug_model_exporter=False)
-
             ###CLEAN UP THIS METHOD TO SOMTHING BETTER!!!!!!
             epoch_avg_loss_mse.append(np.mean(avg_loss_mse))
             epoch_avg_loss_mae.append(np.mean(avg_loss_mae))
@@ -1464,7 +1444,13 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
             epoch_avg_loss_true_positive_tof.append(np.mean(avg_loss_true_positive_tof))
             epoch_avg_loss_false_positive_xy.append(np.mean(avg_loss_false_positive_xy))
 
-            write_hook_data_to_disk_and_clear(activations, weights_data, biases_data, epoch, dir)
+            # check if current epoch is a multiple of 'model_checkpoint_interval' and if so save the model
+            if model_checkpointing and epoch % model_checkpoint_interval == 0 and epoch != 0:
+                full_model_export(True, model_output_dir, model_checkpoints_dir, epoch, encoder, decoder, optim, latent_dim, fc_input_dim, double_precision, Encoder, debug_model_exporter=False)
+
+
+            if epoch % hook_flush_interval == 0 and epoch != 0:
+                write_hook_data_to_disk_and_clear(activations, weights_data, biases_data, epoch, dir)
 
             ### Live Comparison Plots
             if plot_comparative_loss:
@@ -1649,7 +1635,6 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
         output_file.write(f"start_from_pretrained_model: {start_from_pretrained_model}\n")
         if start_from_pretrained_model:
             output_file.write(f"pretrained_model_path: {pretrained_model_path}\n")
-            output_file.write(f"full_statedict_path: {full_statedict_path}\n")    
             output_file.write(f"load_pretrained_optimser: {load_pretrained_optimser}\n")  
         
         output_file.write("\n \nFull Data Readouts:\n") 
@@ -1678,11 +1663,6 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
                                         device, 
                                         valid_loader, 
                                         loss_fn,
-                                        signal_points,
-                                        noise_points,
-                                        x_std_dev, 
-                                        y_std_dev,
-                                        tof_std_dev,
                                         time_dimension,
                                         reconstruction_threshold,
                                         print_partial_training_losses,

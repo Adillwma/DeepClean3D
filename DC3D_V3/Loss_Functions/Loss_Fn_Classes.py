@@ -74,7 +74,7 @@ class NEWESTACB3dloss2024(torch.nn.Module):
 
 # Weighted Custom Split Loss Function
 
-class ada_weighted_custom_split_loss(torch.nn.Module):
+class ada_weighted_custom_split_loss(torch.nn.Module): 
     """
     Calculates the weighted error loss between target_image and reconstructed_image.
     The loss for zero pixels in the target_image is weighted by zero_weighting, and the loss for non-zero
@@ -122,7 +122,7 @@ class ada_weighted_custom_split_loss(torch.nn.Module):
             nonzero_loss = 0
         
         # Sum losses with weighting coefficiants 
-        weighted_split_loss = (zero_weighting * zero_loss) + (nonzero_weighting * nonzero_loss) 
+        weighted_split_loss = (self.zero_weighting * zero_loss) + (self.nonzero_weighting * nonzero_loss) 
         
         return weighted_split_loss
 
