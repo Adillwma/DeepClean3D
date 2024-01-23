@@ -166,8 +166,10 @@ Possible improvements:
 #%% - User Inputs
 dataset_title = "PDT 10K"# "RF_5K"#"PDT 10K" #"RDT 10K MOVE" #'RDT 500K 1000ToF' #"RDT 10K MOVE" #"RDT 50KM"# "Dataset 37_X15K Perfect track recovery" #"Dataset 24_X10Ks"           #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
 model_save_name = "fast test10"#'Parabola6 no norm to loss' #"T2"#"RDT 500K 1000ToF timed"#"2023 Testing - RDT100K n100"#"2023 Testing - RDT10K NEW" #"RDT 100K 30s 200n Fixed"#"RDT 50KM tdim1000 AE2PROTECT 30 sig 200NP LD10"     #"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
+
 model_checkpointing = True                # If set to true then the model will save a checkpoint of the model and optimiser state dicts at the end of each 'model_checkpointing_interval' epochs
 model_checkpoint_interval = 20          # Number of epochs between each model checkpoint save
+
 inject_seed = True     # 
 inject_seed_interval = 20          # Number of epochs between each seed injection
 
@@ -281,7 +283,7 @@ comparative_loss_paths = [r'N:\Yr 3 Project Results\RDT 10K 1000ToF timed - Trai
                           
 plot_pixel_threshold_telemetry = True     # [default = False] # Update name to pixel_cuttoff_telemetry    #Very slow, reduces net performance by XXXXXX%
 plot_pixel_difference = False #BROKEN     # [default = True]          
-plot_latent_generations = True            # [default = True]              
+plot_latent_generations = False            # [default = True]              
 plot_higher_dim = False                   # [default = True]  
 plot_normalised_radar = False
 plot_Graphwiz = True                      # [default = True]       
@@ -1973,11 +1975,13 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
             epoch_end_time = time.time()
             epoch_time = epoch_end_time - epoch_start_time
             epoch_times_list.append(epoch_time) 
-            #print("EPOCH TIM LIST SIZE", len(epoch_times_list))       
 
             # Update the epoch reached counter  
             max_epoch_reached = epoch    
                 
+            history_da['train_loss'].append(train_loss)
+            history_da['test_loss'].append(test_loss)
+
             # check if current epoch is a multiple of 'model_checkpoint_interval' and if so save the model
             if model_checkpointing and epoch % model_checkpoint_interval == 0 and epoch != 0:
                 full_model_export(True, model_output_dir, model_checkpoints_dir, epoch, encoder, decoder, optim, latent_dim, fc_input_dim, double_precision, Encoder, debug_model_exporter=False)
@@ -1997,10 +2001,6 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
 
             write_hook_data_to_disk_and_clear(activations, weights_data, biases_data, epoch, dir)
 
-            history_da['train_loss'].append(train_loss)
-            history_da['test_loss'].append(test_loss)
-            #print("TRAIN LOSS SIZE", len(history_da['train_loss'])) 
-            
             ### Live Comparison Plots
             if plot_comparative_loss:
                 create_comparison_plot_data(slide_live_plot_size, epoch, max_epoch_reached, comparative_live_loss, comparative_loss_titles, comparative_epoch_times, comparative_history_da, data=history_da['train_loss'])
