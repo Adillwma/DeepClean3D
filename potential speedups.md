@@ -34,3 +34,18 @@ https://github.com/mrdbourke/pytorch-deep-learning/blob/main/extras/pytorch_2_in
 
 # Enable running nativly at half precision
 
+
+
+
+
+Freezing Parameters: When you are fine-tuning a pre-trained model and want to freeze certain layers, you can detach the parameters of those layers from the computation graph. This prevents them from being updated during backpropagation. You can detach the parameters by calling the detach() method on the parameter itself, or by using the detach() method on the Module.
+
+    for param in model.parameters():
+        param.requires_grad = False
+
+    # Replace the last fully-connected layer
+    # Parameters of newly constructed modules have requires_grad=True by default
+    model.fc = nn.Linear(512, 100)
+
+    # Optimize only the classifier
+    optimizer = optim.SGD(model.fc.parameters(), lr=1e-2, momentum=0.9)

@@ -912,7 +912,6 @@ def plot_epoch_data(encoder, decoder, dataloader, epoch, model_save_name, time_d
             int_rec_sig_points = (rec_img >= reconstruction_threshold).sum()      
             number_of_recovered_signal_points.append(int(int_rec_sig_points.numpy()))
 
-
             noise_im = gaped_renormalisation(normalised_batch.squeeze(), reconstruction_threshold, time_dimension)
             rec_im = gaped_renormalisation(rec_img.detach().squeeze().numpy(), reconstruction_threshold, time_dimension)
             masked_im = masking_recovery(noise_im, rec_im, time_dimension)
@@ -972,7 +971,6 @@ def plot_epoch_data(encoder, decoder, dataloader, epoch, model_save_name, time_d
 
         Out_Label = graphics_dir + f'{model_save_name} - Epoch {epoch}.png' #creates the name of the file to be saved
         plot_save_choice(plot_or_save, Out_Label) #saves the plot if plot_or_save is set to 1, if 0 it displays, if 2 it displays and saves
-        plt.close()
 
         # 3D Reconstruction
         img, sparse_im, reslim_im, noise_im, rec_im, masked_im = reconstruct_3D(img, sparse_im, reslim_im, noise_im, rec_im, masked_im) #reconstructs the 3D image using the reconstruct_3D function
