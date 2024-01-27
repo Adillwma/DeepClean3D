@@ -8,54 +8,44 @@ from tqdm.auto import tqdm
 from Helper_files.Data_Degradation_Functions import *
 from Helper_files.Helper_Functions import input_range_to_random_value
 
-
 class CustomDataset(Dataset):
-    def __init__(self, dir_path, precision=32, store_full_dataset_in_memory=False):
+    def __init__(self, dir_path, store_full_dataset_in_memory=False, bundle_size=1000):
+        self.bundle_size = bundle_size
         self.data_dir = dir_path + "/Data/"
-        self.set_dtype(precision)
         self.file_list = os.listdir(self.data_dir)
         self.load_from_memory = store_full_dataset_in_memory
         if store_full_dataset_in_memory:
             self.load_data_into_memory()
 
     def load_data_into_memory(self):
-        self.data = []  # List to hold all the data
-        for file_name in tqdm(self.file_list, desc="Loading data into memory", leave=False, unit="files"):
-            sample = np.load(self.data_dir + file_name)
-            sample = self.tensor_transform(sample)
-            self.data.append(sample)
+        self.data = torch.cat([torch.load(self.data_dir + file_name) for file_name in tqdm(self.file_list, desc="Loading data into memory", leave=False, unit="Sample Bundle (1000 Files)")], dim=0)
+        #print("Data loaded into memory")
+        #print("Data shape: ", self.data.shape)
 
-    def __getitem__(self, index):      
+    def get_bundle(self, bundle_index):
+        self.data_bundle = torch.load(self.data_dir + self.file_list[bundle_index])
+
+    def __getitem__(self, index):         # UPDATE METHOD TO DIRECTLY RETURN BATCHES?????
+        #print("GET ITEM: INDEX = ", index)
+
         if self.load_from_memory:
             sample = self.data[index]
-        else:    
-            sample = np.load(self.data_dir + self.file_list[index])                              # Loads the 2D image from the path
-            sample = self.tensor_transform(sample)                                               # Transform to tesnor of shape [C, H, W] with user selected precision (32f, 64f)
+
+        else:
+            sample_bundle_index = index // self.bundle_size
+            sample_index_in_bundle = index % self.bundle_size
+
+            # call load bundle function if index is 0 or a multiple of bundle_size
+            if sample_index_in_bundle == 0:
+                self.get_bundle(sample_bundle_index)
+
+            # load sample from bundle
+            sample = self.data_bundle[sample_index_in_bundle]                                           
+
         return sample
     
     def __len__(self):
-        return len(self.file_list)
-
-    def np_to_tensor(self, np_array, dtype):
-        """
-        Convert np array to torch tensor of user selected precision and adds a channel dim. 
-        Takes in np array of shape [H, W] and returns torch tensor of shape [C, H, W]
-        """
-        tensor = torch.tensor(np_array, dtype=dtype)
-        tensor = tensor.unsqueeze(0)                                                         # Append channel dimension to begining of tensor
-        return(tensor)
-
-    def set_dtype(self, precision):
-        if precision == 16:
-            dtype = torch.float16
-        elif precision == 32:
-            dtype = torch.float32
-        elif precision == 64:
-            dtype = torch.float64
-        else:
-            raise ValueError("Invalid dataset 'precision' value selected. Please select 16, 32, or 64 which correspond to torch.float16, torch.float32, and torch.float64 respectively.")      
-          
-        self.tensor_transform = partial(self.np_to_tensor, dtype=dtype) #using functools partial to bundle the args into np_to_tensor to use in custom torch transform using lambda function
+        return len(self.file_list) * self.bundle_size
 
 class CustomDataLoader(DataLoader):
     def __init__(self, input_signal_settings, physical_scale_parameters, time_dimension, device, preprocess_on_gpu, precision, *args, **kwargs):
@@ -66,7 +56,6 @@ class CustomDataLoader(DataLoader):
         self.device = device
         self.preprocess_on_gpu = preprocess_on_gpu
         self.precision = precision
-        
         
     def __iter__(self):
         return CustomDataLoaderIter(self, self.input_signal_settings, self.physical_scale_parameters, self.time_dimension, self.device, self.preprocess_on_gpu, self.precision)
@@ -101,7 +90,7 @@ class CustomDataLoaderIter:
           
 
     def _custom_processing(self, batch):
-        signal_points, x_std_dev, y_std_dev, tof_std_dev, noise_points = self.input_signal_settings
+        signal_points, x_std_dev, y_std_dev, tof_std_dev, noise_points = self.input_signal_settings # join with following line to clean up code
         signal_settings = input_range_to_random_value(signal_points, x_std_dev, y_std_dev, tof_std_dev, noise_points) 
         degraded_batches = signal_degredation(signal_settings, batch, self.physical_scale_parameters, self.time_dimension, self.device, self.dtype)
         return degraded_batches   
@@ -112,8 +101,9 @@ class CustomDataLoaderIter:
     def __next__(self):
         indices = next(self.sample_iter)
         batch = self.collate_fn([self.dataset[i] for i in indices])
+        batch = batch.to(self.dtype)
         batch = batch.to(self.device)
-        
+
         sparse_output_batch, sparse_and_resolution_limited_batch, noised_sparse_reslimited_batch = self._custom_processing(batch)
 
         return batch, sparse_output_batch, sparse_and_resolution_limited_batch, noised_sparse_reslimited_batch
@@ -131,7 +121,7 @@ if __name__ == "__main__":
     preprocess_on_gpu = True   # Only woirks if cuda gpu is found, else will defulat back to cpu preprocess
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-
+    batch_size = 1000
     signal_points = 150 
     noise_points = 20
     x_std_dev = 0
@@ -140,39 +130,14 @@ if __name__ == "__main__":
     input_signal_settings = [signal_points, x_std_dev, y_std_dev, tof_std_dev, noise_points]
 
     # Create dataset
-    dataset = CustomDataset(dir_path="N:\Yr 3 Project Datasets\Dataset 20_X500", precision=32)
+    dataset = CustomDataset(dir_path="N:\Yr 3 Project Datasets\RDT 50KM Fix", precision=32)
+    dataset2 = CustomDataset_V2(dir_path="N:\Yr 3 Project Datasets\[V2]RDT 50KM Fix", precision=32)
 
     # Create dataloader
-    dataloader = DataLoader(dataset, batch_size=10, shuffle=False, num_workers=0)
-    dataloader2 = CustomDataLoader(input_signal_settings, physical_scale_parameters, time_dimension, device, preprocess_on_gpu, dataset, batch_size=10, shuffle=False, num_workers=0)
+    dataloader = CustomDataLoader(input_signal_settings, physical_scale_parameters, time_dimension, device, preprocess_on_gpu, dataset, batch_size, shuffle=False, num_workers=0)
+    dataloader2 = CustomDataLoader(input_signal_settings, physical_scale_parameters, time_dimension, device, preprocess_on_gpu, dataset2, batch_size, shuffle=False, num_workers=0)
 
     # Get a batch of data
     for sample_batched1, sample_batched2 in zip(dataloader, dataloader2):
-        # allclose the results
-
         print(torch.allclose(sample_batched1, sample_batched2[0]))
-        """
-        # plot one image form each batch to check they are the same
-        plt.figure()
-        plt.subplot(1,2,1)
-        plt.imshow(sample_batched1[0,0,:,:])
-        plt.subplot(1,2,2)
-        plt.imshow(sample_batched2[0][0,0,:,:])
-        plt.show()
-
-
-        # plot the differnt degraded versions of the same image
-        plt.figure()
-        plt.subplot(1,4,1)
-        plt.imshow(sample_batched2[1][0,0,:,:])
-        plt.subplot(1,4,1)
-        plt.imshow(sample_batched2[1][0,0,:,:])
-        plt.subplot(1,4,2)      
-        plt.imshow(sample_batched2[2][0,0,:,:])
-        plt.subplot(1,4,3)
-        plt.imshow(sample_batched2[3][0,0,:,:])
-        plt.show()
-
-        """
-
     print("Finished")
