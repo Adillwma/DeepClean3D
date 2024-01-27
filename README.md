@@ -130,6 +130,12 @@ The second issue arising from the 2D with embedded ToF is due to the way the hit
 *Left hand image shows one of the simulated crosses in the full three dimensions of x, y and time. The right-hand side shows the same cross image but using our 2D with embedded ToF method, which compresses the three-dimensional data to two dimensions to speed up the processing.*
 </div>
 
+<div align="center">
+
+<img src="Images/quantifying_occlusion.png" width=600>
+
+*Qauntifying pixel occlusion, due to 3D to 2D transform.*
+</div>
 
 
 

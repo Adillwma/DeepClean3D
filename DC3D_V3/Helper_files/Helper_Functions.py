@@ -7,6 +7,29 @@ import openpyxl
 from openpyxl.utils import get_column_letter
 from openpyxl.formatting.rule import DataBarRule
 
+def set_model_precision(encoder, decoder, precision):
+    if precision == 16: # Set encoder and decoder to half precision floating point arithmetic (fp16)
+        encoder.half()
+        decoder.half()
+        dtype = torch.float16
+
+    elif precision == 32: # Sets the encoder and decoder to single precision floating point arithmetic (fp32)
+        encoder.float()
+        decoder.float()
+        dtype = torch.float32
+
+    # Sets the encoder and decoder to double precision floating point arithmetic (fp64)
+    elif precision == 64:
+        encoder.double()   
+        decoder.double()
+        dtype = torch.float64
+
+    else:
+        raise ValueError("Error: Precision not set correctly, please set precision to 16, 32, or 64")
+
+    return encoder, decoder, dtype
+
+
 def format_time(seconds):
     hours, remainder = divmod(seconds, 3600)
     minutes, seconds = divmod(remainder, 60)
