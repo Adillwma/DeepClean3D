@@ -160,25 +160,22 @@ Possible improvements:
 data_path = "N:\Yr 3 Project Datasets\\"                      # Path to the dataset folder, this is the folder that contains your dataset folders, not a dataset folder itself. This allows fast switching between datasets by changing just the dataset title below without having to change the full path each time
 results_output_path = "N:\Yr 3 Project Results\\"             # Path to the results output folder, this is the folder that will contains all your results folders, not the results folder for a particular run.
 
-
-
-
 #%% - Data Path Settings
-dataset_title = "RDT 50KM Fix" # "RF_5K"#"PDT 10K" #"RDT 10K MOVE" #'RDT 500K 1000ToF' #"RDT 10K MOVE" #"RDT 50KM"# "Dataset 37_X15K Perfect track recovery" #"Dataset 24_X10Ks"           #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
-model_save_name = "fast test16 100K" #'Parabola6 no norm to loss' #"T2"#"RDT 500K 1000ToF timed"#"2023 Testing - RDT100K n100"#"2023 Testing - RDT10K NEW" #"RDT 100K 30s 200n Fixed"#"RDT 50KM tdim1000 AE2PROTECT 30 sig 200NP LD10"     #"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
+dataset_title = "[V2]RDT 50KM Fix" # "RF_5K"#"PDT 10K" #"RDT 10K MOVE" #'RDT 500K 1000ToF' #"RDT 10K MOVE" #"RDT 50KM"# "Dataset 37_X15K Perfect track recovery" #"Dataset 24_X10Ks"           #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
+model_save_name = "1M-Base 50K 2" #'Parabola6 no norm to loss' #"T2"#"RDT 500K 1000ToF timed"#"2023 Testing - RDT100K n100"#"2023 Testing - RDT10K NEW" #"RDT 100K 30s 200n Fixed"#"RDT 50KM tdim1000 AE2PROTECT 30 sig 200NP LD10"     #"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
 
 model_checkpointing = True                   # If set to true then the model will save a checkpoint of the model and optimiser state dicts at the end of each 'model_checkpointing_interval' epochs
-model_checkpoint_interval = 5               # Number of epochs between each model checkpoint save
-
+model_checkpoint_interval = 5                # Number of epochs between each model checkpoint save
 
 # Data Loader Settings
 precision = 32                               # User controll to set the precision of the model (16f, 32f or 64f) (Hyperparameter)
 preprocess_on_gpu = True                     # Only woirks if cuda gpu is found, else will defulat back to cpu preprocess
-store_full_dataset_in_memory = True          # If set to true then the full dataset will be loaded into memory at the start of training, otherwise will load each batch from disk as needed (WARNING: Setting this to true will use a lot of memory, only use if you have enough system RAM to hold entire dataset)
+store_full_dataset_in_memory = True         # If set to true then the full dataset will be loaded into memory at the start of training, otherwise will load each batch from disk as needed (WARNING: Setting this to true will use a lot of memory, only use if you have enough system RAM to hold entire dataset)
 data_loader_workers = 0                      # Number of workers to use for the data loader, 0 means all data loading will be done on the main thread, 1 means one worker will be used to load data in the background, 2 means two workers will be used etc. 
 inject_seed = True                           # Reinjects the original seeding value to deterministically recreate the same noise and signal points each epoch, this is useful for testing the effect of different hyperparameters on the same data or for allowing the training to see same images multiple times to improve performance
-inject_seed_interval = 1                    # Number of epochs between each seed injection
+inject_seed_interval = 4                     # Number of epochs between each seed injection
 shuffle_train_data = True #NOTE: Tested!     # If set to true then the model will shuffle the training data each epoch, otherwise will not shuffle
+dataset_bundle_size = 1000                   # Bundle size of dataset, 1 for V1, 1000 for V2. 
 
 # Input Data Settings
 TORCHSIM_data = False                        #!!!!!!!!!!!!!!!!!!!!!!
@@ -200,24 +197,24 @@ dropout_prob = 0.2                           # [NOTE Not connected yet] User con
 reconstruction_threshold = 0.5               # MUST BE BETWEEN 0-1  #Threshold for 3d reconstruction, values below this confidence level are discounted
 
 #%% - Dataset Settings
-train_test_split_ratio = 0.9                 # User controll to set the ratio of the dataset to be used for training (Hyperparameter)
-val_set_on = False                           # User controll to set if a validation set is used
-val_test_split_ratio = 0.9                   # This needs to be better explained its actually test_val ration ratehr than oterh way round     # [NOTE LEAVE AT 0.5, is for future update, not working currently] User controll to set the ratio of the non-training data to be used for validation as opposed to testing (Hyperparameter)
+train_test_split_ratio = 0.9                            # User controll to set the ratio of the dataset to be used for training (Hyperparameter)
+val_set_on = False                                      # User controll to set if a validation set is used
+val_test_split_ratio = 0.9                              # This needs to be better explained its actually test_val ration ratehr than oterh way round     # [NOTE LEAVE AT 0.5, is for future update, not working currently] User controll to set the ratio of the non-training data to be used for validation as opposed to testing (Hyperparameter)
 
 #%% - Loss Function Settings
-loss_vs_sparse_img = False    #NOTE: Tested!                 # User controll to set if the loss is calculated against the sparse image or the full image (Hyperparameter)
-loss_function_selection = "Fast3D"                           # Select loss function (string):# "MAE", "MSE", "SSE", "BCE", "ACB_MSE", "ffACB_MSE", "Split_Loss", "True3D", "Simple3D", "ACB3D", "Fast3D", "WPR_Loss"
-renorm_for_loss_calc = True                                   # User controll to set if the loss is calculated against the renormalised image or the network output data (Hyperparameter)
+loss_vs_sparse_img = False    #NOTE: Tested!            # User controll to set if the loss is calculated against the sparse image or the full image (Hyperparameter)
+loss_function_selection = "ACB_MSE"                      # Select loss function (string):# "MAE", "MSE", "SSE", "BCE", "ACB_MSE", "ffACB_MSE", "Split_Loss", "True3D", "Simple3D", "ACB3D", "Fast3D", "WPR_Loss"
+renorm_for_loss_calc = False                             # User controll to set if the loss is calculated against the renormalised image or the network output data (Hyperparameter)
 
 # Weights used for ACBMSE and varients
-zero_weighting = 1                                           # User controll to set zero weighting for ACBMSE or ffACBMSE (Hyperparameter)
-nonzero_weighting = 1#0.4 #0.4                               # User controll to set non zero weighting for ACBMSE or ffACBMSE  (Hyperparameter)
-fullframe_weighting = 1.5 #1.5                               # User controll to set full frame weighting for ffACBMSE (Hyperparameter) [# Only used for ffACBMSE loss function]
-ff_loss = 'mse'                                              # User controll to set loss function for full frame loss (Hyperparameter) [# Only used for ffACBMSE loss function] # "MAE", "MSE", "SSE", "BCE"
+zero_weighting = 1                                      # User controll to set zero weighting for ACBMSE or ffACBMSE (Hyperparameter)
+nonzero_weighting = 1#0.4 #0.4                          # User controll to set non zero weighting for ACBMSE or ffACBMSE  (Hyperparameter)
+fullframe_weighting = 1.5 #1.5                          # User controll to set full frame weighting for ffACBMSE (Hyperparameter) [# Only used for ffACBMSE loss function]
+ff_loss = 'mse'                                         # User controll to set loss function for full frame loss (Hyperparameter) [# Only used for ffACBMSE loss function] # "MAE", "MSE", "SSE", "BCE"
 
 # Selections for split loss function
-zeros_loss_choice = 1                                        # Select loss function for zero values (Hyperparameter): 0 = Maxs_Loss_Func, 1 = torch.nn.MSELoss(), 2 = torch.nn.BCELoss(), 3 = torch.nn.L1Loss(), 4 = ada_SSE_loss
-nonzero_loss_choice = 1                                      # Select loss function for non zero values (Hyperparameter): 0 = Maxs_Loss_Func, 1 = torch.nn.MSELoss(), 2 = torch.nn.BCELoss(), 3 = torch.nn.L1Loss(), 4 = ada_SSE_loss
+zeros_loss_choice = 1                                   # Select loss function for zero values (Hyperparameter): 0 = Maxs_Loss_Func, 1 = torch.nn.MSELoss(), 2 = torch.nn.BCELoss(), 3 = torch.nn.L1Loss(), 4 = ada_SSE_loss
+nonzero_loss_choice = 1                                 # Select loss function for non zero values (Hyperparameter): 0 = Maxs_Loss_Func, 1 = torch.nn.MSELoss(), 2 = torch.nn.BCELoss(), 3 = torch.nn.L1Loss(), 4 = ada_SSE_loss
 
 #%% - Image Preprocessing Settings
 signal_points = 100 #30                                      # User controll to set the number of signal points to add
@@ -227,9 +224,9 @@ y_std_dev = 0                                                # (mm) User control
 tof_std_dev = 0                                              # (ns) User controll to set the standard deviation of the detectors error in the time of flight 
 
 #%% - Pretraining settings
-start_from_pretrained_model = False          # If set to true then the model will load the pretrained model and optimiser state dicts from the path below
+start_from_pretrained_model = True          # If set to true then the model will load the pretrained model and optimiser state dicts from the path below
 load_pretrained_optimser = True              # Only availible if above is set to true - (pretrain seems to perform better if this is set to true)
-pretrained_model_path = 'N:/Yr 3 Project Results/RICHFAST TEST 5 - Training Results/Model_Deployment/RICHFAST TEST 5 - Model + Optimiser State Dicts.pth'      # Specify the path to the saved full state dictionary for pretraining
+pretrained_model_path = 'N:\Yr 3 Project Results\KAGL_1M - Training Results\Model_Deployment\KAGL_1M - Model + Optimiser State Dicts.pth'      # Specify the path to the saved full state dictionary for pretraining
 
 #%% - Normalisation Settings 
 masking_optimised_binary_norm = False        # If set to true then the model will use the binary normalisation method optimised for masking output. Otherwise will use the gaped custom normalisation optimised for the direct network output
@@ -271,10 +268,10 @@ plot_normalised_radar = False                # [default = True]
 
 plot_live_time_loss = True                   # [default = True] Generate plot of live training loss vs time during trainig which is overwritten each epoch, this is useful for seeing how the training is progressing
 plot_live_training_loss = True               # [default = True] Generate plot of live training loss vs epoch during trainig which is overwritten each epoch, this is useful for seeing how the training is progressing
+
+plot_comparative_loss = True
 comparative_live_loss = True                 # [default = True] Adds comparative lines to the live plots, the models for comparison are selected below
 slide_live_plot_size = 0                     # [default = 0] Number of epochs to show on the live plot (if set to 0 then will show all epochs)
-plot_comparative_loss = True
-
 comparative_loss_titles = ["S1 10K", "S1 100K", "S1 500K", "S2 10K"]
 comparative_loss_paths = [r'N:\Yr 3 Project Results\RDT 10K 1000ToF timed - Training Results\\',   # Settings V1
                           r'N:\Yr 3 Project Results\RDT 100K 1000ToF timed - Training Results\\',  # Settings V1
@@ -289,7 +286,6 @@ plot_higher_dim = False                      # [default = True]
 plot_Graphwiz = True                         # [default = True]       
 
 use_tensorboard = False
-
 
 #%% - Advanced Debugging Settings
 print_encoder_debug = False                     # [default = False]  
@@ -367,24 +363,23 @@ from Helper_files.Robust_model_exporter_V1 import Robust_model_export           
 from Helper_files.System_Information_check import get_system_information                # Function to get the host system performance specs of the training machine
 from Helper_files.Dataset_Integrity_Check_V1 import dataset_integrity_check             # Function to check the integrity of the datasets values
 from Helper_files.Dataset_distribution_tester_V1 import dataset_distribution_tester     # Function to check the distribution of the datasets values
-from Helper_files.ExcelExtractor import extract_data_to_excel # This is a custom function to extract data from excel files
-from Helper_files.model_perf_analysis2 import run_full_perf_tests
+from Helper_files.ExcelExtractor import extract_data_to_excel                           # This is a custom function to extract data from excel files
+from Helper_files.model_perf_analysis2 import run_full_perf_tests                       # Function to run the full performance analysis on the model
 
 #from Helper_files.Export_User_Settings import create_settings_dict
+from Dataloader_V2 import *
+from DC3D_Core_Functions import *
+from Helper_files.Network_Hooks import *
+from Helper_files.Plotting_Helpers import *
+from Autoencoders.DC3D_Autoencoder_V1_Protected2_V4 import Encoder, Decoder    # - Autoencoder
 from Helper_files.Helper_Functions import *   # - Helper functions
 from Helper_files.Image_Metrics import *    # - Image metrics
 from Helper_files.AE_Visulisations import *   # - Visulisations 
 from Loss_Functions.Loss_Fn_Classes import *   # - Loss Functions
 from Helper_files.Data_Degradation_Functions import *   # Data Degredation Functions
-from Dataloader import *
-from DC3D_Core_Functions import *
-from Helper_files.Network_Hooks import *
-from Helper_files.Plotting_Helpers import *
-from Autoencoders.DC3D_Autoencoder_V1_Protected2_2 import Encoder, Decoder    # - Autoencoder
 
 if run_profiler:
-    # Create a cProfile object
-    profiler = cProfile.Profile()
+    profiler = cProfile.Profile()      # Create a cProfile object to store the profiler data
 
 #%% - Load in Comparative Live Loss Data
 if comparative_live_loss:
@@ -687,6 +682,14 @@ def train_epoch(encoder, decoder, device, dataloader, loss_fn, optimizer, time_d
             decoded_data = gaped_renormalisation_torch(decoded_data, reconstruction_threshold, time_dimension)
             loss_comparator = gaped_renormalisation_torch(loss_comparator, reconstruction_threshold, time_dimension)
         
+        #print("decoded_data.shape", decoded_data.shape)
+        #print("loss_comparator.shape", loss_comparator.shape)
+        #print("max value in final dim of decoded_data", torch.max(decoded_data, dim=1))
+        #print("max value in final dim of loss_comparator", torch.max(loss_comparator, dim=1))
+
+        #print("min value in final dim of decoded_data", torch.min(decoded_data, dim=1))
+        #print("min value in final dim of loss_comparator", torch.min(loss_comparator, dim=1))
+
         loss = loss_fn(decoded_data, loss_comparator)  # Compute the loss between the decoded image batch and the clean image batch
         
         # Backward pass
@@ -875,179 +878,164 @@ def plot_epoch_data(encoder, decoder, dataloader, epoch, model_save_name, time_d
     encoder.eval()                                   #.eval() is a kind of switch for some specific layers/parts of the model that behave differently during training and inference (evaluating) time. For example, Dropouts Layers, BatchNorm Layers etc. You need to turn off them during model evaluation, and .eval() will do it for you. In addition, the common practice for evaluating/validation is using torch.no_grad() in pair with model.eval() to turn off gradients computation
     decoder.eval()                                   #Simarlary as above
 
-    # Initialise lists for true and recovered signal point values 
-    number_of_true_signal_points = []
-    number_of_recovered_signal_points = []
-
-    # 2D Input/Output Comparison Plots 
-    plt.figure(figsize=(16,9))                                      #Sets the figure size
-    loop = tqdm(range(n), desc='Plotting 2D Comparisons', leave=False, colour="green") 
-
-    for i, (img_batch, sparse_output_batch, sparse_and_resolution_limited_batch, noised_sparse_reslimited_batch) in enumerate(dataloader):     # CLEAN UP START 
-        if i >= n:
-            break
-        # Update tqdm bar
-        loop.update(1)
-
-        img = img_batch[0] # Get the first image in the batch
-        sparse_output_batch = sparse_output_batch[0] # Get the first image in the batch
-        sparse_and_resolution_limited_batch = sparse_and_resolution_limited_batch[0] # Get the first image in the batch
-        noised_sparse_reslimited_batch = noised_sparse_reslimited_batch[0] # Get the first image in the batch
-
-        img.unsqueeze_(0) # Add a dimension to the image batch
-        sparse_output_batch.unsqueeze_(0) # Add a dimension to the image batch
-        sparse_and_resolution_limited_batch.unsqueeze_(0) # Add a dimension to the image batch
-        noised_sparse_reslimited_batch.unsqueeze_(0) # Add a dimension to the image batch
-
-        # Save the number of true signal points on the input image 
-        number_of_true_signal_points.append(signal_points)  
-        
-        # Normalise the noised image
-        if masking_optimised_binary_norm:
-            normalised_batch = mask_optimised_normalisation(noised_sparse_reslimited_batch)
-        else:
-            normalised_batch = gaped_normalisation(noised_sparse_reslimited_batch, reconstruction_threshold, time_dimension)
-        
-        # Run the autoencoder on the noised data  
-        with torch.no_grad():  
-            normalised_batch = normalised_batch.to(device)                                       
-            rec_img = decoder(encoder(normalised_batch))   
-
-        #Determine the number of signal points on the recovered image 
-        int_rec_sig_points = (rec_img >= reconstruction_threshold).sum()      
-        number_of_recovered_signal_points.append(int(int_rec_sig_points.cpu().numpy()))
-
-        test_image = img.cpu().squeeze()
-        sparse_im = sparse_output_batch.cpu().squeeze()
-        reslim_im = sparse_and_resolution_limited_batch.cpu().squeeze()
-        network_input_image = normalised_batch.cpu().squeeze() 
-        recovered_test_image = rec_img.cpu().squeeze().numpy()
-
-        #clean up lines
-        in_im = test_image   
-        noise_im = gaped_renormalisation(network_input_image, reconstruction_threshold, time_dimension)
-        rec_im = gaped_renormalisation(recovered_test_image, reconstruction_threshold, time_dimension)
-        masked_im = masking_recovery(noise_im, rec_im, time_dimension)
-
-        #cmap = cm.get_cmap('viridis')
-        #cmap.set_under('k') # set the color for 0 to black ('k')
-
-        #Following section generates the img plots for the original(labels), noised, and denoised data)
-        ax = plt.subplot(6,n,i+1)                                       #Creates a number of subplots for the 'Original images??????' i.e the labels. the position of the subplot is i+1 as it falls in the first row
-        plt.imshow(in_im.T, cmap='gist_gray', vmin=0, vmax=time_dimension)           #plt.imshow plots an image. The arguments for imshow are, 'image data array' and cmap= which is the colour map. #.squeeze() acts on a tensor and returns a tensor, it removes all dimensions of the tensor that are of length 1, (A×1×B) becomes (AxB) where A and B are greater than 1 #.numpy() creates a numpy array from a tensor #!!! is the .cpu part becuase the code was not made to accept the gpu/cpu check i made????
-        ax.get_xaxis().set_visible(False)                                   #Hides the x axis from showing in the plot as we are plotting images not graphs (we may want to retain axis?)
-        ax.get_yaxis().set_visible(False)                                   #Hides the y axis from showing in the plot as we are plotting images not graphs (we may want to retain axis?)
-        if i == n//2:                                                       #n//2 divides n by 2 without any remainder, i.e 6//2=3 and 7//2=3. So this line checks to see if i is equal to half of n without remainder. it will be yes once in the loop. not sure of its use
-            ax.set_title('EPOCH %s \nOriginal images' %(epoch))               #When above condition is reached, the plots title is set                                   #When above condition is reached, the plots title is set
-
-        ax = plt.subplot(6, n, i + 1 + n)                                   #Creates a number of subplots for the 'Corrupted images??????' i.e the labels. the position of the subplot is i+1+n as it falls in the second row
-        plt.imshow(sparse_im.T, cmap='gist_gray', vmin=0, vmax=time_dimension)   #plt.imshow plots an image. The arguments for imshow are, 'image data array' and cmap= which is the colour map. #.squeeze() acts on a tensor and returns a tensor, it removes all dimensions of the tensor that are of length 1, (A×1×B) becomes (AxB) where A and B are greater than 1 #.numpy() creates a numpy array from a tensor #!!! is the .cpu part becuase the code was not made to accept the gpu/cpu check i made????
-        ax.get_xaxis().set_visible(False)                                   #Hides the x axis from showing in the plot as we are plotting images not graphs (we may want to retain axis?)
-        ax.get_yaxis().set_visible(False)                                   #Hides the y axis from showing in the plot as we are plotting images not graphs (we may want to retain axis?)
-        if i == n//2:                                                       #n//2 divides n by 2 without any remainder, i.e 6//2=3 and 7//2=3. So this line checks to see if i is equal to half of n without remainder. it will be yes once in the loop. not sure of its use
-            ax.set_title('Sparsity Applied')                                  #When above condition is reached, the plots title is set
-
-        ax = plt.subplot(6, n, i + 1 + n + n)                               #Creates a number of subplots for the 'Reconstructed images??????' i.e the labels. the position of the subplot is i+1+n+n as it falls in the third row
-        plt.imshow(reslim_im.T, cmap='gist_gray', vmin=0, vmax=time_dimension)       #plt.imshow plots an image. The arguments for imshow are, 'image data array' and cmap= which is the colour map. #.squeeze() acts on a tensor and returns a tensor, it removes all dimensions of the tensor that are of length 1, (A×1×B) becomes (AxB) where A and B are greater than 1 #.numpy() creates a numpy array from a tensor #!!! is the .cpu part becuase the code was not made to accept the gpu/cpu check i made????
-        ax.get_xaxis().set_visible(False)                                   #Hides the x axis from showing in the plot as we are plotting images not graphs (we may want to retain axis?)
-        ax.get_yaxis().set_visible(False)                                   #Hides the y axis from showing in the plot as we are plotting images not graphs (we may want to retain axis?)
-        if i == n//2:                                                       #n//2 divides n by 2 without any remainder, i.e 6//2=3 and 7//2=3. So this line checks to see if i is equal to half of n without remainder. it will be yes once in the loop. not sure of its use
-            ax.set_title('Resoloution Limited')                             #When above condition is reached, the plots title is set 
-
-        ax = plt.subplot(6, n, i + 1 + n + n + n)                                   #Creates a number of subplots for the 'Corrupted images??????' i.e the labels. the position of the subplot is i+1+n as it falls in the second row
-        plt.imshow(noise_im.T, cmap='gist_gray', vmin=0, vmax=time_dimension)   #plt.imshow plots an image. The arguments for imshow are, 'image data array' and cmap= which is the colour map. #.squeeze() acts on a tensor and returns a tensor, it removes all dimensions of the tensor that are of length 1, (A×1×B) becomes (AxB) where A and B are greater than 1 #.numpy() creates a numpy array from a tensor #!!! is the .cpu part becuase the code was not made to accept the gpu/cpu check i made????
-        ax.get_xaxis().set_visible(False)                                   #Hides the x axis from showing in the plot as we are plotting images not graphs (we may want to retain axis?)
-        ax.get_yaxis().set_visible(False)                                   #Hides the y axis from showing in the plot as we are plotting images not graphs (we may want to retain axis?)
-        if i == n//2:                                                       #n//2 divides n by 2 without any remainder, i.e 6//2=3 and 7//2=3. So this line checks to see if i is equal to half of n without remainder. it will be yes once in the loop. not sure of its use
-            ax.set_title('Corrupted images')                                  #When above condition is reached, the plots title is set
-
-        ax = plt.subplot(6, n, i + 1 + n + n + n + n)                               #Creates a number of subplots for the 'Reconstructed images??????' i.e the labels. the position of the subplot is i+1+n+n as it falls in the third row
-        plt.imshow(rec_im.T, cmap='gist_gray', vmin=0, vmax=time_dimension)       #plt.imshow plots an image. The arguments for imshow are, 'image data array' and cmap= which is the colour map. #.squeeze() acts on a tensor and returns a tensor, it removes all dimensions of the tensor that are of length 1, (A×1×B) becomes (AxB) where A and B are greater than 1 #.numpy() creates a numpy array from a tensor #!!! is the .cpu part becuase the code was not made to accept the gpu/cpu check i made????
-        ax.get_xaxis().set_visible(False)                                   #Hides the x axis from showing in the plot as we are plotting images not graphs (we may want to retain axis?)
-        ax.get_yaxis().set_visible(False)                                   #Hides the y axis from showing in the plot as we are plotting images not graphs (we may want to retain axis?)
-        if i == n//2:                                                       #n//2 divides n by 2 without any remainder, i.e 6//2=3 and 7//2=3. So this line checks to see if i is equal to half of n without remainder. it will be yes once in the loop. not sure of its use
-            ax.set_title('Reconstructed images')                             #When above condition is reached, the plots title is set 
-
-        ax = plt.subplot(6, n, i + 1 + n + n + n + n + n)                               #Creates a number of subplots for the 'Reconstructed images??????' i.e the labels. the position of the subplot is i+1+n+n as it falls in the third row
-        plt.imshow(masked_im.T, cmap='gist_gray', vmin=0, vmax=time_dimension)       #plt.imshow plots an image. The arguments for imshow are, 'image data array' and cmap= which is the colour map. #.squeeze() acts on a tensor and returns a tensor, it removes all dimensions of the tensor that are of length 1, (A×1×B) becomes (AxB) where A and B are greater than 1 #.numpy() creates a numpy array from a tensor #!!! is the .cpu part becuase the code was not made to accept the gpu/cpu check i made????
-        ax.get_xaxis().set_visible(False)                                   #Hides the x axis from showing in the plot as we are plotting images not graphs (we may want to retain axis?)
-        ax.get_yaxis().set_visible(False)                                   #Hides the y axis from showing in the plot as we are plotting images not graphs (we may want to retain axis?)
-        if i == n//2:                                                       #n//2 divides n by 2 without any remainder, i.e 6//2=3 and 7//2=3. So this line checks to see if i is equal to half of n without remainder. it will be yes once in the loop. not sure of its use
-            ax.set_title('Masked Reconstruction')                             #When above condition is reached, the plots title is set 
-
-    plt.subplots_adjust(left=0.01,              #Adjusts the exact layout of the plots including whwite space round edges
-                    bottom=0.02, 
-                    right=0.99, 
-                    top=0.95, 
-                    hspace=0.3
-                    )     
-
-    Out_Label = graphics_dir + f'{model_save_name} - Epoch {epoch}.png' #creates the name of the file to be saved
-    plot_save_choice(plot_or_save, Out_Label) #saves the plot if plot_or_save is set to 1, if 0 it displays, if 2 it displays and saves
-    plt.close()
-
-    # 3D Reconstruction
-    in_im, sparse_im, reslim_im, noise_im, rec_im, masked_im = reconstruct_3D(in_im, sparse_im, reslim_im, noise_im, rec_im, masked_im) #reconstructs the 3D image using the reconstruct_3D function
-
-    # 3D Plottting
-    if rec_im.ndim != 1:                       # Checks if there are actually values in the reconstructed image, if not no image is aseved/plotted
-        fig, axs = plt.subplots(2, 3, figsize=(32,20), subplot_kw={'projection': '3d'})
-        ax1, ax2, ax3, ax4, ax5, ax6 = axs.flatten()
-        fig.suptitle(f"3D Reconstruction - Epoch {epoch}") #sets the title of the plot
-
-        ax1.set_title("Input Image") #sets the title of the plot
-        ax1.scatter(in_im[:,0], in_im[:,1], in_im[:,2]) #plots the 3D scatter plot for input 
-
-        ax2.set_title("Sparse Image") #sets the title of the plot
-        ax2.scatter(sparse_im[:,0], sparse_im[:,1], sparse_im[:,2]) #plots the 3D scatter plot for sparse image
-    
-        ax3.set_title("Resolution Limited Image") #sets the title of the plot
-        ax3.scatter(reslim_im[:,0], reslim_im[:,1], reslim_im[:,2]) #plots the 3D scatter plot for reslim image
-
-        ax4.set_title("Noised Image") #sets the title of the plot
-        ax4.scatter(noise_im[:,0], noise_im[:,1], noise_im[:,2]) #plots the 3D scatter plot for noised image
-
-        ax5.set_title("Reconstructed Image") #sets the title of the plot
-        ax5.scatter(rec_im[:,0], rec_im[:,1], rec_im[:,2]) #plots the 3D scatter plot for reconstructed image
-
-        try: ## NOTE THIS ERROR NEEDS FIXING. IT IS CAUSED BY A SITUATION WHERE DATA DOES COME BACK THAT IS GREATER THAN THE RECON CUTTOFF SO 3D PLOTS ARE GENERATED HOWVER NO POINTS LIE IN CORRECT PLACE FOR MASKING SO THE MASK CONTAINS NOTHING. THEN THE MASK WILL BE WRONG DIMS AND CASUE THE PLOT ERROR HERE. FIX
-            ax6.set_title("Masked Reconstructed Image") #sets the title of the plot
-            ax6.scatter(masked_im[:,0], masked_im[:,1], masked_im[:,2]) #plots the 3D scatter plot for masked image
-        except:
-            print("ERROR OCCURED IN MASKING 3D PLOT! INVESTIGATE!")
-
-
-        for ax in [ax1, ax2, ax3, ax4, ax5, ax6]:
-            ax.set_zlim(0, time_dimension)
-            ax.set_xlim(0, 128)
-            ax.set_ylim(0, 88)
-        
-            if use_physical_values_for_plot_axis:
-                # Set axis labels
-                ax.set_xlabel('x (mm)')
-                ax.set_ylabel('y (mm)')
-                ax.set_zlabel('time (ns)')
-                # Apply tick format conversion for x, y, and z axes from 'pixels' to physical values
-                ax.xaxis.set_major_formatter(FuncFormatter(lambda x_scale, tick_number: tick_number * x_scale))
-                ax.yaxis.set_major_formatter(FuncFormatter(lambda y_scale, tick_number: tick_number * y_scale))
-                ax.zaxis.set_major_formatter(FuncFormatter(lambda time_scale, tick_number: tick_number * time_scale))
+    with torch.no_grad():  
             
+        # Initialise lists for true and recovered signal point values 
+        number_of_true_signal_points = np.full(n, signal_points)
+        number_of_recovered_signal_points = []
+
+        # 2D Input/Output Comparison Plots 
+        plt.figure(figsize=(16,9))                                     
+        loop = tqdm(range(n), desc='Plotting 2D Comparisons', leave=False, colour="green") 
+
+        for i, (img_batch, sparse_output_batch, sparse_and_resolution_limited_batch, noised_sparse_reslimited_batch) in enumerate(dataloader):     # CLEAN UP START 
+            if i >= n:
+                break
+            # Update tqdm bar
+            loop.update(1)
+
+            img = img_batch[0] # Get the first image in the batch
+            sparse_im = sparse_output_batch[0] # Get the first image in the batch
+            reslim_im = sparse_and_resolution_limited_batch[0] # Get the first image in the batch
+            noised_sparse_reslimited_batch = noised_sparse_reslimited_batch[0].unsqueeze_(0) # Get the first image in the batch
+            
+            # Normalise the noised image
+            if masking_optimised_binary_norm:
+                normalised_batch = mask_optimised_normalisation(noised_sparse_reslimited_batch)
             else:
-                # Set axis labels
-                ax.set_xlabel('x (pixels)')
-                ax.set_ylabel('y (pixels)')
-                ax.set_zlabel('time (pixels)')
+                normalised_batch = gaped_normalisation(noised_sparse_reslimited_batch, reconstruction_threshold, time_dimension)
+            
+            # Run the autoencoder on the noised data                                     
+            rec_img = decoder(encoder(normalised_batch.to(device)))   
 
-        fig.tight_layout()
+            #Determine the number of signal points on the recovered image 
+            int_rec_sig_points = (rec_img >= reconstruction_threshold).sum()      
+            number_of_recovered_signal_points.append(int(int_rec_sig_points.numpy()))
 
-        Out_Label = graphics_dir + f'{model_save_name} 3D Reconstruction - Epoch {epoch}.png' #creates the name of the file to be saved
+
+            noise_im = gaped_renormalisation(normalised_batch.squeeze(), reconstruction_threshold, time_dimension)
+            rec_im = gaped_renormalisation(rec_img.detach().squeeze().numpy(), reconstruction_threshold, time_dimension)
+            masked_im = masking_recovery(noise_im, rec_im, time_dimension)
+
+            #cmap = cm.get_cmap('viridis')
+            #cmap.set_under('k') # set the color for 0 to black ('k')
+
+            #Following section generates the img plots for the original(labels), noised, and denoised data)
+            ax = plt.subplot(6,n,i+1)                                       #Creates a number of subplots for the 'Original images??????' i.e the labels. the position of the subplot is i+1 as it falls in the first row
+            plt.imshow(img.T, cmap='gist_gray', vmin=0, vmax=time_dimension)           #plt.imshow plots an image. The arguments for imshow are, 'image data array' and cmap= which is the colour map. #.squeeze() acts on a tensor and returns a tensor, it removes all dimensions of the tensor that are of length 1, (A×1×B) becomes (AxB) where A and B are greater than 1 #.numpy() creates a numpy array from a tensor #!!! is the .cpu part becuase the code was not made to accept the gpu/cpu check i made????
+            ax.get_xaxis().set_visible(False)                                   #Hides the x axis from showing in the plot as we are plotting images not graphs (we may want to retain axis?)
+            ax.get_yaxis().set_visible(False)                                   #Hides the y axis from showing in the plot as we are plotting images not graphs (we may want to retain axis?)
+            if i == n//2:                                                       #n//2 divides n by 2 without any remainder, i.e 6//2=3 and 7//2=3. So this line checks to see if i is equal to half of n without remainder. it will be yes once in the loop. not sure of its use
+                ax.set_title('EPOCH %s \nOriginal images' %(epoch))               #When above condition is reached, the plots title is set                                   #When above condition is reached, the plots title is set
+
+            ax = plt.subplot(6, n, i + 1 + n)                                   #Creates a number of subplots for the 'Corrupted images??????' i.e the labels. the position of the subplot is i+1+n as it falls in the second row
+            plt.imshow(sparse_im.T, cmap='gist_gray', vmin=0, vmax=time_dimension)   #plt.imshow plots an image. The arguments for imshow are, 'image data array' and cmap= which is the colour map. #.squeeze() acts on a tensor and returns a tensor, it removes all dimensions of the tensor that are of length 1, (A×1×B) becomes (AxB) where A and B are greater than 1 #.numpy() creates a numpy array from a tensor #!!! is the .cpu part becuase the code was not made to accept the gpu/cpu check i made????
+            ax.get_xaxis().set_visible(False)                                   #Hides the x axis from showing in the plot as we are plotting images not graphs (we may want to retain axis?)
+            ax.get_yaxis().set_visible(False)                                   #Hides the y axis from showing in the plot as we are plotting images not graphs (we may want to retain axis?)
+            if i == n//2:                                                       #n//2 divides n by 2 without any remainder, i.e 6//2=3 and 7//2=3. So this line checks to see if i is equal to half of n without remainder. it will be yes once in the loop. not sure of its use
+                ax.set_title('Sparsity Applied')                                  #When above condition is reached, the plots title is set
+
+            ax = plt.subplot(6, n, i + 1 + n + n)                               #Creates a number of subplots for the 'Reconstructed images??????' i.e the labels. the position of the subplot is i+1+n+n as it falls in the third row
+            plt.imshow(reslim_im.T, cmap='gist_gray', vmin=0, vmax=time_dimension)       #plt.imshow plots an image. The arguments for imshow are, 'image data array' and cmap= which is the colour map. #.squeeze() acts on a tensor and returns a tensor, it removes all dimensions of the tensor that are of length 1, (A×1×B) becomes (AxB) where A and B are greater than 1 #.numpy() creates a numpy array from a tensor #!!! is the .cpu part becuase the code was not made to accept the gpu/cpu check i made????
+            ax.get_xaxis().set_visible(False)                                   #Hides the x axis from showing in the plot as we are plotting images not graphs (we may want to retain axis?)
+            ax.get_yaxis().set_visible(False)                                   #Hides the y axis from showing in the plot as we are plotting images not graphs (we may want to retain axis?)
+            if i == n//2:                                                       #n//2 divides n by 2 without any remainder, i.e 6//2=3 and 7//2=3. So this line checks to see if i is equal to half of n without remainder. it will be yes once in the loop. not sure of its use
+                ax.set_title('Resoloution Limited')                             #When above condition is reached, the plots title is set 
+
+            ax = plt.subplot(6, n, i + 1 + n + n + n)                                   #Creates a number of subplots for the 'Corrupted images??????' i.e the labels. the position of the subplot is i+1+n as it falls in the second row
+            plt.imshow(noise_im.T, cmap='gist_gray', vmin=0, vmax=time_dimension)   #plt.imshow plots an image. The arguments for imshow are, 'image data array' and cmap= which is the colour map. #.squeeze() acts on a tensor and returns a tensor, it removes all dimensions of the tensor that are of length 1, (A×1×B) becomes (AxB) where A and B are greater than 1 #.numpy() creates a numpy array from a tensor #!!! is the .cpu part becuase the code was not made to accept the gpu/cpu check i made????
+            ax.get_xaxis().set_visible(False)                                   #Hides the x axis from showing in the plot as we are plotting images not graphs (we may want to retain axis?)
+            ax.get_yaxis().set_visible(False)                                   #Hides the y axis from showing in the plot as we are plotting images not graphs (we may want to retain axis?)
+            if i == n//2:                                                       #n//2 divides n by 2 without any remainder, i.e 6//2=3 and 7//2=3. So this line checks to see if i is equal to half of n without remainder. it will be yes once in the loop. not sure of its use
+                ax.set_title('Corrupted images')                                  #When above condition is reached, the plots title is set
+
+            ax = plt.subplot(6, n, i + 1 + n + n + n + n)                               #Creates a number of subplots for the 'Reconstructed images??????' i.e the labels. the position of the subplot is i+1+n+n as it falls in the third row
+            plt.imshow(rec_im.T, cmap='gist_gray', vmin=0, vmax=time_dimension)       #plt.imshow plots an image. The arguments for imshow are, 'image data array' and cmap= which is the colour map. #.squeeze() acts on a tensor and returns a tensor, it removes all dimensions of the tensor that are of length 1, (A×1×B) becomes (AxB) where A and B are greater than 1 #.numpy() creates a numpy array from a tensor #!!! is the .cpu part becuase the code was not made to accept the gpu/cpu check i made????
+            ax.get_xaxis().set_visible(False)                                   #Hides the x axis from showing in the plot as we are plotting images not graphs (we may want to retain axis?)
+            ax.get_yaxis().set_visible(False)                                   #Hides the y axis from showing in the plot as we are plotting images not graphs (we may want to retain axis?)
+            if i == n//2:                                                       #n//2 divides n by 2 without any remainder, i.e 6//2=3 and 7//2=3. So this line checks to see if i is equal to half of n without remainder. it will be yes once in the loop. not sure of its use
+                ax.set_title('Reconstructed images')                             #When above condition is reached, the plots title is set 
+
+            ax = plt.subplot(6, n, i + 1 + n + n + n + n + n)                               #Creates a number of subplots for the 'Reconstructed images??????' i.e the labels. the position of the subplot is i+1+n+n as it falls in the third row
+            plt.imshow(masked_im.T, cmap='gist_gray', vmin=0, vmax=time_dimension)       #plt.imshow plots an image. The arguments for imshow are, 'image data array' and cmap= which is the colour map. #.squeeze() acts on a tensor and returns a tensor, it removes all dimensions of the tensor that are of length 1, (A×1×B) becomes (AxB) where A and B are greater than 1 #.numpy() creates a numpy array from a tensor #!!! is the .cpu part becuase the code was not made to accept the gpu/cpu check i made????
+            ax.get_xaxis().set_visible(False)                                   #Hides the x axis from showing in the plot as we are plotting images not graphs (we may want to retain axis?)
+            ax.get_yaxis().set_visible(False)                                   #Hides the y axis from showing in the plot as we are plotting images not graphs (we may want to retain axis?)
+            if i == n//2:                                                       #n//2 divides n by 2 without any remainder, i.e 6//2=3 and 7//2=3. So this line checks to see if i is equal to half of n without remainder. it will be yes once in the loop. not sure of its use
+                ax.set_title('Masked Reconstruction')                             #When above condition is reached, the plots title is set 
+
+        plt.subplots_adjust(left=0.01,              #Adjusts the exact layout of the plots including whwite space round edges
+                        bottom=0.02, 
+                        right=0.99, 
+                        top=0.95, 
+                        hspace=0.3
+                        )     
+
+        Out_Label = graphics_dir + f'{model_save_name} - Epoch {epoch}.png' #creates the name of the file to be saved
         plot_save_choice(plot_or_save, Out_Label) #saves the plot if plot_or_save is set to 1, if 0 it displays, if 2 it displays and saves
+        plt.close()
 
-        if plot_pixel_threshold_telemetry == 1:      #if plot_pixel_threshold_telemetry is set to 1, then the telemetry plots are generated
-            above_threshold, below_threshold = belief_telemetry(recovered_test_image, reconstruction_threshold, epoch+1, settings, plot_or_save)    #calls the belief_telemetry function to generate the telemetry plots
-            telemetry.append([epoch, above_threshold, below_threshold]) #appends the telemetry data to the telemetry list
+        # 3D Reconstruction
+        img, sparse_im, reslim_im, noise_im, rec_im, masked_im = reconstruct_3D(img, sparse_im, reslim_im, noise_im, rec_im, masked_im) #reconstructs the 3D image using the reconstruct_3D function
 
-    return(number_of_true_signal_points, number_of_recovered_signal_points, in_im, noise_im, rec_im)        #returns the number of true signal points, number of recovered signal points, input image, noised image and reconstructed image 
+        # 3D Plottting
+        if rec_im.ndim != 1:                       # Checks if there are actually values in the reconstructed image, if not no image is aseved/plotted
+            fig, axs = plt.subplots(2, 3, figsize=(32,20), subplot_kw={'projection': '3d'})
+            ax1, ax2, ax3, ax4, ax5, ax6 = axs.flatten()
+            fig.suptitle(f"3D Reconstruction - Epoch {epoch}") #sets the title of the plot
+
+            ax1.set_title("Input Image") #sets the title of the plot
+            ax1.scatter(img[:,0], img[:,1], img[:,2]) #plots the 3D scatter plot for input 
+
+            ax2.set_title("Sparse Image") #sets the title of the plot
+            ax2.scatter(sparse_im[:,0], sparse_im[:,1], sparse_im[:,2]) #plots the 3D scatter plot for sparse image
+        
+            ax3.set_title("Resolution Limited Image") #sets the title of the plot
+            ax3.scatter(reslim_im[:,0], reslim_im[:,1], reslim_im[:,2]) #plots the 3D scatter plot for reslim image
+
+            ax4.set_title("Noised Image") #sets the title of the plot
+            ax4.scatter(noise_im[:,0], noise_im[:,1], noise_im[:,2]) #plots the 3D scatter plot for noised image
+
+            ax5.set_title("Reconstructed Image") #sets the title of the plot
+            ax5.scatter(rec_im[:,0], rec_im[:,1], rec_im[:,2]) #plots the 3D scatter plot for reconstructed image
+
+            try: ## NOTE THIS ERROR NEEDS FIXING. IT IS CAUSED BY A SITUATION WHERE DATA DOES COME BACK THAT IS GREATER THAN THE RECON CUTTOFF SO 3D PLOTS ARE GENERATED HOWVER NO POINTS LIE IN CORRECT PLACE FOR MASKING SO THE MASK CONTAINS NOTHING. THEN THE MASK WILL BE WRONG DIMS AND CASUE THE PLOT ERROR HERE. FIX
+                ax6.set_title("Masked Reconstructed Image") #sets the title of the plot
+                ax6.scatter(masked_im[:,0], masked_im[:,1], masked_im[:,2]) #plots the 3D scatter plot for masked image
+            except:
+                print("ERROR OCCURED IN MASKING 3D PLOT! INVESTIGATE!")
+
+
+            for ax in [ax1, ax2, ax3, ax4, ax5, ax6]:
+                ax.set_zlim(0, time_dimension)
+                ax.set_xlim(0, 128)
+                ax.set_ylim(0, 88)
+            
+                if use_physical_values_for_plot_axis:
+                    # Set axis labels
+                    ax.set_xlabel('x (mm)')
+                    ax.set_ylabel('y (mm)')
+                    ax.set_zlabel('time (ns)')
+                    # Apply tick format conversion for x, y, and z axes from 'pixels' to physical values
+                    ax.xaxis.set_major_formatter(FuncFormatter(lambda x_scale, tick_number: tick_number * x_scale))
+                    ax.yaxis.set_major_formatter(FuncFormatter(lambda y_scale, tick_number: tick_number * y_scale))
+                    ax.zaxis.set_major_formatter(FuncFormatter(lambda time_scale, tick_number: tick_number * time_scale))
+                
+                else:
+                    # Set axis labels
+                    ax.set_xlabel('x (pixels)')
+                    ax.set_ylabel('y (pixels)')
+                    ax.set_zlabel('time (pixels)')
+
+            fig.tight_layout()
+
+            Out_Label = graphics_dir + f'{model_save_name} 3D Reconstruction - Epoch {epoch}.png' #creates the name of the file to be saved
+            plot_save_choice(plot_or_save, Out_Label) #saves the plot if plot_or_save is set to 1, if 0 it displays, if 2 it displays and saves
+
+            if plot_pixel_threshold_telemetry == 1:      #if plot_pixel_threshold_telemetry is set to 1, then the telemetry plots are generated
+                above_threshold, below_threshold = belief_telemetry(recovered_test_image, reconstruction_threshold, epoch+1, settings, plot_or_save)    #calls the belief_telemetry function to generate the telemetry plots
+                telemetry.append([epoch, above_threshold, below_threshold]) #appends the telemetry data to the telemetry list
+
+        return(number_of_true_signal_points, number_of_recovered_signal_points, img, noise_im, rec_im)        #returns the number of true signal points, number of recovered signal points, input image, noised image and reconstructed image 
 
 
 #%% - Program begins
@@ -1215,20 +1203,19 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
         dataset_distribution_tester(train_dir, time_dimension, ignore_zero_vals_on_plot=True, output_image_dir=graphics_dir)    # Checks the distribution of the training dataset
 
     # CHECK: Num of images in path greater than batch size choice? 
-    num_of_files_in_path = len(os.listdir(data_path + dataset_title + '/Data/'))                                                       # Number of files in path
+    num_of_files_in_path = len(os.listdir(data_path + dataset_title + '/Data/')) * dataset_bundle_size                                                      # Number of files in path
     if num_of_files_in_path < batch_size:                                                                                              # If the number of files in the path is less than the batch size, user is promted to input a new batch size
-        print("Error, the path selected has", num_of_files_in_path, "image files, which is", (batch_size - num_of_files_in_path) , "less than the chosen batch size. Please select a batch size less than the total number of images in the directory")
+        print(f"Error, the path selected has {num_of_files_in_path} image files, which is {(batch_size - num_of_files_in_path)} less than the chosen batch size. Please select a batch size less than the total number of images in the directory")
         batch_err_message = "Choose new batch size, must be less than total amount of images in directory", (num_of_files_in_path)                               # Creates the error message
         batch_size = int(input(batch_err_message))                                                                                                               # NOTE: Not sure why input message is printing with wierd brakets and speech marks in the terminal? Investigate???
 
     # Report type of gradient descent to user
-    print("%s files in path." %num_of_files_in_path ,"// Batch size =",batch_size, "\nLearning via: " + batch_learning(num_of_files_in_path, batch_size),"\n")   # Prints the number of files in the path and the batch size and the resultant type of batch learning
+    print(f"{num_of_files_in_path} files in path. // Batch size ={batch_size}\nLearning via: {batch_learning(num_of_files_in_path, batch_size)}\n")   # Prints the number of files in the path and the batch size and the resultant type of batch learning
 
     #%% - Data Loader & Preperation
 
-    
     # Creates the training dataset using the DatasetFolder function from torchvision.datasets
-    train_dataset = CustomDataset(train_dir, precision, store_full_dataset_in_memory)
+    train_dataset = CustomDataset(train_dir, store_full_dataset_in_memory, dataset_bundle_size)
 
     ### - Data Preparation 
 
@@ -1265,24 +1252,7 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
     encoder = Encoder(latent_dim, print_encoder_debug, fc_input_dim)
     decoder = Decoder(latent_dim, print_decoder_debug, fc_input_dim)
 
-    if precision == 16: # Set encoder and decoder to half precision floating point arithmetic (fp16)
-        encoder.half()
-        decoder.half()
-        dtype = torch.float16
-
-    elif precision == 32: # Sets the encoder and decoder to single precision floating point arithmetic (fp32)
-        encoder.float()
-        decoder.float()
-        dtype = torch.float32
-
-    # Sets the encoder and decoder to double precision floating point arithmetic (fp64)
-    elif precision == 64:
-        encoder.double()   
-        decoder.double()
-        dtype = torch.float64
-
-    else:
-        raise ValueError("Error: Precision not set correctly, please set precision to 16, 32, or 64")
+    encoder, decoder, dtype = set_model_precision(encoder, decoder, precision) # Sets the precision of the encoder and decoder based on user input and returns the dtype variable used in the rest of the code
 
     # Define the optimizer
     params_to_optimize = [{'params': encoder.parameters()} ,{'params': decoder.parameters()}] #Selects what to optimise, 
@@ -1292,7 +1262,7 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
     if start_from_pretrained_model:
 
         # load the full state dictionary into memory
-        full_state_dict = torch.load(pretrained_model_path)
+        full_state_dict = torch.load(pretrained_model_path, map_location=device)
 
         # load the state dictionaries into the models
         encoder.load_state_dict(full_state_dict['encoder_state_dict'])
