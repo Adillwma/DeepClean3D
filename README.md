@@ -62,7 +62,7 @@ DC3D aims to remove uncorrelated photons from the PMT array data pre-reconstruct
 
 <div align="center">
 
-<img src="Images/ov7.png" width=1000>
+<img src="Images/ov7.png" width=800>
 
 *The full DC3D input/output processing pipeline around the central Autoencoder (AE). Data flows from left to right and can take two paths, 'Direct Output' and 'Masking Output'. Each stage is numbered and explained below*
 </div>
