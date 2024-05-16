@@ -155,7 +155,7 @@ Stage two of the pipeline is the signal degradation. This is the only stage of t
 
 <div align="center">
 
-<img src="Images/noise1.png" width=1200>
+<img src="Images/noise1.png" width=800>
 
 *Example of user selectable noise profiles. Amount is exaggerated for clearer representation of subtle differences. Further description is available in the Noise_Generators.py file in the repository.*
 </div>
