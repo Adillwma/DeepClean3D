@@ -28,7 +28,7 @@ This readme explains the technical implementation of DEEPCLEAN3D. For installati
 Or the full documentation is available as a single downloadable PDF file [here](Usage%20Manuals/DEEPCLEAN3D%20Manual.pdf).
 
 # Introduction
-As part of a planned upgrade for the Large Hadron Collider (LHC), a new subdetector TORCH (Time Of internally Reflected Cherenkov light) is to be added, combining timing information with DIRC-style reconstruction, aiming for a ToF resolution of 10–15 ps (per track). 
+As part of a planned upgrade for the Large Hadron Collider (LHC), a new subdetector named TORCH (Time Of internally Reflected Cherenkov light) is to be added, combining timing information with DIRC-style reconstruction, aiming for a ToF resolution of 10–15 ps (per track). 
 
 The DEEPLCEAN3D (DC3D) project focuses on the processing of data once digitised by the TORCH detectors electronics. To retain readability of this document, the specifics of the detector itself and the origin of the data is not discussed in detail, other than a brief overview. As part of this project a full physical simulation of a single TORCH module in operation was created to generate realistic training data. The simulation is hosted as a standalone repository, [TORCHSIM on GitHub](https://github.com/Adillwma/LHCb_TORCH_Simulation), which focuses specifically on the detector and the mechanism that produces the data. Check it out for a complete breakdown of the TORCH detector and its operation in the context of the LHCb experiment, if you are unfamiliar with TORCH then this is recommended to fully understand the rest of this document.
 
@@ -62,7 +62,7 @@ DC3D aims to remove uncorrelated photons from the PMT array data pre-reconstruct
 
 <div align="center">
 
-<img src="Images/ov7.png" width=1500>
+<img src="Images/ov7.png" width=1000>
 
 *The full DC3D input/output processing pipeline around the central Autoencoder (AE). Data flows from left to right and can take two paths, 'Direct Output' and 'Masking Output'. Each stage is numbered and explained below*
 </div>
