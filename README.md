@@ -252,7 +252,7 @@ This takes us beyond the DAE to a new structure that could be thought of as a Re
 
 ## Stage 5 Masking Technique
 
-<img src="Images/netpathmask2.png" width=1000>
+<img src="Images/netpathmask2.png" width=800>
 
 *Illustration of the masking technique developed, shown here for a simple 4x4 input image. The numbers in the centre of the squares indicate the pixel values. The colours just help to visualise these values. The blue arrow path is the standard path for the denoising autoencoder, the red path shows the additional masking steps. the green arrow shows where the mask is taken from the standard autoencoders output and cast over the masking paths input.*
 </div>
