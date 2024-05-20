@@ -62,7 +62,7 @@ DC3D aims to remove uncorrelated photons from the PMT array data pre-reconstruct
 
 <div align="center">
 
-<img src="Images/ov7.png" width=800>
+<img src="Images/ov7.png" width=100%>
 
 *The full DC3D input/output processing pipeline around the central Autoencoder (AE). Data flows from left to right and can take two paths, 'Direct Output' and 'Masking Output'. Each stage is numbered and explained below*
 </div>
@@ -76,6 +76,9 @@ To simulates live readout from the detector, the input data is dataset full of 3
 
 <img src="Images/2000 scan with 1000 noise points. keep_photons=True_3d.gif" width=400>
 <img src="Images/30 scan with 1000 noise points. F keep_photons=True_3d.gif" width=400>
+
+<img src="Images/2000 scan with 1000 noise points. keep_photons=True_3d.gif" width=40%>
+<img src="Images/30 scan with 1000 noise points. F keep_photons=True_3d.gif" width=40%>
 
 *Training data shown at various stages of DEEPCLEAN3Ds development.*
 </div>
