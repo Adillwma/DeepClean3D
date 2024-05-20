@@ -5,7 +5,7 @@
 #### 3D Neural Denoising for LHCb TORCH at the Large Hadron Collider
 #### Department of Physics - University of Bristol, UK 
 
-<img src="Images/DC3D_sensor_logo.gif" width=600>
+<img src="Images/DC3D_sensor_logo.gif" width=90%>
 
     - Remove Uncorrelated Photons Detected by TORCH
     - Correct for Chromatic Dispersion and Edge Reflection Effects
@@ -74,11 +74,8 @@ To simulates live readout from the detector, the input data is dataset full of 3
 
 <div align="center">
 
-<img src="Images/2000 scan with 1000 noise points. keep_photons=True_3d.gif" width=400>
-<img src="Images/30 scan with 1000 noise points. F keep_photons=True_3d.gif" width=400>
-
-<img src="Images/2000 scan with 1000 noise points. keep_photons=True_3d.gif" width=40%>
-<img src="Images/30 scan with 1000 noise points. F keep_photons=True_3d.gif" width=40%>
+<img src="Images/2000 scan with 1000 noise points. keep_photons=True_3d.gif" width=48%>
+<img src="Images/30 scan with 1000 noise points. F keep_photons=True_3d.gif" width=48%>
 
 *Training data shown at various stages of DEEPCLEAN3Ds development.*
 </div>
@@ -86,7 +83,7 @@ To simulates live readout from the detector, the input data is dataset full of 3
  Very detailed physical simulations of TORCH have been conducted during its development cycle by the LHCb collaboration. From these simulation we can see the expected data has the form: 
 
 <div align="center">
-<img src="Images/truesig3.png" width=500>
+<img src="Images/truesig3.png" width=80%>
 
 *Simulated TORCH data. Background noise points are marked in white, signal points are marked in red and lines joining them up demonstrate the characteristic signal pattern. The left-hand pane shows the simulation without the effects of chromatic dispersion or reflection from the lower edge where the characteristic pattern becomes visible. The right-hand pane shows detector data that includes these effects, the pattern is much harder to make out. TORCH has costly algorithms for correcting for the dispersion and reflection effects, but we hope to automatically correct for them in DC3D*
 </div>
@@ -95,7 +92,7 @@ During development of DC3D training data was created with signals patterns of va
 
 <div align="center">
 
-<img src="Images/ad.png" width=500>
+<img src="Images/ad.png" width=80%>
 
 *Training data shown at various stages of DEEPCLEAN3Ds development.*
 </div>
@@ -105,7 +102,7 @@ More recently having achieved a good level of performance on the simplified data
 
 <div align="center">
 
-<img src="Images/10K w chromatic dispersion1.png" width=350>
+<img src="Images/10K w chromatic dispersion1.png" width=60%>
 
 *Simplified TORCH data derived from our physically modelled simulation. Simulation available at [TORCHSIM on GitHub](https://github.com/Adillwma/LHCb_TORCH_Simulation). Two views of the simulated photon hits on the PMT array, photon number artificially increased to show pattern clearly. The colour of each point shows the time of arrival. The yellow grouping at the bottom of the PMT is the reflection from the bottom edge, the width of the pattern is because of chromatic dispersion. No added background noise is shown.*
 </div>
@@ -128,14 +125,14 @@ The second issue arising from the 2D with embedded ToF is due to the way the hit
 
 <div align="center">
 
-<img src="Images/3d22d.png" width=600>
+<img src="Images/3d22d.png" width=80%>
 
 *Left hand image shows one of the simulated crosses in the full three dimensions of x, y and time. The right-hand side shows the same cross image but using our 2D with embedded ToF method, which compresses the three-dimensional data to two dimensions to speed up the processing.*
 </div>
 
 <div align="center">
 
-<img src="Images/quantifying_occlusion.png" width=600>
+<img src="Images/quantifying_occlusion.png" width=60%>
 
 *Qauntifying pixel occlusion, due to 3D to 2D transform.*
 </div>
@@ -143,7 +140,7 @@ The second issue arising from the 2D with embedded ToF is due to the way the hit
 
 <div align="center">
 
-<img src="Images/quantifying_occlusion_2.png" width=600>
+<img src="Images/quantifying_occlusion_2.png" width=60%>
 
 *Qauntifying pixel occlusion, due to 3D to 2D transform.*
 </div>
@@ -166,7 +163,7 @@ Stage two of the pipeline is the signal degradation. This is the only stage of t
 
 <div align="center">
 
-<img src="Images/noise1.png" width=800>
+<img src="Images/noise1.png" width=100%>
 
 *Example of user selectable noise profiles. Amount is exaggerated for clearer representation of subtle differences. Further description is available in the Noise_Generators.py file in the repository.*
 </div>
@@ -176,7 +173,7 @@ The way the degradation steps are applied during training is within the main tra
 
 <div align="center">
 
-<img src="Images/98.png" width=800>
+<img src="Images/98.png" width=100%>
 
 *Example degradation. Exaggerated number of photons (~300) retained so that the resolution limiting is easily visible. Real data has ~ 30 photons, so much sparser than shown.*
 </div>
@@ -207,8 +204,8 @@ The reconstruction threshold also allows the data to be reconstructed to 3D with
 
 <div align="center">
 
-<img src="Images/gn1.png" width=200>
-<img src="Images/gn2.png" width=200>
+<img src="Images/gn1.png" width=40%>
+<img src="Images/gn2.png" width=40%>
 
 *The effect of the gaped-normalisation with a user selected reconstruction threshold $r$ of 0.5.*
 </div>
@@ -233,7 +230,7 @@ where $y_i$ is the true value of the $i$-th pixel in the class, $\hat{y}_i$ is t
 
 <div align="center">
 
-<img src="Images/loss curve 1.png" width=450>
+<img src="Images/loss curve 1.png" width=60%>
 
 *Figure that demonstrates how each of the loss functions (ACB-MSE, MSE and MAE) behave based on the number of hits in the true signal. Two dummy images were created, the first image contains some ToF values of 100 the second image is a replica of the first but only containing the Tof values in half of the number of pixels of the first image, this simulates a 50% signal recovery. to generate the plot the first image was filled in two pixel increments with the second image following at a constant 50% recovery, and at each iteration the loss functions are calculated for the pair of images. We can see how the MSE and MAE functions loss varies as the size of the signal is increased. Whereas the ACB-MSE loss stays constant regardless of the frequency of the signal class.*
 </div>
@@ -251,7 +248,7 @@ This takes us beyond the DAE to a new structure that could be thought of as a Re
 
 <div align="center">
 
-<img src="Images/rl.png" width=800>
+<img src="Images/rl.png" width=100%>
 
 *Demonstrating the culmination of the RAE with masking applied to a realistic proportion of 30 signal points and 200 noise points. When using the reconstructive method, the direct denoiser output returns the full traced pattern paths which may or may not be of more value than the individual photon hit locations. If this is not the case, then the masking method provides a perfect way to recover the exact signal hits only. *
 </div>
@@ -263,7 +260,7 @@ This takes us beyond the DAE to a new structure that could be thought of as a Re
 
 ## Stage 5 Masking Technique
 
-<img src="Images/netpathmask2.png" width=800>
+<img src="Images/netpathmask2.png" width=100%>
 
 *Illustration of the masking technique developed, shown here for a simple 4x4 input image. The numbers in the centre of the squares indicate the pixel values. The colours just help to visualise these values. The blue arrow path is the standard path for the denoising autoencoder, the red path shows the additional masking steps. the green arrow shows where the mask is taken from the standard autoencoders output and cast over the masking paths input.*
 </div>
@@ -282,7 +279,7 @@ The masking technique yields perfect ToF recovery for all true signal pixel foun
 
 <div align="center">
 
-<img src="Images/3d rec hiq.png" width=800>
+<img src="Images/3d rec hiq.png" width=100%>
 
 *Shows the 3D reconstruction for the DAE results with masking. The 3D allows the ToF benefits of the masking to be seen properly. This test featured 200 signal points, and a high amount of noise, 1000 points.*
 </div>
@@ -308,7 +305,7 @@ In equations \ref{norm eq} and \ref{renorm eq}, $x$ represents the input data th
 
 <div align="center">
 
-<img src="Images/recon cut.png" width=450>
+<img src="Images/recon cut.png" width=60%>
 
 *The histogram shows the ToF values for all the pixels in the networks raw output before re-normalisation. Values are between 0 and 1 which is shown on the x axis, the number of pixels in each bin are label on the top of each histogram bin. The red line indicates the reconstruction cutoff value, $r$, All points below this cutoff will be set to 0's in the re-normalisation and all points above it will be spread out into the range 1-100 to return the real ToF value.*
 </div>
@@ -322,7 +319,7 @@ Sample overview of results up to this point.
 
 <div align="center">
 
-<img src="Images/results.png" width=950>
+<img src="Images/results.png" width=100%>
 
 *Comparison between DC3D in both normal and masking mode against a range of other popular denoising algorythms both classicalk and neural models i.e the popular BM3D.*
 </div>
@@ -446,7 +443,7 @@ Communications of the ACM, 11(3), 147-148.
 
 <div align="center">
 
-<img src="Images/its sep.png" width=600>
+<img src="Images/its sep.png" width=60%>
 
 *The number of iterations required for each processing step of the analytical PDF method Vs the number of photons received from the detector. Shown for a single track and with three particle hypothesises, pion/kaon/proton. Each stage's iterations, $I_1$ through to $I_4$ has its function given on the plot in terms of P the number of photons detected, H the number of hypothesis and T the number of tracks.*
 </div>
@@ -454,7 +451,7 @@ Communications of the ACM, 11(3), 147-148.
 
 <div align="center">
 
-<img src="Images/LHC_Ring.png" width=500>
+<img src="Images/LHC_Ring.png" width=60%>
 
 *LHC Ring with the four main experiments shown. Includes the underground detectors and above ground control stations.*
 </div>
@@ -465,7 +462,7 @@ Communications of the ACM, 11(3), 147-148.
 
 <div align="center">
 
-<img src="Images/3d best.png" width=800>
+<img src="Images/3d best.png" width=100%>
 
 *The results of the RAE applied to the 30 signal and 200 noise points shown in reconstructed 3D. It is important to note that the masked output does not look like the input image because in the case of the reconstructive method the masking recovers only the true signal points incident on the detector not the full pattern, these points are the input image after it has been thinned out by the sparsity function.*
 </div>
