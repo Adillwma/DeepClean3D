@@ -374,54 +374,214 @@ Contributions to this codebase are welcome! If you encounter any issues, bugs or
 For any further inquiries or for assistance in deploying DC3D, please feel free to reach out to me at adill@neuralworkx.com.
 
 # Acknowledgments
-Special thanks to Dr. Jonas Radamaker for his guidance and expertise on LHCb and the TORCH project, Dr. Alex Marshall for his support on getting to grips with PyTorch and troubleshooting, and Max Carter for his contributions and signal generator used in early development.
+Special thanks to Professor Jonas Radamaker for his guidance and expertise on LHCb and the TORCH project, Dr Alex Marshall for his support and troubleshooting, and Max Carter for his contributions and signal generator used in early development.
 
 ## References
 
-<a id="1">[1]</a> 
-Dijkstra, E. W. (1968). 
-Go to statement considered harmful. 
-Communications of the ACM, 11(3), 147-148.
+<a id="1">[1]</a>  LHCb Collaboration et al. Evidence for cp violation in time-integrated d0→ h- h+ decay rates. Physical Review Letters, 2012, Vol. 108, No. 11, 2012.
 
-<a id="2">[2]</a> 
+<a id="2">[2]</a> Paul Langacker. The standard model and beyond. Taylor & Francis, 2017.
 
-<a id="3">[3]</a>
+<a id="3">[3]</a> Roel Aaij, B Adeva, M Adinolfi, A Affolder, Z Ajaltouni, S Akar, J Albrecht, F Alessio, M Alexander, S Ali,
+et al. Evidence for c p violation in b+→ p p¯ k+ decays. Physical review letters, 113(14):141801, 2014.
 
-<a id="4">[4]</a>
+<a id="4">[4]</a> LHCb Collaboration et al. Measurement of the bs0→ µ+ µ-branching fraction and effective lifetime and search
+for b0→ µ+ µ-decays. Physical Review Letters, 118(19):191801, 2017.
 
-<a id="5">[5]</a>
+<a id="5">[5]</a>   Bockelman et al. Iris-hep strategic plan for the next phase of software upgrades for hl-lhc physics. Technical
+report, 2023.
 
-<a id="6">[6]</a>
+<a id="6">[6]</a>  ATLAS collaboration et al. Atlas software and computing hl-lhc roadmap. Technical report, 2022.
 
-<a id="7">[7]</a>
+<a id="7">[7]</a> LHCb Collaboration, CERN (Meyrin). Framework TDR for the LHCb Upgrade II Opportunities in flavour
+physics, and beyond, in the HL-LHC era. Technical report, CERN, Geneva, 2021.
 
-<a id="8">[8]</a>
+<a id="8">[8]</a> Neville Harnew, R Gao, T Hadavizadeh, TH Hancock, JC Smallwood, NH Brook, S Bhasin, D Cussans,
+J Rademacker, R Forty, et al. The torch time-of-flight detector. Nuclear Instruments and Methods in Physics
+Research Section A: Accelerators, Spectrometers, Detectors and Associated Equipment, 1048:167991, 2023.
 
-<a id="9">[9]</a>
+<a id="9">[9]</a>  I Bediaga, M Cruz Torres, JM De Miranda, A Gomes, A Massafferri, J Molina Rodriguez, AC dos Reis, R Aoude,
+S Amato, K Carvalho Akiba, et al. Physics case for an lhcb upgrade ii-opportunities in flavour physics, and
+beyond, in the hl-lhc era. arXiv preprint arXiv:1808.08865, 2018.
 
-<a id="10">[10]</a>
+<a id="10">[10]</a>     MJ Charles, R Forty, LHCb Collaboration, et al. Torch: Time of flight identification with cherenkov radiation.
+Nuclear Instruments and Methods in Physics Research Section A: Accelerators, Spectrometers, Detectors and
+Associated Equipment, 639(1):173–176, 2011.
 
-<a id="11">[11]</a>
+<a id="11">[11]</a> JC Smallwood, S Bhasin, T Blake, NH Brook, MF Cicala, T Conneely, D Cussans, MWU van Dijk, R Forty,
+C Frei, et al. Test-beam demonstration of a torch prototype module. In Journal of Physics: Conference Series,
+volume 2374, page 012004. IOP Publishing, 2022.
 
-<a id="12">[12]</a>
-
-<a id="13">[13]</a>
-
-<a id="14">[14]</a>
-
-<a id="15">[15]</a>
-
-<a id="16">[16]</a>
-
-<a id="17">[17]</a>
-
-<a id="18">[18]</a>
-
-<a id="19">[19]</a>
-
-<a id="20">[20]</a>
+<a id="12">[12]</a> Maarten Van Dijk. Design of the TORCH detector: A Cherenkov based Time-of-Flight system for particle identification. PhD thesis, Oxford U., 2016.
 
 
+<a id="13">[13]</a> Vitalii L Ginzburg. Radiation by uniformly moving sources (vavilov–cherenkov effect, transition radiation, and
+other phenomena). Physics-Uspekhi, 39(10):973, 1996.
+
+<a id="14">[14]</a> Boris M Bolotovskii. Vavilov–cherenkov radiation: its discovery and application. Physics-Uspekhi, 52(11):1099,
+
+<a id="15">[15]</a> Robert W Boyd and Daniel J Gauthier. Slow and fast light. 2002.
+
+<a id="16">[16]</a> Maria Flavia Cicala, Srishti Bhasin, Thomas Blake, Nick H Brook, Thomas Conneely, David Cussans,
+Maarten WU van Dijk, Roger Forty, Christoph Frei, Emmy PM Gabriel, et al. Picosecond timing of charged
+particles using the torch detector. Nuclear Instruments and Methods in Physics Research Section A: Accelerators,
+Spectrometers, Detectors and Associated Equipment, 1038:166950, 2022.
+
+<a id="17">[17]</a> Jonas Rademacker. Torch reconstruction. Technical report, 2022.
+
+<a id="18">[18]</a> H Merritt. Detectors of internally reflected cherenkov light. 2009.
+
+<a id="19">[19]</a> R Gao, N Brook, L Castillo Garc´ıa, D Cussans, K Fohl, R Forty, C Frei, T Gys, N Harnew, D Piedigrossi, et al.
+Development of torch readout electronics for customised mcps. Journal of Instrumentation, 11(04):C04012, 2016.
+
+<a id="20">[20]</a> Roger Forty. The torch project. Journal of Instrumentation, 9(04):C04024, 2014.
+
+<a id="21">[21]</a> Neville Harnew. Torch: A large-area detector for precision time-of-flight measurements at lhcb. Physics Procedia,
+37:626–633, 2012.
+
+<a id="22">[22]</a> T Jones, S Bhasin, T Blake, NH Brook, MF Cicala, T Conneely, D Cussans, MWU van Dijk, R Forty, C Frei,
+et al. New developments from the torch r&d project. Nuclear Instruments and Methods in Physics Research
+Section A: Accelerators, Spectrometers, Detectors and Associated Equipment, 1045:167535, 2023.
+
+<a id="23">[23]</a> Klaus Fohl. TORCH — an Innovative High-Precision Time-of-Flight PID Detector for the LHCb Upgrade. page
+7431227, 2015.
+
+<a id="24">[24]</a> NH Brook, L Castillo Garc´ıa, TM Conneely, David Cussans, MWU van Dijk, Klaus F¨ohl, Roger Forty, Christoph
+Frei, Rui Gao, Thierry Gys, et al. Testbeam studies of a torch prototype detector. Nuclear Instruments and Methods in Physics Research Section A: Accelerators, Spectrometers, Detectors and Associated Equipment, 908:256–
+268, 2018.
+
+<a id="25">[25]</a> Srishti Bhasin, Roger Forty, Guy Wilkinson, Thomas Blake, Thierry Gys, Silvia Gambetta, Rui Gao, Emmy
+Pauline Maria Gabriel, Jonas Rademacker, Franz Muheim, et al. Torch physics performance: improving low momentum pid performance during upgrade ib and beyond. Technical report, 2020.
+
+<a id="26">[26]</a> Chunwei Tian, Lunke Fei, Wenxian Zheng, Yong Xu, Wangmeng Zuo, and Chia-Wen Lin. Deep learning on image
+denoising: An overview. Neural Networks, 131:251–275, 2020.
+
+<a id="27">[27]</a> Kazufumi Ito and Kaiqi Xiong. Gaussian filters for nonlinear filtering problems. IEEE transactions on automatic
+control, 45(5):910–927, 2000.
+
+<a id="28">[28]</a> Jacob Benesty, Jingdong Chen, and Yiteng Huang. Study of the widely linear wiener filter for noise reduction.
+In 2010 IEEE International Conference on Acoustics, Speech and Signal Processing, pages 205–208. IEEE, 2010.
+
+<a id="29">[29]</a> Yong Lee and S Kassam. Generalized median filtering and related nonlinear filtering
+techniques. IEEE Transactions on Acoustics, Speech, and Signal Processing, 33(3):672–683, 1985.
+
+<a id="30">[30]</a> Carlo Tomasi and Roberto Manduchi. Bilateral filtering for gray and color images. In Sixth international conference on computer vision (IEEE Cat. No. 98CH36271), pages 839–846. IEEE, 1998.
+
+<a id="31">[31]</a> Jun Xu, Lei Zhang, and David Zhang. A trilateral weighted sparse coding scheme for real-world image denoising.
+In Proceedings of the European conference on computer vision (ECCV), pages 20–36, 2018.
+
+<a id="32">[32]</a> Kostadin Dabov, Alessandro Foi, Vladimir Katkovnik, and Karen Egiazarian. Image denoising by sparse 3-d
+transform-domain collaborative filtering. IEEE Transactions on image processing, 16(8):2080–2095, 2007.
+
+<a id="33">[33]</a> Leonid I Rudin, Stanley Osher, and Emad Fatemi. Nonlinear total variation based noise removal algorithms.
+Physica D: nonlinear phenomena, 60(1-4):259–268, 1992.
+
+<a id="34">[34]</a> Camille Sutour, Charles-Alban Deledalle, and Jean-Fran¸cois Aujol. Adaptive regularization of the nl-means:
+Application to image and video denoising. IEEE Transactions on image processing, 23(8):3506–3521, 2014.
+
+<a id="35">[35]</a> Linwei Fan, Fan Zhang, Hui Fan, and Caiming Zhang. Brief review of image denoising techniques. Visual
+Computing for Industry, Biomedicine, and Art, 2(1):1–12, 2019.
+
+<a id="36">[36]</a> Leonid I Rudin and Stanley Osher. Total variation based image restoration with free local constraints. In
+Proceedings of 1st international conference on image processing, volume 1, pages 31–35. IEEE, 1994.
+
+<a id="37">[37]</a> D Maheswari and V Radha. Noise removal in compound image using median filter. International Journal
+on Computer Science and Engineering, 2(04):1359–1362, 2010.
+
+<a id="38">[38]</a> Arce and McLoughlin. Theoretical analysis of the max/median filter. IEEE transactions on acoustics, speech,
+and signal processing, 35(1):60–69, 1987.
+
+<a id="39">[39]</a> Peter Ndajah, Hisakazu Kikuchi, Masahiro Yukawa, Hidenori Watanabe, and Shogo Muramatsu. An investigation
+on the quality of denoised images. International Journal of Circuit, Systems, and Signal Processing, 5(4):423–434,
+
+<a id="40">[40]</a> Anil K Jain. Fundamentals of digital image processing. Prentice-Hall, Inc., 1989.
+
+<a id="41">[41]</a> Ian Goodfellow, Jean Pouget-Abadie, Mehdi Mirza, Bing Xu, David Warde-Farley, Sherjil Ozair, Aaron Courville,
+and Yoshua Bengio. Generative adversarial nets. In Advances in neural information processing systems, pages 2672–2680, 2014.
+
+<a id="42">[42]</a> Frank Rosenblatt. The perceptron: a probabilistic model for information storage and organization in the brain.
+Psychological review, 65(6):386, 1958.
+
+<a id="43">[43]</a> Stefan Leijnen and Fjodor van Veen. The neural network zoo. In Proceedings, volume 47, page 9. MDPI, 2020.
+
+<a id="44">[44]</a> Yann LeCun, Yoshua Bengio, and Geoffrey Hinton. Deep learning. nature, 521(7553):436–444, 2015.
+
+<a id="45">[45]</a> Pascal Vincent, Hugo Larochelle, Yoshua Bengio, and Pierre-Antoine Manzagol. Extracting and composing robust
+features with denoising autoencoders. In Proceedings of the 25th international conference on Machine learning,
+pages 1096–1103, 2008.
+
+<a id="46">[46]</a> Kyojin Jang, Seokyoung Hong, Minsu Kim, Jonggeol Na, and Il Moon. Adversarial autoencoder based feature
+learning for fault detection in industrial processes. IEEE Transactions on Industrial Informatics, 18(2):827–834,
+2021.
+
+<a id="47">[47]</a> Yiru Zhao, Bing Deng, Chen Shen, Yao Liu, Hongtao Lu, and Xian-Sheng Hua. Spatio-temporal autoencoder
+for video anomaly detection. In Proceedings of the 25th ACM international conference on Multimedia, pages
+1933–1941, 2017.
+
+<a id="48">[48]</a> Yasi Wang, Hongxun Yao, and Sicheng Zhao. Auto-encoder based dimensionality reduction. Neurocomputing,
+184:232–242, 2016.
+
+<a id="49">[49]</a> Joana Frontera-Pons, Florent Sureau, Jerome Bobin, and Emeric Le Floc’h. Unsupervised feature-learning for
+galaxy seds with denoising autoencoders. Astronomy & Astrophysics, 603:A60, 2017.
+
+<a id="50">[50]</a> Jo Schlemper, Jose Caballero, Joseph V Hajnal, Anthony Price, and Daniel Rueckert. A deep cascade of convolutional neural networks for mr image reconstruction. In Information Processing in Medical Imaging: 25th International Conference, IPMI 2017, Boone, NC, USA, June 25-30, 2017, Proceedings 25, pages 647–658. Springer,
+2017.
+
+<a id="51">[51]</a> Xiao Xiang Zhu, Devis Tuia, Lichao Mou, Gui-Song Xia, Liangpei Zhang, Feng Xu, and Friedrich Fraundorfer.
+Deep learning in remote sensing: A comprehensive review and list of resources. IEEE geoscience and remote
+sensing magazine, 5(4):8–36, 2017.
+
+<a id="52">[52]</a> Eli Stevens, Luca Antiga, and Thomas Viehmann. Deep learning with PyTorch. Manning Publications, 2020.
+
+<a id="53">[53]</a> Matthew D Zeiler and Rob Fergus. Visualizing and understanding convolutional networks. In Computer Vision–
+ECCV 2014: 13th European Conference, Zurich, Switzerland, September 6-12, 2014, Proceedings, Part I 13, pages
+818–833. Springer, 2014.
+
+<a id="54">[54]</a> Geoffrey E. Hinton, Nitish Srivastava, Alex Krizhevsky, Ilya Sutskever, and Ruslan Salakhutdinov. Improving
+neural networks by preventing co-adaptation of feature detectors. CoRR, abs/1207.0580, 2012.
+
+<a id="55">[55]</a> Jonathan Tompson, Ross Goroshin, Arjun Jain, Yann LeCun, and Christoph Bregler. Efficient object localization
+using convolutional networks. In Proceedings of the IEEE conference on computer vision and pattern recognition,
+pages 648–656, 2015.
+
+<a id="56">[56]</a> Sergey Ioffe and Christian Szegedy. Batch normalization: Accelerating deep network training by reducing internal
+covariate shift. In International conference on machine learning, pages 448–456. pmlr, 2015.
+
+<a id="57">[57]</a> Vinod Nair and Geoffrey E Hinton. Rectified linear units improve restricted boltzmann machines. In Proceedings
+of the 27th international conference on machine learning (ICML-10), pages 807–814, 2010.
+
+<a id="58">[58]</a> Alex Krizhevsky, Ilya Sutskever, and Geoffrey E Hinton. Imagenet classification with deep convolutional neural
+networks. Communications of the ACM, 60(6):84–90, 2017.
+
+<a id="59">[59]</a> Diederik P Kingma and Jimmy Ba. Adam: A method for stochastic optimization. arXiv preprint arXiv:1412.6980,
+2014.
+
+<a id="60">[60]</a> Sashank J Reddi, Satyen Kale, and Sanjiv Kumar. On the convergence of adam and beyond. arXiv preprint
+arXiv:1904.09237, 2019.
+
+<a id="61">[61]</a> Ruo-Yu Sun. Optimization for deep learning: An overview. Journal of the Operations Research Society of China,
+8(2):249–294, 2020.
+
+<a id="62">[62]</a> Nitesh V Chawla, Kevin W Bowyer, Lawrence O Hall, and W Philip Kegelmeyer. Smote: synthetic minority
+over-sampling technique. Journal of artificial intelligence research, 16:321–357, 2002.
+
+<a id="63">[63]</a> Tsung-Yi Lin, Priya Goyal, Ross Girshick, Kaiming He, and Piotr Doll´ar. Focal loss for dense object detection.
+In Proceedings of the IEEE international conference on computer vision, pages 2980–2988, 2017.
+
+<a id="64">[64]</a> Maxim Berman, Amal Rannen Triki, and Matthew B Blaschko. The lov´asz-softmax loss: A tractable surrogate for
+the optimization of the intersection-over-union measure in neural networks. In Proceedings of the IEEE conference
+on computer vision and pattern recognition, pages 4413–4421, 2018.
+
+<a id="65">[65]</a> Yin Cui, Menglin Jia, Tsung-Yi Lin, Yang Song, and Serge Belongie. Class-balanced loss based on effective
+number of samples. In Proceedings of the IEEE/CVF conference on computer vision and pattern recognition,
+pages 9268–9277, 2019.
+
+<a id="66">[66]</a> Zhou Wang, Alan C Bovik, Hamid R Sheikh, and Eero P Simoncelli. Image quality assessment: from error
+visibility to structural similarity. IEEE transactions on image processing, 13(4):600–612, 2004.
+
+<a id="67">[67]</a> Zhou Wang, Eero P Simoncelli, and Alan C Bovik. Multiscale structural similarity for image quality assessment.
+In The Thrity-Seventh Asilomar Conference on Signals, Systems & Computers, 2003, volume 2, pages 1398–1402.
+Ieee, 2003.
 
 
 
@@ -433,8 +593,8 @@ Communications of the ACM, 11(3), 147-148.
 
 <div align="center">
 
-<img src="Images/truesig.png" height=400>
-<img src="Images/det sig.png" height=400>
+<img src="Images/truesig.png" width=28%>
+<img src="Images/det sig.png" width=65.6%>
 
 *Left-hand image shows the 2d flattened data for many charged hadrons passing the quartz in the centre of the block overlayed. with the colour scale indicating the number of detections per pixel. image source: \cite{brook2018testbeam}. Realistic distribution of photon detections taken for one simulated charged hadron passing through the quartz block. The red pixels indicate the ones that are correlated to the charged hadron. The line joining the red points is an aid for the eye to demonstrate that the signal points fall on the characteristic pattern. Image source: \cite{forty2014torch}.*
 </div>
