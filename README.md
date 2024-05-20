@@ -138,6 +138,14 @@ The second issue arising from the 2D with embedded ToF is due to the way the hit
 </div>
 
 
+<div align="center">
+
+<img src="Images/quantifying_occlusion_2.png" width=600>
+
+*Qauntifying pixel occlusion, due to 3D to 2D transform.*
+</div>
+
+
 
 
 <div align="center">
@@ -367,52 +375,6 @@ For any further inquiries or for assistance in deploying DC3D, please feel free 
 
 # Acknowledgments
 Special thanks to Dr. Jonas Radamaker for his guidance and expertise on LHCb and the TORCH project, Dr. Alex Marshall for his support on getting to grips with PyTorch and troubleshooting, and Max Carter for his contributions and signal generator used in early development.
-
-
-
-
-
-
-
-[[1]](#1)
-
-[[2]](#2)
-
-[[3]](#3)
-
-[[4]](#4)
-
-[[5]](#5)
-
-[[6]](#6)
-
-[[7]](#7)
-
-[[8]](#8)
-
-[[9]](#9)
-
-[[10]](#10)
-
-[[11]](#11)
-
-[[12]](#12)
-
-[[13]](#13)
-
-[[14]](#14)
-
-[[15]](#15)
-
-[[16]](#16)
-
-[[17]](#17)
-
-[[18]](#18)
-
-[[19]](#19)
-
-[[20]](#20)
 
 ## References
 
