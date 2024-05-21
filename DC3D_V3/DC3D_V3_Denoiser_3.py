@@ -75,7 +75,7 @@ class DC3D_Inference:
         return data
 
     def custom_renormalisation(self, data):
-        data = np.where(data > self.reconstruction_threshold, ((data - self.reconstruction_threshold)*(1/(1-self.reconstruction_threshold)))*(self.time_dimension), 0)
+        data = torch.where(data > self.reconstruction_threshold, ((data - self.reconstruction_threshold)*(1/(1-self.reconstruction_threshold)))*(self.time_dimension), 0)
         return data
 
     def deepclean3(self, input_image_tensor):
@@ -83,20 +83,20 @@ class DC3D_Inference:
                 norm_image = self.custom_normalisation(input_image_tensor)
                 image_prepared = norm_image.unsqueeze(0).unsqueeze(0)
                 rec_image = self.decoder(self.encoder(image_prepared))
-                rec = rec_image.squeeze().numpy()
+                rec = rec_image.squeeze()
                 rec_image_renorm = self.custom_renormalisation(rec)
             return rec_image_renorm
 
     def masking_recovery(self, input_image, recovered_image, print_result):
         raw_input_image = input_image.clone()
-        net_recovered_image = recovered_image.copy()
-        masking_pixels = np.count_nonzero(net_recovered_image)
+        net_recovered_image = recovered_image.clone()
+        masking_pixels = torch.count_nonzero(net_recovered_image)
         image_shape = net_recovered_image.shape
-        total_pixels = image_shape[0] * image_shape[1] * time_dimension
+        total_pixels = image_shape[0] * image_shape[1] * self.time_dimension
         if print_result:
             print(f"Total number of pixels in the timescan: {format(total_pixels, ',')}\nNumber of pixels returned by the masking: {format(masking_pixels, ',')}\nNumber of pixels removed from reconstruction by masking: {format(total_pixels - masking_pixels, ',')}")
 
-        mask_indexs = np.where(net_recovered_image != 0)
+        mask_indexs = torch.where(net_recovered_image != 0)
         net_recovered_image[mask_indexs] = raw_input_image[mask_indexs]
         result = net_recovered_image
         return result
@@ -138,6 +138,11 @@ if __name__ == "__main__":
 
         recovered_image, masking_rec_image = dc3d_inference.run(input_image_tensor)
 
+        # turn the rec tensors into numpy arrays
+        recovered_image = recovered_image.numpy()
+        masking_rec_image = masking_rec_image.numpy()
+
+        # Save the recovered images to disk
         if not os.path.exists(output_images_path + "\Direct_Output\\"):
             os.makedirs(output_images_path + "\Direct_Output\\")
         if not os.path.exists(output_images_path + "\Masked_Output\\"):

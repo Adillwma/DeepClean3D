@@ -1,8 +1,0 @@
-
-Here is a bit of info on the autoencoders in this file:
-
-V1 - Standard AE with 3, 2D convolutional layers that move into two linear layers. Go from nodes --> 512 --> enc dim
-V2 - Changes padding and adds another convolutional layer to make 4
-V3 - Adds another convoltional layer to make 5
-V4 - Maintains 5 conv layers like V3 but the linear layers are changed to nodes --> 128 --> enc dim
-V5 - Maintains 5 conv layers like V3 but the linear layers are changed to nodes --> 2048 --> 1024 --> 512 --> enc dim

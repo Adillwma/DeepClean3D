@@ -1,4 +1,29 @@
 
+## Dependencies
+    graphviz==0.20.1
+    librosa==0.10.0.post2
+    openpyxl==3.1.2
+    pandas==1.5.3
+    pickleshare==0.7.5
+    Pillow==9.4.0
+    tabulate==0.9.0
+    torch==2.0.1
+    torchinfo==1.8.0
+    torchvision==0.15.2
+    torchviz==0.0.2
+    tqdm==4.65.0
+    uproot==5.0.11
+    WMI==1.5.1
+    XlsxWriter==3.1.0
+    zipp==3.16.2
+
+
+## Install from GitHub
+```bash
+git clone
+cd DC3D_Full
+pip install -e .
+```
 
 # Quick start for Training
 Using the settings guide below set the trainer settings to the desired values.
@@ -11,7 +36,6 @@ This section contains the inputs that the user should provide to the program. Th
     time_dimension: an integer representing the number of time steps in the data.
     reconstruction_threshold: a float representing the threshold for 3D reconstruction; values below this confidence level are discounted. Must be in range 0 > reconstruction_threshold < 1
 
-
     ### Example Code
 
     # Import the Trainer
@@ -20,7 +44,7 @@ This section contains the inputs that the user should provide to the program. Th
     # Set the trainer settings
     dataset_title = "my_dataset"
     model_save_name = "my_new_model"
-    time_dimension = 128
+    time_dimension = 1000
     reconstruction_threshold = 0.5
 
     # Run the Trainer
@@ -39,7 +63,7 @@ This section contains the hyperparameters that the user can adjust to train the 
     batch_size: an integer representing the number of images to pull per batch.
     latent_dim: an integer representing the number of nodes in the latent space, which is the bottleneck layer.
     learning_rate: a float representing the optimizer learning rate.
-    optim_w_decay: a float representing the optimizer weight decay for regularization.
+    optim_w_decay: a float representing the optimizer weight decay for regularisation.
     dropout_prob: a float representing the dropout probability.
 
 ### Dataset Settings
