@@ -103,7 +103,7 @@ class CustomDataLoaderIter:
     def _custom_processing(self, batch):
         signal_points, x_std_dev, y_std_dev, tof_std_dev, noise_points = self.input_signal_settings
         signal_settings = input_range_to_random_value(signal_points, x_std_dev, y_std_dev, tof_std_dev, noise_points) 
-        degraded_batches = signal_degredation(signal_settings, batch, self.physical_scale_parameters, self.time_dimension, self.device, self.dtype)
+        degraded_batches = signal_degredation(signal_settings, batch, self.physical_scale_parameters, self.time_dimension, self.device)
         return degraded_batches   
 
     def __iter__(self):
