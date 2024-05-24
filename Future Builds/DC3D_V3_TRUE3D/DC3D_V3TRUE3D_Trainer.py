@@ -2,11 +2,8 @@
 """
 DeepClean v0.3.4
 Build created on Sat Feb 1 2022
-Authors: Adill Al-Ashgar & Max Carter
+Authors: Adill Al-Ashgar 
 University of Bristol
-
-@Adill: adillwmaa@gmail.co.uk - ex18871@bristol.ac.uk
-@Max: qa19105@bristol.ac.uk
 
 
 
@@ -71,7 +68,7 @@ import torch
 
 #%% - User Inputs
 #mode = 0 ### 0=Data_Gathering, 1=Testing, 2=Speed_Test, 3=Debugging
-dataset_title = "Dataset 20_X500" #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
+dataset_title = "Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
 model_save_name = "2dto3dloadertest3D"#"Dataset 18_X_rotshiftlarge"
 
 num_epochs = 11                                          #User controll to set number of epochs (Hyperparameter)

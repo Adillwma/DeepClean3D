@@ -82,8 +82,8 @@ def add_noise_points_to_batch_prenorm(input_image_batch, noise_points=100, time_
             # Iterate through noise_points number of random pixels to noise
             for i in range(noise_points):
 
-                # Add a random number between recon_threshold and 1 to the pixel 
-                image[0][x_coords[i], y_coords[i]] = np.random.uniform(0, time_dimension)   ##### NOTE: Change to using a torch random function instead of a numpy one
+                # Add a random number between 1 and time dim
+                image[0][x_coords[i], y_coords[i]] = np.random.uniform(1, time_dimension)   ##### NOTE: Change to using a torch random function instead of a numpy one
 
     return image_batch
 
@@ -133,7 +133,7 @@ def create_sparse_signal(input_image_batch, signal_points=2, linear=False):
     return output_image_batch
 
 # Function to add shift in x, y and ToF to a true signal point due to detector resoloution
-def simulate_detector_resolution(input_image_batch, x_std_dev, y_std_dev, tof_std_dev, x_scale, y_scale, time_scale, device, dtype, plot=False):
+def simulate_detector_resolution(input_image_batch, x_std_dev, y_std_dev, tof_std_dev, x_scale, y_scale, time_scale, device, plot=False):
     """
     This function will add a random shift taken from a gaussain std deviation in x, y or ToF to each non-zero pixel in the image tensor to simulate detector resoloution limits
 
@@ -145,10 +145,15 @@ def simulate_detector_resolution(input_image_batch, x_std_dev, y_std_dev, tof_st
         x_scale (float): The physical scale of the x axis in mm per pixel to convert pixel values to physical values
         y_scale (float): The physical scale of the y axis in mm per pixel to convert pixel values to physical values
         time_scale (float): The physical scale of the ToF axis in ns per pixel to convert pixel values to physical values
+        device (torch device): The device to create tensors on
+        plot (bool): If set to true then the function will plot the image after the shifts have been applied. Default = False
 
     Returns:
         image_batch_all (torch tensor): The degraded image batch. Shape [B, C, H, W]
     """
+
+    # Determine dtype of input batch
+    dtype = input_image_batch.dtype
 
     # Convert physical values to pixel values
     x_std_dev_pixels = x_std_dev / x_scale
@@ -190,7 +195,7 @@ def simulate_detector_resolution(input_image_batch, x_std_dev, y_std_dev, tof_st
         
     return image_batch_all
 
-def signal_degredation(signal_settings, image_batch, physical_scale_parameters, time_dimension, device, dtype):
+def signal_degredation(signal_settings, image_batch, physical_scale_parameters, time_dimension, device):
     """
     Sequentially applies the differnt signal degredation functions to the input image batch and returns the output of each stage
 
@@ -205,6 +210,15 @@ def signal_degredation(signal_settings, image_batch, physical_scale_parameters, 
     x_scale, y_scale, time_scale = physical_scale_parameters
     signal_points_r, x_std_dev_r, y_std_dev_r, tof_std_dev_r, noise_points_r = signal_settings
     sparse_output_batch = create_sparse_signal(image_batch, signal_points_r)
-    sparse_and_resolution_limited_batch = simulate_detector_resolution(sparse_output_batch, x_std_dev_r, y_std_dev_r, tof_std_dev_r, x_scale, y_scale, time_scale, device, dtype)
-    noised_sparse_reslimited_batch = add_noise_points_to_batch_prenorm(sparse_and_resolution_limited_batch, noise_points_r, time_dimension)
+
+    if x_std_dev_r != 0 or y_std_dev_r != 0 or tof_std_dev_r != 0:
+        sparse_and_resolution_limited_batch = simulate_detector_resolution(sparse_output_batch, x_std_dev_r, y_std_dev_r, tof_std_dev_r, x_scale, y_scale, time_scale, device)
+    else:
+        sparse_and_resolution_limited_batch = sparse_output_batch
+    
+    if noise_points_r != 0:
+        noised_sparse_reslimited_batch = add_noise_points_to_batch_prenorm(sparse_and_resolution_limited_batch, noise_points_r, time_dimension)
+    else:
+        noised_sparse_reslimited_batch = sparse_and_resolution_limited_batch
+        
     return sparse_output_batch, sparse_and_resolution_limited_batch, noised_sparse_reslimited_batch   

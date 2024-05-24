@@ -218,3 +218,103 @@ def compare_images_pixels(clean_img, denoised_img, terminal_print=False):   ###!
         print(f"percentage_of_false_positives_xy: {percentage_of_false_lit_pixels}%")
     
     return percentage_of_true_positive_xy, percentage_of_true_positive_tof, numof_false_positives_xy
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#### ADD IN THESE NEW METRICS TOO !!!!
+
+
+def accuracy(output, target):
+    """
+    Calculates accuracy of a given output and target tensor.
+    :param output: (torch.Tensor) Output tensor of shape (batch_size, num_classes)
+    :param target: (torch.Tensor) Target tensor of shape (batch_size,)
+    :return: (float) Accuracy score.
+    """
+    with torch.no_grad():
+        # Convert the predicted class from one-hot encoded form to integer form
+        pred = output.argmax(dim=1)
+        # Calculate the number of correctly predicted examples
+        correct = (pred == target).sum().item()
+        # Calculate the total number of examples
+        total = target.shape[0]
+        # Return the accuracy score as the ratio of correctly predicted examples to total examples
+        return correct / total
+    
+def precisionMETRIC(output, target):
+    """
+    Calculates precision of a given output and target tensor.
+    :param output: (torch.Tensor) Output tensor of shape (batch_size, num_classes)
+    :param target: (torch.Tensor) Target tensor of shape (batch_size,)
+    :return: (float) Precision score.
+    """
+    with torch.no_grad():
+        # Convert the predicted class from one-hot encoded form to integer form
+        pred = output.argmax(dim=1)
+        # Calculate the number of correctly predicted positive examples
+        true_positive = ((pred == 1) & (target == 1)).sum().item()
+        # Calculate the number of predicted positive examples
+        predicted_positive = (pred == 1).sum().item()
+        # Return the precision score as the ratio of correctly predicted positive examples to predicted positive examples
+        return true_positive / predicted_positive if predicted_positive != 0 else 0
+    
+def recall(output, target):
+    """
+    Calculates recall of a given output and target tensor.
+    :param output: (torch.Tensor) Output tensor of shape (batch_size, num_classes)
+    :param target: (torch.Tensor) Target tensor of shape (batch_size,)
+    :return: (float) Recall score.
+    """
+    with torch.no_grad():
+        # Convert the predicted class from one-hot encoded form to integer form
+        pred = output.argmax(dim=1)
+        # Calculate the number of correctly predicted positive examples
+        true_positive = ((pred == 1) & (target == 1)).sum().item()
+        # Calculate the number of actual positive examples
+        actual_positive = (target == 1).sum().item()
+        # Return the recall score as the ratio of correctly predicted positive examples to actual positive examples
+        return true_positive / actual_positive if actual_positive != 0 else 0
+
+def f1_score(output, target):
+    """
+    Compute the F1 score for the output and target tensors.
+    
+    Parameters:
+    - output (torch.Tensor): Tensor of predicted values
+    - target (torch.Tensor): Tensor of ground truth values
+    
+    Returns:
+    - f1 (float): The computed F1 score
+    """
+    with torch.no_grad():
+        # Compute the precision of the model's predictions
+        precision_val = precision(output, target)
+        
+        # Compute the recall of the model's predictions
+        recall_val = recall(output, target)
+        
+        # Compute the F1 score as 2 * (precision * recall) / (precision + recall + 1e-15)
+        # The 1e-15 term is added to avoid division by zero
+        f1 = 2 * (precision_val * recall_val) / (precision_val + recall_val + 1e-15)
+        
+        # Return the computed F1 score
+        return f1
+
+

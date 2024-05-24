@@ -7,7 +7,7 @@ import numpy as np
 import random
 import pickle
 import pandas as pd
-
+from Helper_files.DC3D_Core_Functions import masking_recovery, gaped_normalisation, gaped_renormalisation
 #### NEED SFIXING
 # ADD TIME DIM AS ARG
 #  warn("File may not be readable: column headings must be strings.") 
@@ -289,32 +289,10 @@ def quantify_performance(clean_input, noised_target, label, debug_mode=False):
     return performance
 
 
-#%% - Model Component Functions
-def custom_normalisation(data, reconstruction_threshold, time_dimension=100):
-    data = torch.where(data > 0, (((data / time_dimension) / (1/(1-reconstruction_threshold))) + reconstruction_threshold), 0 )
-    return data
 
-def custom_renormalisation(data, reconstruction_threshold, time_dimension=100):
-    data = np.where(data > reconstruction_threshold, ((data - reconstruction_threshold)*(1/(1-reconstruction_threshold)))*(time_dimension), 0)
-    return data
 
-def masking_recovery(input_image, recovered_image, print_result=True, time_dimension=1000):
-    raw_input_image = input_image.copy()
-    net_recovered_image = recovered_image.copy()
-    #Evaluate usefullness 
-    # count the number of non-zero values
-    masking_pixels = np.count_nonzero(net_recovered_image)
-    image_shape = net_recovered_image.shape
-    total_pixels = image_shape[0] * image_shape[1] * time_dimension
-    # print the count
-    if print_result:
-        print(f"Total number of pixels in the timescan: {format(total_pixels, ',')}\nNumber of pixels returned by the masking: {format(masking_pixels, ',')}\nNumber of pixels removed from reconstruction by masking: {format(total_pixels - masking_pixels, ',')}")
 
-    # use np.where and boolean indexing to update values in a
-    mask_indexs = np.where(net_recovered_image != 0)
-    net_recovered_image[mask_indexs] = raw_input_image[mask_indexs]
-    result = net_recovered_image
-    return result
+
 
  
 #%% - Model Operation Functions
@@ -442,12 +420,12 @@ def initialise_model(pretrained_model_folder_path, verbose_mode=False): # Define
 
 def run_model(input_image_tensor, reconstruction_threshold, encoder, decoder, time_dimension=100):                                                        # Defines a function for generating a batch of test outputs from the autoencoder. And also the input + clean training data? Function takes inputs, 'encoder' and 'decoder' which are expected to be classes (defining the encode and decode nets), 'n' which is the number of ?????Images in the batch????, and 'noise_factor' which is a multiplier for the magnitude of the added noise allowing it to be scaled in intensity.  
     with torch.no_grad():
-        norm_image = custom_normalisation(input_image_tensor.clone(), reconstruction_threshold, time_dimension)
+        norm_image = gaped_normalisation(input_image_tensor.clone(), reconstruction_threshold, time_dimension)
         image_prepared = norm_image.unsqueeze(0).unsqueeze(0)   #Adds two extra dimesnions to start of array so shape goes from (x,y) to (1,1,x,y) to represent batch and channel dims
         rec_image = decoder(encoder(image_prepared))                         #Creates a recovered image (denoised image), by running a noisy image through the encoder and then the output of that through the decoder.
         rec = rec_image.squeeze().numpy()
-        rec_image_renorm = custom_renormalisation(rec, reconstruction_threshold, time_dimension)
-        masking_rec_image = masking_recovery(input_image_tensor.numpy(), rec_image_renorm, print_result=False)
+        rec_image_renorm = gaped_renormalisation(rec, reconstruction_threshold, time_dimension)
+        masking_rec_image = masking_recovery(input_image_tensor.numpy(), rec_image_renorm, time_dimension, print_result=False)
 
     return rec_image_renorm, masking_rec_image
 
@@ -785,6 +763,8 @@ def run_full_perf_tests(num_files, plot, save_recovered_data, dataset_dir, outpu
 
 #%% - Driver
 """
+
+
 run_full_perf_tests(num_files=10, 
                      plot=10, 
                      save_recovered_data=True, 

@@ -23,6 +23,7 @@ from sklearn.manifold import TSNE
 import os
 import torch
 from torchvision.transforms import ToPILImage
+from Helper_files.DC3D_Core_Functions import gaped_normalisation, gaped_renormalisation_torch  
 
 
 #%% - Differnce between images
@@ -83,6 +84,8 @@ import os
 import torch
 from torchviz import make_dot
 
+
+
 def Graphviz_visulisation(encoder, decoder, double_precision, batch_size, x_dim, y_dim, output_folder):
     """
     Using GraphViz: GraphViz is a popular open-source graph visualization software that can be used to visualize the 
@@ -102,10 +105,10 @@ def Graphviz_visulisation(encoder, decoder, double_precision, batch_size, x_dim,
     dot.render('network_model_graph', output_folder, format='png', cleanup=True)
 
 
-    
+  
 
 #%% - Create new images from the latent space
-def Generative_Latent_information_Visulisation(encoder, decoder, latent_dim, device, test_loader):
+def Generative_Latent_information_Visulisation(encoder, decoder, latent_dim, device, test_loader, reconstruction_threshold, time_dimension):
     """
     Function to visualize autoencoder data by generating random latent vectors and reconstructing 
     corresponding images using the decoder model.
@@ -126,8 +129,14 @@ def Generative_Latent_information_Visulisation(encoder, decoder, latent_dim, dev
 
     with torch.no_grad():
         # calculate mean and std of latent code, generated takining in test images as inputs
-        images, labels = next(iter(test_loader))
-        images = images.to(device)
+        image_batch, sparse_output_batch, sparse_and_resolution_limited_batch, noised_sparse_reslimited_batch = next(iter(test_loader))
+        noised_sparse_reslimited_batch
+
+        # alwasy uses gaped norm, fix so rthat if follows the type of norm used in main code 
+        normalised_batch = gaped_normalisation(noised_sparse_reslimited_batch, reconstruction_threshold, time_dimension)
+        image_batch_norm = gaped_normalisation(image_batch, reconstruction_threshold, time_dimension)
+            
+        images = image_batch_norm.to(device)
         latent = encoder(images)
         latent = latent.cpu()
 
@@ -143,6 +152,8 @@ def Generative_Latent_information_Visulisation(encoder, decoder, latent_dim, dev
         latent = latent.to(device)
         img_recon = decoder(latent)
         img_recon = img_recon.cpu()
+
+        img_recon = gaped_renormalisation_torch(img_recon, reconstruction_threshold, time_dimension)
         
         return (img_recon)
 
@@ -272,6 +283,8 @@ def Reduced_Dimension_Data_Representations(encoder, device, test_dataset, save_p
         
 
 """
+
+
 This code is performing the following operations:
 
     encoded_samples = []: Initializes an empty list called encoded_samples to store the encoded images.
