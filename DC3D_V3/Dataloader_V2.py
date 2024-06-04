@@ -1,3 +1,12 @@
+"""
+DC3D Dataloader V2
+Created by Adill Al-Ashgar 
+
+Custom Dataset and DataLoader classes for the DC3D_V3 project. 
+Used to load data from disk and apply custom data degradation functions to the data in the loader. 
+"""
+
+
 import os
 import torch
 import numpy as np
