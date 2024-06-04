@@ -77,16 +77,11 @@ def reconstruct_3D(*args):
     Returns:
         results (np array): The reconstructed 3D arrays. Same number of arrays as input.
     """
-    
     results = []
     for data in args:
-        data_output = []
-        for cdx, row in enumerate(data):
-            for idx, num in enumerate(row):
-                if num > 0:  
-                    data_output.append([cdx, idx, num])
-        results.append(np.array(data_output))
-
+        res = np.nonzero(data > 0)
+        data_output = np.column_stack((res[0], res[1], data[res]))
+        results.append(data_output)
     return results
 
 # Masking technique
