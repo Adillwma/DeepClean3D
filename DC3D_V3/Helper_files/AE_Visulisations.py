@@ -247,9 +247,12 @@ def Reduced_Dimension_Data_Representations(encoder, device, test_dataset, save_p
     """
     try:
         encoded_samples = []
-        for sample in tqdm(test_dataset):
-            img = sample[0].unsqueeze(0).to(device)
-            label = sample[1]
+        for data in tqdm(test_dataset):
+            image_batch, _, _, noised_sparse_reslimited_batch = data
+            
+            img = noised_sparse_reslimited_batch.to(device)
+            label = image_batch.to(device)
+
             # Encode image
             encoder.eval()
             with torch.no_grad():

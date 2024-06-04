@@ -77,6 +77,7 @@ def plot_telemetry(telemetry, true_num_of_signal_points, save_path, plot_or_save
     plt.title("Telemetry over epochs")
     plt.xlabel("Epoch number")
     plt.ylabel("Number of Signal Points")
+    plt.grid(alpha=0.2)
     plt.legend()
     plot_save_choice(plot_or_save, save_path)
 
