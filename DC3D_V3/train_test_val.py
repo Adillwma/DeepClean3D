@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.ticker import FuncFormatter
 from tqdm import tqdm
-from DC3D_Core_Functions import *
+from DC3D_V3.Helper_files.DC3D_Core_Functions import *
 from Helper_files.Helper_Functions import plot_save_choice
 from DC3D_V3_Trainer_3 import quantify_loss_performance
 
@@ -74,14 +74,6 @@ def train_epoch(epoch, encoder, decoder, device, dataloader, loss_fn, optimizer,
         if renorm_for_loss_calc:
             decoded_data = gaped_renormalisation_torch(decoded_data, reconstruction_threshold, time_dimension)
             loss_comparator = gaped_renormalisation_torch(loss_comparator, reconstruction_threshold, time_dimension)
-        
-        #print("decoded_data.shape", decoded_data.shape)
-        #print("loss_comparator.shape", loss_comparator.shape)
-        #print("max value in final dim of decoded_data", torch.max(decoded_data, dim=1))
-        #print("max value in final dim of loss_comparator", torch.max(loss_comparator, dim=1))
-
-        #print("min value in final dim of decoded_data", torch.min(decoded_data, dim=1))
-        #print("min value in final dim of loss_comparator", torch.min(loss_comparator, dim=1))
 
         loss = loss_fn(decoded_data, loss_comparator)  # Compute the loss between the decoded image batch and the clean image batch
         
