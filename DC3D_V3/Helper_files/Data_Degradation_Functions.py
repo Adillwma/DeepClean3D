@@ -109,7 +109,7 @@ def create_sparse_signal(input_image_batch, signal_points=2, linear=False):
     return output_image_batch
 
 # Function to add shift in x, y and ToF to a true signal point due to detector resoloution
-def simulate_detector_resolution(input_image_batch, x_std_dev_pixels, y_std_dev_pixels, tof_std_dev_pixels, device, plot=False):
+def simulate_detector_resolution(input_image_batch, x_std_dev_pixels, y_std_dev_pixels, tof_std_dev_pixels, time_dimension, device, clamp_photons_to_slice=True):
     """
     This function will add a random shift taken from a gaussain std deviation in x, y or ToF to each non-zero pixel in the image tensor to simulate detector resoloution limits
 
@@ -124,36 +124,50 @@ def simulate_detector_resolution(input_image_batch, x_std_dev_pixels, y_std_dev_
     Returns:
         image_batch_all (torch tensor): The degraded image batch. Shape [B, C, H, W]
     """
-
-    # Determine dtype of input batch
     dtype = input_image_batch.dtype
-
-    # Take as input a torch tensor in form [batch_size, 1, x_dim, y_dim]]
-    # Create a copy of the input image batch
     image_batch_all = input_image_batch.clone()
 
-    for idx, image_batch_andc in enumerate(image_batch_all):
-        image_batch = image_batch_andc.squeeze()
-        x, y = image_batch.size()
-
-        # For all the values in the tensor that are non zero (all signal points) add random value drawn from a gaussian distribution with mean of the original value and std dev of ToF_std_dev so simulate ToF resoloution limiting
-        image_batch[image_batch != 0] = image_batch[image_batch != 0] + torch.normal(mean=0, std=tof_std_dev_pixels, size=image_batch[image_batch != 0].shape, device=device, dtype=dtype)
-
-        # Generate random values for shifting the x and y indices
-        x_shift = torch.normal(mean=0, std=x_std_dev_pixels, size=(x, y), dtype=torch.float32, device=device)
-        y_shift = torch.normal(mean=0, std=y_std_dev_pixels, size=(x, y), dtype=torch.float32,  device=device)
-
-        # Create a mask for selecting non-zero values in the image tensor
-        mask = image_batch != 0
-
-        # Apply the x and y shifts to the non-zero pixel locations
-        new_x_indices = torch.clamp(torch.round(torch.arange(x, device=device).unsqueeze(1) + x_shift), 0, x - 1).long()
-        new_y_indices = torch.clamp(torch.round(torch.arange(y, device=device).unsqueeze(0) + y_shift), 0, y - 1).long()
-        shifted_image_tensor = torch.zeros_like(image_batch)
-        shifted_image_tensor[new_x_indices[mask], new_y_indices[mask]] = image_batch[mask]
-
-        image_batch_all[idx,0] = shifted_image_tensor
+    if clamp_photons_to_slice:
+        # perform ToF resolution smearing and dont allow photons to move into other slices (unnatural!)
+        image_batch_all[image_batch_all != 0] = image_batch_all[image_batch_all != 0] + torch.normal(mean=0, std=tof_std_dev_pixels, size=image_batch_all[image_batch_all != 0].shape, device=device, dtype=dtype)
+        image_batch_all = torch.clamp(image_batch_all, 0, time_dimension)
+    else:
+        # perfrom ToF resolution smearing and allow photons to move into other slices (i.e thrown away)
+        image_batch_all[image_batch_all != 0] = image_batch_all[image_batch_all != 0] + torch.normal(mean=0, std=tof_std_dev_pixels, size=image_batch_all[image_batch_all != 0].shape, device=device, dtype=dtype)
+        image_batch_all[image_batch_all > time_dimension] = 0
+        image_batch_all[image_batch_all < 1] = 0
         
+        
+    # Squeeze the batch dimension
+    image_batch_all_squeezed = image_batch_all.squeeze(1)
+    
+    # Get the size of the images
+    batch_size, x, y = image_batch_all_squeezed.size()
+    
+    # Generate random shifts for all points the batch
+    x_shift = torch.normal(mean=0, std=x_std_dev_pixels, size=(batch_size, x, y), dtype=dtype, device=device)
+    y_shift = torch.normal(mean=0, std=y_std_dev_pixels, size=(batch_size, x, y), dtype=dtype, device=device)
+    
+    # Generate indices for the entire batch
+    x_indices = torch.arange(x, device=device).view(1, x, 1).expand(batch_size, x, y)
+    y_indices = torch.arange(y, device=device).view(1, 1, y).expand(batch_size, x, y)
+    
+    # Create new indices by adding the shifts
+    new_x_indices = torch.clamp(torch.round(x_indices + x_shift), 0, x - 1).long()
+    new_y_indices = torch.clamp(torch.round(y_indices + y_shift), 0, y - 1).long()
+    
+    # Create a mask for non-zero values in the batch
+    mask = image_batch_all_squeezed != 0
+    
+    # Initialize the shifted image tensor
+    shifted_image_tensor = torch.zeros_like(image_batch_all_squeezed)
+    
+    # Apply the shifts using advanced indexing
+    batch_indices = torch.arange(batch_size, device=device).view(-1, 1, 1).expand(batch_size, x, y)
+    shifted_image_tensor[batch_indices[mask], new_x_indices[mask], new_y_indices[mask]] = image_batch_all_squeezed[mask]
+    
+    # Unsqueeze to add the channel dimension back
+    image_batch_all[:, 0, :, :] = shifted_image_tensor
     return image_batch_all
 
 def signal_degredation(signal_settings, image_batch, physical_scale_parameters, time_dimension, device, timer=None):
@@ -188,7 +202,7 @@ def signal_degredation(signal_settings, image_batch, physical_scale_parameters, 
     # Apply the detector resolution limits
     if x_std_dev_r != 0 or y_std_dev_r != 0 or tof_std_dev_r != 0:
         timer.record_time(event_name="Signal Degredation: Detector Resolution Limits", event_type="start")
-        sparse_and_resolution_limited_batch = simulate_detector_resolution(sparse_output_batch, x_std_dev_pixels, y_std_dev_pixels, tof_std_dev_pixels, device)
+        sparse_and_resolution_limited_batch = simulate_detector_resolution(sparse_output_batch, x_std_dev_pixels, y_std_dev_pixels, tof_std_dev_pixels, time_dimension, device, clamp_photons_to_slice=True)
         timer.record_time(event_name="Signal Degredation: Detector Resolution Limits", event_type="stop")
     else:
         sparse_and_resolution_limited_batch = sparse_output_batch.clone()
