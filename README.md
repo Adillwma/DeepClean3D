@@ -23,7 +23,7 @@ This readme explains the technical implementation of DEEPCLEAN3D. For installati
 
 - [Installation Manual](Usage%20Manuals/Installation_Manual.md)
 - [Inference Manual](Usage%20Manuals/Inference_Manual.md)
-- [Training Manual](Usage%20Manuals/Training_Manual.md)
+- [Training Manual](Training_Manual.md)
 
 Or the full documentation is available as a single downloadable PDF file [here](Usage%20Manuals/DEEPCLEAN3D%20Manual.pdf).
 
