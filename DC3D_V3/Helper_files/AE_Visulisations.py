@@ -130,13 +130,12 @@ def Generative_Latent_information_Visulisation(encoder, decoder, latent_dim, dev
     with torch.no_grad():
         # calculate mean and std of latent code, generated takining in test images as inputs
         image_batch, sparse_output_batch, sparse_and_resolution_limited_batch, noised_sparse_reslimited_batch = next(iter(test_loader))
-        noised_sparse_reslimited_batch
 
         # alwasy uses gaped norm, fix so rthat if follows the type of norm used in main code 
         normalised_batch = gaped_normalisation(noised_sparse_reslimited_batch, reconstruction_threshold, time_dimension)
         image_batch_norm = gaped_normalisation(image_batch, reconstruction_threshold, time_dimension)
             
-        images = image_batch_norm.to(device)
+        images = normalised_batch.to(device)
         latent = encoder(images)
         latent = latent.cpu()
 
