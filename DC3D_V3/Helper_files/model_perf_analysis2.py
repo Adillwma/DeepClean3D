@@ -199,68 +199,77 @@ def NomalisedMutualInformation(clean_input, noised_target):
     recovered_image = noised_target.detach().cpu().numpy()
     return normalized_mutual_information(clean_image, recovered_image)-1
 
-def compare_images_pixels(clean_img, denoised_img, debug_mode=False):   ###!!!INVESTIGATE USING PRINT = TRUE !!!!
-    clean_img = clean_img.detach().cpu().numpy()
-    denoised_img = denoised_img.detach().cpu().numpy()
-    ###TRUE HITS STATS###
-    if debug_mode:
-        print("###TRUE HITS STATS###")
-    
-    ##X,Y##
-    true_hits_indexs = np.nonzero(clean_img)     # Find the indexs of the non zero pixels in clean_img
-    numof_true_hits = len(true_hits_indexs[0])   # Find the number of lit pixels in clean_img
-    if debug_mode:
-        print("numof_true_hits:", numof_true_hits)
-    
-    # Check the values in corresponding indexs in denoised_img, retunr the index's and number of them that are also non zero
-    true_positive_xy_indexs = np.nonzero(denoised_img[true_hits_indexs]) 
-    numof_true_positive_xy = len(true_positive_xy_indexs[0])                     # Calculate the number of pixels in clean_img that are also in denoised_img ###NUMBER OF SUCSESSFUL X,Y RECON PIXELS
-    if debug_mode:
-        print("numof_true_positive_xy:", numof_true_positive_xy)
+def compare_images_pixels(target_image, reconstructed_image, debug_mode=False): 
+    """
+    Takes in the clean image and the denoised image and compares them to find the percentages of signal spatial retention, signal temporal retention, and the raw count of false positives and false negatives.
 
-    # Calculate the number of true hit pixels in clean_img that are not lit at all in denoised_img  ###NUMBER OF LOST TRUE PIXELS
-    false_negative_xy = numof_true_hits - numof_true_positive_xy
-    if debug_mode:
-        print("false_negative_xy:", false_negative_xy)
+    Args:
+        target_image (torch tensor): The clean image
+        reconstructed_image (torch tensor): The denoised image
+        debug_mode (bool): If True, the function will print out the total number of pixels, the true signal points, and the true zero points in the target image. Default = False
+        
+    Returns:
+        signal_spatial_retention_percentage (float): The percentage of signal spatial retention
+        signal_temporal_retention_percentage (float): The percentage of signal temporal retention
+        false_positive_count_raw (int): The raw count of false positives
+        false_negative_count_raw (int): The raw count of false negatives
+    """
+    target_image = target_image.detach().cpu()
+    reconstructed_image = reconstructed_image.detach().cpu()
     
-    # Calculate the percentage of non zero pixels in clean_img that are also non zero in denoised_img   ###PERCENTAGE OF SUCSESSFUL X,Y RECON PIXELS
-    percentage_of_true_positive_xy = (numof_true_positive_xy / numof_true_hits) * 100
+    # determine the total number of pixels in the data
+    total_pixels = target_image.numel()
     if debug_mode:
-        print(f"percentage_of_true_positive_xy: {percentage_of_true_positive_xy}%")
-    
+        print("Total Pixels: ", total_pixels)
 
-    ##TOF##
-    # Calculate the number of pixels in clean_img that are also in denoised_img and have the same TOF value  ###NUMBER OF SUCSESSFUL X,Y,TOF RECON PIXELS
-    num_of_true_positive_tof = np.count_nonzero(np.isclose(clean_img[true_hits_indexs], denoised_img[true_hits_indexs], atol=1e-4))
-    if debug_mode:
-        print("num_of_true_positive_tof:", num_of_true_positive_tof)
-    
-    # Calculate the percentage of pixels in clean_img that are also in denoised_img and have the same value   ###PERCENTAGE OF SUCSESSFUL X,Y,TOF RECON PIXELS
-    percentage_of_true_positive_tof = (num_of_true_positive_tof / numof_true_hits) * 100
-    if debug_mode:
-        print(f"percentage_of_true_positive_tof: {percentage_of_true_positive_tof}%")    
-    
+    # Genrates a index mask for the zero values in the target image
+    zero_mask = (target_image == 0)
 
-    ###FALSE HIT STATS###
-    if debug_mode:
-        print("\n###FALSE HIT STATS###")        
-    clean_img_zero_indexs = np.where(clean_img == 0)   # find the index of the 0 valued pixels in clean image 
-    number_of_zero_pixels = np.sum(clean_img_zero_indexs[0])   # Find the number of pixels in clean image that are zero
-    if debug_mode:
-        print("number_of_true_zero_pixels:",number_of_zero_pixels)
+    # Inverts the zero mask to get the non-zero mask from the target image indicating the signal points
+    nonzero_mask = ~zero_mask
 
-    #check the values in corresponding indexs in denoised_img, return the number of them that are non zero
-    denoised_img_false_lit_pixels = np.nonzero(denoised_img[clean_img_zero_indexs])
-    numof_false_positives_xy = len(denoised_img_false_lit_pixels[0])
+    # True Number of Signal Points in the Target Image
+    true_signal_points = len(target_image[nonzero_mask])
     if debug_mode:
-        print("numof_false_positives_xy:",numof_false_positives_xy)
+        print("True Signal Points: ", true_signal_points)
 
-    # Calculate the percentage of pixels in clean_img that are zero and are also non zero in denoised_img   ###PERCENTAGE OF FALSE LIT PIXELS
-    percentage_of_false_lit_pixels = (numof_false_positives_xy / number_of_zero_pixels) * 100
+    # True Zero Points in the Target Image
+    true_zero_points = len(target_image[zero_mask])
     if debug_mode:
-        print(f"percentage_of_false_positives_xy: {percentage_of_false_lit_pixels}%")
-    
-    return percentage_of_true_positive_xy, percentage_of_true_positive_tof, numof_false_positives_xy
+        print("True Zero Points: ", true_zero_points)
+
+
+    # detemine how many of the values in the reconstructed image that fall in the nonzero mask are non zero
+    signal_spatial_retention_raw = len(reconstructed_image[nonzero_mask].nonzero())
+    if debug_mode:
+        print("Signal Spatial Retention Raw: ", signal_spatial_retention_raw)
+    signal_spatial_retention_percentage = (signal_spatial_retention_raw / len(reconstructed_image[nonzero_mask])) * 100
+    if debug_mode:
+        print("Signal Spatial Retention Percentage: ", signal_spatial_retention_percentage, "%")
+
+    # determine how many of those indexs have matching ToF values
+    signal_temporal_retention_raw = len(reconstructed_image[nonzero_mask] == target_image[nonzero_mask])
+    if debug_mode:
+        print("Signal Temporal Retention Raw: ", signal_temporal_retention_raw)
+    signal_temporal_retention_percentage = (signal_temporal_retention_raw / len(reconstructed_image[nonzero_mask])) * 100
+    if debug_mode:
+        print("Signal Temporal Retention Percentage: ", signal_temporal_retention_percentage, "%")
+
+
+    # determine how many of the values in the reconstructed image that fall under the zero mask are not zero 
+    false_positive_count_raw = len(reconstructed_image[zero_mask].nonzero())
+    if debug_mode:
+        print("False Positive Count: ", false_positive_count_raw)
+
+
+    # Determine how many of the values in the reconstructed image that fall under the non zero mask are zero
+    data = reconstructed_image[nonzero_mask]
+    false_negative_count_raw = len(data[data == 0])
+    if debug_mode:
+        print("False negative count: ", false_negative_count_raw)
+
+    return signal_spatial_retention_percentage, signal_temporal_retention_percentage, false_positive_count_raw, false_negative_count_raw
+
 
 def image_loader(input_image_path):
     ### Load image from path 
@@ -282,10 +291,11 @@ def quantify_performance(clean_input, noised_target, label, debug_mode=False):
     performance['SSIM'] = SSIM(clean_input, noised_target)
     performance['Normalised Mutual Information'] = NomalisedMutualInformation(clean_input, noised_target)    #BROKEN
     performance['Correlation Coefficient'] = correlation_coeff(clean_input, noised_target)
-    percentage_of_true_positive_xy, percentage_of_true_positive_tof, numof_false_positives_xy = compare_images_pixels(clean_input, noised_target)
+    percentage_of_true_positive_xy, percentage_of_true_positive_tof, numof_false_positives_xy, num_of_false_negative_x_y = compare_images_pixels(clean_input, noised_target)
     performance['Percentage of true pixels lit in recon'] = percentage_of_true_positive_xy
     performance['Percentage of true TOF pixels recon'] = percentage_of_true_positive_tof
     performance['Number of extra lit pixels in recon'] = numof_false_positives_xy
+    #performance['Number of missing lit pixels in recon'] = num_of_false_negative_x_y   # ADD IN AND VERIFY
     return performance
 
 
