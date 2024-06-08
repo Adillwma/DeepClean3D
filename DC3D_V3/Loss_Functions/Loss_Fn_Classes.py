@@ -157,24 +157,203 @@ class ACBLoss(torch.nn.Module):
         zero_mask = (target_image == 0)
         nonzero_mask = ~zero_mask
 
-        values_zero = target_image[zero_mask]
-        values_nonzero = target_image[nonzero_mask]
+        zero_loss = self.mse_loss(reconstructed_image[zero_mask], target_image[zero_mask])
+        nonzero_loss = self.mse_loss(reconstructed_image[nonzero_mask], target_image[nonzero_mask])
 
-        corresponding_values_zero = reconstructed_image[zero_mask]
-        corresponding_values_nonzero = reconstructed_image[nonzero_mask]
+        # make assert checking that both zero and nonzero loss are not nan at once
+        assert not (torch.isnan(zero_loss) and torch.isnan(nonzero_loss)),"A fatal error has occured in the ACBMSE loss function with both loss values returning NaN, please investigate your inputs to verify they are correct."
 
-        zero_loss = self.mse_loss(corresponding_values_zero, values_zero)
-        nonzero_loss = self.mse_loss(corresponding_values_nonzero, values_nonzero)
-
-        if torch.isnan(zero_loss):
+        if torch.isnan(zero_loss): # Handles the case where there are no zero pixels in the target image at all
             zero_loss = 0
-        if torch.isnan(nonzero_loss):
+        if torch.isnan(nonzero_loss): # Handles the case where there are no nonzero pixels in the target image at all
             nonzero_loss = 0
 
         weighted_mse_loss = (self.zero_weighting * zero_loss) + (self.nonzero_weighting * nonzero_loss)
-
+        
         return weighted_mse_loss
 
+
+
+class TrippleLoss(torch.nn.Module):
+    def __init__(self, zero_weighting=1, nonzero_weighting=1, ff_weighting=1, time_weighting=1, tp_weighting=1, fp_weighting=1, fn_weighting=1, tn_weighting=1):
+        """
+        Initializes the ACB-MSE Loss Function class with weighting coefficients.
+
+        Args:
+        - zero_weighting: a scalar weighting coefficient for the MSE loss of zero pixels
+        - nonzero_weighting: a scalar weighting coefficient for the MSE loss of non-zero pixels
+        """
+        super().__init__()   
+        self.zero_weighting = zero_weighting
+        self.nonzero_weighting = nonzero_weighting
+        self.TPW = tp_weighting
+        self.FPW = fp_weighting
+        self.FNW = fn_weighting
+        self.TNW = tn_weighting
+        self.time_weight = time_weighting
+        self.ff_weight = ff_weighting
+        self.MSE = torch.nn.MSELoss(reduction='mean')
+
+
+    def forward(self, reconstructed_image, target_image):
+        """
+        Takes in the clean image and the denoised image and compares them to find the percentages of signal spatial retention, signal temporal retention, and the raw count of false positives and false negatives.
+
+        Args:
+            target_image (torch tensor): The clean image
+            reconstructed_image (torch tensor): The denoised image
+            
+        Returns:
+
+        """
+        zero_mask = (target_image == 0)           # Genrates a index mask for the zero values in the target image
+        nonzero_mask = ~zero_mask           # Inverts the zero mask to get the non-zero mask from the target image indicating the signal points
+
+        signalmasked_output = reconstructed_image[nonzero_mask]           # detemine how many of the values in the reconstructed image that fall in the nonzero mask are non zero
+        zeromasked_output = reconstructed_image[zero_mask]           # determine how many of the values in the reconstructed image that fall under the zero mask are not zero
+
+        # Time domain 
+        time_domain_match_mask = (signalmasked_output == target_image[nonzero_mask])           # determine how many of those indexs have matching ToF values
+        #TP = torch.sum(time_domain_match_mask)           # this is th number of items that are signal in both the target and reconstructed image and have the same ToF values
+        #FP = torch.sum(~time_domain_match_mask)      # this is rthe number of items that are signal in both the target and reconstructed image but have different ToF values
+        Time_Match = self.MSE(reconstructed_image[nonzero_mask][time_domain_match_mask], target_image[nonzero_mask][time_domain_match_mask])
+
+        # Spatial domain 
+        # Signal Masked Output Stats
+        false_negative_mask = (signalmasked_output == 0)   
+        true_positive_mask = ~false_negative_mask        
+    
+        false_negatives = signalmasked_output[false_negative_mask] 
+        true_positives = signalmasked_output[true_positive_mask] 
+
+        FNL = self.MSE(false_negatives, target_image[nonzero_mask][false_negative_mask])
+        TPL = self.MSE(true_positives, target_image[nonzero_mask][true_positive_mask])
+
+        # Zero Masked Output Stats
+        true_negative_mask = (zeromasked_output == 0)
+        false_positive_mask = ~true_negative_mask
+        true_negatives = zeromasked_output[true_negative_mask] 
+        false_positives = zeromasked_output[false_positive_mask] 
+
+        TNL = self.MSE(true_negatives, target_image[zero_mask][true_negative_mask])
+        FPL = self.MSE(false_positives, target_image[zero_mask][false_positive_mask])
+
+        if torch.isnan(FNL): # Handles the case where there are no nonzero pixels in the target image at all
+            FNL = 0
+        if torch.isnan(FPL): # Handles the case where there are no nonzero pixels in the target image at all
+            FPL = 0
+        if torch.isnan(TNL): # Handles the case where there are no zero pixels in the target image at all
+            TNL = 1.3
+        if torch.isnan(TPL): # Handles the case where there are no zero pixels in the target image at all
+            TPL = 1.7
+        if torch.isnan(Time_Match): # Handles the case where there are no signal points with matching time values in the target image at all
+            Time_Match = 1.5
+        #REVERT PUNISHMENT TO 10 IF BREAKS
+
+        full_frame_loss = self.MSE(reconstructed_image, target_image)
+        #REMOVE IF BREAKS
+
+        #TEST!
+        boost_time_loss = False
+        if boost_time_loss:
+            Time_Match = Time_Match**2
+
+
+        weighted_loss = (self.TPW * TPL) + (self.FNW * FNL) + (self.FPW * FPL) + (self.TNW * TNL) + (self.time_weight * Time_Match) + (self.ff_weight * full_frame_loss)
+        
+        return weighted_loss
+
+
+class LayeredLoss(torch.nn.Module):
+    def __init__(self, zero_weighting=1, nonzero_weighting=1):
+        """
+        Initializes the ACB-MSE Loss Function class with weighting coefficients.
+
+        Args:
+        - zero_weighting: a scalar weighting coefficient for the MSE loss of zero pixels
+        - nonzero_weighting: a scalar weighting coefficient for the MSE loss of non-zero pixels
+        """
+        super().__init__()   
+        self.zero_weighting = zero_weighting
+        self.nonzero_weighting = nonzero_weighting
+        self.ff_weighting = 1
+        self.MSE = torch.nn.MSELoss(reduction='mean')
+        self.TPW = 1
+        self.FPW = 1
+        self.FNW = 1
+        self.TNW = 1
+        self.time_weight = 1
+
+    def forward(self, reconstructed_image, target_image):
+        """
+        Takes in the clean image and the denoised image and compares them to find the percentages of signal spatial retention, signal temporal retention, and the raw count of false positives and false negatives.
+
+        Args:
+            target_image (torch tensor): The clean image
+            reconstructed_image (torch tensor): The denoised image
+            
+        Returns:
+
+        """
+        ff_loss = self.MSE(reconstructed_image, target_image)
+
+        zero_mask = (target_image == 0)           # Genrates a index mask for the zero values in the target image
+        nonzero_mask = ~zero_mask           # Inverts the zero mask to get the non-zero mask from the target image indicating the signal points
+
+        zero_loss = self.MSE(reconstructed_image[zero_mask], target_image[zero_mask])
+        nonzero_loss = self.MSE(reconstructed_image[nonzero_mask], target_image[nonzero_mask])
+
+
+
+        True_Signal = reconstructed_image[nonzero_mask]           # detemine how many of the values in the reconstructed image that fall in the nonzero mask are non zero
+        False_Signal = reconstructed_image[zero_mask]           # determine how many of the values in the reconstructed image that fall under the zero mask are not zero
+
+        # Time domain 
+        time_domain_match_mask = (True_Signal == target_image[nonzero_mask])           # determine how many of those indexs have matching ToF values
+        #TP = torch.sum(time_domain_match_mask)           # this is th number of items that are signal in both the target and reconstructed image and have the same ToF values
+        #FP = torch.sum(~time_domain_match_mask)      # this is rthe number of items that are signal in both the target and reconstructed image but have different ToF values
+        Time_Match = self.MSE(reconstructed_image[nonzero_mask][time_domain_match_mask], target_image[nonzero_mask][time_domain_match_mask])
+
+        # Spatial domain 
+        # Signal
+        false_negative_mask = (True_Signal == 0)   
+        true_positive_mask = ~false_negative_mask        
+    
+        false_negatives = True_Signal[false_negative_mask] 
+        true_positives = True_Signal[true_positive_mask] 
+
+        FNL = self.MSE(false_negatives, target_image[nonzero_mask][false_negative_mask])
+        FPL = self.MSE(true_positives, target_image[nonzero_mask][true_positive_mask])
+
+        # Non-Signal
+        true_negative_mask = (False_Signal == 0)
+        false_positive_mask = ~true_negative_mask
+        true_negatives = False_Signal[true_negative_mask] 
+        false_positives = False_Signal[false_positive_mask] 
+
+        TNL = self.MSE(true_negatives, target_image[zero_mask][true_negative_mask])
+        TPL = self.MSE(false_positives, target_image[zero_mask][false_positive_mask])
+
+
+
+        if torch.isnan(zero_loss): # Handles the case where there are no zero pixels in the target image at all
+            zero_loss = 0
+        if torch.isnan(nonzero_loss): # Handles the case where there are no nonzero pixels in the target image at all
+            nonzero_loss = 0
+        if torch.isnan(Time_Match): # Handles the case where there are no signal points with matching time values in the target image at all
+            Time_Match = 10
+        if torch.isnan(FNL): # Handles the case where there are no nonzero pixels in the target image at all
+            FNL = 0
+        if torch.isnan(FPL): # Handles the case where there are no nonzero pixels in the target image at all
+            FPL = 0
+        if torch.isnan(TNL): # Handles the case where there are no zero pixels in the target image at all
+            TNL = 10
+        if torch.isnan(TPL): # Handles the case where there are no zero pixels in the target image at all
+            TPL = 10
+
+        weighted_loss = (self.TPW * TPL) + (self.FNW * FNL) + (self.FPW * FPL) + (self.TNW * TNL) + (self.time_weight * Time_Match) + (self.ff_weighting * ff_loss) + (self.zero_weighting * zero_loss) + (self.nonzero_weighting * nonzero_loss)
+        
+        return weighted_loss
 
 
 
