@@ -4,7 +4,7 @@ import torch
 
 #%% DC3D Special Functions
 # Special normalisation for pure masking
-def mask_optimised_normalisation(data):
+def mask_optimised_normalisation(data, ):
     """
     Normalisation function for pure masking output, trhe function takes any non zero valu eto 1 and any zero value is left as is. [EXPLAIN WHY!!!!!]
 
@@ -31,11 +31,23 @@ def gaped_normalisation(data, reconstruction_threshold, time_dimension=100):
     Returns:
         data (torch tensor): The normalised data.
     """
-    data = torch.where(data > 0, (((data / time_dimension) / (1 / (1 - reconstruction_threshold))) + reconstruction_threshold), 0 )
+    data = torch.where(data > 0, (((data / time_dimension) / (1 / (1 - reconstruction_threshold))) + reconstruction_threshold), 0 ) 
+    
+    """
+    print(data.shape)
+    print(type(data))
+    print(data)
+    if data is torch.Tensor:    
+        data = torch.where(data > 0, (((data / time_dimension) / (1 / (1 - reconstruction_threshold))) + reconstruction_threshold), 0 )
+    elif data is np.array:
+        data = np.where(data > 0, (((data / time_dimension) / (1 / (1 - reconstruction_threshold))) + reconstruction_threshold), 0 )
+    else:
+        raise ValueError("ERROR: The data type is not recognised by the gaped_normalisation function, please use a torch tensor or a numpy array")
+    """
     return data
 
 # Custom renormalisation function
-def gaped_renormalisation_torch(data, reconstruction_threshold, time_dimension=100):
+def gaped_renormalisation(data, reconstruction_threshold, time_dimension=100):
     """
     torch version of our Renormalisation function that renormalises values in range [reconstruction_threshold < value <= 1] to new range of [0 < renorm_value <= 'time_dimension'] removing any values that fell below the 'reconstruction_threshold' by setting thwm to zero. All zero values are left untouched. This is used for the direct network output.
 
@@ -47,23 +59,15 @@ def gaped_renormalisation_torch(data, reconstruction_threshold, time_dimension=1
     Returns:
         data (torch tensor): The renormalised data.
     """
-
     data = torch.where(data > reconstruction_threshold, ((data - reconstruction_threshold)*(1 / (1 - reconstruction_threshold))) * (time_dimension), 0)
-    return data
-
-def gaped_renormalisation(data, reconstruction_threshold, time_dimension=100):
     """
-    Numpy version of our Renormalisation function that renormalises values in range [reconstruction_threshold < value <= 1] to new range of [0 < renorm_value <= 'time_dimension'] removing any values that fell below the 'reconstruction_threshold' by setting thwm to zero. All zero values are left untouched. This is used for the direct network output.
-
-    Args:
-        data (np array): The input data to be renormalised. [WARNING: the data must be (float values? and) in the range [reconstruction_threshold < value <= 1] or the renormalisation will not work correctly]
-        reconstruction_threshold (float): The threshold used in the custom normalisation, used to set the lower limit of the normalised values.
-        time_dimension (int): The number of time steps in the data set, used to set the upper limit of the normalised values. Default = 100
-
-    Returns:
-        data (np array): The renormalised data.
+    if data is torch.Tensor:
+        data = torch.where(data > reconstruction_threshold, ((data - reconstruction_threshold)*(1 / (1 - reconstruction_threshold))) * (time_dimension), 0)
+    elif data is np.array:
+        data = np.where(data > reconstruction_threshold, ((data - reconstruction_threshold)*(1 / (1 - reconstruction_threshold))) * (time_dimension), 0)
+    else:
+        raise ValueError("ERROR: The data type is not recognised by the gaped_renormalisation function, please use a torch tensor or a numpy array")
     """
-    data = np.where(data > reconstruction_threshold, ((data - reconstruction_threshold)*(1 / (1 - reconstruction_threshold))) * (time_dimension), 0)
     return data
 
 # 3D Reconstruction function
@@ -85,7 +89,7 @@ def reconstruct_3D(*args):
     return results
 
 # Masking technique
-def masking_recovery(input_image, recovered_image, time_dimension, print_result=False):
+def masking_recovery(input_image, recovered_image, time_dimension, debug=False):
     """
     Applies my masking technique to the recovered image, this is essential and and condational for both the input and the recovered image as to weatehr a pixel is allowed to stay in the final output or not, which relies on the differing distortion profiles of the two images.
 
@@ -97,23 +101,25 @@ def masking_recovery(input_image, recovered_image, time_dimension, print_result=
 
     Returns:
         result (np array): The masked recovered image.
-    
     """
-    raw_input_image = input_image.copy()
-    net_recovered_image = recovered_image.copy()
+    raw_input_image = input_image.clone()
+    net_recovered_image = recovered_image.clone()
     #Evaluate usefullness 
     # count the number of non-zero values
-    masking_pixels = np.count_nonzero(net_recovered_image)
+    masking_pixels = torch.count_nonzero(net_recovered_image)
     image_shape = net_recovered_image.shape
     total_pixels = image_shape[0] * image_shape[1] * time_dimension
     # print the count
-    if print_result:
+    if debug:
         print(f"Total number of pixels in the timescan: {format(total_pixels, ',')}\nNumber of pixels returned by the masking: {format(masking_pixels, ',')}\nNumber of pixels removed from reconstruction by masking: {format(total_pixels - masking_pixels, ',')}")
 
     # use np.where and boolean indexing to update values in a
     mask_indexs = np.where(net_recovered_image != 0)
     net_recovered_image[mask_indexs] = raw_input_image[mask_indexs]
     result = net_recovered_image
+
+    #assert result.shape == raw_input_image.shape, "ERROR: Masking has failed, the recovered image is not the same shape as the input image"
     if result.shape != raw_input_image.shape:
         print("ERROR: Masking has failed, the recovered image is not the same shape as the input image")
+    
     return result

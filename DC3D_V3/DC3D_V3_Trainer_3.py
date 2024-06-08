@@ -1,11 +1,34 @@
-# DeepClean Trainer v1.2.4
-# Build created on Saterday Jan 20th 2024
+# DeepClean Trainer v1.3.1
+# Build created on Tuesday June 4th 2024
 # Author: Adill Al-Ashgar
 # University of Bristol
 # adill@neuralworkx.com
 
 """
 Possible improvements:
+
+### ~~~~~ FIX: Datalaoder calls for every individual sample in the ifnal bacth instead of loading them all at once in a singl eslice with the rang eof index's ... this will require reevaluation of the metho dused to iterate the large datloader as woul dno longe rbe checking index by index ?
+
+### ~~~~~ FIX: async load the large datlaoder
+
+### ~~~~~ FIX: degradation fucntions, costly and need optimisation
+
+### ~~~~~ FIX: Torch profiler is not working, need to investigate, possibly due to not using the when loop 
+
+### ~~~~~ FIX: 3d reconstrucxtion costly and requires reoptimisations
+
+### ~~~~~ FIX: Handle execution timer misiing star/stop data gracefully, do not allow program crash 
+
+### ~~~~~ FIX plotting fucntion iterates through test_loader batches choosing first image in each batch, this leads to error if there are less batches than the number to plot selected
+
+### ~~~~~ FIX hook_flush_interval, setting this to greater than 1 results in just th eepoch in question being saved, i.,e setting to 4 saves every fourth epoch rather than stroing each epoch between then and then dumping them all!!
+
+### ~~~~~ FIX TOF std_dev which if applied ends up with values outside of the range 0-time_dimension, either clamp the values to this range, or if values exceed it then remove those points is in practice the std_dev would carry them into previous or post frames rather than current frame. 
+
+### ~~~~~ FIX the way the precision value is saved for model reruns, currently saves the double_precision boolean although have now moved to numerical 'precision' variable that accepts 16. 32 and 64 corresponding to half, single and double 
+
+### ~~~~~ FIX, [UPDATE: THIS IS AN ERROR WITH ACB_MSE CREATING NANS WHICH THEN ESULT IN 0 VALUES BEING ASSINGED, THE PROGRAM DOES WORK USING STANDARD MSE LOASS AT FP16] when running with precision = 16 an error ocurs in backwards pass saying cannot perfrom backward pass of int, i think its saying the result of the loss is an int?? Investigate
+
 
 ### REFACTOR: func: quantify_loss_performance~ Appends the average performance metrics for the batch to the corresponding list of average metrics results for each epoch which is tracked eleshwehre in the enhanced performance tracking system and needs simplifying and condensing!!!
 
@@ -157,53 +180,51 @@ Possible improvements:
 #%% - First time setup
 
 # NOTE: This section should be set when running on a new machine or when first setting up the program, once set it should not need to be changed again unless you want to change the default paths for the datasets and results folders
-data_path = "N:\Yr 3 Project Datasets\\"                      # Path to the dataset folder, this is the folder that contains your dataset folders, not a dataset folder itself. This allows fast switching between datasets by changing just the dataset title below without having to change the full path each time
+data_path = "N:\Yr 3 Project Datasets\\"   #"B:\\"#                   # Path to the dataset folder, this is the folder that contains your dataset folders, not a dataset folder itself. This allows fast switching between datasets by changing just the dataset title below without having to change the full path each time
 results_output_path = "N:\Yr 3 Project Results\\"             # Path to the results output folder, this is the folder that will contains all your results folders, not the results folder for a particular run.
 
 #%% - Data Path Settings
-dataset_title = "[V2]RDT 50KM Fix" # "RF_5K"#"PDT 10K" #"RDT 10K MOVE" #'RDT 500K 1000ToF' #"RDT 10K MOVE" #"RDT 50KM"# "Dataset 37_X15K Perfect track recovery" #"Dataset 24_X10Ks"           #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
-model_save_name = "1M-Base 50K 2" #'Parabola6 no norm to loss' #"T2"#"RDT 500K 1000ToF timed"#"2023 Testing - RDT100K n100"#"2023 Testing - RDT10K NEW" #"RDT 100K 30s 200n Fixed"#"RDT 50KM tdim1000 AE2PROTECT 30 sig 200NP LD10"     #"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
+dataset_title = "[V3]_RDT_50K"  #"V2_1K_Fast"#  "RF_5K"#"PDT 10K" #"RDT 10K MOVE" #'RDT 500K 1000ToF' #"RDT 10K MOVE" #"RDT 50KM"# "Dataset 37_X15K Perfect track recovery" #"Dataset 24_X10Ks"           #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
+model_save_name = "TEST_047" #'Parabola6 no norm to loss' #"T2"#"RDT 500K 1000ToF timed"#"2023 Testing - RDT100K n100"#"2023 Testing - RDT10K NEW" #"RDT 100K 30s 200n Fixed"#"RDT 50KM tdim1000 AE2PROTECT 30 sig 200NP LD10"     #"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
 
 model_checkpointing = True                   # If set to true then the model will save a checkpoint of the model and optimiser state dicts at the end of each 'model_checkpointing_interval' epochs
-model_checkpoint_interval = 5                # Number of epochs between each model checkpoint save
+model_checkpoint_interval = 10                # Number of epochs between each model checkpoint save
 
 # Data Loader Settings
-precision = 32                               # User controll to set the precision of the model (16f, 32f or 64f) (Hyperparameter)
-preprocess_on_gpu = True                     # Only woirks if cuda gpu is found, else will defulat back to cpu preprocess
-store_full_dataset_in_memory = True         # If set to true then the full dataset will be loaded into memory at the start of training, otherwise will load each batch from disk as needed (WARNING: Setting this to true will use a lot of memory, only use if you have enough system RAM to hold entire dataset)
-data_loader_workers = 0                      # Number of workers to use for the data loader, 0 means all data loading will be done on the main thread, 1 means one worker will be used to load data in the background, 2 means two workers will be used etc. 
-inject_seed = True                           # Reinjects the original seeding value to deterministically recreate the same noise and signal points each epoch, this is useful for testing the effect of different hyperparameters on the same data or for allowing the training to see same images multiple times to improve performance
-inject_seed_interval = 4                     # Number of epochs between each seed injection
-shuffle_train_data = True #NOTE: Tested!     # If set to true then the model will shuffle the training data each epoch, otherwise will not shuffle
-dataset_bundle_size = 1000                   # Bundle size of dataset, 1 for V1, 1000 for V2. 
+preprocess_on_gpu = False                     # Only woirks if cuda gpu is found, else will defulat back to cpu preprocess
+inject_seed = True          # COMBINE WITH BELOW, FALSE OR VALUE                 # Reinjects the original seeding value to deterministically recreate the same noise and signal points each epoch, this is useful for testing the effect of different hyperparameters on the same data or for allowing the training to see same images multiple times to improve performance
+inject_seed_interval = 5                     # Number of epochs between each seed injection
+shuffle_train_data = False       #FIX CURRENLT BREAKS CODE CAUSING SAME ERROR AS FP16 i.e NANS IN ACBMSE RETURNING INT AS 0 FOR LOSS             # If set to true then will shuffle the training data each epoch
+large_data_bundles_size = 10000              # Bundle size of dataset, 1 for V1 ~0.98MB, 1000 for V2 ~98MB. [Planned 10K for V3 = ~980MB]
+number_of_bundles_to_memory = 1              # Essentially the 'Large batch Size' i.e how many bundles to load into memory at once [Must be less than or equal to the number of bundles in the dataset on disk]
+data_loader_workers = 0       #BROKEN! INVESTIGATE!               # Number of workers to use for the data loader, 0 means all data loading will be done on the main thread, 1 means one worker will be used to load data in the background, 2 means two workers will be used etc. 
 
 # Input Data Settings
 TORCHSIM_data = False                        #!!!!!!!!!!!!!!!!!!!!!!
-xdim = 88                                    # Currently useless
-ydim = 128                                   # Currently useless
 time_dimension = 1000                        # User controll to set the number of time steps in the data
+xdim = 88                                    # Currently useless as the neural net isnot able to accept dynamicly sized inputs
+ydim = 128                                   # Currently useless, as above so below
 channels = 1      #CONNECT                   # User controll to set the number of channels in the data
 
 #%% - Training Hyperparameter Settings
-num_epochs = 2000                            # User controll to set number of epochs (Hyperparameter)
-batch_size = 10 #6 looks good                # User controll to set batch size - number of Images to pull per batch (Hyperparameter) 
-learning_rate = 0.0001                       # User controll to set optimiser learning rate (Hyperparameter)
+num_epochs = 1000                           # User controll to set number of epochs (Hyperparameter)
+batch_size = 200 #6 looks good                # User controll to set batch size - number of Images to pull per batch (Hyperparameter) 
+learning_rate = 0.0008                       # User controll to set optimiser learning rate (Hyperparameter)
 optim_w_decay = 1e-05                        # User controll to set optimiser weight decay for regularisation (Hyperparameter)
+precision = 32                      #  [16, 32, 0r 64] 16 only availble if runing on supported GPU       # User controll to set the precision of the data and model (16, 32 or 64)
 
 # Architecture Settings
-latent_dim = 50                              # User controll to set number of nodes in the latent space, the bottleneck layer (Hyperparameter)
-fc_input_dim = 512                           # User controll to set number of nodes in the fc2 layer (Hyperparameter)
+latent_dim = 19                               # User controll to set number of nodes in the latent space, the bottleneck layer (Hyperparameter)
+fc_input_dim = 124                           # User controll to set number of nodes in the fc2 layer (Hyperparameter)
 dropout_prob = 0.2                           # [NOTE Not connected yet] User controll to set dropout probability (Hyperparameter)
 reconstruction_threshold = 0.5               # MUST BE BETWEEN 0-1  #Threshold for 3d reconstruction, values below this confidence level are discounted
 
 #%% - Dataset Settings
 train_test_split_ratio = 0.9                            # User controll to set the ratio of the dataset to be used for training (Hyperparameter)
-val_set_on = False                                      # User controll to set if a validation set is used
-val_test_split_ratio = 0.9                              # This needs to be better explained its actually test_val ration ratehr than oterh way round     # [NOTE LEAVE AT 0.5, is for future update, not working currently] User controll to set the ratio of the non-training data to be used for validation as opposed to testing (Hyperparameter)
 
 #%% - Loss Function Settings
 loss_vs_sparse_img = False    #NOTE: Tested!            # User controll to set if the loss is calculated against the sparse image or the full image (Hyperparameter)
-loss_function_selection = "ACB_MSE"                      # Select loss function (string):# "MAE", "MSE", "SSE", "BCE", "ACB_MSE", "ffACB_MSE", "Split_Loss", "True3D", "Simple3D", "ACB3D", "Fast3D", "WPR_Loss"
+loss_function_selection = "TrippleLoss" #"LayeredLoss"# #"ACB_MSE"                      # Select loss function (string):# "MAE", "MSE", "SSE", "BCE", "ACB_MSE", "ffACB_MSE", "Split_Loss", "True3D", "Simple3D", "ACB3D", "Fast3D", "WPR_Loss"
 renorm_for_loss_calc = False                             # User controll to set if the loss is calculated against the renormalised image or the network output data (Hyperparameter)
 
 # Weights used for ACBMSE and varients
@@ -217,16 +238,16 @@ zeros_loss_choice = 1                                   # Select loss function f
 nonzero_loss_choice = 1                                 # Select loss function for non zero values (Hyperparameter): 0 = Maxs_Loss_Func, 1 = torch.nn.MSELoss(), 2 = torch.nn.BCELoss(), 3 = torch.nn.L1Loss(), 4 = ada_SSE_loss
 
 #%% - Image Preprocessing Settings
-signal_points = 100 #30                                      # User controll to set the number of signal points to add
-noise_points =  0 #200#0#100                                 # User controll to set the number of noise points to add
+signal_points = 30                                     # User controll to set the number of signal points to add
+noise_points = 0#0 #200#0#100                                 # User controll to set the number of noise points to add
 x_std_dev = 0                                                # (mm) User controll to set the standard deviation of the detectors error in the x axis
 y_std_dev = 0                                                # (mm) User controll to set the standard deviation of the detectors error in the y axis
-tof_std_dev = 0                                              # (ns) User controll to set the standard deviation of the detectors error in the time of flight 
+tof_std_dev = 0                                             # (ns) User controll to set the standard deviation of the detectors error in the time of flight 
 
 #%% - Pretraining settings
-start_from_pretrained_model = True          # If set to true then the model will load the pretrained model and optimiser state dicts from the path below
+start_from_pretrained_model = False          # If set to true then the model will load the pretrained model and optimiser state dicts from the path below
 load_pretrained_optimser = True              # Only availible if above is set to true - (pretrain seems to perform better if this is set to true)
-pretrained_model_path = 'N:\Yr 3 Project Results\KAGL_1M - Training Results\Model_Deployment\KAGL_1M - Model + Optimiser State Dicts.pth'      # Specify the path to the saved full state dictionary for pretraining
+pretrained_model_path = r'N:\Yr 3 Project Results\TEST_047 - Training Results\Model_Checkpoints\Epoch_250\Model_checkpoint_epoch_250.pth'      # Specify the path to the saved full state dictionary for pretraining
 
 #%% - Normalisation Settings 
 masking_optimised_binary_norm = False        # If set to true then the model will use the binary normalisation method optimised for masking output. Otherwise will use the gaped custom normalisation optimised for the direct network output
@@ -235,13 +256,15 @@ masking_optimised_binary_norm = False        # If set to true then the model wil
 print_every_other = 1                        # [default = 2] 1 is to save/print all training plots every epoch, 2 is every other epoch, 3 is every 3rd epoch etc
 plot_or_save = 1                             # [default = 1] 0 prints plots to terminal (blocking till closed), If set to 1 then saves all end of epoch printouts to disk (non-blocking), if set to 2 then saves outputs whilst also printing for user (blocking till closed)
 num_to_plot = 10
-save_all_raw_plot_data = True                # [default = False] If set to true then all raw data for plots is saved to disk for replotting and analysis later
+save_all_raw_plot_data = False                # [default = False] If set to true then all raw data for plots is saved to disk for replotting and analysis later
 
 #%% - New beta feature settings 
 double_precision = False #NOTE: Tested!      # [default = False] If set to true then the model will use double precision floating point numbers for all calculations, otherwise will use single precision
+compile_model = False    # NOT AVAILIBE ON WINDOWS!                    # [default = True] If set to true then the model will be compiled using torch.compile for faster execution, if set to false then the model will not be compiled further information is availible at: 
+pin_memory = False                            # [default = False] If set to true then the data loader will pin the memory for faster data transfer to the GPU, if set to false then the data loader will not pin the memory
 
 # TRUN THESE TWO FLAGS INTO ONE SINGLE VARIABLE WHERE None WILL HAVE NO TIMEOUT AND A VALUE WILL SET THE TIMEOUT
-timeout_training = False                     # If set to true then the model will stop training after the timeout time has been reached
+timeout_training = False         #COMBINE WITH BELOW INTO FALSE/NUMERICAL            # If set to true then the model will stop training after the timeout time has been reached
 timeout_time = 720                           # Time in minuits to wait before stopping training if timeout_training is set to true`
 
 # Neural Net Telemetry
@@ -249,10 +272,11 @@ record_weights = False                       # If set to true then the model wil
 record_biases = False                        # If set to true then the model will record the biases of the network at the end of each epoch
 record_activity = False                      # If set to true then the model will record the activations of the network at the end of each epoch
 flush_network_hooks = True                   # If set to true then the model will flush the network hooks to disk periodically, this is useful for reducing memory usage but will slow down training due to the time taken to flush the hooks
-hook_flush_interval = 1                      # Number of epochs between each flush of the network hooks to disk, larger values will consume more memory but will reduce the overhead of flushing the hooks to disk
+hook_flush_interval = 1          #FIX!            # Number of epochs between each flush of the network hooks to disk, larger values will consume more memory but will reduce the overhead of flushing the hooks to disk
+hook_max_memory_usage = 0.5         #CONNECT!         # Maximum memory usage in GB before the hooks are flushed to disk, this is useful for reducing memory usage but will slow down training due to the time taken to flush the hooks
 
 ### NEW PHYSICAL GROUNDING FOR UNITS
-use_physical_values_for_plot_axis = False    # If false then axis are label by pixel indicies, if true then axis are labelled by physical units
+use_physical_values_for_plot_axis = True    # If false then axis are label by pixel indicies, if true then axis are labelled by physical units
 x_length = 800                               # mm
 y_length = 1500                              # mm
 time_length = 1000                           # ns
@@ -261,10 +285,9 @@ time_length = 1000                           # ns
 plot_train_loss = True                       # [default = True]       
 plot_test_loss = True                        # [default = True]
 plot_validation_loss = True                  # [default = True]               
-plot_time_loss = True                        # [default = True]
 
 plot_detailed_performance_loss = True        # Plots ssim nmi etc for each epoch 
-plot_normalised_radar = False                # [default = True]
+plot_normalised_radar = True                # [default = True]
 
 plot_live_time_loss = True                   # [default = True] Generate plot of live training loss vs time during trainig which is overwritten each epoch, this is useful for seeing how the training is progressing
 plot_live_training_loss = True               # [default = True] Generate plot of live training loss vs epoch during trainig which is overwritten each epoch, this is useful for seeing how the training is progressing
@@ -281,11 +304,11 @@ comparative_loss_paths = [r'N:\Yr 3 Project Results\RDT 10K 1000ToF timed - Trai
                           
 plot_pixel_threshold_telemetry = True        # [default = False] # Update name to pixel_cuttoff_telemetry    #Very slow, reduces net performance by XXXXXX%
 plot_pixel_difference = False #BROKEN        # [default = True]          
-plot_latent_generations = False              # [default = True]              
+plot_latent_generations = True              # [default = True]              
 plot_higher_dim = False                      # [default = True]  
 plot_Graphwiz = True                         # [default = True]       
 
-use_tensorboard = False
+use_tensorboard = True                       # [default = False]
 
 #%% - Advanced Debugging Settings
 print_encoder_debug = False                     # [default = False]  
@@ -297,16 +320,22 @@ debug_noise_function = False                    # [default = False]
 debug_loader_batch = False                      # SAFELY REMOVE THIS PARAM!!!  #(Default = False) //INPUT 0 or 1//   #Setting debug loader batch will print to user the images taken in by the dataoader in this current batch and print the corresponding labels
 debug_model_exporter  = False                   # [default = False]
 
+
 full_dataset_integrity_check = False            # [Default = False] V slow  #Checks the integrity of the dataset by checking shape of each item as opposed to when set to false which only checks one single random file in the dataset
 full_dataset_distribution_check = False         # [Default = False] V slow  #Checks the distribution of the dataset , false maesn no distributionn check is done
 
 seeding_value = 10 #None                        # [Default = None] None gives no seeeding to RNG, if the value is set this is used for the RNG seeding for numpy, and torch libraries
+
+use_execution_timer = True    #FIX!!     ###CONNECT!! # [Default = True] Uses the execution timer to time each module in the process
 run_profiler = False                            # [Default = False] Runs the cProfiler on the training loop to check for bottlenecks and slow functions
+run_pytorch_profiler = False
 
 #%% Hyperparameter Optimisation Settings  #######IMPLEMENT!!!
 optimise_hyperparameter = False                               # User controll to set if hyperparameter optimisation is used
 hyperparam_to_optimise = 'zero_weighting'                     # User controll to set which hyperparameter to optimise  - options are: 'batch_size', 'learning_rate', 'optim_w_decay', 'dropout_prob', 'loss_function_selection', 'conv_layers', 'conv_filter_multiplier', 'latent_dim'
 set_optimisiation_list_manually = [0.3, 0.5, 0.7, 1.0, 1.3]   # Set this param = to your list i.e [[12, 120], 35, 87]
+val_set_on = False                                            # User controll to set if a validation set is used
+val_test_split_ratio = 0.9                                    # This needs to be better explained its actually test_val ration ratehr than oterh way round     # [NOTE LEAVE AT 0.5, is for future update, not working currently] User controll to set the ratio of the non-training data to be used for validation as opposed to testing (Hyperparameter)
 
 # Simple Performance Measure
 print_validation_results = True                               # User controll to set if the validation results are printed to terminal 
@@ -319,7 +348,7 @@ perf_analysis_dataset_dir = (r"N:\\Yr 3 Project Datasets\\PERF VALIDATION SETS\\
 debug_hpo_perf_analysis = False
 
 #%% - HACKS NEED FIXING!!!
-if print_every_other > num_epochs:                                                                   # Protection from audio data not being there to save if plot not genrated - Can fix by moving audio genration out of the plotting function entirely and only perform it once at the end wher eit is actually saved.
+if print_every_other > num_epochs:                                                                   
     print_every_other = num_epochs
 
 results_output_path_1 = results_output_path  # HACK FOR HYPERPARAM OPTIMISATION FIX IT!!!
@@ -327,9 +356,9 @@ results_output_path_1 = results_output_path  # HACK FOR HYPERPARAM OPTIMISATION 
 history_da = {'train_loss':[], 'test_loss':[], 'val_loss':[], 'HTO_val':[], 'training_time':[]}      # Needs better placement???
 max_epoch_reached = 0                                                                                # In case user exits before end of first epoch 
 
-time_scale = time_dimension / time_length    # ns per t pixel   # MOVE THESE LINES ELSEWHERE TO CLEAN UP
-x_scale = xdim / x_length                    # mm per x pixel
-y_scale = ydim / y_length                    # mm per y pixel
+time_scale = time_dimension / time_length                                                            # ns per t pixel   # MOVE THESE LINES ELSEWHERE TO CLEAN UP
+x_scale = xdim / x_length                                                                            # mm per x pixel
+y_scale = ydim / y_length                                                                            # mm per y pixel
 physical_scale_parameters = [x_scale, y_scale, time_scale]
 
 input_signal_settings = [signal_points, x_std_dev, y_std_dev, tof_std_dev, noise_points] #move!
@@ -346,17 +375,18 @@ biases_data = {}
 import os
 import time     # Used to time the training loop
 import torch
-import datetime 
+from datetime import datetime 
 import torchvision 
 import numpy as np  
 import pandas as pd
 from tqdm.auto import tqdm  # Progress bar, auto automtically selects between normal TQDM or notebook version for running in Jupiter/Google collab style notebooks
 from torchinfo import summary # function to get the summary of the model layers structure, trainable parameters and memory usage
 import matplotlib.pyplot as plt     
-from torchvision import transforms  
 from matplotlib.ticker import FuncFormatter
-from torch.utils.tensorboard import SummaryWriter, FileWriter 
+from torch.utils.tensorboard import SummaryWriter, FileWriter
 import cProfile
+from torch.utils.data import Subset
+import torch.profiler
 
 # - General Functions
 from Helper_files.Robust_model_exporter_V1 import Robust_model_export                   # Function to export the raw .py file that contains the autoencoder class
@@ -365,14 +395,15 @@ from Helper_files.Dataset_Integrity_Check_V1 import dataset_integrity_check     
 from Helper_files.Dataset_distribution_tester_V1 import dataset_distribution_tester     # Function to check the distribution of the datasets values
 from Helper_files.ExcelExtractor import extract_data_to_excel                           # This is a custom function to extract data from excel files
 from Helper_files.model_perf_analysis2 import run_full_perf_tests                       # Function to run the full performance analysis on the model
+from Helper_files.ExecutionTimer import Execution_Timer
 
 #from Helper_files.Export_User_Settings import create_settings_dict
-from Dataloader_V2 import *
-from DC3D_Core_Functions import *
-from train_test_val import *
+from Dataloader_V4 import *
+from Helper_files.DC3D_Core_Functions import *
+#from train_test_val import train_epoch, test_epoch, validation_routine
 from Helper_files.Network_Hooks import *
 from Helper_files.Plotting_Helpers import *
-from Autoencoders.DC3D_Autoencoder_V1_Protected2_V4 import Encoder, Decoder    # - Autoencoder
+from Autoencoders.DC3D_Autoencoder_V1_Protected2_V2 import Encoder, Decoder    # - Autoencoder
 from Helper_files.Helper_Functions import *   # - Helper functions
 from Helper_files.Image_Metrics import *    # - Image metrics
 from Helper_files.AE_Visulisations import *   # - Visulisations 
@@ -380,9 +411,29 @@ from Loss_Functions.Loss_Fn_Classes import *   # - Loss Functions
 from Helper_files.Data_Degradation_Functions import *   # Data Degredation Functions
 
 
+if use_execution_timer:
+    execution_timer = Execution_Timer()
+
+if compile_model:
+    gaped_renormalisation = torch.compile(gaped_renormalisation)
+    #gaped_normalisation = torch.compile(gaped_normalisation)
+    reconstruct_3D = torch.compile(reconstruct_3D)
+    signal_degredation = torch.compile(signal_degredation)
+
 if run_profiler:
     profiler = cProfile.Profile()      # Create a cProfile object to store the profiler data
 
+if run_pytorch_profiler:
+    torch_profiler = torch.profiler.profile(activities=[torch.profiler.ProfilerActivity.CPU, torch.profiler.ProfilerActivity.CUDA],
+                                            schedule=torch.profiler.schedule(wait=1, warmup=1, active=3, repeat=2),
+                                            on_trace_ready=torch.profiler.tensorboard_trace_handler('./log'),
+                                            record_shapes=True,
+                                            profile_memory=True,
+                                            with_stack=True
+                                            )
+
+    # Start the profiler
+    torch_profiler.start()
 #%% - Load in Comparative Live Loss Data
 if comparative_live_loss:
     comparative_history_da, comparative_epoch_times = load_comparative_data(comparative_loss_paths, plot_live_training_loss, plot_live_time_loss)
@@ -528,13 +579,14 @@ def quantify_loss_performance(clean_input_batch, noised_target_batch, time_dimen
     loss_true_positive_xy = []
     loss_true_positive_tof = []
     loss_false_positive_xy = [] 
+    #loss_false_negative_xy = []
     #loss_nrmse = []
 
-    for i in range(len(clean_input_batch)):
-        clean_input = clean_input_batch[i][0]
+    for i in range(len(clean_input_batch)): # iterates through batch 
+        clean_input = clean_input_batch[i][0] # removes channel dim 
         noised_target = noised_target_batch[i][0]
 
-        ### ADD IN!!
+        # Appends the performance metrics for each image in the batch to the corresponding list of metrics results for each epoch
         #loss_nrmse.append(NMSRE(clean_input, noised_target))
         loss_mse.append(MSE(clean_input, noised_target))
         loss_mae.append(MAE(clean_input, noised_target))
@@ -543,11 +595,14 @@ def quantify_loss_performance(clean_input_batch, noised_target_batch, time_dimen
         loss_ssim.append(SSIM(clean_input, noised_target, time_dimension))
         loss_nmi.append(NomalisedMutualInformation(clean_input, noised_target))
         loss_cc.append(correlation_coeff(clean_input, noised_target))
-        percentage_of_true_positive_xy, percentage_of_true_positive_tof, numof_false_positives_xy = compare_images_pixels(clean_input, noised_target)
+
+        percentage_of_true_positive_xy, percentage_of_true_positive_tof, numof_false_positives_xy, num_false_negative_xy = compare_images_pixels(clean_input, noised_target)
         loss_true_positive_xy.append(percentage_of_true_positive_xy)
         loss_true_positive_tof.append(percentage_of_true_positive_tof)
         loss_false_positive_xy.append(numof_false_positives_xy)
+        #loss_false_negative_xy.append(num_false_negative_xy)
 
+    # Calculates the mean of the performance metrics for the batch and appends this to the corresponding list of average metrics results for each epoch
     #avg_loss_nrmse.append(np.mean(loss_nrmse))
     avg_loss_mse.append(np.mean(loss_mse))
     avg_loss_mae.append(np.mean(loss_mae))
@@ -559,6 +614,7 @@ def quantify_loss_performance(clean_input_batch, noised_target_batch, time_dimen
     avg_loss_true_positive_xy.append(np.mean(loss_true_positive_xy))
     avg_loss_true_positive_tof.append(np.mean(loss_true_positive_tof))
     avg_loss_false_positive_xy.append(np.mean(loss_false_positive_xy))
+    #avg_loss_false_negative_xy.append(np.mean(loss_false_negative_xy)
 
 def create_comparison_plot_data(slide_live_plot_size, epoch, max_epoch_reached, comparative_live_loss, comparative_loss_titles, comparative_epoch_times, comparative_history_da, data=history_da['train_loss']):
 
@@ -616,15 +672,15 @@ def create_comparison_plot_data(slide_live_plot_size, epoch, max_epoch_reached, 
     comparitive_loss_plot(x_list_time, y_list, legend_label_list, "Time (s)", "Train loss (ACB-MSE)", "Live Time loss", Out_Label2, plot_or_save)
 
 #%% - Train, Test, Val and Plot Functions
+
 ### Plotting function
-def plot_epoch_data(encoder, decoder, device, dataloader, epoch, model_save_name, time_dimension, reconstruction_threshold, signal_points, graphics_dir, plot_or_save, n=10, masking_optimised_binary_norm=False):       #Defines a function for plotting the output of the autoencoder. And also the input + clean training data? Function takes inputs, 'encoder' and 'decoder' which are expected to be classes (defining the encode and decode nets), 'n' which is the number of ?????Images in the batch????, and 'noise_factor' which is a multiplier for the magnitude of the added noise allowing it to be scaled in intensity.  
+def plot_epoch_data(end_of_epoch_plotting_data, epoch, model_save_name, time_dimension, reconstruction_threshold, signal_points, graphics_dir, plot_or_save, n=10):       #Defines a function for plotting the output of the autoencoder. And also the input + clean training data? Function takes inputs, 'encoder' and 'decoder' which are expected to be classes (defining the encode and decode nets), 'n' which is the number of ?????Images in the batch????, and 'noise_factor' which is a multiplier for the magnitude of the added noise allowing it to be scaled in intensity.  
     
     """
     Plots the output of the autoencoder in a variety of ways to track its perfromance and abilities during the training cycle. 
 
     Args:
-        encoder (torch model): The encoder model
-        decoder (torch model): The decoder model
+        end_of_epoch_plotting_data (torch tensor): The image batch. Shape [5, B=1, C=1, H, W]
         epoch (int): The current epoch number
         model_save_name (str): The name of the model being trained
         time_dimension (int): The number of time steps in the data set, used to set the upper limit of the noise point values amonst other things. Default = 100
@@ -641,184 +697,446 @@ def plot_epoch_data(encoder, decoder, device, dataloader, epoch, model_save_name
         A variety of plots showing the output of the autoencoder
     
     """
-    encoder.eval()                                   #.eval() is a kind of switch for some specific layers/parts of the model that behave differently during training and inference (evaluating) time. For example, Dropouts Layers, BatchNorm Layers etc. You need to turn off them during model evaluation, and .eval() will do it for you. In addition, the common practice for evaluating/validation is using torch.no_grad() in pair with model.eval() to turn off gradients computation
-    decoder.eval()                                   #Simarlary as above
 
-    with torch.no_grad():  
+
+
+    # Initialise lists for true and recovered signal point values 
+    number_of_true_signal_points = []
+    number_of_recovered_signal_points = []
+
+    # 2D Input/Output Comparison Plots 
+    plt.figure(figsize=(16,9))                                      #Sets the figure size
+    #loop = tqdm(range(n), desc='Plotting 2D Comparisons', leave=False, colour="green") 
+    for i, (img, sparse_output_batch, sparse_and_resolution_limited_batch, noised_sparse_reslimited_batch, recovered_batch, recovered_masking_batch) in tqdm(enumerate(end_of_epoch_plotting_data), desc='Plotting 2D Comparisons', leave=False, colour="green", dynamic_ncols=True) :     # CLEAN UP START 
+
+        # Update tqdm bar
+        #loop.update(1)
+
+        # Save the number of true signal points on the input image !!# THIS NEEDS TO BE ABLE TO DEAL WITH CASES WHERE IT IS A RANGE NOT AIFXED VALUE!
+        number_of_true_signal_points.append(signal_points)  
+
+        #Determine the number of signal points on the recovered image batch
+        int_rec_sig_points = (recovered_batch >= reconstruction_threshold*time_dimension).sum()      # recon threshold * time dim beacus e rec image has been renomalised by this point and the recon threshol applies to the normalised state
+        number_of_recovered_signal_points.append(int(int_rec_sig_points.cpu().numpy())) # clean up the .cpu.numpy? its not needed??
+
+        in_im = img.cpu().numpy()
+        sparse_im = sparse_output_batch.cpu().numpy()
+        reslim_im = sparse_and_resolution_limited_batch.cpu().numpy()
+        noise_im = noised_sparse_reslimited_batch.cpu().numpy()
+        rec_im = recovered_batch.cpu().numpy()
+        masked_im = recovered_masking_batch.cpu().numpy()
+
+
+        #cmap = cm.get_cmap('viridis')
+        #cmap.set_under('k') # set the color for 0 to black ('k')
+
+        #Following section generates the img plots for the original(labels), noised, and denoised data)
+        ax = plt.subplot(6,n,i+1)                                       #Creates a number of subplots for the 'Original images??????' i.e the labels. the position of the subplot is i+1 as it falls in the first row
+        plt.imshow(in_im.T, cmap='gist_gray', vmin=0, vmax=time_dimension)           #plt.imshow plots an image. The arguments for imshow are, 'image data array' and cmap= which is the colour map. #.squeeze() acts on a tensor and returns a tensor, it removes all dimensions of the tensor that are of length 1, (A×1×B) becomes (AxB) where A and B are greater than 1 #.numpy() creates a numpy array from a tensor #!!! is the .cpu part becuase the code was not made to accept the gpu/cpu check i made????
+        ax.get_xaxis().set_visible(False)                                   #Hides the x axis from showing in the plot as we are plotting images not graphs (we may want to retain axis?)
+        ax.get_yaxis().set_visible(False)                                   #Hides the y axis from showing in the plot as we are plotting images not graphs (we may want to retain axis?)
+        if i == n//2:                                                       #n//2 divides n by 2 without any remainder, i.e 6//2=3 and 7//2=3. So this line checks to see if i is equal to half of n without remainder. it will be yes once in the loop. not sure of its use
+            ax.set_title('EPOCH %s \nOriginal images' %(epoch))               #When above condition is reached, the plots title is set                                   #When above condition is reached, the plots title is set
+
+        ax = plt.subplot(6, n, i + 1 + n)                                   #Creates a number of subplots for the 'Corrupted images??????' i.e the labels. the position of the subplot is i+1+n as it falls in the second row
+        plt.imshow(sparse_im.T, cmap='gist_gray', vmin=0, vmax=time_dimension)   #plt.imshow plots an image. The arguments for imshow are, 'image data array' and cmap= which is the colour map. #.squeeze() acts on a tensor and returns a tensor, it removes all dimensions of the tensor that are of length 1, (A×1×B) becomes (AxB) where A and B are greater than 1 #.numpy() creates a numpy array from a tensor #!!! is the .cpu part becuase the code was not made to accept the gpu/cpu check i made????
+        ax.get_xaxis().set_visible(False)                                   #Hides the x axis from showing in the plot as we are plotting images not graphs (we may want to retain axis?)
+        ax.get_yaxis().set_visible(False)                                   #Hides the y axis from showing in the plot as we are plotting images not graphs (we may want to retain axis?)
+        if i == n//2:                                                       #n//2 divides n by 2 without any remainder, i.e 6//2=3 and 7//2=3. So this line checks to see if i is equal to half of n without remainder. it will be yes once in the loop. not sure of its use
+            ax.set_title('Sparsity Applied')                                  #When above condition is reached, the plots title is set
+
+        ax = plt.subplot(6, n, i + 1 + (2*n))                               #Creates a number of subplots for the 'Reconstructed images??????' i.e the labels. the position of the subplot is i+1+n+n as it falls in the third row
+        plt.imshow(reslim_im.T, cmap='gist_gray', vmin=0, vmax=time_dimension)       #plt.imshow plots an image. The arguments for imshow are, 'image data array' and cmap= which is the colour map. #.squeeze() acts on a tensor and returns a tensor, it removes all dimensions of the tensor that are of length 1, (A×1×B) becomes (AxB) where A and B are greater than 1 #.numpy() creates a numpy array from a tensor #!!! is the .cpu part becuase the code was not made to accept the gpu/cpu check i made????
+        ax.get_xaxis().set_visible(False)                                   #Hides the x axis from showing in the plot as we are plotting images not graphs (we may want to retain axis?)
+        ax.get_yaxis().set_visible(False)                                   #Hides the y axis from showing in the plot as we are plotting images not graphs (we may want to retain axis?)
+        if i == n//2:                                                       #n//2 divides n by 2 without any remainder, i.e 6//2=3 and 7//2=3. So this line checks to see if i is equal to half of n without remainder. it will be yes once in the loop. not sure of its use
+            ax.set_title('Resoloution Limited')                             #When above condition is reached, the plots title is set 
+
+        ax = plt.subplot(6, n, i + 1 + (3*n))                                   #Creates a number of subplots for the 'Corrupted images??????' i.e the labels. the position of the subplot is i+1+n as it falls in the second row
+        plt.imshow(noise_im.T, cmap='gist_gray', vmin=0, vmax=time_dimension)   #plt.imshow plots an image. The arguments for imshow are, 'image data array' and cmap= which is the colour map. #.squeeze() acts on a tensor and returns a tensor, it removes all dimensions of the tensor that are of length 1, (A×1×B) becomes (AxB) where A and B are greater than 1 #.numpy() creates a numpy array from a tensor #!!! is the .cpu part becuase the code was not made to accept the gpu/cpu check i made????
+        ax.get_xaxis().set_visible(False)                                   #Hides the x axis from showing in the plot as we are plotting images not graphs (we may want to retain axis?)
+        ax.get_yaxis().set_visible(False)                                   #Hides the y axis from showing in the plot as we are plotting images not graphs (we may want to retain axis?)
+        if i == n//2:                                                       #n//2 divides n by 2 without any remainder, i.e 6//2=3 and 7//2=3. So this line checks to see if i is equal to half of n without remainder. it will be yes once in the loop. not sure of its use
+            ax.set_title('Corrupted images')                                  #When above condition is reached, the plots title is set
+
+        ax = plt.subplot(6, n, i + 1 + (4*n))                               #Creates a number of subplots for the 'Reconstructed images??????' i.e the labels. the position of the subplot is i+1+n+n as it falls in the third row
+        plt.imshow(rec_im.T, cmap='gist_gray', vmin=0, vmax=time_dimension)       #plt.imshow plots an image. The arguments for imshow are, 'image data array' and cmap= which is the colour map. #.squeeze() acts on a tensor and returns a tensor, it removes all dimensions of the tensor that are of length 1, (A×1×B) becomes (AxB) where A and B are greater than 1 #.numpy() creates a numpy array from a tensor #!!! is the .cpu part becuase the code was not made to accept the gpu/cpu check i made????
+        ax.get_xaxis().set_visible(False)                                   #Hides the x axis from showing in the plot as we are plotting images not graphs (we may want to retain axis?)
+        ax.get_yaxis().set_visible(False)                                   #Hides the y axis from showing in the plot as we are plotting images not graphs (we may want to retain axis?)
+        if i == n//2:                                                       #n//2 divides n by 2 without any remainder, i.e 6//2=3 and 7//2=3. So this line checks to see if i is equal to half of n without remainder. it will be yes once in the loop. not sure of its use
+            ax.set_title('Reconstructed images')                             #When above condition is reached, the plots title is set 
+
+        ax = plt.subplot(6, n, i + 1 + (5*n))                               #Creates a number of subplots for the 'Reconstructed images??????' i.e the labels. the position of the subplot is i+1+n+n as it falls in the third row
+        plt.imshow(masked_im.T, cmap='gist_gray', vmin=0, vmax=time_dimension)       #plt.imshow plots an image. The arguments for imshow are, 'image data array' and cmap= which is the colour map. #.squeeze() acts on a tensor and returns a tensor, it removes all dimensions of the tensor that are of length 1, (A×1×B) becomes (AxB) where A and B are greater than 1 #.numpy() creates a numpy array from a tensor #!!! is the .cpu part becuase the code was not made to accept the gpu/cpu check i made????
+        ax.get_xaxis().set_visible(False)                                   #Hides the x axis from showing in the plot as we are plotting images not graphs (we may want to retain axis?)
+        ax.get_yaxis().set_visible(False)                                   #Hides the y axis from showing in the plot as we are plotting images not graphs (we may want to retain axis?)
+        if i == n//2:                                                       #n//2 divides n by 2 without any remainder, i.e 6//2=3 and 7//2=3. So this line checks to see if i is equal to half of n without remainder. it will be yes once in the loop. not sure of its use
+            ax.set_title('Masked Reconstruction')                             #When above condition is reached, the plots title is set 
+
+    plt.subplots_adjust(left=0.01,              #Adjusts the exact layout of the plots including whwite space round edges
+                    bottom=0.02, 
+                    right=0.99, 
+                    top=0.95, 
+                    hspace=0.3
+                    )     
+
+    Out_Label = graphics_dir + f'{model_save_name} - Epoch {epoch}.png' #creates the name of the file to be saved
+    plot_save_choice(plot_or_save, Out_Label) #saves the plot if plot_or_save is set to 1, if 0 it displays, if 2 it displays and saves
+    plt.close()
+
+    # 3D Reconstruction
+    in_im_3d, sparse_im, reslim_im, noise_im, rec_im_3d, masked_im = reconstruct_3D(in_im.squeeze(0), sparse_im.squeeze(0), reslim_im.squeeze(0), noise_im.squeeze(0), rec_im.squeeze(0), masked_im.squeeze(0)) #reconstructs the 3D image using the reconstruct_3D function
+
+    # 3D Plottting
+    if rec_im.ndim != 1:                       # Checks if there are actually values in the reconstructed image, if not no image is aseved/plotted
+        fig, axs = plt.subplots(2, 3, figsize=(32,20), subplot_kw={'projection': '3d'})
+        ax1, ax2, ax3, ax4, ax5, ax6 = axs.flatten()
+        fig.suptitle(f"3D Reconstruction - Epoch {epoch}") #sets the title of the plot
+
+        ax1.set_title("Input Image") #sets the title of the plot
+        ax1.scatter(in_im_3d[:,0], in_im_3d[:,1], in_im_3d[:,2]) #plots the 3D scatter plot for input 
+
+        ax2.set_title("Sparse Image") #sets the title of the plot
+        ax2.scatter(sparse_im[:,0], sparse_im[:,1], sparse_im[:,2]) #plots the 3D scatter plot for sparse image
+    
+        ax3.set_title("Resolution Limited Image") #sets the title of the plot
+        ax3.scatter(reslim_im[:,0], reslim_im[:,1], reslim_im[:,2]) #plots the 3D scatter plot for reslim image
+
+        ax4.set_title("Noised Image") #sets the title of the plot
+        ax4.scatter(noise_im[:,0], noise_im[:,1], noise_im[:,2]) #plots the 3D scatter plot for noised image
+
+        ax5.set_title("Reconstructed Image") #sets the title of the plot
+        ax5.scatter(rec_im_3d[:,0], rec_im_3d[:,1], rec_im_3d[:,2]) #plots the 3D scatter plot for reconstructed image
+
+        try: ## NOTE THIS ERROR NEEDS FIXING. IT IS CAUSED BY A SITUATION WHERE DATA DOES COME BACK THAT IS GREATER THAN THE RECON CUTTOFF SO 3D PLOTS ARE GENERATED HOWVER NO POINTS LIE IN CORRECT PLACE FOR MASKING SO THE MASK CONTAINS NOTHING. THEN THE MASK WILL BE WRONG DIMS AND CASUE THE PLOT ERROR HERE. FIX
+            ax6.set_title("Masked Reconstructed Image") #sets the title of the plot
+            ax6.scatter(masked_im[:,0], masked_im[:,1], masked_im[:,2]) #plots the 3D scatter plot for masked image
+        except:
+            print("ERROR OCCURED IN MASKING 3D PLOT! INVESTIGATE!")
+
+
+        for ax in [ax1, ax2, ax3, ax4, ax5, ax6]:
+            ax.set_zlim(0, time_dimension)
+            ax.set_xlim(0, 128)
+            ax.set_ylim(0, 88)
+        
+            if use_physical_values_for_plot_axis:
+                # Set axis labels
+                ax.set_xlabel('x (mm)')
+                ax.set_ylabel('y (mm)')
+                ax.set_zlabel('time (ns)')
+                # Apply tick format conversion for x, y, and z axes from 'pixels' to physical values
+                ax.xaxis.set_major_formatter(FuncFormatter(lambda x_scale, tick_number: tick_number * x_scale))
+                ax.yaxis.set_major_formatter(FuncFormatter(lambda y_scale, tick_number: tick_number * y_scale))
+                ax.zaxis.set_major_formatter(FuncFormatter(lambda time_scale, tick_number: tick_number * time_scale))
             
-        # Initialise lists for true and recovered signal point values 
-        number_of_true_signal_points = np.full(n, signal_points)
-        number_of_recovered_signal_points = []
-
-        # 2D Input/Output Comparison Plots 
-        plt.figure(figsize=(16,9))                                     
-        loop = tqdm(range(n), desc='Plotting 2D Comparisons', leave=False, colour="green") 
-
-        for i, (img_batch, sparse_output_batch, sparse_and_resolution_limited_batch, noised_sparse_reslimited_batch) in enumerate(dataloader):     # CLEAN UP START 
-            if i >= n:
-                break
-            # Update tqdm bar
-            loop.update(1)
-
-            img = img_batch[0] # Get the first image in the batch
-            sparse_im = sparse_output_batch[0] # Get the first image in the batch
-            reslim_im = sparse_and_resolution_limited_batch[0] # Get the first image in the batch
-            noised_sparse_reslimited_batch = noised_sparse_reslimited_batch[0].unsqueeze_(0) # Get the first image in the batch
-            
-            # Normalise the noised image
-            if masking_optimised_binary_norm:
-                normalised_batch = mask_optimised_normalisation(noised_sparse_reslimited_batch)
             else:
-                normalised_batch = gaped_normalisation(noised_sparse_reslimited_batch, reconstruction_threshold, time_dimension)
-            
-            # Run the autoencoder on the noised data                                     
-            rec_img = decoder(encoder(normalised_batch.to(device)))   
+                # Set axis labels
+                ax.set_xlabel('x (pixels)')
+                ax.set_ylabel('y (pixels)')
+                ax.set_zlabel('time (pixels)')
 
-            if plot_pixel_threshold_telemetry == 1:      #if plot_pixel_threshold_telemetry is set to 1, then the telemetry plots are generated
-                above_threshold, below_threshold = belief_telemetry(rec_img, reconstruction_threshold, epoch+1, settings, plot_or_save)    #calls the belief_telemetry function to generate the telemetry plots
-                telemetry.append([epoch, above_threshold, below_threshold]) #appends the telemetry data to the telemetry list
+        fig.tight_layout()
 
-            #Determine the number of signal points on the recovered image 
-            int_rec_sig_points = (rec_img >= reconstruction_threshold).sum()      
-            number_of_recovered_signal_points.append(int(int_rec_sig_points.numpy()))
-
-            # check if above threshold is equal to int_rec_sig_points
-            if above_threshold != int_rec_sig_points:    #DEBUG TEST!"!! REMOVE!¬!!!"
-                print("WARNING: The number of pixels above the reconstruction threshold does not match the number of pixels in the recovered image above the threshold")
-                print("Number of pixels above threshold: ", above_threshold)
-                print("Number of pixels in recovered image above threshold: ", int_rec_sig_points)
-            else:
-                print("Number of pixels above threshold match the number of pixels in the recovered image above the threshold")
-
-            noise_im = gaped_renormalisation(normalised_batch.squeeze(), reconstruction_threshold, time_dimension)
-            rec_im = gaped_renormalisation(rec_img.detach().squeeze().numpy(), reconstruction_threshold, time_dimension)
-            masked_im = masking_recovery(noise_im, rec_im, time_dimension)
-
-            #cmap = cm.get_cmap('viridis')
-            #cmap.set_under('k') # set the color for 0 to black ('k')
-
-            #Following section generates the img plots for the original(labels), noised, and denoised data)
-            ax = plt.subplot(6,n,i+1)                                       #Creates a number of subplots for the 'Original images??????' i.e the labels. the position of the subplot is i+1 as it falls in the first row
-            plt.imshow(img.T, cmap='gist_gray', vmin=0, vmax=time_dimension)           #plt.imshow plots an image. The arguments for imshow are, 'image data array' and cmap= which is the colour map. #.squeeze() acts on a tensor and returns a tensor, it removes all dimensions of the tensor that are of length 1, (A×1×B) becomes (AxB) where A and B are greater than 1 #.numpy() creates a numpy array from a tensor #!!! is the .cpu part becuase the code was not made to accept the gpu/cpu check i made????
-            ax.get_xaxis().set_visible(False)                                   #Hides the x axis from showing in the plot as we are plotting images not graphs (we may want to retain axis?)
-            ax.get_yaxis().set_visible(False)                                   #Hides the y axis from showing in the plot as we are plotting images not graphs (we may want to retain axis?)
-            if i == n//2:                                                       #n//2 divides n by 2 without any remainder, i.e 6//2=3 and 7//2=3. So this line checks to see if i is equal to half of n without remainder. it will be yes once in the loop. not sure of its use
-                ax.set_title('EPOCH %s \nOriginal images' %(epoch))               #When above condition is reached, the plots title is set                                   #When above condition is reached, the plots title is set
-
-            ax = plt.subplot(6, n, i + 1 + n)                                   #Creates a number of subplots for the 'Corrupted images??????' i.e the labels. the position of the subplot is i+1+n as it falls in the second row
-            plt.imshow(sparse_im.T, cmap='gist_gray', vmin=0, vmax=time_dimension)   #plt.imshow plots an image. The arguments for imshow are, 'image data array' and cmap= which is the colour map. #.squeeze() acts on a tensor and returns a tensor, it removes all dimensions of the tensor that are of length 1, (A×1×B) becomes (AxB) where A and B are greater than 1 #.numpy() creates a numpy array from a tensor #!!! is the .cpu part becuase the code was not made to accept the gpu/cpu check i made????
-            ax.get_xaxis().set_visible(False)                                   #Hides the x axis from showing in the plot as we are plotting images not graphs (we may want to retain axis?)
-            ax.get_yaxis().set_visible(False)                                   #Hides the y axis from showing in the plot as we are plotting images not graphs (we may want to retain axis?)
-            if i == n//2:                                                       #n//2 divides n by 2 without any remainder, i.e 6//2=3 and 7//2=3. So this line checks to see if i is equal to half of n without remainder. it will be yes once in the loop. not sure of its use
-                ax.set_title('Sparsity Applied')                                  #When above condition is reached, the plots title is set
-
-            ax = plt.subplot(6, n, i + 1 + n + n)                               #Creates a number of subplots for the 'Reconstructed images??????' i.e the labels. the position of the subplot is i+1+n+n as it falls in the third row
-            plt.imshow(reslim_im.T, cmap='gist_gray', vmin=0, vmax=time_dimension)       #plt.imshow plots an image. The arguments for imshow are, 'image data array' and cmap= which is the colour map. #.squeeze() acts on a tensor and returns a tensor, it removes all dimensions of the tensor that are of length 1, (A×1×B) becomes (AxB) where A and B are greater than 1 #.numpy() creates a numpy array from a tensor #!!! is the .cpu part becuase the code was not made to accept the gpu/cpu check i made????
-            ax.get_xaxis().set_visible(False)                                   #Hides the x axis from showing in the plot as we are plotting images not graphs (we may want to retain axis?)
-            ax.get_yaxis().set_visible(False)                                   #Hides the y axis from showing in the plot as we are plotting images not graphs (we may want to retain axis?)
-            if i == n//2:                                                       #n//2 divides n by 2 without any remainder, i.e 6//2=3 and 7//2=3. So this line checks to see if i is equal to half of n without remainder. it will be yes once in the loop. not sure of its use
-                ax.set_title('Resoloution Limited')                             #When above condition is reached, the plots title is set 
-
-            ax = plt.subplot(6, n, i + 1 + n + n + n)                                   #Creates a number of subplots for the 'Corrupted images??????' i.e the labels. the position of the subplot is i+1+n as it falls in the second row
-            plt.imshow(noise_im.T, cmap='gist_gray', vmin=0, vmax=time_dimension)   #plt.imshow plots an image. The arguments for imshow are, 'image data array' and cmap= which is the colour map. #.squeeze() acts on a tensor and returns a tensor, it removes all dimensions of the tensor that are of length 1, (A×1×B) becomes (AxB) where A and B are greater than 1 #.numpy() creates a numpy array from a tensor #!!! is the .cpu part becuase the code was not made to accept the gpu/cpu check i made????
-            ax.get_xaxis().set_visible(False)                                   #Hides the x axis from showing in the plot as we are plotting images not graphs (we may want to retain axis?)
-            ax.get_yaxis().set_visible(False)                                   #Hides the y axis from showing in the plot as we are plotting images not graphs (we may want to retain axis?)
-            if i == n//2:                                                       #n//2 divides n by 2 without any remainder, i.e 6//2=3 and 7//2=3. So this line checks to see if i is equal to half of n without remainder. it will be yes once in the loop. not sure of its use
-                ax.set_title('Corrupted images')                                  #When above condition is reached, the plots title is set
-
-            ax = plt.subplot(6, n, i + 1 + n + n + n + n)                               #Creates a number of subplots for the 'Reconstructed images??????' i.e the labels. the position of the subplot is i+1+n+n as it falls in the third row
-            plt.imshow(rec_im.T, cmap='gist_gray', vmin=0, vmax=time_dimension)       #plt.imshow plots an image. The arguments for imshow are, 'image data array' and cmap= which is the colour map. #.squeeze() acts on a tensor and returns a tensor, it removes all dimensions of the tensor that are of length 1, (A×1×B) becomes (AxB) where A and B are greater than 1 #.numpy() creates a numpy array from a tensor #!!! is the .cpu part becuase the code was not made to accept the gpu/cpu check i made????
-            ax.get_xaxis().set_visible(False)                                   #Hides the x axis from showing in the plot as we are plotting images not graphs (we may want to retain axis?)
-            ax.get_yaxis().set_visible(False)                                   #Hides the y axis from showing in the plot as we are plotting images not graphs (we may want to retain axis?)
-            if i == n//2:                                                       #n//2 divides n by 2 without any remainder, i.e 6//2=3 and 7//2=3. So this line checks to see if i is equal to half of n without remainder. it will be yes once in the loop. not sure of its use
-                ax.set_title('Reconstructed images')                             #When above condition is reached, the plots title is set 
-
-            ax = plt.subplot(6, n, i + 1 + n + n + n + n + n)                               #Creates a number of subplots for the 'Reconstructed images??????' i.e the labels. the position of the subplot is i+1+n+n as it falls in the third row
-            plt.imshow(masked_im.T, cmap='gist_gray', vmin=0, vmax=time_dimension)       #plt.imshow plots an image. The arguments for imshow are, 'image data array' and cmap= which is the colour map. #.squeeze() acts on a tensor and returns a tensor, it removes all dimensions of the tensor that are of length 1, (A×1×B) becomes (AxB) where A and B are greater than 1 #.numpy() creates a numpy array from a tensor #!!! is the .cpu part becuase the code was not made to accept the gpu/cpu check i made????
-            ax.get_xaxis().set_visible(False)                                   #Hides the x axis from showing in the plot as we are plotting images not graphs (we may want to retain axis?)
-            ax.get_yaxis().set_visible(False)                                   #Hides the y axis from showing in the plot as we are plotting images not graphs (we may want to retain axis?)
-            if i == n//2:                                                       #n//2 divides n by 2 without any remainder, i.e 6//2=3 and 7//2=3. So this line checks to see if i is equal to half of n without remainder. it will be yes once in the loop. not sure of its use
-                ax.set_title('Masked Reconstruction')                             #When above condition is reached, the plots title is set 
-
-        plt.subplots_adjust(left=0.01,              #Adjusts the exact layout of the plots including whwite space round edges
-                        bottom=0.02, 
-                        right=0.99, 
-                        top=0.95, 
-                        hspace=0.3
-                        )     
-
-        Out_Label = graphics_dir + f'{model_save_name} - Epoch {epoch}.png' #creates the name of the file to be saved
+        Out_Label = graphics_dir + f'{model_save_name} 3D Reconstruction - Epoch {epoch}.png' #creates the name of the file to be saved
         plot_save_choice(plot_or_save, Out_Label) #saves the plot if plot_or_save is set to 1, if 0 it displays, if 2 it displays and saves
 
-        # 3D Reconstruction
-        img, sparse_im, reslim_im, noise_im, rec_im, masked_im = reconstruct_3D(img, sparse_im, reslim_im, noise_im, rec_im, masked_im) #reconstructs the 3D image using the reconstruct_3D function
+    return(number_of_true_signal_points, number_of_recovered_signal_points, in_im, noise_im, rec_im)        #returns the number of true signal points, number of recovered signal points, input image, noised image and reconstructed image 
 
-        # 3D Plottting
-        if rec_im.ndim != 1:                       # Checks if there are actually values in the reconstructed image, if not no image is aseved/plotted
-            fig, axs = plt.subplots(2, 3, figsize=(32,20), subplot_kw={'projection': '3d'})
-            ax1, ax2, ax3, ax4, ax5, ax6 = axs.flatten()
-            fig.suptitle(f"3D Reconstruction - Epoch {epoch}") #sets the title of the plot
+### Training Function
+def train_epoch(epoch, encoder, decoder, device, dataloader, loss_fn, optimizer, time_dimension=100, reconstruction_threshold=0.5, print_partial_training_losses=False, masking_optimised_binary_norm=False, loss_vs_sparse_img=False, renorm_for_loss_calc=False, use_tensorboard=False, writer=None):
+    """
+    Training loop for a single epoch
 
-            ax1.set_title("Input Image") #sets the title of the plot
-            ax1.scatter(img[:,0], img[:,1], img[:,2]) #plots the 3D scatter plot for input 
+    Args:
+        encoder (torch model): The encoder model
+        decoder (torch model): The decoder model
+        device (torch device): The device to run the training on
+        dataloader (torch dataloader): The dataloader to iterate over
+        loss_fn (torch loss function): The loss function to use
+        optimizer (torch optimizer): The optimizer to use
+        signal_points (int) or (tuple): The number of signal points to retain in the signal sparsification preprocess. If given as int then number will be constant over training, if given as tuple then a random value will be selected from the range given for each batch
+        noise_points (int) or (tuple): The number of noise points to add in the preprocessing. If given as int then number will be constant over training, if given as tuple then a random value will be selected from the range given for each batch. Default = 0
+        x_std_dev (float) or (tuple): The standard deviation of the gaussian distribution to draw the x shift from. If given as float then number will be constant over training, if given as tuple then a random value will be selected from the range given for each batch. Default = 0
+        y_std_dev (float) or (tuple): The standard deviation of the gaussian distribution to draw the y shift from. If given as float then number will be constant over training, if given as tuple then a random value will be selected from the range given for each batch. Default = 0
+        tof_std_dev (float) or (tuple): The standard deviation of the gaussian distribution to draw the ToF shift from. If given as float then number will be constant over training, if given as tuple then a random value will be selected from the range given for each batch. Default = 0
+        time_dimension (int): The number of time steps in the data set, used to set the upper limit of the noise point values amonst other things. Default = 100
+        reconstruction_threshold (float): The threshold used in the custom normalisation, also used to set the lower limit of the noise point values. Default = 0.5
+        print_partial_training_losses (bool): A flag to set if the partial training losses are printed to terminal. If set to true partial loss is printed to termial whilst training. If set to false the a TQDM progress bar is used to show processing progress. Default = False
+        masking_optimised_binary_norm (bool): A flag to set if the masking optimised binary normalisation is used. If set to true the masking optimised binary normalisation is used, if set to false the gaped normalisation is used. Default = False  [EXPLAIN IN MORE DETAIL!!!!!]
+        loss_vs_sparse_img (bool): A flag to set if the loss is calculated against the sparse image or the clean image. If set to true the loss is calculated against the sparse image, if set to false the loss is calculated against the clean image. Default = False
 
-            ax2.set_title("Sparse Image") #sets the title of the plot
-            ax2.scatter(sparse_im[:,0], sparse_im[:,1], sparse_im[:,2]) #plots the 3D scatter plot for sparse image
-        
-            ax3.set_title("Resolution Limited Image") #sets the title of the plot
-            ax3.scatter(reslim_im[:,0], reslim_im[:,1], reslim_im[:,2]) #plots the 3D scatter plot for reslim image
+    Returns:
+        loss_total/batches (float): The average loss over the epoch calulated by dividing the total sum of loss by the number of batches !! EXPLAIN THIS SIMPLER !!! 
 
-            ax4.set_title("Noised Image") #sets the title of the plot
-            ax4.scatter(noise_im[:,0], noise_im[:,1], noise_im[:,2]) #plots the 3D scatter plot for noised image
+    """
+    encoder.train()   
+    decoder.train()   
 
-            ax5.set_title("Reconstructed Image") #sets the title of the plot
-            ax5.scatter(rec_im[:,0], rec_im[:,1], rec_im[:,2]) #plots the 3D scatter plot for reconstructed image
-
-            try: ## NOTE THIS ERROR NEEDS FIXING. IT IS CAUSED BY A SITUATION WHERE DATA DOES COME BACK THAT IS GREATER THAN THE RECON CUTTOFF SO 3D PLOTS ARE GENERATED HOWVER NO POINTS LIE IN CORRECT PLACE FOR MASKING SO THE MASK CONTAINS NOTHING. THEN THE MASK WILL BE WRONG DIMS AND CASUE THE PLOT ERROR HERE. FIX
-                ax6.set_title("Masked Reconstructed Image") #sets the title of the plot
-                ax6.scatter(masked_im[:,0], masked_im[:,1], masked_im[:,2]) #plots the 3D scatter plot for masked image
-            except:
-                print("ERROR OCCURED IN MASKING 3D PLOT! INVESTIGATE!")
+    loss_total = 0.0
+    batches = 0
+    loss = loss_fn(torch.rand((1, 1, 1, 1)), torch.rand((1, 1, 1, 1)))  # Compute the loss between the decoded image batch and the clean image batch
 
 
-            for ax in [ax1, ax2, ax3, ax4, ax5, ax6]:
-                ax.set_zlim(0, time_dimension)
-                ax.set_xlim(0, 128)
-                ax.set_ylim(0, 88)
+    iterator = tqdm(dataloader, desc='Batches', leave=False, dynamic_ncols=True, postfix="Starting")                  # If print_partial_training_losses is true then we just iterate the dataloder without genrating a progress bar as partial losses will be printed instead. If set to 'False' use the tqdm progress bar wrapper for the dataset for user feedback on progress
+    for data in iterator: 
+        image_batch, sparse_output_batch, _, noised_sparse_reslimited_batch = data
+        execution_timer.record_time(event_name="Training-preprocess", event_type="start")
+        # DATA PREPROCESSING
+        with torch.no_grad(): # No need to track the gradients
+            if masking_optimised_binary_norm:
+                normalised_batch = mask_optimised_normalisation(noised_sparse_reslimited_batch)
+                norm_sparse_output_batch = mask_optimised_normalisation(sparse_output_batch)
+                normalised_inputs = mask_optimised_normalisation(image_batch)
+            else:
+                normalised_batch = gaped_normalisation(noised_sparse_reslimited_batch, reconstruction_threshold, time_dimension)
+                norm_sparse_output_batch = gaped_normalisation(sparse_output_batch, reconstruction_threshold, time_dimension)
+                normalised_inputs = gaped_normalisation(image_batch, reconstruction_threshold, time_dimension)
             
-                if use_physical_values_for_plot_axis:
-                    # Set axis labels
-                    ax.set_xlabel('x (mm)')
-                    ax.set_ylabel('y (mm)')
-                    ax.set_zlabel('time (ns)')
-                    # Apply tick format conversion for x, y, and z axes from 'pixels' to physical values
-                    ax.xaxis.set_major_formatter(FuncFormatter(lambda x_scale, tick_number: tick_number * x_scale))
-                    ax.yaxis.set_major_formatter(FuncFormatter(lambda y_scale, tick_number: tick_number * y_scale))
-                    ax.zaxis.set_major_formatter(FuncFormatter(lambda time_scale, tick_number: tick_number * time_scale))
+        # Move tensor to the proper device
+        image_clean = normalised_inputs.to(device) # Move the clean image batch to the device
+        image_sparse = norm_sparse_output_batch.to(device) # Move the sparse image batch to the device
+        image_noisy = normalised_batch.to(device) # Move the noised image batch to the device
+        execution_timer.record_time(event_name="Training-preprocess", event_type="stop")
+
+        execution_timer.record_time(event_name="Training-forward", event_type="start")
+        # Encode data
+        encoded_data = encoder(image_noisy) # Encode the noised image batch
+        # Decode data
+        decoded_data = decoder(encoded_data) # Decode the encoded image batch
+        execution_timer.record_time(event_name="Training-forward", event_type="stop")
+
+        execution_timer.record_time(event_name="Training-loss", event_type="start")
+        if loss_vs_sparse_img:
+            loss_comparator = image_sparse
+        else:
+            loss_comparator = image_clean
+
+        # Evaluate loss
+        if renorm_for_loss_calc:
+            decoded_data = gaped_renormalisation(decoded_data, reconstruction_threshold, time_dimension)
+            loss_comparator = gaped_renormalisation(loss_comparator, reconstruction_threshold, time_dimension)
+
+        loss = loss_fn(decoded_data, loss_comparator)  # Compute the loss between the decoded image batch and the clean image batch
+        execution_timer.record_time(event_name="Training-loss", event_type="stop")
+
+        execution_timer.record_time(event_name="Training-backward", event_type="start")
+        # Backward pass
+        optimizer.zero_grad() # Reset the gradients
+        loss.backward() # Compute the gradients
+        optimizer.step() # Update the parameters
+
+        batches += 1
+        loss_total += loss.item()
+        avg_epoch_loss = loss_total/batches
+        
+        execution_timer.record_time(event_name="Training-backward", event_type="stop")
+
+        execution_timer.record_time(event_name="Training-postprocess", event_type="start")
+        
+        iterator.set_postfix({'Partial Batch Loss': loss.data.item()})
+
+        if use_tensorboard:
+            # Add the gradient values to Tensorboard
+            for name, param in encoder.named_parameters():
+                writer.add_histogram(name + '/grad', param.grad, global_step=epoch)
+
+            for name, param in decoder.named_parameters():
+                writer.add_histogram(name + '/grad', param.grad, global_step=epoch)
+
+            writer.add_scalar('Loss/train', avg_epoch_loss, epoch)
+        execution_timer.record_time(event_name="Training-postprocess", event_type="stop")
+    return avg_epoch_loss
+
+### Testing Function
+def test_epoch(encoder, decoder, device, dataloader, loss_fn, time_dimension=100, reconstruction_threshold=0.5, print_partial_training_losses=False, masking_optimised_binary_norm=False, loss_vs_sparse_img=False, renorm_for_loss_calc=False, debug_masking_function=False):
+    """
+    Testing (Evaluation) loop for a single epoch. This function is identical to the training loop except that it does not perform the backward pass and parameter update steps and the model is run in eval mode. Additionaly the dataset used is the test dataset rather than the training dataset so that the data is unseen by the model.
+
+    Args:
+
+        encoder (torch model): The encoder model
+        decoder (torch model): The decoder model
+        device (torch device): The device to run the training on
+        dataloader (torch dataloader): The dataloader to iterate over
+        loss_fn (torch loss function): The loss function to use
+        signal_points (int) or (tuple): The number of signal points to retain in the signal sparsification preprocess. If given as int then number will be constant over training, if given as tuple then a random value will be selected from the range given for each batch
+        noise_points (int) or (tuple): The number of noise points to add in the preprocessing. If given as int then number will be constant over training, if given as tuple then a random value will be selected from the range given for each batch. Default = 0
+        x_std_dev (float) or (tuple): The standard deviation of the gaussian distribution to draw the x shift from. If given as float then number will be constant over training, if given as tuple then a random value will be selected from the range given for each batch. Default = 0
+        y_std_dev (float) or (tuple): The standard deviation of the gaussian distribution to draw the y shift from. If given as float then number will be constant over training, if given as tuple then a random value will be selected from the range given for each batch. Default = 0
+        tof_std_dev (float) or (tuple): The standard deviation of the gaussian distribution to draw the ToF shift from. If given as float then number will be constant over training, if given as tuple then a random value will be selected from the range given for each batch. Default = 0
+        time_dimension (int): The number of time steps in the data set, used to set the upper limit of the noise point values amonst other things. Default = 100
+        reconstruction_threshold (float): The threshold used in the custom normalisation, also used to set the lower limit of the noise point values. Default = 0.5
+        print_partial_training_losses (bool): A flag to set if the partial training losses are printed to terminal. If set to true partial loss is printed to termial whilst training. If set to false the a TQDM progress bar is used to show processing progress. Default = False
+        masking_optimised_binary_norm (bool): A flag to set if the masking optimised binary normalisation is used. If set to true the masking optimised binary normalisation is used, if set to false the gaped normalisation is used. Default = False  [EXPLAIN IN MORE DETAIL!!!!!]
+        loss_vs_sparse_img (bool): A flag to set if the loss is calculated against the sparse image or the clean image. If set to true the loss is calculated against the sparse image, if set to false the loss is calculated against the clean image. Default = False
+
+    Returns:
+        loss_total/batches (float): The average loss over the epoch calulated by dividing the total sum of loss by the number of batches !! EXPLAIN THIS SIMPLER !!!
+
+    """
+    imgs = []
+    sparse_imgs = []
+    reslim_imgs = []
+    noised_imgs = []
+    recovered_imgs = []
+    maskrec_imgs = []
+    n = 10 
+
+    # Set evaluation mode for encoder and decoder
+    encoder.eval() # Evaluation mode for the encoder
+    decoder.eval() # Evaluation mode for the decoder
+    with torch.no_grad(): # No need to track the gradients
+
+        loss_total = 0.0
+        batches = 0
+        
+        iterator = tqdm(dataloader, desc='Testing', leave=False, colour="yellow", dynamic_ncols=True, postfix="Starting")                  # If print_partial_training_losses is true then we just iterate the dataloder without genrating a progress bar as partial losses will be printed instead. If set to 'False' use the tqdm progress bar wrapper for the dataset for user feedback on progress
+        for data in iterator: 
+            image_batch, sparse_output_batch, sparse_and_resolution_limited_batch, noised_sparse_reslimited_batch = data
+
+            if masking_optimised_binary_norm:
+                normalised_batch = mask_optimised_normalisation(noised_sparse_reslimited_batch)
+                image_batch_norm = mask_optimised_normalisation(image_batch)
+            else:
+                normalised_batch = gaped_normalisation(noised_sparse_reslimited_batch, reconstruction_threshold, time_dimension)
+                image_batch_norm = gaped_normalisation(image_batch, reconstruction_threshold, time_dimension)
+            
+            image_clean = image_batch_norm.to(device) # Move the clean image batch to the device
+            image_noisy = normalised_batch.to(device) # Move the noised image batch to the device
+
+            # Encode data
+            encoded_data = encoder(image_noisy) # Encode the noised image batch
+            # Decode data
+            decoded_data = decoder(encoded_data) # Decode the encoded image batch
+
+            if loss_vs_sparse_img:
+                loss_comparator = sparse_output_batch
+            else:
+                loss_comparator = image_clean
+
+            # Evaluate loss
+            if renorm_for_loss_calc: # NOTE: IF USED THIS WOULD DUPLICATE THE RENORM DONE FURTHER DOWN AND BE A PROBLEM!!! FIUX !!!!
+                data_for_loss = gaped_renormalisation(decoded_data, reconstruction_threshold, time_dimension)
+                loss_comparator = gaped_renormalisation(loss_comparator, reconstruction_threshold, time_dimension)
+            else:
+                data_for_loss = decoded_data   # is this fix for the above working or does it need to copy to not modify the original????
+
+            # Evaluate loss
+            loss = loss_fn(data_for_loss, loss_comparator)  # Compute the loss between the decoded image batch and the clean image batch
+            batches += 1
+            loss_total += loss.item()
+
+            iterator.set_postfix({'Partial Batch Loss': loss.data.item()})
+
+            performance_test_comparator = gaped_renormalisation(loss_comparator.clone(), reconstruction_threshold, time_dimension) # Clone the loss comparator to avoid modifying the original
+            performance_test_data = gaped_renormalisation(decoded_data.clone(), reconstruction_threshold, time_dimension) # Clone the decoded data to avoid modifying the original
+
+            #Run additional perfomrnace metrics
+            quantify_loss_performance(performance_test_comparator, performance_test_data, time_dimension)
+
+
+            if len(imgs) < n:
+                num_to_append = min(n - len(imgs), len(image_batch))
+                imgs.append(image_batch[:num_to_append])
+                sparse_imgs.append(sparse_output_batch[:num_to_append])
+                reslim_imgs.append(sparse_and_resolution_limited_batch[:num_to_append])
+                noised_imgs.append(noised_sparse_reslimited_batch[:num_to_append])
                 
-                else:
-                    # Set axis labels
-                    ax.set_xlabel('x (pixels)')
-                    ax.set_ylabel('y (pixels)')
-                    ax.set_zlabel('time (pixels)')
+                output_data = gaped_renormalisation(decoded_data[:num_to_append].cpu(), reconstruction_threshold, time_dimension)        # Renormalise output data   avoiding doing it to the entire batch, just the required num of images for the following plotting etc    
+                recovered_imgs.append(output_data) 
+                maskrec_imgs.append(masking_recovery(noised_sparse_reslimited_batch[:num_to_append].cpu(), output_data, time_dimension, debug_masking_function))
 
-            fig.tight_layout()
+        if plot_pixel_threshold_telemetry and epoch % print_every_other == 0 and epoch !=0:   
+            above_threshold, below_threshold = belief_telemetry(decoded_data[0][0].cpu(), reconstruction_threshold, epoch, settings, plot_or_save)    #calls the belief_telemetry function to generate the telemetry plots
+            telemetry.append([epoch, above_threshold, below_threshold]) #appends the telemetry data to the telemetry list
 
-            Out_Label = graphics_dir + f'{model_save_name} 3D Reconstruction - Epoch {epoch}.png' #creates the name of the file to be saved
-            plot_save_choice(plot_or_save, Out_Label) #saves the plot if plot_or_save is set to 1, if 0 it displays, if 2 it displays and saves
+        imgs = torch.cat(imgs, dim=0)[:n]
+        sparse_imgs = torch.cat(sparse_imgs, dim=0)[:n]
+        reslim_imgs = torch.cat(reslim_imgs, dim=0)[:n]
+        noised_imgs = torch.cat(noised_imgs, dim=0)[:n]
+        recovered_imgs = torch.cat(recovered_imgs, dim=0)[:n]
+        maskrec_imgs = torch.cat(maskrec_imgs, dim=0)[:n]
 
+        end_of_epoch_plotting_data = list(zip(imgs, sparse_imgs, reslim_imgs, noised_imgs, recovered_imgs, maskrec_imgs))
+        
+    return loss_total/batches, end_of_epoch_plotting_data
 
+### Validation Function
+def validation_routine(encoder, decoder, device, dataloader, loss_fn, time_dimension=100, reconstruction_threshold=0.5, print_partial_training_losses=False, masking_optimised_binary_norm=False, loss_vs_sparse_img=False, renorm_for_loss_calc=False):
+    """
+    Validation loop for a single epoch. This function is identical to the test/evaluation loop except that it is used for hyperparamter evaluation to evaluate between differnt models. This function is not used during training, only for hyperparameter evaluation. Again it uses a previosuly unseen dataset howevr this one is fixed and not randomly selected from the dataset so as to provide a fixed point of reference for direct model comparison.
+    
+    Args:
+        encoder (torch model): The encoder model
+        decoder (torch model): The decoder model
+        device (torch device): The device to run the training on
+        dataloader (torch dataloader): The dataloader to iterate over
+        loss_fn (torch loss function): The loss function to use
+        signal_points (int) or (tuple): The number of signal points to retain in the signal sparsification preprocess. If given as int then number will be constant over training, if given as tuple then a random value will be selected from the range given for each batch
+        noise_points (int) or (tuple): The number of noise points to add in the preprocessing. If given as int then number will be constant over training, if given as tuple then a random value will be selected from the range given for each batch. Default = 0
+        x_std_dev (float) or (tuple): The standard deviation of the gaussian distribution to draw the x shift from. If given as float then number will be constant over training, if given as tuple then a random value will be selected from the range given for each batch. Default = 0
+        y_std_dev (float) or (tuple): The standard deviation of the gaussian distribution to draw the y shift from. If given as float then number will be constant over training, if given as tuple then a random value will be selected from the range given for each batch. Default = 0
+        tof_std_dev (float) or (tuple): The standard deviation of the gaussian distribution to draw the ToF shift from. If given as float then number will be constant over training, if given as tuple then a random value will be selected from the range given for each batch. Default = 0
+        time_dimension (int): The number of time steps in the data set, used to set the upper limit of the noise point values amonst other things. Default = 100
+        reconstruction_threshold (float): The threshold used in the custom normalisation, also used to set the lower limit of the noise point values. Default = 0.5
+        print_partial_training_losses (bool): A flag to set if the partial training losses are printed to terminal. If set to true partial loss is printed to termial whilst training. If set to false the a TQDM progress bar is used to show processing progress. Default = False
+        masking_optimised_binary_norm (bool): A flag to set if the masking optimised binary normalisation is used. If set to true the masking optimised binary normalisation is used, if set to false the gaped normalisation is used. Default = False  [EXPLAIN IN MORE DETAIL!!!!!]
+        loss_vs_sparse_img (bool): A flag to set if the loss is calculated against the sparse image or the clean image. If set to true the loss is calculated against the sparse image, if set to false the loss is calculated against the clean image. Default = False
 
-        return(number_of_true_signal_points, number_of_recovered_signal_points, img, noise_im, rec_im)        #returns the number of true signal points, number of recovered signal points, input image, noised image and reconstructed image 
+    Returns:
+        loss_total/batches (float): The average loss over the epoch calulated by dividing the total sum of loss by the number of batches !! EXPLAIN THIS SIMPLER !!!
 
+    """
+    # Set evaluation mode for encoder and decoder
+    encoder.eval() # Evaluation mode for the encoder
+    decoder.eval() # Evaluation mode for the decoder
+    with torch.no_grad(): # No need to track the gradients
 
+        loss_total = 0.0
+        batches = 0
 
+        iterator = tqdm(dataloader, desc='Validation', leave=False, colour="green", dynamic_ncols=True, postfix="Starting")                  # If print_partial_training_losses is true then we just iterate the dataloder without genrating a progress bar as partial losses will be printed instead. If set to 'False' use the tqdm progress bar wrapper for the dataset for user feedback on progress
+        for data in iterator: 
+            image_batch, sparse_output_batch, sparse_and_resolution_limited_batch, noised_sparse_reslimited_batch = data
+            if masking_optimised_binary_norm:
+                normalised_batch = mask_optimised_normalisation(noised_sparse_reslimited_batch)
+                image_batch_norm = mask_optimised_normalisation(image_batch)
+            else:
+                normalised_batch = gaped_normalisation(noised_sparse_reslimited_batch, reconstruction_threshold, time_dimension)
+                image_batch_norm = gaped_normalisation(image_batch, reconstruction_threshold, time_dimension)
+            
+            image_clean = image_batch_norm.to(device) # Move the clean image batch to the device
+            image_noisy = normalised_batch.to(device) # Move the noised image batch to the device
 
+            # Encode data
+            encoded_data = encoder(image_noisy) # Encode the noised image batch
+            # Decode data
+            decoded_data = decoder(encoded_data) # Decode the encoded image batch
 
+            if loss_vs_sparse_img:
+                loss_comparator = sparse_output_batch
+            else:
+                loss_comparator = image_clean
+
+            # Evaluate loss
+            if renorm_for_loss_calc:
+                decoded_data = gaped_renormalisation(decoded_data, reconstruction_threshold, time_dimension)
+                loss_comparator = gaped_renormalisation(loss_comparator, reconstruction_threshold, time_dimension)
+
+            # Evaluate loss
+            loss = loss_fn(decoded_data, loss_comparator)  # Compute the loss between the decoded image batch and the clean image batch
+            batches += 1
+            loss_total += loss.item()
+
+            iterator.set_postfix({'Partial Batch Loss': loss.data.item()})
+    
+    return loss_total/batches
 
 
 #%% - Program begins
-print("\n \nProgram Initalised - Welcome to DC3D Trainer\n")  #prints the welcome message
+print("\n \nProgram Initalised - Welcome to DC3D Trainer")  #prints the welcome message
+execution_timer.record_time(event_name="Program Initialisation", event_type="start") #records the time the program started
 
 # Following section checks if a CUDA enabled GPU is available. If found it is selected as the 'device' to perform the tensor opperations. If no CUDA GPU is found the 'device' is set to CPU (much slower) 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
@@ -827,6 +1145,10 @@ print(f'Selected compute device: {device}\n')  #Informs user if running on CPU o
 if run_profiler:
     # Start profiling
     profiler.enable()
+
+
+
+
 
 
 #%% - # Hyperparameter Optimiser
@@ -841,10 +1163,6 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
     if optimise_hyperparameter:
         globals()[hyperparam_to_optimise] = HTO_val
         print(f"Current Test: {hyperparam_to_optimise} value = {HTO_val}\n")
-
-
-
-
 
     #%% - # Input / Output Path Initialisation
     if optimise_hyperparameter:
@@ -892,6 +1210,8 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
     # Create a summary writer
     if use_tensorboard:
         writer = SummaryWriter()
+    else:
+        writer = None
 
 
     #%% - Initialises seeding values to RNGs
@@ -903,8 +1223,8 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
         torch.seed()                                    # Set the seed for the RNGs
         np.random.seed()
 
-    T_seed = torch.initial_seed()
-    N_seed = np.random.get_state()[1][0]
+    T_seed = torch.initial_seed()           # Seed for PyTorch RNGs
+    N_seed = np.random.get_state()[1][0]    # Seed for NumPy RNGs
 
 
     #%% - Set loss function choice
@@ -919,8 +1239,11 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
         "MAE": torch.nn.L1Loss(),                                                                      # Mean Absolute Error Loss from PyTorch Library
         "MSE": torch.nn.MSELoss(),                                                                     # Mean Squared Error Loss from PyTorch Library
         "SSE": ada_SSE_loss,                                                                           # Sum of Squared Error Loss (Custom)
-        "BCE": torch.nn.BCELoss(),                                                                     # Binary Cross Entropy Loss from PyTorch Library
+        "BCE": torch.nn.BCELoss(),   
 
+        "LayeredLoss": LayeredLoss(zero_weighting, nonzero_weighting),                                                                  # Custom Layered Loss Function
+        "TrippleLoss": TrippleLoss(zero_weighting, nonzero_weighting),                                                                  # Custom Tripple Loss Function
+                                                                                                                                          # Binary Cross Entropy Loss from PyTorch Library
         "ACB_MSE": ACBLoss(zero_weighting, nonzero_weighting),                                                                # My Original Automatically Class Balanced MSE Loss using Class balancing by frequency
         "ffACB_MSE": ffACBLoss(zero_weighting, nonzero_weighting, fullframe_weighting),                                       # Update to ACB_MSE, adds new term to the loss function that calulates mse over the full frame with its own weighting
         "Split_Loss": ada_weighted_custom_split_loss(split_loss_functions, zero_weighting, nonzero_weighting),                # Uses my automatic class balancing to split the loss function into two parts, one for zero values and one for non-zero values but instead of using MSE as my ACBMSE implementation this just leaves the loss function open to user setting, and uniquly allows user to select differnt loss fucntion for each class.
@@ -961,69 +1284,85 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
     settings["record_activity"] = record_activity
     settings["timeout_training"] = timeout_training
     settings["timeout_time"] = timeout_time
- 
-
-
-
 
     #%% - Dataset Pre-tests
-    if full_dataset_integrity_check: #if full_dataset_integrity_check is set to True, then the scan type is set to full (slow)
-        scantype = "full"
-    else:
-        scantype = "quick"
+    #if full_dataset_integrity_check: #if full_dataset_integrity_check is set to True, then the scan type is set to full (slow)
+    #    scantype = "full"
+    #else:
+    #    scantype = "quick"
 
+
+    ###### NOTE! REMOVE TESTS FOR DATASET AND INCLUDE THEM IN THE DATSET GENRATOR INSTEAD TO AVOID REPETETIVE CHECKS OF THE SAME SETS OVER AND OVER AGAIN !!!!
     # CHECK: Dataset Integrity Check
-    print(f"Testing training dataset integrity, with {scantype} scan")                                 # Prints the scan type
-    dataset_integrity_check(train_dir, full_test=full_dataset_integrity_check, print_output=True)      # Checks the integrity of the training dataset
+    #print(f"Testing training dataset integrity, with {scantype} scan")                                 # Prints the scan type
+    #dataset_integrity_check(train_dir, full_test=full_dataset_integrity_check, print_output=True)      # Checks the integrity of the training dataset
 
     # CHECK: Dataset Distribution Check
-    if full_dataset_distribution_check:                                                                                         # If full_dataset_distribution_check is set to True, then the dataset distribution is checked
-        print("\nTesting training dataset signal distribution")
-        dataset_distribution_tester(train_dir, time_dimension, ignore_zero_vals_on_plot=True, output_image_dir=graphics_dir)    # Checks the distribution of the training dataset
+    #if full_dataset_distribution_check:                                                                                         # If full_dataset_distribution_check is set to True, then the dataset distribution is checked
+    #    print("\nTesting training dataset signal distribution")
+    #    dataset_distribution_tester(train_dir, time_dimension, ignore_zero_vals_on_plot=True, output_image_dir=graphics_dir)    # Checks the distribution of the training dataset
 
     # CHECK: Num of images in path greater than batch size choice? 
-    num_of_files_in_path = len(os.listdir(data_path + dataset_title + '/Data/')) * dataset_bundle_size                                                      # Number of files in path
+    num_of_files_in_path = len(os.listdir(data_path + dataset_title + '/Data/')) * large_data_bundles_size                                                      # Number of files in path
     if num_of_files_in_path < batch_size:                                                                                              # If the number of files in the path is less than the batch size, user is promted to input a new batch size
         print(f"Error, the path selected has {num_of_files_in_path} image files, which is {(batch_size - num_of_files_in_path)} less than the chosen batch size. Please select a batch size less than the total number of images in the directory")
         batch_err_message = "Choose new batch size, must be less than total amount of images in directory", (num_of_files_in_path)                               # Creates the error message
         batch_size = int(input(batch_err_message))                                                                                                               # NOTE: Not sure why input message is printing with wierd brakets and speech marks in the terminal? Investigate???
 
     # Report type of gradient descent to user
-    print(f"{num_of_files_in_path} files in path. // Batch size ={batch_size}\nLearning via: {batch_learning(num_of_files_in_path, batch_size)}\n")   # Prints the number of files in the path and the batch size and the resultant type of batch learning
+    print(f"{num_of_files_in_path} files in path. // Batch size = {batch_size}\nLearning via: {batch_learning(num_of_files_in_path, batch_size)}\n")   # Prints the number of files in the path and the batch size and the resultant type of batch learning
 
     #%% - Data Loader & Preperation
 
-    # Creates the training dataset using the DatasetFolder function from torchvision.datasets
-    train_dataset = CustomDataset(train_dir, store_full_dataset_in_memory, dataset_bundle_size)
-
-    ### - Data Preparation 
-
-    # Transformations
-    #train_transform = transforms.Compose(#transforms.RandomRotation(30),         #transforms.RandomRotation(angle (degrees?) ) rotates the tensor randomly up to max value of angle argument
-    #                                    #transforms.RandomResizedCrop(224),     #transforms.RandomResizedCrop(pixels) crops the data to 'pixels' in height and width (#!!! and (maybe) chooses a random centre point????)
-    #                                    #transforms.RandomHorizontalFlip(),     #transforms.RandomHorizontalFlip() flips the image data horizontally 
-    #                                    ])      
-    #train_dataset.transform = train_transform   
-    ##For info on all transforms check out: https://pytorch.org/vision/0.9/transforms.html
+    # Creates the dataset
+    train_dataset = MTN_Dataset(train_dir + '\\Data\\', large_data_bundles_size, number_of_bundles_to_memory, device, shuffle_train_data, preprocess_on_gpu, precision, timer=execution_timer)
 
     # Dataset Partitioning
-    m = len(train_dataset)  #m is the length of the train_dataset, i.e the number of images in the dataset
-    train_split = int(m * train_test_split_ratio) #train_split is the ratio of train images to be used in the training set as opposed to non_training set
-    train_data, non_training_data = torch.utils.data.random_split(train_dataset, [train_split, m-train_split])    #random_split(data_to_split, [size of output1, size of output2]) just splits the train_dataset into two parts, 4/5 goes to train_data and 1/5 goes to val_data , validation?
+    m = len(train_dataset)  # m is the length of the train_dataset, i.e., the number of images in the dataset
+    train_split = int(m * train_test_split_ratio)  # train_split is the ratio of train images to be used in the training set as opposed to non_training set
 
-    m2 = len(non_training_data)  #m2 is the length of the non_training_data, i.e the number of images in the dataset
+    # Sequentially split the dataset
+    train_indices = list(range(train_split))
+    non_training_indices = list(range(train_split, m))
+
+    train_data = Subset(train_dataset, train_indices)
+    non_training_data = Subset(train_dataset, non_training_indices)
+
+    m2 = len(non_training_data)  # m2 is the length of the non_training_data, i.e., the number of images in the dataset
+
     if val_set_on:
-        val_split = int(m2 * val_test_split_ratio) #val_split is the ratio of npon train images to be used in the validation set as opposed to test set
-        test_data, val_data = torch.utils.data.random_split(non_training_data, [m2 - val_split, val_split])  
-    else:   #this all needs cleaning up, dont need val set in this case bu tnot having one does break other lines
-        test_data = non_training_data  
+        val_split = int(m2 * val_test_split_ratio)  # val_split is the ratio of non-train images to be used in the validation set as opposed to the test set
+        test_indices = non_training_indices[:m2 - val_split]
+        val_indices = non_training_indices[m2 - val_split:]
+
+        test_data = Subset(train_dataset, test_indices)
+        val_data = Subset(train_dataset, val_indices)
+    else:
+        test_data = non_training_data
         val_data = non_training_data
 
-    # Generating Dataloaders
-    train_loader = CustomDataLoader(input_signal_settings, physical_scale_parameters, time_dimension, device, preprocess_on_gpu, precision, dataset=train_data, batch_size=batch_size, shuffle=shuffle_train_data, num_workers=data_loader_workers) #Training data loader, is shuffled based on parameter 'shuffle_train_data' = True/False
-    test_loader = CustomDataLoader(input_signal_settings, physical_scale_parameters, time_dimension, device, preprocess_on_gpu, precision, dataset=test_data, batch_size=batch_size, shuffle=False, num_workers=data_loader_workers) # Test/Eval data loader 
-    valid_loader = CustomDataLoader(input_signal_settings, physical_scale_parameters, time_dimension, device, preprocess_on_gpu, precision, dataset=val_data, batch_size=batch_size, shuffle=False, num_workers=data_loader_workers) # Model Validation data loader 
-    
+    # Generating Dataloaders WITH THE WAY I HAVE STORED DATA IN MEMORY IS THIS CAUSING A 3X IN SIZE IN MEMORY????
+    train_loader = StackedDatasetLoader(input_signal_settings, physical_scale_parameters, time_dimension, device, preprocess_on_gpu, precision, dataset=train_data, batch_size=batch_size, num_workers=data_loader_workers, timer=execution_timer) # Shuffle is handled by the dataset, set with the variable 'shuffle_data'. It must not be applied here otherwise will induce errors in the logic based on index value
+    test_loader = StackedDatasetLoader(input_signal_settings, physical_scale_parameters, time_dimension, device, preprocess_on_gpu, precision, dataset=test_data, batch_size=batch_size, num_workers=data_loader_workers, timer=execution_timer) # Shuffle is handled by the dataset, set with the variable 'shuffle_data'. It must not be applied here otherwise will induce errors in the logic based on index value
+    valid_loader = StackedDatasetLoader(input_signal_settings, physical_scale_parameters, time_dimension, device, preprocess_on_gpu, precision, dataset=val_data, batch_size=batch_size, num_workers=data_loader_workers, timer=execution_timer) # Shuffle is handled by the dataset, set with the variable 'shuffle_data'. It must not be applied here otherwise will induce errors in the logic based on index value
+
+    train_batch_sampler = torch.utils.data.BatchSampler(torch.utils.data.SequentialSampler(train_data), 
+                                                batch_size=batch_size, 
+                                                drop_last=False)
+
+    test_batch_sampler = torch.utils.data.BatchSampler(torch.utils.data.SequentialSampler(test_data), 
+                                                batch_size=batch_size, 
+                                                drop_last=False)
+
+    val_batch_sampler = torch.utils.data.BatchSampler(torch.utils.data.SequentialSampler(val_data), 
+                                                batch_size=batch_size, 
+                                                drop_last=False)
+
+    # Generating Dataloaders WITH THE WAY I HAVE STORED DATA IN MEMORY IS THIS CAUSING A 3X IN SIZE IN MEMORY????
+    train_loader = StackedDatasetLoader(input_signal_settings, physical_scale_parameters, time_dimension, device, preprocess_on_gpu, precision, dataset=train_data, batch_sampler=train_batch_sampler,  timer=execution_timer) # Shuffle is handled by the dataset, set with the variable 'shuffle_data'. It must not be applied here otherwise will induce errors in the logic based on index value
+    test_loader = StackedDatasetLoader(input_signal_settings, physical_scale_parameters, time_dimension, device, preprocess_on_gpu, precision, dataset=test_data, batch_sampler=test_batch_sampler,  timer=execution_timer) # Shuffle is handled by the dataset, set with the variable 'shuffle_data'. It must not be applied here otherwise will induce errors in the logic based on index value
+    valid_loader = StackedDatasetLoader(input_signal_settings, physical_scale_parameters, time_dimension, device, preprocess_on_gpu, precision, dataset=val_data, batch_sampler=val_batch_sampler, timer=execution_timer) # Shuffle is handled by the dataset, set with the variable 'shuffle_data'. It must not be applied here otherwise will induce errors in the logic based on index value
+
 
 
     #%% - Setup model, loss criteria and optimiser    
@@ -1032,6 +1371,11 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
     decoder = Decoder(latent_dim, print_decoder_debug, fc_input_dim)
 
     encoder, decoder, dtype = set_model_precision(encoder, decoder, precision) # Sets the precision of the encoder and decoder based on user input and returns the dtype variable used in the rest of the code
+
+    if compile_model:
+        encoder = torch.compile(encoder, mode="default")
+        decoder = torch.compile(decoder, mode="default")
+
 
     # Define the optimizer
     params_to_optimize = [{'params': encoder.parameters()} ,{'params': decoder.parameters()}] #Selects what to optimise, 
@@ -1080,7 +1424,11 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
         register_network_hooks(encoder, decoder, record_activity, record_weights, record_biases, activations, weights_data, biases_data)
 
     #%% - Running Training Loop
-    print("\nTraining Initiated\nPress Ctr + c to exit and save the model during training.\n")
+
+    execution_timer.record_time(event_name="Program Initialisation", event_type="stop") #records the time the program started
+
+
+    print("Training Initiated\nPress Ctr + c to exit and save the model during training.\n")
     start_time = time.time()                     # Begin the training timer
 
     epoch_times_list = []                        # Creates a variable called epoch_times_list which is an empty list. values are latter appeneded to the list by way of epoch_times_list.append(x)
@@ -1088,13 +1436,11 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
     history_da['test_loss'] = []                 # Just creates a variable called history_da which contains two lists, 'train_loss' and 'val_loss' which are both empty to start with. value are latter appeneded to the two lists by way of history_da['val_loss'].append(x)
 
     try:                                         # Try except clause allows user to exit training gracefully whilst still retaiing a saved model and ouput plots
-        if print_partial_training_losses:        # Prints partial train losses per batch
-            loop_range = range(1, num_epochs+1)
-        else:                                    # No print partial train losses per batch, instead create progress bar
-            loop_range = tqdm(range(1, num_epochs+1), desc='Epochs', colour='red')
-        
+        loop_range = tqdm(range(1, num_epochs+1), desc='Epochs', colour='red', dynamic_ncols=True, postfix="Starting")
         epoch_start_time = time.time()           # Starts the epoch timer
         for epoch in loop_range:                 # For loop that iterates over the number of epochs where 'epoch' takes the values (0) to (num_epochs - 1)
+            execution_timer.record_time(event_name="Epoch", event_type="start") #records the time the program started
+
             if print_partial_training_losses:
                 print(f'\nStart of EPOCH {epoch + 1}/{num_epochs}')
 
@@ -1116,6 +1462,7 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
             avg_loss_false_positive_xy = []
 
             ### Training (use the training function)
+            execution_timer.record_time(event_name="Training", event_type="start") #records the time the program started
             train_loss=train_epoch(epoch, 
                                     encoder, 
                                     decoder, 
@@ -1132,9 +1479,11 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
                                     use_tensorboard,
                                     writer,
                                     )
+            execution_timer.record_time(event_name="Training", event_type="stop") #records the time the program started
 
             ### Testing (use the testing function)
-            test_loss = test_epoch(encoder, 
+            execution_timer.record_time(event_name="Testing", event_type="start") #records the time the program started
+            test_loss, end_of_epoch_plotting_data = test_epoch(encoder, 
                                     decoder, 
                                     device, 
                                     test_loader, 
@@ -1146,28 +1495,31 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
                                     loss_vs_sparse_img,
                                     renorm_for_loss_calc,
                                     )
+            execution_timer.record_time(event_name="Testing", event_type="stop") #records the time the program started
+
+            #if print_partial_training_losses:
+            #    print('\n End of EPOCH {}/{} \t train loss {:.3f} \t val loss {:.3f}'.format(epoch + 1, num_epochs, train_loss, test_loss))     #epoch +1 is to make up for the fact the range spans 0 to epoch-1 but we want to numerate things from 1 upwards for sanity
             
-            if print_partial_training_losses:
-                print('\n End of EPOCH {}/{} \t train loss {:.3f} \t val loss {:.3f}'.format(epoch + 1, num_epochs, train_loss, test_loss))     #epoch +1 is to make up for the fact the range spans 0 to epoch-1 but we want to numerate things from 1 upwards for sanity
-            
-            if epoch % print_every_other == 0 and epoch != 0:                        
+            loop_range.set_postfix({'Train Loss': train_loss, 'Test Loss': test_loss})
+
+
+            if epoch % print_every_other == 0 and epoch != 0:         
+                execution_timer.record_time(event_name="Plotting Function", event_type="start") #records the time the program started           
                 # Run plotting function for training feedback and telemetry.
                 encoder.eval()
                 decoder.eval()
-
-                returned_data_from_plotting_function = plot_epoch_data(encoder, 
-                                                                        decoder, 
-                                                                        test_loader,
+                returned_data_from_plotting_function = plot_epoch_data(end_of_epoch_plotting_data,
                                                                         epoch, 
                                                                         model_save_name, 
                                                                         time_dimension, 
                                                                         reconstruction_threshold,
                                                                         signal_points,
-                                                                        num_to_plot, 
+                                                                        graphics_dir,
+                                                                        plot_or_save,
+                                                                        num_to_plot,
                                                                         )
                 
                 number_of_true_signal_points, number_of_recovered_signal_points, in_data, noisy_data, rec_data = returned_data_from_plotting_function
-                
                 if save_all_raw_plot_data:
                     save_variable(number_of_true_signal_points, f'Epoch {epoch}_number_of_true_signal_points', raw_plotdata_output_dir, force_pickle=True)
                     save_variable(number_of_recovered_signal_points, f'Epoch {epoch}_number_of_recovered_signal_points', raw_plotdata_output_dir, force_pickle=True)
@@ -1177,7 +1529,10 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
         
                 encoder.train()
                 decoder.train()
-            
+                execution_timer.record_time(event_name="Plotting Function", event_type="stop") #records the time the program started
+
+            execution_timer.record_time(event_name="Epoch Results", event_type="start") #records the time the program started      
+
             epoch_end_time = time.time()
             epoch_time = epoch_end_time - epoch_start_time
             epoch_times_list.append(epoch_time) 
@@ -1204,26 +1559,29 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
             if model_checkpointing and epoch % model_checkpoint_interval == 0 and epoch != 0:
                 full_model_export(True, model_output_dir, model_checkpoints_dir, epoch, encoder, decoder, optim, latent_dim, fc_input_dim, double_precision, Encoder, debug_model_exporter=False)
 
-
             if epoch % hook_flush_interval == 0 and epoch != 0:
                 write_hook_data_to_disk_and_clear(activations, weights_data, biases_data, epoch, dir)
 
             ### Live Comparison Plots
             if plot_comparative_loss:
                 create_comparison_plot_data(slide_live_plot_size, epoch, max_epoch_reached, comparative_live_loss, comparative_loss_titles, comparative_epoch_times, comparative_history_da, data=history_da['train_loss'])
+            execution_timer.record_time(event_name="Epoch Results", event_type="stop") #records the time the program started
+            execution_timer.record_time(event_name="Epoch", event_type="stop") #records the time the program started
 
             ### Training Timeout Check
             if timeout_training:
                 if time.time() - start_time > timeout_time * 60:  #convert timeout time from minuits to seconds
                     print("Training timed out, exiting training loop")
                     break
-
+            
             pass # end of try clause, if all goes well and user doesen't request an early exit then the training loop will end here
 
     # If user presses Ctr + c to exit training loop, this handles the exception and allows the code to run its final data and model saving etc before exiting        
     except KeyboardInterrupt:
         print("Keyboard interrupt detected. Exiting training gracefully...")
     
+    execution_timer.record_time(event_name="Program Debrief", event_type="start") #records the time the program started
+
     if run_profiler:
         # Stop profiling
         profiler.disable()
@@ -1244,6 +1602,18 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
     full_data_output["Train Loss"] = round(history_da['train_loss'][-1], 3)
     full_data_output["Test Loss"] = round(history_da['test_loss'][-1], 3)   #Val loss calulaton is broken? check it above
 
+    detailed_performance_loss_dict={}
+    detailed_performance_loss_dict["epoch_avg_loss_mse"] = epoch_avg_loss_mse
+    detailed_performance_loss_dict["epoch_avg_loss_snr"] = epoch_avg_loss_snr
+    detailed_performance_loss_dict["epoch_avg_loss_psnr"] = epoch_avg_loss_psnr
+    detailed_performance_loss_dict["epoch_avg_loss_ssim"] = epoch_avg_loss_ssim
+    detailed_performance_loss_dict["epoch_avg_loss_nmi"] = epoch_avg_loss_nmi
+    detailed_performance_loss_dict["epoch_avg_loss_cc"] = epoch_avg_loss_cc
+    detailed_performance_loss_dict["epoch_avg_loss_true_positive_xy"] = epoch_avg_loss_true_positive_xy
+    detailed_performance_loss_dict["epoch_avg_loss_true_positive_tof"] = epoch_avg_loss_true_positive_tof
+    detailed_performance_loss_dict["epoch_avg_loss_false_positive_xy"] = epoch_avg_loss_false_positive_xy
+
+
     #%% - Save any remaining unsaved raw plot data
     epochs_range = range(1,len(history_da["train_loss"])+1) 
     if save_all_raw_plot_data:     ##FIND bETTER PLACE FOR THIS
@@ -1255,39 +1625,40 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
 
         save_variable(settings, "settings", raw_plotdata_output_dir)
 
-        detailed_performance_loss_dict={}
-        detailed_performance_loss_dict["epoch_avg_loss_mse"] = epoch_avg_loss_mse
-        detailed_performance_loss_dict["epoch_avg_loss_snr"] = epoch_avg_loss_snr
-        detailed_performance_loss_dict["epoch_avg_loss_psnr"] = epoch_avg_loss_psnr
-        detailed_performance_loss_dict["epoch_avg_loss_ssim"] = epoch_avg_loss_ssim
-        detailed_performance_loss_dict["epoch_avg_loss_nmi"] = epoch_avg_loss_nmi
-        detailed_performance_loss_dict["epoch_avg_loss_cc"] = epoch_avg_loss_cc
-        detailed_performance_loss_dict["epoch_avg_loss_true_positive_xy"] = epoch_avg_loss_true_positive_xy
-        detailed_performance_loss_dict["epoch_avg_loss_true_positive_tof"] = epoch_avg_loss_true_positive_tof
-        detailed_performance_loss_dict["epoch_avg_loss_false_positive_xy"] = epoch_avg_loss_false_positive_xy
         save_variable(detailed_performance_loss_dict, "detailed_performance_loss", raw_plotdata_output_dir)
 
 
     #%% - Output Visulisations
     ###Loss function plots
+    """
     if plot_train_loss:
         Out_Label =  graphics_dir + f'{model_save_name} - Train loss - Epoch {epoch}.png'
         loss_plot(epochs_range, history_da['train_loss'], "Epoch number", f"Train loss ({loss_fn_label})", "Training loss", Out_Label, plot_or_save)
+
+        Out_Label = graphics_dir + f'{model_save_name} - Train loss v Time - Epoch {epoch}.png'
+        loss_plot(epoch_times_list, history_da['train_loss'], "Training Time (s)", f"Train loss ({loss_fn_label})", "Training Time v Loss", Out_Label, plot_or_save)
+
 
     if plot_test_loss:
         Out_Label =  graphics_dir + f'{model_save_name} - Val loss - Epoch {epoch}.png'
         loss_plot(epochs_range, history_da['test_loss'], "Epoch number", f"Test loss ({loss_fn_label})", "Test loss", Out_Label, plot_or_save)
 
-    if plot_time_loss:
-        Out_Label = graphics_dir + f'{model_save_name} - Train loss v Time - Epoch {epoch}.png'
-        loss_plot(epoch_times_list, history_da['train_loss'], "Training Time (s)", f"Train loss ({loss_fn_label})", "Training Time v Loss", Out_Label, plot_or_save)
+        Out_Label = graphics_dir + f'{model_save_name} - Val loss v Time - Epoch {epoch}.png'
+        loss_plot(epoch_times_list, history_da['test_loss'], "Training Time (s)", f"Test loss ({loss_fn_label})", "Training Time v Loss", Out_Label, plot_or_save)
+    """
+
+    Out_Label = graphics_dir + f'{model_save_name} - Train and Val loss v epoch Comb - Epoch {epoch}.png'
+    loss_plot_trainval([epochs_range, epochs_range], [history_da['train_loss'], history_da['test_loss']], ["train", "test"], [model_save_name, model_save_name], "Epoch number", f"Loss ({loss_fn_label})", "Train and Val loss v Epoch", Out_Label, plot_or_save)
+
+    Out_Label = graphics_dir + f'{model_save_name} - Train and Val loss v Time Comb - Epoch {epoch}.png'
+    loss_plot_trainval([epoch_times_list, epoch_times_list], [history_da['train_loss'], history_da['test_loss']], ["train", "test"], [model_save_name, model_save_name], "Training Time (s)", f"Loss ({loss_fn_label})", "Train and Val loss v Time", Out_Label, plot_or_save)
 
     if plot_detailed_performance_loss: 
         Out_Label = graphics_dir + f'{model_save_name} - Detailed Performance loss - Epoch {epoch}.png'
         draw_detailed_performance_loss_plots(epochs_range, epoch_avg_loss_mse, epoch_avg_loss_snr, epoch_avg_loss_psnr, epoch_avg_loss_ssim, epoch_avg_loss_nmi, epoch_avg_loss_cc, epoch_avg_loss_true_positive_xy, epoch_avg_loss_true_positive_tof, epoch_avg_loss_false_positive_xy, Out_Label, plot_or_save)
 
     if plot_pixel_threshold_telemetry:
-        Out_Label = graphics_dir + f'{model_save_name} - Reconstruction Telemetry Histogram - Epoch {epoch}.png'
+        Out_Label = graphics_dir + f'{model_save_name} - Reconstruction Threshold Telemetry - Epoch {epoch}.png'
         plot_telemetry(telemetry, signal_points, Out_Label, plot_or_save=plot_or_save)
 
     if plot_pixel_difference:
@@ -1319,7 +1690,7 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
             npimg = img.numpy()
             plt.imshow(np.transpose(npimg, (1, 2, 0)))
 
-        img_recon = Generative_Latent_information_Visulisation(encoder, decoder, latent_dim, device, test_loader)
+        img_recon = Generative_Latent_information_Visulisation(encoder, decoder, latent_dim, device, test_loader, reconstruction_threshold, time_dimension)
         
         fig, ax = plt.subplots(figsize=(20, 8.5))
         show_image(torchvision.utils.make_grid(img_recon[:100],10,10, pad_value=100))
@@ -1330,14 +1701,17 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
     if plot_higher_dim:
         Out_Label_1 = graphics_dir + f'{model_save_name} - Higher Dimensisions Epoch {epoch}.png'
         Out_Label_2 = graphics_dir + f'{model_save_name} - TSNE Epoch {epoch}.png'
-        Reduced_Dimension_Data_Representations(encoder, device, train_dataset, plot_or_save)
+        Reduced_Dimension_Data_Representations(encoder, device, train_dataset, Out_Label_1, Out_Label_2, plot_or_save)
         
     if plot_normalised_radar:
         # Data for the radar plot
         categories = list(map(str, detailed_performance_loss_dict.keys())) # Names of each performance measure
-        #data = HARD!!! #np.array(([3, 1, 74, 1, 1], [6, 52, 2, 76, 6], [-4, 272, 2, 1, 6]))  # List of models each with list of values for each measure
-        multi_labels = [f"{model_save_name}"].extend(comparative_loss_titles)  # Labels for each plot
-        #create_radar_plot_multi_model(categories, data, multi_labels)
+
+        fig = create_radar_plot(categories, [detailed_performance_loss_dict], [model_save_name])
+        Out_Label = graphics_dir + f'{model_save_name} - Normalised Radar Epoch {epoch}.png'
+        plot_save_choice(plot_or_save, Out_Label)
+
+
            
     if plot_Graphwiz:
         Graphviz_visulisation(encoder, decoder, double_precision, batch_size, xdim, ydim, graphics_dir)
@@ -1359,7 +1733,7 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
     # Save .txt Encoder/Decoder Network Summary
     with open(full_netsum_filepath, 'w', encoding='utf-8') as output_file:    #utf_8 encoding needed as default (cp1252) unable to write special charecters present in the summary
         # Write the local date and time to the file
-        TD_now = datetime.datetime.now()         # Get the current local date and time
+        TD_now = datetime.now()         # Get the current local date and time
         output_file.write(f"Date data taken: {TD_now.strftime('%Y-%m-%d %H:%M:%S')}\n")     # Write the current local date and time to the file
         output_file.write(("Model ID: " + model_save_name + f"\nTrained on device: {device}\n"))   # Write the model ID and device used to train the model to the file
         output_file.write((f"Max Epoch Reached: {max_epoch_reached}\n"))  # Write the max epoch reached during training to the file
@@ -1471,7 +1845,6 @@ if optimise_hyperparameter:
         pretrained_model_folder_paths.append(netsum_directory + str(HTOsetting) + f'\\{model_save_name} - Training Results\Model_Deployment\\')
     
     ### NOTE FIX!!!!!!!!!!!!!!!!!!!!!!!
-    ##run_full_perf_tests(perf_analysis_num_files, perf_analysis_plot, True, perf_analysis_dataset_dir, output_file_path, model_names, pretrained_model_folder_paths, terminal_print=False)
     run_full_perf_tests(num_files=perf_analysis_num_files, 
                         plot=perf_analysis_plot, 
                         save_recovered_data=True, 
@@ -1481,16 +1854,14 @@ if optimise_hyperparameter:
                         pretrained_model_folder_paths=pretrained_model_folder_paths,  
                         debug_mode = debug_hpo_perf_analysis)
 
-
-
+execution_timer.record_time(event_name="Program Debrief", event_type="stop") #records the time the program started
 
 #%% - End of Program - Printing message to notify user!
 print("\nProgram Complete - Shutting down...\n")    
 
-
 if run_profiler:
     # Print the profiling results
-    profiler.print_stats(sort='total')
+    #profiler.print_stats()
 
     # save the profiling results to a file
     profiler.dump_stats('profiler_results.prof')
@@ -1500,5 +1871,15 @@ if run_profiler:
     os.system(command)
 
 
+if run_pytorch_profiler:
+    # Stop the profiler
+    torch_profiler.stop()
+    print(torch_profiler.key_averages().table(sort_by="cuda_time_total", row_limit=10))
 
+print("Generating execution timer plot...")
+fig = execution_timer.return_plot(dark_mode=True)
+fig.set_size_inches(28.5, 10.8)
+Out_Label = graphics_dir + f'{model_save_name} - Execution Timer.png'
+plot_save_choice(plot_or_save, Out_Label, dpi=100)  
 
+print("- Completed -")
