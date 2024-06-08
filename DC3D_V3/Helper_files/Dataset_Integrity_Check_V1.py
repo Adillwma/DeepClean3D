@@ -50,7 +50,7 @@ def dataset_integrity_check(folder_path, full_test=False, print_output=True):
     npy_files = []
     for dirpath, dirnames, filenames in os.walk(folder_path):
         for filename in filenames:
-            if filename.endswith('.npy'):
+            if filename.endswith('.pt'):
                 npy_files.append(os.path.join(dirpath, filename))
     
     

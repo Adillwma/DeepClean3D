@@ -190,7 +190,9 @@ def compare_images_pixels(target_image, reconstructed_image, debug_mode=False):
         print("Signal Spatial Retention Percentage: ", signal_spatial_retention_percentage, "%")
 
     # determine how many of those indexs have matching ToF values
-    signal_temporal_retention_raw = len(reconstructed_image[nonzero_mask] == target_image[nonzero_mask])
+    values_in_recon = reconstructed_image[nonzero_mask]
+    values_in_target = target_image[nonzero_mask]
+    signal_temporal_retention_raw = len(values_in_recon[values_in_recon == values_in_target])
     if debug_mode:
         print("Signal Temporal Retention Raw: ", signal_temporal_retention_raw)
     signal_temporal_retention_percentage = (signal_temporal_retention_raw / len(reconstructed_image[nonzero_mask])) * 100

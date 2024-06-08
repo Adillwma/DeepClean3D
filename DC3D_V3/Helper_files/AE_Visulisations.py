@@ -23,7 +23,7 @@ from sklearn.manifold import TSNE
 import os
 import torch
 from torchvision.transforms import ToPILImage
-from Helper_files.DC3D_Core_Functions import gaped_normalisation, gaped_renormalisation_torch  
+from Helper_files.DC3D_Core_Functions import gaped_normalisation, gaped_renormalisation
 
 
 #%% - Differnce between images
@@ -152,7 +152,7 @@ def Generative_Latent_information_Visulisation(encoder, decoder, latent_dim, dev
         img_recon = decoder(latent)
         img_recon = img_recon.cpu()
 
-        img_recon = gaped_renormalisation_torch(img_recon, reconstruction_threshold, time_dimension)
+        img_recon = gaped_renormalisation(img_recon, reconstruction_threshold, time_dimension)
         
         return (img_recon)
 

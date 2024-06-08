@@ -25,11 +25,12 @@ def biases_hook_fn(module, input, output, layer_index, biases_data):
     """
     biases_data[layer_index] = module.bias.data.clone().detach()
 
-def register_network_hooks(encoder, decoder, record_activity, record_weights, record_biases, activations, weights_data, biases_data):
+def register_network_hooks(encoder, decoder, record_activity, record_weights, record_biases, activations, weights_data, biases_data, debug=False):
     # Loop through all the modules (layers) in the encoder and register the hooks
     for idx, module in enumerate(encoder.encoder_lin.modules()):
         if isinstance(module, torch.nn.Linear):
-            print("Registering hooks for encoder layer: ", idx)
+            if debug:   
+                print("Registering hooks for encoder layer: ", idx)
             if record_activity:
                 # Register the hook with the layer_index as the key to identify activations for this layer
                 module.register_forward_hook(partial(activation_hook_fn, layer_index=idx, activations=activations))
@@ -44,7 +45,8 @@ def register_network_hooks(encoder, decoder, record_activity, record_weights, re
     # Loop through all the modules (layers) in the decoder and register the hooks
     for idx, module in enumerate(decoder.decoder_lin.modules()):
         if isinstance(module, torch.nn.Linear):
-            print("Registering hooks for decoder layer: ", enc_max_idx + idx)
+            if debug:
+                print("Registering hooks for decoder layer: ", enc_max_idx + idx)
             if record_activity:
                 # Register the hook with the layer_index as the key to identify activations for this layer
                 module.register_forward_hook(partial(activation_hook_fn, layer_index = enc_max_idx + idx, activations=activations))
@@ -57,6 +59,8 @@ def register_network_hooks(encoder, decoder, record_activity, record_weights, re
 
     print("All hooks registered\n")
 
+
+### FIX !!!! 
 def write_hook_data_to_disk_and_clear(activations, weights_data, biases_data, epoch, output_dir):
     """
     This function saves the activation, weights and biases tracking data to disk and then clears the tracking dictionaries to avoid unnecaesary memory usage and potential overflows during longer training runs.
