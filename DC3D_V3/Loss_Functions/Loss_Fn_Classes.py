@@ -128,7 +128,7 @@ class ada_weighted_custom_split_loss(torch.nn.Module):
 
 
 class ACBLoss(torch.nn.Module):
-    def __init__(self, zero_weighting=1, nonzero_weighting=1):
+    def __init__(self, zero_weighting=1, nonzero_weighting=1, reduction='mean'):
         """
         Initializes the ACB-MSE Loss Function class with weighting coefficients.
 
@@ -139,7 +139,8 @@ class ACBLoss(torch.nn.Module):
         super().__init__()   
         self.zero_weighting = zero_weighting
         self.nonzero_weighting = nonzero_weighting
-        self.mse_loss = torch.nn.MSELoss(reduction='mean')
+        self.mse_loss = torch.nn.MSELoss(reduction=reduction)
+        self.reduction = reduction
 
     def forward(self, reconstructed_image, target_image):
         """
@@ -159,7 +160,15 @@ class ACBLoss(torch.nn.Module):
 
         zero_loss = self.mse_loss(reconstructed_image[zero_mask], target_image[zero_mask])
         nonzero_loss = self.mse_loss(reconstructed_image[nonzero_mask], target_image[nonzero_mask])
+    
 
+        #print("Reduction is none")
+        #output = torch.zeros_like(target_image)
+        #output[zero_mask] = zero_loss * self.zero_weighting
+        #output[nonzero_mask] = nonzero_loss * self.nonzero_weighting
+        #return output
+        
+    
         # make assert checking that both zero and nonzero loss are not nan at once
         assert not (torch.isnan(zero_loss) and torch.isnan(nonzero_loss)),"A fatal error has occured in the ACBMSE loss function with both loss values returning NaN, please investigate your inputs to verify they are correct."
 
@@ -175,7 +184,7 @@ class ACBLoss(torch.nn.Module):
 
 
 class TrippleLoss(torch.nn.Module):
-    def __init__(self, zero_weighting=1, nonzero_weighting=1, ff_weighting=1, time_weighting=1, tp_weighting=1, fp_weighting=1, fn_weighting=1, tn_weighting=1):
+    def __init__(self, zero_weighting=1, nonzero_weighting=1, ff_weighting=0.0001, time_weighting=1, tp_weighting=1, fp_weighting=1, fn_weighting=1, tn_weighting=1, reduction='mean'):
         """
         Initializes the ACB-MSE Loss Function class with weighting coefficients.
 
@@ -192,7 +201,7 @@ class TrippleLoss(torch.nn.Module):
         self.TNW = tn_weighting
         self.time_weight = time_weighting
         self.ff_weight = ff_weighting
-        self.MSE = torch.nn.MSELoss(reduction='mean')
+        self.MSE = torch.nn.MSELoss(reduction=reduction)
 
 
     def forward(self, reconstructed_image, target_image):
@@ -243,14 +252,14 @@ class TrippleLoss(torch.nn.Module):
         if torch.isnan(FPL): # Handles the case where there are no nonzero pixels in the target image at all
             FPL = 0
         if torch.isnan(TNL): # Handles the case where there are no zero pixels in the target image at all
-            TNL = 1.3
+            TNL = 1
         if torch.isnan(TPL): # Handles the case where there are no zero pixels in the target image at all
-            TPL = 1.7
+            TPL = 1
         if torch.isnan(Time_Match): # Handles the case where there are no signal points with matching time values in the target image at all
-            Time_Match = 1.5
+            Time_Match = 1
         #REVERT PUNISHMENT TO 10 IF BREAKS
 
-        full_frame_loss = self.MSE(reconstructed_image, target_image)
+        full_frame_loss = 0#self.MSE(reconstructed_image, target_image)
         #REMOVE IF BREAKS
 
         #TEST!
