@@ -185,7 +185,7 @@ results_output_path = "N:\Yr 3 Project Results\\"             # Path to the resu
 
 #%% - Data Path Settings
 dataset_title = "[V3]_RDT_50K"  #"V2_1K_Fast"#  "RF_5K"#"PDT 10K" #"RDT 10K MOVE" #'RDT 500K 1000ToF' #"RDT 10K MOVE" #"RDT 50KM"# "Dataset 37_X15K Perfect track recovery" #"Dataset 24_X10Ks"           #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
-model_save_name = "TEST_047" #'Parabola6 no norm to loss' #"T2"#"RDT 500K 1000ToF timed"#"2023 Testing - RDT100K n100"#"2023 Testing - RDT10K NEW" #"RDT 100K 30s 200n Fixed"#"RDT 50KM tdim1000 AE2PROTECT 30 sig 200NP LD10"     #"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
+model_save_name = "250TrippleBASE - Posttrain011FFL" #'Parabola6 no norm to loss' #"T2"#"RDT 500K 1000ToF timed"#"2023 Testing - RDT100K n100"#"2023 Testing - RDT10K NEW" #"RDT 100K 30s 200n Fixed"#"RDT 50KM tdim1000 AE2PROTECT 30 sig 200NP LD10"     #"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
 
 model_checkpointing = True                   # If set to true then the model will save a checkpoint of the model and optimiser state dicts at the end of each 'model_checkpointing_interval' epochs
 model_checkpoint_interval = 10                # Number of epochs between each model checkpoint save
@@ -208,7 +208,7 @@ channels = 1      #CONNECT                   # User controll to set the number o
 
 #%% - Training Hyperparameter Settings
 num_epochs = 1000                           # User controll to set number of epochs (Hyperparameter)
-batch_size = 200 #6 looks good                # User controll to set batch size - number of Images to pull per batch (Hyperparameter) 
+batch_size = 200# 200 #6 looks good                # User controll to set batch size - number of Images to pull per batch (Hyperparameter) 
 learning_rate = 0.0008                       # User controll to set optimiser learning rate (Hyperparameter)
 optim_w_decay = 1e-05                        # User controll to set optimiser weight decay for regularisation (Hyperparameter)
 precision = 32                      #  [16, 32, 0r 64] 16 only availble if runing on supported GPU       # User controll to set the precision of the data and model (16, 32 or 64)
@@ -230,7 +230,15 @@ renorm_for_loss_calc = False                             # User controll to set 
 # Weights used for ACBMSE and varients
 zero_weighting = 1                                      # User controll to set zero weighting for ACBMSE or ffACBMSE (Hyperparameter)
 nonzero_weighting = 1#0.4 #0.4                          # User controll to set non zero weighting for ACBMSE or ffACBMSE  (Hyperparameter)
-fullframe_weighting = 1.5 #1.5                          # User controll to set full frame weighting for ffACBMSE (Hyperparameter) [# Only used for ffACBMSE loss function]
+fullframe_weighting = 1 #1.5                          # User controll to set full frame weighting for ffACBMSE (Hyperparameter) [# Only used for ffACBMSE loss function]
+time_weighting = 1                                    # User controll to set time weighting for ffACBMSE (Hyperparameter) [# Only used for ffACBMSE loss function]
+time_penalty = 10
+tp_weighting = 1                                      # User controll to set time point weighting for ffACBMSE (Hyperparameter) [# Only used for ffACBMSE loss function]
+tp_penalty = 10
+tn_weighting = 1                                      # User controll to set frame point weighting for ffACBMSE (Hyperparameter) [# Only used for ffACBMSE loss function]
+tn_penalty = 10
+fp_weighting = 1                                      # User controll to set frame point weighting for ffACBMSE (Hyperparameter) [# Only used for ffACBMSE loss function]
+fn_weighting = 1                                      # User controll to set frame point weighting for ffACBMSE (Hyperparameter) [# Only used for ffACBMSE loss function]
 ff_loss = 'mse'                                         # User controll to set loss function for full frame loss (Hyperparameter) [# Only used for ffACBMSE loss function] # "MAE", "MSE", "SSE", "BCE"
 
 # Selections for split loss function
@@ -239,15 +247,15 @@ nonzero_loss_choice = 1                                 # Select loss function f
 
 #%% - Image Preprocessing Settings
 signal_points = 30                                     # User controll to set the number of signal points to add
-noise_points = 0#0 #200#0#100                                 # User controll to set the number of noise points to add
+noise_points = 0#(0,50) #0 #200#0#100                                 # User controll to set the number of noise points to add
 x_std_dev = 0                                                # (mm) User controll to set the standard deviation of the detectors error in the x axis
 y_std_dev = 0                                                # (mm) User controll to set the standard deviation of the detectors error in the y axis
 tof_std_dev = 0                                             # (ns) User controll to set the standard deviation of the detectors error in the time of flight 
 
 #%% - Pretraining settings
-start_from_pretrained_model = False          # If set to true then the model will load the pretrained model and optimiser state dicts from the path below
+start_from_pretrained_model = True          # If set to true then the model will load the pretrained model and optimiser state dicts from the path below
 load_pretrained_optimser = True              # Only availible if above is set to true - (pretrain seems to perform better if this is set to true)
-pretrained_model_path = r'N:\Yr 3 Project Results\TEST_047 - Training Results\Model_Checkpoints\Epoch_250\Model_checkpoint_epoch_250.pth'      # Specify the path to the saved full state dictionary for pretraining
+pretrained_model_path = r'N:\Yr 3 Project Results\TEST_047 - Training Results\Model_Deployment\TEST_047 - Model + Optimiser State Dicts.pth'      # Specify the path to the saved full state dictionary for pretraining
 
 #%% - Normalisation Settings 
 masking_optimised_binary_norm = False        # If set to true then the model will use the binary normalisation method optimised for masking output. Otherwise will use the gaped custom normalisation optimised for the direct network output
@@ -308,7 +316,7 @@ plot_latent_generations = True              # [default = True]
 plot_higher_dim = False                      # [default = True]  
 plot_Graphwiz = True                         # [default = True]       
 
-use_tensorboard = True                       # [default = False]
+use_tensorboard = False                       # [default = False]
 
 #%% - Advanced Debugging Settings
 print_encoder_debug = False                     # [default = False]  
@@ -330,7 +338,7 @@ use_execution_timer = True    #FIX!!     ###CONNECT!! # [Default = True] Uses th
 run_profiler = False                            # [Default = False] Runs the cProfiler on the training loop to check for bottlenecks and slow functions
 run_pytorch_profiler = False
 
-#%% Hyperparameter Optimisation Settings  #######IMPLEMENT!!!
+#%% Hyperparameter Optimisation Settings  
 optimise_hyperparameter = False                               # User controll to set if hyperparameter optimisation is used
 hyperparam_to_optimise = 'zero_weighting'                     # User controll to set which hyperparameter to optimise  - options are: 'batch_size', 'learning_rate', 'optim_w_decay', 'dropout_prob', 'loss_function_selection', 'conv_layers', 'conv_filter_multiplier', 'latent_dim'
 set_optimisiation_list_manually = [0.3, 0.5, 0.7, 1.0, 1.3]   # Set this param = to your list i.e [[12, 120], 35, 87]
@@ -347,26 +355,6 @@ perf_analysis_plot = 100                                                        
 perf_analysis_dataset_dir = (r"N:\\Yr 3 Project Datasets\\PERF VALIDATION SETS\\40K 100N 30S\\")   # Directory of dataset to test - (Best to use totally unseen data files that are not contianed within the train, test or validation sets)
 debug_hpo_perf_analysis = False
 
-#%% - HACKS NEED FIXING!!!
-if print_every_other > num_epochs:                                                                   
-    print_every_other = num_epochs
-
-results_output_path_1 = results_output_path  # HACK FOR HYPERPARAM OPTIMISATION FIX IT!!!
-
-history_da = {'train_loss':[], 'test_loss':[], 'val_loss':[], 'HTO_val':[], 'training_time':[]}      # Needs better placement???
-max_epoch_reached = 0                                                                                # In case user exits before end of first epoch 
-
-time_scale = time_dimension / time_length                                                            # ns per t pixel   # MOVE THESE LINES ELSEWHERE TO CLEAN UP
-x_scale = xdim / x_length                                                                            # mm per x pixel
-y_scale = ydim / y_length                                                                            # mm per y pixel
-physical_scale_parameters = [x_scale, y_scale, time_scale]
-
-input_signal_settings = [signal_points, x_std_dev, y_std_dev, tof_std_dev, noise_points] #move!
-
-# Create a dictionary to store the activations
-activations = {}
-weights_data = {}
-biases_data = {}
 
 
 
@@ -409,6 +397,29 @@ from Helper_files.Image_Metrics import *    # - Image metrics
 from Helper_files.AE_Visulisations import *   # - Visulisations 
 from Loss_Functions.Loss_Fn_Classes import *   # - Loss Functions
 from Helper_files.Data_Degradation_Functions import *   # Data Degredation Functions
+
+
+
+#%% - HACKS NEED FIXING!!!
+if print_every_other > num_epochs:                                                                   
+    print_every_other = num_epochs
+
+results_output_path_1 = results_output_path  # HACK FOR HYPERPARAM OPTIMISATION FIX IT!!!
+
+history_da = {'train_loss':[], 'test_loss':[], 'val_loss':[], 'HTO_val':[], 'training_time':[]}      # Needs better placement???
+max_epoch_reached = 0                                                                                # In case user exits before end of first epoch 
+
+time_scale = time_dimension / time_length                                                            # ns per t pixel   # MOVE THESE LINES ELSEWHERE TO CLEAN UP
+x_scale = xdim / x_length                                                                            # mm per x pixel
+y_scale = ydim / y_length                                                                            # mm per y pixel
+physical_scale_parameters = [x_scale, y_scale, time_scale]
+
+input_signal_settings = [signal_points, x_std_dev, y_std_dev, tof_std_dev, noise_points] #move!
+
+# Create a dictionary to store the activations
+activations = {}
+weights_data = {}
+biases_data = {}
 
 
 if use_execution_timer:
@@ -875,7 +886,6 @@ def train_epoch(epoch, encoder, decoder, device, dataloader, loss_fn, optimizer,
 
     loss_total = 0.0
     batches = 0
-    loss = loss_fn(torch.rand((1, 1, 1, 1)), torch.rand((1, 1, 1, 1)))  # Compute the loss between the decoded image batch and the clean image batch
 
 
     iterator = tqdm(dataloader, desc='Batches', leave=False, dynamic_ncols=True, postfix="Starting")                  # If print_partial_training_losses is true then we just iterate the dataloder without genrating a progress bar as partial losses will be printed instead. If set to 'False' use the tqdm progress bar wrapper for the dataset for user feedback on progress
@@ -1139,17 +1149,17 @@ print("\n \nProgram Initalised - Welcome to DC3D Trainer")  #prints the welcome 
 execution_timer.record_time(event_name="Program Initialisation", event_type="start") #records the time the program started
 
 # Following section checks if a CUDA enabled GPU is available. If found it is selected as the 'device' to perform the tensor opperations. If no CUDA GPU is found the 'device' is set to CPU (much slower) 
-device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+if torch.cuda.is_available():                                               # Nvidia GPU
+    device = torch.device("cuda")         
+elif hasattr(torch.backends, 'mps') and torch.backends.mps.is_available():  # Apple Silicon, Metal Performance Shaders
+    device = torch.device("mps")
+else:                                                                       # CPU
+    device = torch.device("cpu")                                            
 print(f'Selected compute device: {device}\n')  #Informs user if running on CPU or GPU
 
 if run_profiler:
     # Start profiling
     profiler.enable()
-
-
-
-
-
 
 #%% - # Hyperparameter Optimiser
 if optimise_hyperparameter:
@@ -1372,11 +1382,6 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
 
     encoder, decoder, dtype = set_model_precision(encoder, decoder, precision) # Sets the precision of the encoder and decoder based on user input and returns the dtype variable used in the rest of the code
 
-    if compile_model:
-        encoder = torch.compile(encoder, mode="default")
-        decoder = torch.compile(decoder, mode="default")
-
-
     # Define the optimizer
     params_to_optimize = [{'params': encoder.parameters()} ,{'params': decoder.parameters()}] #Selects what to optimise, 
     optim = torch.optim.Adam(params_to_optimize, lr=learning_rate, weight_decay=optim_w_decay)
@@ -1386,7 +1391,6 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
 
         # load the full state dictionary into memory
         full_state_dict = torch.load(pretrained_model_path, map_location=device)
-
         # load the state dictionaries into the models
         encoder.load_state_dict(full_state_dict['encoder_state_dict'])
         decoder.load_state_dict(full_state_dict['decoder_state_dict'])
@@ -1394,6 +1398,11 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
         if load_pretrained_optimser:
             # load the optimizer state dictionary, if user requested
             optim.load_state_dict(full_state_dict['optimizer_state_dict'])
+
+
+    if compile_model:
+        encoder = torch.compile(encoder, mode="default")
+        decoder = torch.compile(decoder, mode="default")
 
     # Initalise Model on compute device
     encoder.to(device)   #Moves encoder to selected device, CPU/GPU
