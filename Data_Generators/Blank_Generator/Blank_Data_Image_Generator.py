@@ -21,25 +21,15 @@ output_dir = "C:/Users/Student/Documents/UNI/Onedrive - University of Bristol/Yr
 import os
 import numpy as np
 from tqdm import tqdm 
+import torch 
 
 #%% - Function
-def generate_blanks(xdim, ydim, number_of_files, output_dir):
-
-    # Create output directory if it doesn't exist
-    os.makedirs(output_dir, exist_ok=True)
+def generate_blanks(xdim, ydim, number_of_files):
 
     print("\nCreating Blank Images...")
-    # Generate 'number_of_files' arrays of zeros and save them to disk
-    for i in tqdm(range(number_of_files), desc="Blank Image"):                       #Display pregress bar during generation for user feedback
 
-        # Generate array of zeros
-        arr = np.zeros((ydim, xdim))
-        
-        # Generate filename
-        filename = f"blankdata_{i+1}.npy"
-        
-        # Save array to disk
-        np.save(os.path.join(output_dir, filename), arr)
+    # Generate tensor of zeros
+    arr = torch.zeros(number_of_files, 1, ydim, xdim, dtype=torch.float64)
 
-    # Feedback to user on task completed
-    print(f"Generation of {number_of_files} blank images completed successfully\n")
+    return arr
+

@@ -9,18 +9,29 @@ University of Bristol
 # Add a way to have some files rotated some shifted some not without making the input settings to complicated
 """
 
+
+
+
+
 #%% - User Inputs
+bundles = 2
+bundle_size = 10
+
 xdim = 88                                             # X dimension of image
 ydim = 128                                            # Y dimension of image
-time_dimension = 100                                  # Time dimension of image
-sig_pts = 2000                                         # Number of signal points to generate
-data_set_title = "Dataset 38_X50K Realistic IDEAL SIG2000"          # Ouput title of dataset
+time_dimension = 1000                                  # Time dimension of image
+
+number_of_blanks = 3
+number_single_x = 0 # DO NOT USE< THIS IS A PLACEHOLDER TILL CONNECTED
+number_single_realisitic = 4
+number_single_parabola = 3
+
+#sig_pts = 2000                                         # Number of signal points to generate
+data_set_title = "V3_Mixed_20K_TESTRUN"          # Ouput title of dataset
 data_sets_folder = r"N:\Yr 3 Project Datasets\\"      # Folder to save dataset to
 
-#Ada: r"C:\Users\Student\Documents\UNI\Onedrive - University of Bristol\Yr 3 Project\Circular and Spherical Dummy Datasets\\"
-#Max: 
-
-### Number of data files of each type to generate  # (~89kb each, which scales linearly so 20,000 ~ 1.75Gb)
+"""
+### Number of data files of each type to generate  # (~96KB each, which scales linearly so 10,000 ~ 980MB)
 number_of_blanks = 0            # Number of blank data files to 
 number_of_hemisphere = 0        # Number of hemisphere data files to generate
 
@@ -34,6 +45,11 @@ number_of_two_realisitic = 0        # Number of two realistic data files to gene
 number_of_three_realisitic = 0      # Number of three realistic data files to generate
 number_of_four_realisitic = 0       # Number of four realistic data files to generate
 
+number_single_parabola = 0         # Number of single parabola data files to generate
+number_of_two_parabola = 0          # Number of two parabola data files to generate
+number_of_three_parabola = 0        # Number of three parabola data files to generate
+number_of_four_parabola = 0         # Number of four parabola data files to generate
+
 # Shared Settings
 shift_positions = True         #If True then the signal positions are shifted by a random amount, otherwise they are not
 
@@ -43,17 +59,21 @@ rotate_seperatly = True        #If True then each x signal is rotated by a rando
 
 #Realistic Gen Settings
 ideal_hit_spread = True        #If True then the hit points spread is idealised as linearly spaced in the pattern, otherwise points are chosen randomly from pattern 
+"""
+
 
 #%% - Dependencies
 #External Libraries
 import datetime          # Current local time and date
+import torch 
+import matplotlib.pyplot as plt 
+from tqdm import tqdm
+import os
 
 # Local Custom Generators
-from Data_Generators.X_Generator.Comb_X_Gen_Full import simp_generator                     # Import custom function for generating X signals
 from Data_Generators.Blank_Generator.Blank_Data_Image_Generator import generate_blanks         # Import custom function for generating blank images
-from Data_Generators.Maxs_Realistic_Generator.Realistic_Gen import multi_real_gen_wrapper               # Import custom function for generating realistic TORCH signals
-#from Data_Generators.Hemisphere_Generator.Hemispheres_Gen import hemispheres_gen_wrapper           # Import custom function for generating hemisphere signals
-#from Data_Generators.spherical                                                # Import custom function for generating spherical signals
+from Data_Generators.RDT_Gen import generate_rdt_data_tensors
+from Data_Generators.PDT_Gen import genrate_pdt_data_tensors
 
 # Local Dataset Validation Functions
 from DC3D_V3.Helper_files.Dataset_distribution_tester_V1 import dataset_distribution_tester  # Import custom function for testing the distribution of the dataset
@@ -61,23 +81,30 @@ from DC3D_V3.Helper_files.Dataset_Integrity_Check_V1 import dataset_integrity_ch
 
 #%% - Program Initalisation
 # Combine output folder and dataset information folder
-output_dir = data_sets_folder + data_set_title + "\Data\\"     # Add the data folder to the end of the output directory
+output_dir = data_sets_folder + data_set_title + "\\Data\\"     # Add the data folder to the end of the output directory
 output_dataset_info = data_sets_folder + data_set_title + " Information.txt"   # Add the information file to the end of the output directory
 output_dataset_dist_img = data_sets_folder + data_set_title    
 
-#%% - Generators
-# Generate Blanks
-generate_blanks(xdim=xdim, ydim=ydim, number_of_files=number_of_blanks, output_dir=output_dir)   # Generate blank images
+# create output directory if it doesn't exist
+os.makedirs(output_dir, exist_ok=True)
 
-# Generate X signals
-datasplit_values = [number_single_x, number_of_two_x, number_of_three_x, number_of_four_x]   # List of number of each type of X signal to generate
-simp_generator(output_dir, datasplit_values, sig_pts, ydim, xdim, time_dimension, shift_positions, rotate_x_positions)    # Generate X signals
 
-#Generate Realisitic Signals
-realistic_proportions = [number_single_realisitic, number_of_two_realisitic, number_of_three_realisitic, number_of_four_realisitic]  # List of number of each type of realistic signal to generate
-multi_real_gen_wrapper(output_dir, realistic_proportions, signal_points=sig_pts, detector_pixel_dimensions=(ydim, xdim), height=time_dimension, hit_point='random', ideal=ideal_hit_spread, debug_image_generator=False, shift=shift_positions)  # Generate realistic signals
+
+#%% Generation
+for bundle_idx in tqdm(range(bundles), desc="Bundle", leave=True, dynamic_ncols=True, colour="red"):
+    bundle = torch.zeros(bundle_size, 1, ydim, xdim, dtype=torch.float64)
+    randomised_indexs = torch.randperm(bundle_size)
+
+    bundle[randomised_indexs[:number_of_blanks]] = generate_blanks(xdim=xdim, ydim=ydim, number_of_files=number_of_blanks) 
+    bundle[randomised_indexs[number_of_blanks:(number_of_blanks+number_single_x)]] = torch.ones(number_single_x, 1, ydim, xdim)*5
+    bundle[randomised_indexs[-(number_single_realisitic+number_single_parabola):-number_single_parabola]] = generate_rdt_data_tensors(number_single_realisitic, 0, 3, 1, xdim, ydim, time_dimension, show=False, origin=None)
+    bundle[randomised_indexs[-number_single_parabola:]] = genrate_pdt_data_tensors(xdim, ydim, time_dimension, number_single_parabola, origin=None)
+
+    # save bundle to disk as .pt file in thew output dir
+    torch.save(bundle, output_dir + f"V3_bundle_{bundle_idx}.pt") 
 
 print("Dataset Generation Completed")   # Print to console to show that dataset generation has completed
+
 #%% - Run Tests
 try:
     print("\nVerifying Dataset Integrity...")
