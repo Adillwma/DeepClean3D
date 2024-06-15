@@ -180,12 +180,17 @@ Possible improvements:
 #%% - First time setup
 
 # NOTE: This section should be set when running on a new machine or when first setting up the program, once set it should not need to be changed again unless you want to change the default paths for the datasets and results folders
-data_path = "N:\Yr 3 Project Datasets\\"   #"B:\\"#                   # Path to the dataset folder, this is the folder that contains your dataset folders, not a dataset folder itself. This allows fast switching between datasets by changing just the dataset title below without having to change the full path each time
+dataset_paths = ["N:/Yr 3 Project Datasets/[V3]_RDT_50K/",    # Path to the dataset folder, this is the folder that contains your dataset folders, not a dataset folder itself. This allows fast switching between datasets by changing just the dataset title below without having to change the full path each time
+                 "N:/Yr 3 Project Datasets/V3_RDT_150K/",
+                 ]   #"B:\\"#                  
+
 results_output_path = "N:\Yr 3 Project Results\\"             # Path to the results output folder, this is the folder that will contains all your results folders, not the results folder for a particular run.
 
 #%% - Data Path Settings
-dataset_title = "[V3]_RDT_50K"  #"V2_1K_Fast"#  "RF_5K"#"PDT 10K" #"RDT 10K MOVE" #'RDT 500K 1000ToF' #"RDT 10K MOVE" #"RDT 50KM"# "Dataset 37_X15K Perfect track recovery" #"Dataset 24_X10Ks"           #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
-model_save_name = "250TrippleBASE - Posttrain011FFL" #'Parabola6 no norm to loss' #"T2"#"RDT 500K 1000ToF timed"#"2023 Testing - RDT100K n100"#"2023 Testing - RDT10K NEW" #"RDT 100K 30s 200n Fixed"#"RDT 50KM tdim1000 AE2PROTECT 30 sig 200NP LD10"     #"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
+
+# NOTE: Update to dataset_titles = ["Dataset 1", "Dataset 2", "Dataset 3"] to enable joining multiple datsets on disk 
+dataset_title = "REMOVE"  #"V2_1K_Fast"#  "RF_5K"#"PDT 10K" #"RDT 10K MOVE" #'RDT 500K 1000ToF' #"RDT 10K MOVE" #"RDT 50KM"# "Dataset 37_X15K Perfect track recovery" #"Dataset 24_X10Ks"           #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
+model_save_name = "T007" #'Parabola6 no norm to loss' #"T2"#"RDT 500K 1000ToF timed"#"2023 Testing - RDT100K n100"#"2023 Testing - RDT10K NEW" #"RDT 100K 30s 200n Fixed"#"RDT 50KM tdim1000 AE2PROTECT 30 sig 200NP LD10"     #"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
 
 model_checkpointing = True                   # If set to true then the model will save a checkpoint of the model and optimiser state dicts at the end of each 'model_checkpointing_interval' epochs
 model_checkpoint_interval = 10                # Number of epochs between each model checkpoint save
@@ -207,12 +212,12 @@ ydim = 128                                   # Currently useless, as above so be
 channels = 1      #CONNECT                   # User controll to set the number of channels in the data
 
 #%% - Training Hyperparameter Settings
-num_epochs = 1000                           # User controll to set number of epochs (Hyperparameter)
+num_epochs = 200                           # User controll to set number of epochs (Hyperparameter)
 batch_size = 200# 200 #6 looks good                # User controll to set batch size - number of Images to pull per batch (Hyperparameter) 
 learning_rate = 0.0008                       # User controll to set optimiser learning rate (Hyperparameter)
 optim_w_decay = 1e-05                        # User controll to set optimiser weight decay for regularisation (Hyperparameter)
 precision = 32                      #  [16, 32, 0r 64] 16 only availble if runing on supported GPU       # User controll to set the precision of the data and model (16, 32 or 64)
-
+ 
 # Architecture Settings
 latent_dim = 19                               # User controll to set number of nodes in the latent space, the bottleneck layer (Hyperparameter)
 fc_input_dim = 124                           # User controll to set number of nodes in the fc2 layer (Hyperparameter)
@@ -246,8 +251,8 @@ zeros_loss_choice = 1                                   # Select loss function f
 nonzero_loss_choice = 1                                 # Select loss function for non zero values (Hyperparameter): 0 = Maxs_Loss_Func, 1 = torch.nn.MSELoss(), 2 = torch.nn.BCELoss(), 3 = torch.nn.L1Loss(), 4 = ada_SSE_loss
 
 #%% - Image Preprocessing Settings
-signal_points = 30                                     # User controll to set the number of signal points to add
-noise_points = 0#(0,50) #0 #200#0#100                                 # User controll to set the number of noise points to add
+signal_points = 500                                     # User controll to set the number of signal points to add
+noise_points = 0 #(0,50) #0 #200#0#100                                 # User controll to set the number of noise points to add
 x_std_dev = 0                                                # (mm) User controll to set the standard deviation of the detectors error in the x axis
 y_std_dev = 0                                                # (mm) User controll to set the standard deviation of the detectors error in the y axis
 tof_std_dev = 0                                             # (ns) User controll to set the standard deviation of the detectors error in the time of flight 
@@ -255,7 +260,7 @@ tof_std_dev = 0                                             # (ns) User controll
 #%% - Pretraining settings
 start_from_pretrained_model = True          # If set to true then the model will load the pretrained model and optimiser state dicts from the path below
 load_pretrained_optimser = True              # Only availible if above is set to true - (pretrain seems to perform better if this is set to true)
-pretrained_model_path = r'N:\Yr 3 Project Results\TEST_047 - Training Results\Model_Deployment\TEST_047 - Model + Optimiser State Dicts.pth'      # Specify the path to the saved full state dictionary for pretraining
+pretrained_model_path = r'N:\Yr 3 Project Results\Online_RUN_020_PTfrom online19 PTfrm47 - Training Results\Model_Checkpoints\Epoch_170\Statedicts_checkpoint_epoch_170.pth'      # Specify the path to the saved full state dictionary for pretraining
 
 #%% - Normalisation Settings 
 masking_optimised_binary_norm = False        # If set to true then the model will use the binary normalisation method optimised for masking output. Otherwise will use the gaped custom normalisation optimised for the direct network output
@@ -1199,7 +1204,8 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
     full_netsum_filepath = dir + model_save_name + " - Network Summary.txt"
 
     # Joins up the parts of the differnt input dataset load paths
-    train_dir = data_path + dataset_title
+    train_dirs = [dataset_path + 'Data/' for dataset_path in dataset_paths]
+
 
     #%% - Bodge clean up 
     ###CLEAN UP THIS METHOD TO SOMTHING BETTER!!!!!!
@@ -1313,7 +1319,7 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
     #    dataset_distribution_tester(train_dir, time_dimension, ignore_zero_vals_on_plot=True, output_image_dir=graphics_dir)    # Checks the distribution of the training dataset
 
     # CHECK: Num of images in path greater than batch size choice? 
-    num_of_files_in_path = len(os.listdir(data_path + dataset_title + '/Data/')) * large_data_bundles_size                                                      # Number of files in path
+    num_of_files_in_path = sum(len(os.listdir(dir_path)) for dir_path in train_dirs) * large_data_bundles_size                                                      # Number of files in path
     if num_of_files_in_path < batch_size:                                                                                              # If the number of files in the path is less than the batch size, user is promted to input a new batch size
         print(f"Error, the path selected has {num_of_files_in_path} image files, which is {(batch_size - num_of_files_in_path)} less than the chosen batch size. Please select a batch size less than the total number of images in the directory")
         batch_err_message = "Choose new batch size, must be less than total amount of images in directory", (num_of_files_in_path)                               # Creates the error message
@@ -1324,8 +1330,10 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
 
     #%% - Data Loader & Preperation
 
+
+
     # Creates the dataset
-    train_dataset = MTN_Dataset(train_dir + '\\Data\\', large_data_bundles_size, number_of_bundles_to_memory, device, shuffle_train_data, preprocess_on_gpu, precision, timer=execution_timer)
+    train_dataset = MTN_Dataset(train_dirs, large_data_bundles_size, number_of_bundles_to_memory, device, shuffle_train_data, preprocess_on_gpu, precision, timer=execution_timer)
 
     # Dataset Partitioning
     m = len(train_dataset)  # m is the length of the train_dataset, i.e., the number of images in the dataset
@@ -1386,6 +1394,10 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
     params_to_optimize = [{'params': encoder.parameters()} ,{'params': decoder.parameters()}] #Selects what to optimise, 
     optim = torch.optim.Adam(params_to_optimize, lr=learning_rate, weight_decay=optim_w_decay)
 
+    # Initalise Model on compute device
+    encoder.to(device)   #Moves encoder to selected device, CPU/GPU
+    decoder.to(device)   #Moves decoder to selected device, CPU/GPU
+
     # Load in pretrained weights and biases, if user requested
     if start_from_pretrained_model:
 
@@ -1399,14 +1411,11 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
             # load the optimizer state dictionary, if user requested
             optim.load_state_dict(full_state_dict['optimizer_state_dict'])
 
-
     if compile_model:
         encoder = torch.compile(encoder, mode="default")
         decoder = torch.compile(decoder, mode="default")
 
-    # Initalise Model on compute device
-    encoder.to(device)   #Moves encoder to selected device, CPU/GPU
-    decoder.to(device)   #Moves decoder to selected device, CPU/GPU
+
 
     #%% - Prepare Network Summary
     # Set evaluation mode for encoder and decoder

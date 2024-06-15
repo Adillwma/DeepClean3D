@@ -34,7 +34,7 @@ class DTM_Dataset(Dataset):
     Loads data from disk to memory in the form of bundles to reduce i/o operations
 
     Args:
-    data_dir: str, the directory where the data files are stored
+    data_dirs: str or list, the directory where the data files are stored or a list of directories where the data files are stored which will be concatenated
 
     Methods:
     __len__: returns the number of data files
@@ -42,9 +42,14 @@ class DTM_Dataset(Dataset):
     __getitem__: returns a data file
     
     """
-    def __init__(self, data_dir):
-        # Get all .npy files in the specified directory
-        self.data_files = [os.path.join(data_dir, f) for f in os.listdir(data_dir) if f.endswith('.pt')]
+    def __init__(self, data_dirs):
+
+        # check if the input is a list of directories or one single path and get all .npy files in the specified directorys
+        if isinstance(data_dirs, list):
+            self.data_files = [os.path.join(data_dir, f) for data_dir in data_dirs for f in os.listdir(data_dir) if f.endswith('.pt')]
+        else:
+            self.data_files = [os.path.join(data_dirs, f) for f in os.listdir(data_dirs) if f.endswith('.pt')]
+
         self.size = len(self.data_files)
 
     def __len__(self):
@@ -59,6 +64,7 @@ class MTN_Dataset(Dataset):
     Loads data from memory to the neural network in the form of individual samples, handling shuffling across the two datasets and iteration bewteen them
 
     Args:
+    dataset_paths_ondisk: str or list, the directory where the data files are stored or a list of directories where the data files are stored which will be concatenated
     large_data_bundles_size: int, the number of individual files in each bundle
     large_batch_size: int, the number of bundles to load into memory at once
     shuffle_data: bool, whether to shuffle the data across both large and small batches
@@ -69,8 +75,8 @@ class MTN_Dataset(Dataset):
     __getitem__: returns a single sample from memory
     """
 
-    def __init__(self, dataset_path_ondisk, large_data_bundles_size, large_batch_size, device, shuffle_data=False, preprocess_on_gpu=True, precision=64, timer=None):
-        self.large_dataset = DTM_Dataset(dataset_path_ondisk)
+    def __init__(self, dataset_paths_ondisk, large_data_bundles_size, large_batch_size, device, shuffle_data=False, preprocess_on_gpu=True, precision=64, timer=None):
+        self.large_dataset = DTM_Dataset(dataset_paths_ondisk)
         self.large_dataloader = DataLoader(self.large_dataset, large_batch_size, shuffle_data)
         self.large_data_bundles_size = large_data_bundles_size
         self.large_batch_size = large_batch_size

@@ -184,7 +184,7 @@ class ACBLoss(torch.nn.Module):
 
 
 class TrippleLoss(torch.nn.Module):
-    def __init__(self, zero_weighting=1, nonzero_weighting=1, ff_weighting=0.0001, time_weighting=1, tp_weighting=1, fp_weighting=1, fn_weighting=1, tn_weighting=1, reduction='mean'):
+    def __init__(self, zero_weighting=1, nonzero_weighting=1, ff_weighting=0.000001, time_weighting=1, tp_weighting=1, fp_weighting=1, fn_weighting=1, tn_weighting=1, reduction='mean'):
         """
         Initializes the ACB-MSE Loss Function class with weighting coefficients.
 
@@ -259,7 +259,7 @@ class TrippleLoss(torch.nn.Module):
             Time_Match = 1
         #REVERT PUNISHMENT TO 10 IF BREAKS
 
-        full_frame_loss = 0#self.MSE(reconstructed_image, target_image)
+        full_frame_loss = 0 #self.MSE(reconstructed_image, target_image)
         #REMOVE IF BREAKS
 
         #TEST!
@@ -268,7 +268,7 @@ class TrippleLoss(torch.nn.Module):
             Time_Match = Time_Match**2
 
 
-        weighted_loss = (self.TPW * TPL) + (self.FNW * FNL) + (self.FPW * FPL) + (self.TNW * TNL) + (self.time_weight * Time_Match) + (self.ff_weight * full_frame_loss)
+        weighted_loss = (self.TPW * TPL) + (self.FNW * FNL) + (self.FPW * FPL) + (self.TNW * TNL) #+ (self.time_weight * Time_Match)# + (self.ff_weight * full_frame_loss)
         
         return weighted_loss
 
