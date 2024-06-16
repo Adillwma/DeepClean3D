@@ -1,4 +1,4 @@
-# DeepClean Trainer v1.3.1
+# DeepClean Trainer v0.1.3
 # Build created on Tuesday June 4th 2024
 # Author: Adill Al-Ashgar
 # University of Bristol
@@ -7,7 +7,7 @@
 """
 Possible improvements:
 
-### ~~~~~ FIX: Datalaoder calls for every individual sample in the ifnal bacth instead of loading them all at once in a singl eslice with the rang eof index's ... this will require reevaluation of the metho dused to iterate the large datloader as woul dno longe rbe checking index by index ?
+### ~~~~~ [DONE!] FIX: Datalaoder calls for every individual sample in the ifnal bacth instead of loading them all at once in a singl eslice with the rang eof index's ... this will require reevaluation of the metho dused to iterate the large datloader as woul dno longe rbe checking index by index ?
 
 ### ~~~~~ FIX: async load the large datlaoder
 
@@ -17,15 +17,15 @@ Possible improvements:
 
 ### ~~~~~ FIX: 3d reconstrucxtion costly and requires reoptimisations
 
-### ~~~~~ FIX: Handle execution timer misiing star/stop data gracefully, do not allow program crash 
+### ~~~~~ FIX: Handle execution timer misiing start/stop data gracefully, do not allow program crash 
 
-### ~~~~~ FIX plotting fucntion iterates through test_loader batches choosing first image in each batch, this leads to error if there are less batches than the number to plot selected
+### ~~~~~ [DONE!] FIX plotting fucntion iterates through test_loader batches choosing first image in each batch, this leads to error if there are less batches than the number to plot selected
 
 ### ~~~~~ FIX hook_flush_interval, setting this to greater than 1 results in just th eepoch in question being saved, i.,e setting to 4 saves every fourth epoch rather than stroing each epoch between then and then dumping them all!!
 
 ### ~~~~~ FIX TOF std_dev which if applied ends up with values outside of the range 0-time_dimension, either clamp the values to this range, or if values exceed it then remove those points is in practice the std_dev would carry them into previous or post frames rather than current frame. 
 
-### ~~~~~ FIX the way the precision value is saved for model reruns, currently saves the double_precision boolean although have now moved to numerical 'precision' variable that accepts 16. 32 and 64 corresponding to half, single and double 
+### ~~~~~  [DONE!] FIX the way the precision value is saved for model reruns, currently saves the double_precision boolean although have now moved to numerical 'precision' variable that accepts 16. 32 and 64 corresponding to half, single and double 
 
 ### ~~~~~ FIX, [UPDATE: THIS IS AN ERROR WITH ACB_MSE CREATING NANS WHICH THEN ESULT IN 0 VALUES BEING ASSINGED, THE PROGRAM DOES WORK USING STANDARD MSE LOASS AT FP16] when running with precision = 16 an error ocurs in backwards pass saying cannot perfrom backward pass of int, i think its saying the result of the loss is an int?? Investigate
 
@@ -55,7 +55,7 @@ Possible improvements:
 
 ### ~~~~~ FIX BUG : xlsxwriter.exceptions.InvalidWorksheetName: Excel worksheet name 'T_fullframe_weighting_0.5 direct' must be <= 31 chars.
 
-### ~~~~~ USe seeding value to controll data spareness and noise addition so that thay can be set to fixed
+### ~~~~~ [DONE!] USe seeding value to controll data spareness and noise addition so that thay can be set to fixed
 
 ### ~~~~~ [DONE!] Create new unseen dataset for performance analysis on hyperparameter optimisation, could have a switch to make it use the val/test data?
 
@@ -99,10 +99,6 @@ Possible improvements:
 
 ### ~~~~~ fix epoch numbering printouts? they seem to report 1 epoch greater than they should
 
-### ~~~~~ clear up visulisations
-
-### ~~~~~ Functionalise things
-
 ### ~~~~~ Clean up custom autoencoder.py file saver terminal prints left over from debugging
 
 ### ~~~~~ [DONE!] Fix Val loss save bug
@@ -121,19 +117,13 @@ Possible improvements:
 
 ### ~~~~~ [DONE!] Train on labeld data which has the fill line paths in labels and then just points on line in the raw data?
 
-### ~~~~~ Add arg to plot or save function that passes a test string to print for the plot generating user notice ratehr than the generic one used each time atm 
-
 ### ~~~~~ [DONE!] change telemetry variable name to output_pixel_telemetry
 
 ### ~~~~~ [DONE!] Fix this " if plot_higher_dim: AE_visulisation(en...)" break out all seperate plotting functions
     
-### ~~~~~ adapt new version for masking - DeepMask3D 
-
 ### ~~~~~ [DONE!] sort out val, test and train properly
 
-### ~~~~~ FC2_INPUT_DIM IS NOT USED!! This would be extremely useful. ?? is this for dynamic layer sizing?
-
-### ~~~~~ Update all layer activation tracking from lists and numpy to torch tensors throughout pipeline for speed
+### ~~~~~ [DONE!] Update all layer activation tracking from lists and numpy to torch tensors throughout pipeline for speed
 
 ### ~~~~~ Add in automatic Enc/Dec layer size calulations
 
@@ -141,9 +131,7 @@ Possible improvements:
 
 ### ~~~~~ [DONE!] Seperate and moularise renorm and 3D reconstruction
 
-### ~~~~~ Create flatten module in main body so noise can be added to the 3D cube rather than slicewise
-
-### ~~~~~ [DONE!] Add way to compress the NPZ output as filesize is to large ! ~3Gb+
+### ~~~~~ Create flatten module in main body so noise can be added to the 3D cube rather than slicewise?
 
 ### ~~~~~ [DONE!] Add all advanced program settings to end of net summary txt file i.e what typ eof normalisation used etc, also add th enam eof the autoencoder file i.e AE_V1 etc from the module name 
 
@@ -180,25 +168,27 @@ Possible improvements:
 #%% - First time setup
 
 # NOTE: This section should be set when running on a new machine or when first setting up the program, once set it should not need to be changed again unless you want to change the default paths for the datasets and results folders
-dataset_paths = ["N:/Yr 3 Project Datasets/[V3]_RDT_50K/",    # Path to the dataset folder, this is the folder that contains your dataset folders, not a dataset folder itself. This allows fast switching between datasets by changing just the dataset title below without having to change the full path each time
-                 "N:/Yr 3 Project Datasets/V3_RDT_150K/",
-                 ]   #"B:\\"#                  
+dataset_paths = ["N:/Yr 3 Project Datasets/[V3]_RDT_50K/"]#,    # Path to the dataset folder, this is the folder that contains your dataset folders, not a dataset folder itself. This allows fast switching between datasets by changing just the dataset title below without having to change the full path each time
+                 #"N:/Yr 3 Project Datasets/V3_RDT_150K/",
+#]   #"B:\\"#                  
 
-results_output_path = "N:\Yr 3 Project Results\\"             # Path to the results output folder, this is the folder that will contains all your results folders, not the results folder for a particular run.
+results_output_path = "N:/Yr 3 Project Results/"             # Path to the results output folder, this is the folder that will contains all your results folders, not the results folder for a particular run.
 
 #%% - Data Path Settings
 
-# NOTE: Update to dataset_titles = ["Dataset 1", "Dataset 2", "Dataset 3"] to enable joining multiple datsets on disk 
-dataset_title = "REMOVE"  #"V2_1K_Fast"#  "RF_5K"#"PDT 10K" #"RDT 10K MOVE" #'RDT 500K 1000ToF' #"RDT 10K MOVE" #"RDT 50KM"# "Dataset 37_X15K Perfect track recovery" #"Dataset 24_X10Ks"           #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
-model_save_name = "T007" #'Parabola6 no norm to loss' #"T2"#"RDT 500K 1000ToF timed"#"2023 Testing - RDT100K n100"#"2023 Testing - RDT10K NEW" #"RDT 100K 30s 200n Fixed"#"RDT 50KM tdim1000 AE2PROTECT 30 sig 200NP LD10"     #"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
+# get the last folder in the path to use as the dataset title
+#"REMOVE"  #"V2_1K_Fast"#  "RF_5K"#"PDT 10K" #"RDT 10K MOVE" #'RDT 500K 1000ToF' #"RDT 10K MOVE" #"RDT 50KM"# "Dataset 37_X15K Perfect track recovery" #"Dataset 24_X10Ks"           #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
+model_save_name = "T010_low_punishment" #'Parabola6 no norm to loss' #"T2"#"RDT 500K 1000ToF timed"#"2023 Testing - RDT100K n100"#"2023 Testing - RDT10K NEW" #"RDT 100K 30s 200n Fixed"#"RDT 50KM tdim1000 AE2PROTECT 30 sig 200NP LD10"     #"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
 
 model_checkpointing = True                   # If set to true then the model will save a checkpoint of the model and optimiser state dicts at the end of each 'model_checkpointing_interval' epochs
 model_checkpoint_interval = 10                # Number of epochs between each model checkpoint save
 
+timeout_time = False                  # Numerical value: Time in minuits to wait before stopping training, set to False to disable time based stopping. Default is False. NOTE! Program will allow the epoch currently in progress to conclude before stopping.
+
 # Data Loader Settings
 preprocess_on_gpu = False                     # Only woirks if cuda gpu is found, else will defulat back to cpu preprocess
 inject_seed = True          # COMBINE WITH BELOW, FALSE OR VALUE                 # Reinjects the original seeding value to deterministically recreate the same noise and signal points each epoch, this is useful for testing the effect of different hyperparameters on the same data or for allowing the training to see same images multiple times to improve performance
-inject_seed_interval = 5                     # Number of epochs between each seed injection
+inject_seed_interval = 1                     # Number of epochs between each seed injection
 shuffle_train_data = False       #FIX CURRENLT BREAKS CODE CAUSING SAME ERROR AS FP16 i.e NANS IN ACBMSE RETURNING INT AS 0 FOR LOSS             # If set to true then will shuffle the training data each epoch
 large_data_bundles_size = 10000              # Bundle size of dataset, 1 for V1 ~0.98MB, 1000 for V2 ~98MB. [Planned 10K for V3 = ~980MB]
 number_of_bundles_to_memory = 1              # Essentially the 'Large batch Size' i.e how many bundles to load into memory at once [Must be less than or equal to the number of bundles in the dataset on disk]
@@ -251,11 +241,12 @@ zeros_loss_choice = 1                                   # Select loss function f
 nonzero_loss_choice = 1                                 # Select loss function for non zero values (Hyperparameter): 0 = Maxs_Loss_Func, 1 = torch.nn.MSELoss(), 2 = torch.nn.BCELoss(), 3 = torch.nn.L1Loss(), 4 = ada_SSE_loss
 
 #%% - Image Preprocessing Settings
-signal_points = 500                                     # User controll to set the number of signal points to add
-noise_points = 0 #(0,50) #0 #200#0#100                                 # User controll to set the number of noise points to add
+signal_points = (30, 100) #500                                     # User controll to set the number of signal points to add
+noise_points = (0, 300) #(0,50) #0 #200#0#100                                 # User controll to set the number of noise points to add
 x_std_dev = 0                                                # (mm) User controll to set the standard deviation of the detectors error in the x axis
 y_std_dev = 0                                                # (mm) User controll to set the standard deviation of the detectors error in the y axis
 tof_std_dev = 0                                             # (ns) User controll to set the standard deviation of the detectors error in the time of flight 
+
 
 #%% - Pretraining settings
 start_from_pretrained_model = True          # If set to true then the model will load the pretrained model and optimiser state dicts from the path below
@@ -265,20 +256,11 @@ pretrained_model_path = r'N:\Yr 3 Project Results\Online_RUN_020_PTfrom online19
 #%% - Normalisation Settings 
 masking_optimised_binary_norm = False        # If set to true then the model will use the binary normalisation method optimised for masking output. Otherwise will use the gaped custom normalisation optimised for the direct network output
 
-#%% - Plotting Control Settings
-print_every_other = 1                        # [default = 2] 1 is to save/print all training plots every epoch, 2 is every other epoch, 3 is every 3rd epoch etc
-plot_or_save = 1                             # [default = 1] 0 prints plots to terminal (blocking till closed), If set to 1 then saves all end of epoch printouts to disk (non-blocking), if set to 2 then saves outputs whilst also printing for user (blocking till closed)
-num_to_plot = 10
-save_all_raw_plot_data = False                # [default = False] If set to true then all raw data for plots is saved to disk for replotting and analysis later
 
 #%% - New beta feature settings 
-double_precision = False #NOTE: Tested!      # [default = False] If set to true then the model will use double precision floating point numbers for all calculations, otherwise will use single precision
 compile_model = False    # NOT AVAILIBE ON WINDOWS!                    # [default = True] If set to true then the model will be compiled using torch.compile for faster execution, if set to false then the model will not be compiled further information is availible at: 
 pin_memory = False                            # [default = False] If set to true then the data loader will pin the memory for faster data transfer to the GPU, if set to false then the data loader will not pin the memory
 
-# TRUN THESE TWO FLAGS INTO ONE SINGLE VARIABLE WHERE None WILL HAVE NO TIMEOUT AND A VALUE WILL SET THE TIMEOUT
-timeout_training = False         #COMBINE WITH BELOW INTO FALSE/NUMERICAL            # If set to true then the model will stop training after the timeout time has been reached
-timeout_time = 720                           # Time in minuits to wait before stopping training if timeout_training is set to true`
 
 # Neural Net Telemetry
 record_weights = False                       # If set to true then the model will record the weights of the network at the end of each epoch
@@ -294,13 +276,14 @@ x_length = 800                               # mm
 y_length = 1500                              # mm
 time_length = 1000                           # ns
 
-#%% - Advanced Visulisation Settings
-plot_train_loss = True                       # [default = True]       
-plot_test_loss = True                        # [default = True]
-plot_validation_loss = True                  # [default = True]               
+#%% - Visulisation Settings
+plot_or_save = 1                             # [default = 1] 0 prints plots to terminal (blocking till closed), If set to 1 then saves all end of epoch printouts to disk (non-blocking), if set to 2 then saves outputs whilst also printing for user (blocking till closed)
+save_all_raw_plot_data = False                # [default = False] If set to true then all raw data for plots is saved to disk for replotting and analysis later
 
-plot_detailed_performance_loss = True        # Plots ssim nmi etc for each epoch 
-plot_normalised_radar = True                # [default = True]
+
+# During training plots
+print_every_other = 1                        # [default = 2] 1 is to save/print all training plots every epoch, 2 is every other epoch, 3 is every 3rd epoch etc
+num_to_plot = 10 # 2d plots                   # [default = 10] Number of images to plot during training
 
 plot_live_time_loss = True                   # [default = True] Generate plot of live training loss vs time during trainig which is overwritten each epoch, this is useful for seeing how the training is progressing
 plot_live_training_loss = True               # [default = True] Generate plot of live training loss vs epoch during trainig which is overwritten each epoch, this is useful for seeing how the training is progressing
@@ -314,7 +297,16 @@ comparative_loss_paths = [r'N:\Yr 3 Project Results\RDT 10K 1000ToF timed - Trai
                           r'N:\Yr 3 Project Results\RDT 500K 1000ToF timed - Training Results\\',  # Settings V1
                           r'N:\Yr 3 Project Results\RDT 10K S2 - Training Results\\'               # Settings V2
                           ] 
-                          
+
+
+# Post training plots
+plot_train_loss = True                       # [default = True]       
+plot_test_loss = True                        # [default = True]
+plot_validation_loss = True                  # [default = True]               
+
+plot_detailed_performance_loss = True        # Plots ssim nmi etc for each epoch 
+plot_normalised_radar = True                # [default = True]
+         
 plot_pixel_threshold_telemetry = True        # [default = False] # Update name to pixel_cuttoff_telemetry    #Very slow, reduces net performance by XXXXXX%
 plot_pixel_difference = False #BROKEN        # [default = True]          
 plot_latent_generations = True              # [default = True]              
@@ -327,7 +319,6 @@ use_tensorboard = False                       # [default = False]
 print_encoder_debug = False                     # [default = False]  
 print_decoder_debug = False                     # [default = False] 
 print_network_summary = False                   # [Default = False] Prints the network summary to terminal
-print_partial_training_losses = False           # [Default = True] Prints the training loss for each batch in the epoch
 
 debug_noise_function = False                    # [default = False]  
 debug_loader_batch = False                      # SAFELY REMOVE THIS PARAM!!!  #(Default = False) //INPUT 0 or 1//   #Setting debug loader batch will print to user the images taken in by the dataoader in this current batch and print the corresponding labels
@@ -450,13 +441,15 @@ if run_pytorch_profiler:
 
     # Start the profiler
     torch_profiler.start()
+
+
 #%% - Load in Comparative Live Loss Data
 if comparative_live_loss:
     comparative_history_da, comparative_epoch_times = load_comparative_data(comparative_loss_paths, plot_live_training_loss, plot_live_time_loss)
 
 #%% - Data Gathering Functions
 ### CLEAN UP THIS FUCNTION !!!!!!!!!!!!
-def full_model_export(checkpoint, model_output_dir, model_checkpoints_dir, epoch, encoder, decoder, optim, latent_dim, fc_input_dim, double_precision, Encoder, debug_model_exporter=False):
+def full_model_export(checkpoint, model_output_dir, model_checkpoints_dir, epoch, encoder, decoder, optim, latent_dim, fc_input_dim, precision, Encoder, debug_model_exporter=False):
     
     if checkpoint:
 
@@ -483,7 +476,7 @@ def full_model_export(checkpoint, model_output_dir, model_checkpoints_dir, epoch
         save_variable(fc_input_dim, "deployment_variables_fc_input_dim", model_checkpoints_path)
 
         # Save the processing precision value for automatic setting when deploying the models
-        save_variable(str(double_precision), "deployment_variables_double_precision", model_checkpoints_path)
+        save_variable(str(precision), "deployment_variables_precision", model_checkpoints_path)
 
         # Get the directory name of the current Python file for the autoencoder export
         search_dir = os.path.abspath(__file__)
@@ -519,7 +512,7 @@ def full_model_export(checkpoint, model_output_dir, model_checkpoints_dir, epoch
         save_variable(fc_input_dim, "deployment_variables_fc_input_dim", model_output_dir)
 
         # Save the processing precision value for automatic setting when deploying the models
-        save_variable(str(double_precision), "deployment_variables_double_precision", model_output_dir)
+        save_variable(str(precision), "deployment_variables_precision", model_output_dir)
 
         # Get the directory name of the current Python file for the autoencoder export
         search_dir = os.path.abspath(__file__)
@@ -860,7 +853,7 @@ def plot_epoch_data(end_of_epoch_plotting_data, epoch, model_save_name, time_dim
     return(number_of_true_signal_points, number_of_recovered_signal_points, in_im, noise_im, rec_im)        #returns the number of true signal points, number of recovered signal points, input image, noised image and reconstructed image 
 
 ### Training Function
-def train_epoch(epoch, encoder, decoder, device, dataloader, loss_fn, optimizer, time_dimension=100, reconstruction_threshold=0.5, print_partial_training_losses=False, masking_optimised_binary_norm=False, loss_vs_sparse_img=False, renorm_for_loss_calc=False, use_tensorboard=False, writer=None):
+def train_epoch(epoch, encoder, decoder, device, dataloader, loss_fn, optimizer, time_dimension=100, reconstruction_threshold=0.5, masking_optimised_binary_norm=False, loss_vs_sparse_img=False, renorm_for_loss_calc=False, use_tensorboard=False, writer=None):
     """
     Training loop for a single epoch
 
@@ -878,7 +871,6 @@ def train_epoch(epoch, encoder, decoder, device, dataloader, loss_fn, optimizer,
         tof_std_dev (float) or (tuple): The standard deviation of the gaussian distribution to draw the ToF shift from. If given as float then number will be constant over training, if given as tuple then a random value will be selected from the range given for each batch. Default = 0
         time_dimension (int): The number of time steps in the data set, used to set the upper limit of the noise point values amonst other things. Default = 100
         reconstruction_threshold (float): The threshold used in the custom normalisation, also used to set the lower limit of the noise point values. Default = 0.5
-        print_partial_training_losses (bool): A flag to set if the partial training losses are printed to terminal. If set to true partial loss is printed to termial whilst training. If set to false the a TQDM progress bar is used to show processing progress. Default = False
         masking_optimised_binary_norm (bool): A flag to set if the masking optimised binary normalisation is used. If set to true the masking optimised binary normalisation is used, if set to false the gaped normalisation is used. Default = False  [EXPLAIN IN MORE DETAIL!!!!!]
         loss_vs_sparse_img (bool): A flag to set if the loss is calculated against the sparse image or the clean image. If set to true the loss is calculated against the sparse image, if set to false the loss is calculated against the clean image. Default = False
 
@@ -893,7 +885,7 @@ def train_epoch(epoch, encoder, decoder, device, dataloader, loss_fn, optimizer,
     batches = 0
 
 
-    iterator = tqdm(dataloader, desc='Batches', leave=False, dynamic_ncols=True, postfix="Starting")                  # If print_partial_training_losses is true then we just iterate the dataloder without genrating a progress bar as partial losses will be printed instead. If set to 'False' use the tqdm progress bar wrapper for the dataset for user feedback on progress
+    iterator = tqdm(dataloader, desc='Batches', leave=False, dynamic_ncols=True, postfix="Starting")             
     for data in iterator: 
         image_batch, sparse_output_batch, _, noised_sparse_reslimited_batch = data
         execution_timer.record_time(event_name="Training-preprocess", event_type="start")
@@ -964,7 +956,7 @@ def train_epoch(epoch, encoder, decoder, device, dataloader, loss_fn, optimizer,
     return avg_epoch_loss
 
 ### Testing Function
-def test_epoch(encoder, decoder, device, dataloader, loss_fn, time_dimension=100, reconstruction_threshold=0.5, print_partial_training_losses=False, masking_optimised_binary_norm=False, loss_vs_sparse_img=False, renorm_for_loss_calc=False, debug_masking_function=False):
+def test_epoch(encoder, decoder, device, dataloader, loss_fn, time_dimension=100, reconstruction_threshold=0.5, masking_optimised_binary_norm=False, loss_vs_sparse_img=False, renorm_for_loss_calc=False, debug_masking_function=False):
     """
     Testing (Evaluation) loop for a single epoch. This function is identical to the training loop except that it does not perform the backward pass and parameter update steps and the model is run in eval mode. Additionaly the dataset used is the test dataset rather than the training dataset so that the data is unseen by the model.
 
@@ -982,7 +974,6 @@ def test_epoch(encoder, decoder, device, dataloader, loss_fn, time_dimension=100
         tof_std_dev (float) or (tuple): The standard deviation of the gaussian distribution to draw the ToF shift from. If given as float then number will be constant over training, if given as tuple then a random value will be selected from the range given for each batch. Default = 0
         time_dimension (int): The number of time steps in the data set, used to set the upper limit of the noise point values amonst other things. Default = 100
         reconstruction_threshold (float): The threshold used in the custom normalisation, also used to set the lower limit of the noise point values. Default = 0.5
-        print_partial_training_losses (bool): A flag to set if the partial training losses are printed to terminal. If set to true partial loss is printed to termial whilst training. If set to false the a TQDM progress bar is used to show processing progress. Default = False
         masking_optimised_binary_norm (bool): A flag to set if the masking optimised binary normalisation is used. If set to true the masking optimised binary normalisation is used, if set to false the gaped normalisation is used. Default = False  [EXPLAIN IN MORE DETAIL!!!!!]
         loss_vs_sparse_img (bool): A flag to set if the loss is calculated against the sparse image or the clean image. If set to true the loss is calculated against the sparse image, if set to false the loss is calculated against the clean image. Default = False
 
@@ -1006,7 +997,7 @@ def test_epoch(encoder, decoder, device, dataloader, loss_fn, time_dimension=100
         loss_total = 0.0
         batches = 0
         
-        iterator = tqdm(dataloader, desc='Testing', leave=False, colour="yellow", dynamic_ncols=True, postfix="Starting")                  # If print_partial_training_losses is true then we just iterate the dataloder without genrating a progress bar as partial losses will be printed instead. If set to 'False' use the tqdm progress bar wrapper for the dataset for user feedback on progress
+        iterator = tqdm(dataloader, desc='Testing', leave=False, colour="yellow", dynamic_ncols=True, postfix="Starting")           
         for data in iterator: 
             image_batch, sparse_output_batch, sparse_and_resolution_limited_batch, noised_sparse_reslimited_batch = data
 
@@ -1078,7 +1069,7 @@ def test_epoch(encoder, decoder, device, dataloader, loss_fn, time_dimension=100
     return loss_total/batches, end_of_epoch_plotting_data
 
 ### Validation Function
-def validation_routine(encoder, decoder, device, dataloader, loss_fn, time_dimension=100, reconstruction_threshold=0.5, print_partial_training_losses=False, masking_optimised_binary_norm=False, loss_vs_sparse_img=False, renorm_for_loss_calc=False):
+def validation_routine(encoder, decoder, device, dataloader, loss_fn, time_dimension=100, reconstruction_threshold=0.5, masking_optimised_binary_norm=False, loss_vs_sparse_img=False, renorm_for_loss_calc=False):
     """
     Validation loop for a single epoch. This function is identical to the test/evaluation loop except that it is used for hyperparamter evaluation to evaluate between differnt models. This function is not used during training, only for hyperparameter evaluation. Again it uses a previosuly unseen dataset howevr this one is fixed and not randomly selected from the dataset so as to provide a fixed point of reference for direct model comparison.
     
@@ -1095,7 +1086,6 @@ def validation_routine(encoder, decoder, device, dataloader, loss_fn, time_dimen
         tof_std_dev (float) or (tuple): The standard deviation of the gaussian distribution to draw the ToF shift from. If given as float then number will be constant over training, if given as tuple then a random value will be selected from the range given for each batch. Default = 0
         time_dimension (int): The number of time steps in the data set, used to set the upper limit of the noise point values amonst other things. Default = 100
         reconstruction_threshold (float): The threshold used in the custom normalisation, also used to set the lower limit of the noise point values. Default = 0.5
-        print_partial_training_losses (bool): A flag to set if the partial training losses are printed to terminal. If set to true partial loss is printed to termial whilst training. If set to false the a TQDM progress bar is used to show processing progress. Default = False
         masking_optimised_binary_norm (bool): A flag to set if the masking optimised binary normalisation is used. If set to true the masking optimised binary normalisation is used, if set to false the gaped normalisation is used. Default = False  [EXPLAIN IN MORE DETAIL!!!!!]
         loss_vs_sparse_img (bool): A flag to set if the loss is calculated against the sparse image or the clean image. If set to true the loss is calculated against the sparse image, if set to false the loss is calculated against the clean image. Default = False
 
@@ -1111,7 +1101,7 @@ def validation_routine(encoder, decoder, device, dataloader, loss_fn, time_dimen
         loss_total = 0.0
         batches = 0
 
-        iterator = tqdm(dataloader, desc='Validation', leave=False, colour="green", dynamic_ncols=True, postfix="Starting")                  # If print_partial_training_losses is true then we just iterate the dataloder without genrating a progress bar as partial losses will be printed instead. If set to 'False' use the tqdm progress bar wrapper for the dataset for user feedback on progress
+        iterator = tqdm(dataloader, desc='Validation', leave=False, colour="green", dynamic_ncols=True, postfix="Starting")                 
         for data in iterator: 
             image_batch, sparse_output_batch, sparse_and_resolution_limited_batch, noised_sparse_reslimited_batch = data
             if masking_optimised_binary_norm:
@@ -1221,7 +1211,7 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
     epoch_avg_loss_false_positive_xy = []
 
     # Initialises pixel belief telemetry
-    telemetry = [[0,0.5,0.5]]                # Initalises the telemetry memory, starting values are 0, 0.5, 0.5 which corrspond to epoch(0), above_threshold(0.5), below_threshold(0.5)
+    telemetry = [[0,xdim*ydim,0]]                # Initalises the telemetry memory, starting values are 0, 0.5, 0.5 which corrspond to epoch(0), above_threshold(0.5), below_threshold(0.5)
     
     # Create a summary writer
     if use_tensorboard:
@@ -1289,16 +1279,15 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
     settings["Noise Points"] = noise_points # Adds the noise points to the settings dictionary
     settings["Train Split"] = train_test_split_ratio # Adds the train split to the settings dictionary
     settings["Val/Test Split"] = val_test_split_ratio   # Adds the val/test split to the settings dictionary
-    settings["Dataset"] = dataset_title # Adds the dataset title to the settings dictionary
+    settings["Dataset/s used"] = [path.rstrip('/').split('/')[-1] for path in dataset_paths] # Adds the dataset titles to the settings dictionary
     settings["Time Dimension"] = time_dimension # Adds the time dimension to the settings dictionary
     settings["Seed Val"] = seeding_value # Adds the seed value to the settings dictionary
     settings["Reconstruction Threshold"] = reconstruction_threshold # Adds the reconstruction threshold to the settings dictionary
-    settings["Double Precision"] = double_precision
+    settings["Precision"] = precision
     settings["shuffle_train_data"] = shuffle_train_data
     settings["record_weights"] = record_weights
     settings["record_biases"] = record_biases
     settings["record_activity"] = record_activity
-    settings["timeout_training"] = timeout_training
     settings["timeout_time"] = timeout_time
 
     #%% - Dataset Pre-tests
@@ -1459,9 +1448,6 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
         for epoch in loop_range:                 # For loop that iterates over the number of epochs where 'epoch' takes the values (0) to (num_epochs - 1)
             execution_timer.record_time(event_name="Epoch", event_type="start") #records the time the program started
 
-            if print_partial_training_losses:
-                print(f'\nStart of EPOCH {epoch + 1}/{num_epochs}')
-
             #### IMPLEMNT THIS TO INJECT SEED VAULE AGAIN WEACH EPOCH SO THAT  THE TRAINING DATA IS THE DETERMINISTICALLY THE SAME EACH EPOCH NOT FRESH EACH TIME
             if inject_seed and epoch % inject_seed_interval == 0:
                 torch.manual_seed(T_seed)
@@ -1490,7 +1476,6 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
                                     optim,
                                     time_dimension,
                                     reconstruction_threshold,
-                                    print_partial_training_losses,
                                     masking_optimised_binary_norm,
                                     loss_vs_sparse_img,
                                     renorm_for_loss_calc,
@@ -1508,16 +1493,13 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
                                     loss_fn,
                                     time_dimension,
                                     reconstruction_threshold,
-                                    print_partial_training_losses,
                                     masking_optimised_binary_norm,
                                     loss_vs_sparse_img,
                                     renorm_for_loss_calc,
                                     )
             execution_timer.record_time(event_name="Testing", event_type="stop") #records the time the program started
 
-            #if print_partial_training_losses:
-            #    print('\n End of EPOCH {}/{} \t train loss {:.3f} \t val loss {:.3f}'.format(epoch + 1, num_epochs, train_loss, test_loss))     #epoch +1 is to make up for the fact the range spans 0 to epoch-1 but we want to numerate things from 1 upwards for sanity
-            
+
             loop_range.set_postfix({'Train Loss': train_loss, 'Test Loss': test_loss})
 
 
@@ -1575,7 +1557,7 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
 
             # check if current epoch is a multiple of 'model_checkpoint_interval' and if so save the model
             if model_checkpointing and epoch % model_checkpoint_interval == 0 and epoch != 0:
-                full_model_export(True, model_output_dir, model_checkpoints_dir, epoch, encoder, decoder, optim, latent_dim, fc_input_dim, double_precision, Encoder, debug_model_exporter=False)
+                full_model_export(True, model_output_dir, model_checkpoints_dir, epoch, encoder, decoder, optim, latent_dim, fc_input_dim, precision, Encoder, debug_model_exporter=False)
 
             if epoch % hook_flush_interval == 0 and epoch != 0:
                 write_hook_data_to_disk_and_clear(activations, weights_data, biases_data, epoch, dir)
@@ -1587,7 +1569,7 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
             execution_timer.record_time(event_name="Epoch", event_type="stop") #records the time the program started
 
             ### Training Timeout Check
-            if timeout_training:
+            if timeout_time:
                 if time.time() - start_time > timeout_time * 60:  #convert timeout time from minuits to seconds
                     print("Training timed out, exiting training loop")
                     break
@@ -1677,7 +1659,7 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
 
     if plot_pixel_threshold_telemetry:
         Out_Label = graphics_dir + f'{model_save_name} - Reconstruction Threshold Telemetry - Epoch {epoch}.png'
-        plot_telemetry(telemetry, signal_points, Out_Label, plot_or_save=plot_or_save)
+        plot_telemetry(telemetry, signal_points, xdim*ydim, Out_Label, plot_or_save=plot_or_save)
 
     if plot_pixel_difference:
         num_diff_noised, num_same_noised, num_diff_cleaned, num_same_cleaned, im_diff_noised, im_diff_cleaned = AE_visual_difference(in_data, noisy_data, rec_data)
@@ -1732,10 +1714,10 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
 
            
     if plot_Graphwiz:
-        Graphviz_visulisation(encoder, decoder, double_precision, batch_size, xdim, ydim, graphics_dir)
+        Graphviz_visulisation(encoder, decoder, precision, batch_size, xdim, ydim, graphics_dir)
 
     #%% - Export model, statedicts and required variables for inference to disk    
-    AE_file_name = full_model_export(False, model_output_dir, model_checkpoints_dir, epoch, encoder, decoder, optim, latent_dim, fc_input_dim, double_precision, Encoder, debug_model_exporter=False)
+    AE_file_name = full_model_export(False, model_output_dir, model_checkpoints_dir, epoch, encoder, decoder, optim, latent_dim, fc_input_dim, precision, Encoder, debug_model_exporter=False)
 
     #%% - Export all data logged to disk in form of .txt file in the output dir
     print("\nSaving inputs, model stats and results to .txt file in output dir...")
@@ -1813,7 +1795,6 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
                                         loss_fn,
                                         time_dimension,
                                         reconstruction_threshold,
-                                        print_partial_training_losses,
                                         masking_optimised_binary_norm,
                                         loss_vs_sparse_img,
                                         renorm_for_loss_calc)

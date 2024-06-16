@@ -184,7 +184,7 @@ class ACBLoss(torch.nn.Module):
 
 
 class TrippleLoss(torch.nn.Module):
-    def __init__(self, zero_weighting=1, nonzero_weighting=1, ff_weighting=0.000001, time_weighting=1, tp_weighting=1, fp_weighting=1, fn_weighting=1, tn_weighting=1, reduction='mean'):
+    def __init__(self, zero_weighting=1, nonzero_weighting=1, ff_weighting=1e-8, time_weighting=1, tp_weighting=1, fp_weighting=1, fn_weighting=1, tn_weighting=1, punishment=0.05, reduction='mean'):
         """
         Initializes the ACB-MSE Loss Function class with weighting coefficients.
 
@@ -193,14 +193,13 @@ class TrippleLoss(torch.nn.Module):
         - nonzero_weighting: a scalar weighting coefficient for the MSE loss of non-zero pixels
         """
         super().__init__()   
-        self.zero_weighting = zero_weighting
-        self.nonzero_weighting = nonzero_weighting
         self.TPW = tp_weighting
         self.FPW = fp_weighting
         self.FNW = fn_weighting
         self.TNW = tn_weighting
         self.time_weight = time_weighting
         self.ff_weight = ff_weighting
+        self.punishment = punishment
         self.MSE = torch.nn.MSELoss(reduction=reduction)
 
 
@@ -223,12 +222,10 @@ class TrippleLoss(torch.nn.Module):
 
         # Time domain 
         time_domain_match_mask = (signalmasked_output == target_image[nonzero_mask])           # determine how many of those indexs have matching ToF values
-        #TP = torch.sum(time_domain_match_mask)           # this is th number of items that are signal in both the target and reconstructed image and have the same ToF values
-        #FP = torch.sum(~time_domain_match_mask)      # this is rthe number of items that are signal in both the target and reconstructed image but have different ToF values
         Time_Match = self.MSE(reconstructed_image[nonzero_mask][time_domain_match_mask], target_image[nonzero_mask][time_domain_match_mask])
 
         # Spatial domain 
-        # Signal Masked Output Stats
+        ## Signal Masked Output Stats
         false_negative_mask = (signalmasked_output == 0)   
         true_positive_mask = ~false_negative_mask        
     
@@ -238,7 +235,7 @@ class TrippleLoss(torch.nn.Module):
         FNL = self.MSE(false_negatives, target_image[nonzero_mask][false_negative_mask])
         TPL = self.MSE(true_positives, target_image[nonzero_mask][true_positive_mask])
 
-        # Zero Masked Output Stats
+        ## Zero Masked Output Stats
         true_negative_mask = (zeromasked_output == 0)
         false_positive_mask = ~true_negative_mask
         true_negatives = zeromasked_output[true_negative_mask] 
@@ -252,21 +249,13 @@ class TrippleLoss(torch.nn.Module):
         if torch.isnan(FPL): # Handles the case where there are no nonzero pixels in the target image at all
             FPL = 0
         if torch.isnan(TNL): # Handles the case where there are no zero pixels in the target image at all
-            TNL = 1
+            TNL = self.punishment
         if torch.isnan(TPL): # Handles the case where there are no zero pixels in the target image at all
-            TPL = 1
+            TPL = self.punishment
         if torch.isnan(Time_Match): # Handles the case where there are no signal points with matching time values in the target image at all
-            Time_Match = 1
-        #REVERT PUNISHMENT TO 10 IF BREAKS
+            Time_Match = self.punishment
 
         full_frame_loss = 0 #self.MSE(reconstructed_image, target_image)
-        #REMOVE IF BREAKS
-
-        #TEST!
-        boost_time_loss = False
-        if boost_time_loss:
-            Time_Match = Time_Match**2
-
 
         weighted_loss = (self.TPW * TPL) + (self.FNW * FNL) + (self.FPW * FPL) + (self.TNW * TNL) #+ (self.time_weight * Time_Match)# + (self.ff_weight * full_frame_loss)
         
