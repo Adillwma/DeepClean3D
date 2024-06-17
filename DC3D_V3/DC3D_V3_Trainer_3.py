@@ -165,20 +165,20 @@ Possible improvements:
 #%% - First time setup
 results_output_path = "N:/Yr 3 Project Results/"             # Path to the results output folder, this is the folder that will contains all your results folders, not the results folder for a particular run.
 
-dataset_paths = ["N:/Yr 3 Project Datasets/[V3]_RDT_50K/"]#,    # Path to the dataset folder, this is the folder that contains your dataset folders, not a dataset folder itself. This allows fast switching between datasets by changing just the dataset title below without having to change the full path each time
+dataset_paths = ["N:/Yr 3 Project Datasets/V3_PDT_10K/"]#,    # Path to the dataset folder, this is the folder that contains your dataset folders, not a dataset folder itself. This allows fast switching between datasets by changing just the dataset title below without having to change the full path each time
                  #"N:/Yr 3 Project Datasets/V3_RDT_150K/",
 #]               #"B:\\"#                  
 
 
 #%% - Data Path Settings
-model_save_name = "T013_low_punishment"      # Name of the model to be saved, this will be the name of the folder that the model is saved in
+model_save_name = "T016_low_punishment"      # Name of the model to be saved, this will be the name of the folder that the model is saved in
 model_checkpoint_interval = 10               # Number of epochs between each model checkpoint save, set to False for no checkpointing. If set to a value then the model will save a checkpoint of the model and optimiser state dicts at the end of each 'model_checkpointing_interval' epochs
 timeout_time = False                         # Time in minuits to wait before stopping training, set to False to disable time based stopping. {Default = False}. NOTE! Program will allow the epoch currently in progress to conclude before stopping.
 
 #%% - Training Hyperparameter Settings
-num_epochs = 2                               # Set max number of epochs to run for. {Default = 100}
+num_epochs = 200                               # Set max number of epochs to run for. {Default = 100}
 batch_size = 200                             # Set batch size - number of Images to pull per batch. {Default = 64}
-learning_rate = 0.0008                       # Set optimiser learning rate. {Default = 1e-3}
+learning_rate = 0.002                       # Set optimiser learning rate. {Default = 1e-3}
 optim_w_decay = 1e-05                        # Set optimiser weight decay for regularisation. {Default = 1e-5}
 precision = 32                               # Set the precision of the data and model (16, 32 or 64) NOTE 16 only availble if runing on supported GPU hardware. {Default = 32}
  
@@ -248,15 +248,17 @@ nonzero_loss_choice = 1                                 # Select loss function f
 
 #%% - Pretraining settings
 start_from_pretrained_model = True                      # If set to true then the model will load the pretrained model and optimiser state dicts from the path below
-load_pretrained_optimser = True                         # Only availible if above is set to true - (pretrain seems to perform better if this is set to true)
+load_pretrained_optimiser = True                         # Only availible if above is set to true - (pretrain seems to perform better if this is set to true)
 
 pretrained_model_path = r'N:\Yr 3 Project Results\Online_RUN_020_PTfrom online19 PTfrm47 - Training Results\Model_Checkpoints\Epoch_170\Statedicts_checkpoint_epoch_170.pth'      # Specify the path to the saved full state dictionary for pretraining
+pt_style = "V2"    # V1 for legacy model, V2 for new models
 
 #%% - Normalisation Settings 
 masking_optimised_binary_norm = False        # If set to true then the model will use the binary normalisation method optimised for masking output. Otherwise will use the gaped custom normalisation optimised for the direct network output
 
 #%% - New beta feature settings 
 compile_model = False    # NOT AVAILIBE ON WINDOWS!                    # [default = True] If set to true then the model will be compiled using torch.compile for faster execution, if set to false then the model will not be compiled further information is availible at: 
+compile_mode = 'default' # mode for the torch.compile, can be set to default, reduce-overhead or max-autotune, see here: https://pytorch.org/docs/stable/generated/torch.compile.html for more information
 
 # Neural Net Telemetry
 record_weights = False                       # If set to true then the model will record the weights of the network at the end of each epoch
@@ -358,7 +360,7 @@ from torch.utils.data import Subset
 import torch.profiler
 
 # - General Functions
-from Helper_files.Robust_model_exporter_V1 import Robust_model_export                   # Function to export the raw .py file that contains the autoencoder class
+from Helper_files.Robust_model_exporter_V1 import Robust_model_export, Robust_model_export2                   # Function to export the raw .py file that contains the autoencoder class
 from Helper_files.System_Information_check import get_system_information                # Function to get the host system performance specs of the training machine
 from Helper_files.Dataset_Integrity_Check_V1 import dataset_integrity_check             # Function to check the integrity of the datasets values
 from Helper_files.Dataset_distribution_tester_V1 import dataset_distribution_tester     # Function to check the distribution of the datasets values
@@ -435,79 +437,41 @@ if comparative_live_loss:
 #%% - Data Gathering Functions
 ### CLEAN UP THIS FUCNTION !!!!!!!!!!!!
 def full_model_export(checkpoint, model_output_dir, model_checkpoints_dir, epoch, encoder, decoder, optim, latent_dim, fc_input_dim, precision, Encoder, debug_model_exporter=False):
-    
-    if checkpoint:
 
-        model_checkpoints_path = model_checkpoints_dir + f"Epoch_{epoch}\\"
-        os.makedirs(model_checkpoints_path, exist_ok=True)
+    def save_model_data(output_path, output_filename, encoder, decoder, optim, latent_dim, fc_input_dim, precision, model_output_dir, model_save_name, checkpoint, model_checkpoints_dir, epoch, debug_model_exporter=False):
+        # Get the directory name of the current Python file for the autoencoder export
+        search_dir = os.path.abspath(__file__)
+        search_dir = os.path.dirname(search_dir)
+
+        autoencoder_py_file_script, AE_file_name = Robust_model_export2(Encoder, search_dir, debug=debug_model_exporter) #Only need to run on encoder as encoder and decoder are both in the same file so both get saved this way
+
+        torch.save({'encoder_state_dict': encoder.state_dict(),
+                    'decoder_state_dict': decoder.state_dict(),
+                    'optimizer_state_dict': optim.state_dict(),
+                    'latent_dim': latent_dim,
+                    'fc_input_dim': fc_input_dim,
+                    'precision': precision,
+                    'autoencoder_py_file_script': autoencoder_py_file_script,
+                    },
+                output_filename)
         
-        # Joins up the parts of the differnt output files save paths
-        full_model_path = model_checkpoints_path + f"Model_checkpoint_epoch_{epoch}.pth"
-        full_statedict_path = model_checkpoints_path + f"Statedicts_checkpoint_epoch_{epoch}.pth"
-
-        # Save and export trained model to user output dir
-        torch.save((encoder, decoder), full_model_path)
-
-        # Save the state dictionary
-        torch.save({'encoder_state_dict': encoder.state_dict(),   
-                    'decoder_state_dict': decoder.state_dict(),   
-                    'optimizer_state_dict': optim.state_dict()},  
-                    full_statedict_path)  
-
-        # Save the latent dimesion value for automatic setting when deploying the models
-        save_variable(latent_dim, "deployment_variables_ld", model_checkpoints_path)
-
-        # save the fc_input_dim value for automatic setting when deploying the models
-        save_variable(fc_input_dim, "deployment_variables_fc_input_dim", model_checkpoints_path)
-
-        # Save the processing precision value for automatic setting when deploying the models
-        save_variable(str(precision), "deployment_variables_precision", model_checkpoints_path)
-
-        # Get the directory name of the current Python file for the autoencoder export
-        search_dir = os.path.abspath(__file__)
-        search_dir = os.path.dirname(search_dir)
-
-        # Locate .py file that defines the Encoder and Decoder and copies it to the model save dir, due to torch.save model save issues
-        AE_file_name = Robust_model_export(Encoder, search_dir, model_checkpoints_path, debug=debug_model_exporter) #Only need to run on encoder as encoder and decoder are both in the same file so both get saved this way
-
-    else:
-        # Joins up the parts of the differnt output files save paths
-        full_model_path = model_output_dir + model_save_name + " - Model.pth"
-        full_statedict_path = model_output_dir + model_save_name + " - Model + Optimiser State Dicts.pth"
-
-        print("\nSaving model to .pth file...")
-        # Save and export trained model to user output dir
-        torch.save((encoder, decoder), full_model_path)
-        print("- Completed -")
-
-        print("\nSaving model state dictionary...")
-        # Save the state dictionary
-        torch.save({'encoder_state_dict': encoder.state_dict(),   
-                    'decoder_state_dict': decoder.state_dict(),   
-                    'optimizer_state_dict': optim.state_dict()},  
-                    full_statedict_path)  
-        print("- Completed -") 
-
-        print("\nSaving Autoencoder python file and user variables for recall...")
-
-        # Save the latent dimesion value for automatic setting when deploying the models
-        save_variable(latent_dim, "deployment_variables_ld", model_output_dir)
-
-        # save the fc_input_dim value for automatic setting when deploying the models
-        save_variable(fc_input_dim, "deployment_variables_fc_input_dim", model_output_dir)
-
-        # Save the processing precision value for automatic setting when deploying the models
-        save_variable(str(precision), "deployment_variables_precision", model_output_dir)
-
-        # Get the directory name of the current Python file for the autoencoder export
-        search_dir = os.path.abspath(__file__)
-        search_dir = os.path.dirname(search_dir)
-
-        # Locate .py file that defines the Encoder and Decoder and copies it to the model save dir, due to torch.save model save issues
-        AE_file_name = Robust_model_export(Encoder, search_dir, model_output_dir, debug=debug_model_exporter) #Only need to run on encoder as encoder and decoder are both in the same file so both get saved this way
         return AE_file_name
 
-        print("- Completed -")
+    if checkpoint:
+        model_checkpoints_path = model_checkpoints_dir + f"Epoch_{epoch}\\"
+        os.makedirs(model_checkpoints_path, exist_ok=True)
+        new_combined_filename = model_checkpoints_path + f"Combined_checkpoint_epoch_{epoch}.pth"
+        AE_file_name = save_model_data(model_checkpoints_path, new_combined_filename, encoder, decoder, optim, latent_dim, fc_input_dim, precision, model_output_dir, model_save_name, checkpoint, model_checkpoints_dir, epoch, debug_model_exporter=False)
+
+    else:
+        # Joins up the parts of the different output files save paths
+        new_combined_filename = model_output_dir + model_save_name + f"Combined_checkpoint_epoch_{epoch}.pth"
+        print("\nSaving model to .pth file...")
+        AE_file_name = save_model_data(model_output_dir, new_combined_filename, encoder, decoder, optim, latent_dim, fc_input_dim, precision, model_output_dir, model_save_name, checkpoint, model_checkpoints_dir, epoch, debug_model_exporter=False)
+        print("- Completed -") 
+        
+        return AE_file_name
+
     
 # Tracks network output pixel value distribution as histogram pre-reconstruction threshold and renomalisation to understand the effect of the reconstruction thresholding
 def belief_telemetry(data, reconstruction_threshold, epoch, settings, plot_or_save=0):
@@ -1196,7 +1160,7 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
     epoch_avg_loss_false_positive_xy = []
 
     # Initialises pixel belief telemetry
-    telemetry = [[0,xdim*ydim,0]]                # Initalises the telemetry memory, starting values are 0, 0.5, 0.5 which corrspond to epoch(0), above_threshold(0.5), below_threshold(0.5)
+    telemetry = [[0, 0, xdim * ydim]]                # Initalises the telemetry memory, starting values are 0, 0.5, 0.5 which corrspond to epoch(0), above_threshold(0.5), below_threshold(0.5)
     
     # Create a summary writer
     if use_tensorboard:
@@ -1261,6 +1225,7 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
     settings["Optimiser Decay"] = optim_w_decay # Adds the optimiser decay to the settings dictionary
     settings["Dropout Probability"] = dropout_prob # Adds the dropout probability to the settings dictionary
     settings["Latent Dimension"] = latent_dim # Adds the latent dimension to the settings dictionary
+    settings["FC Input Dim"] = fc_input_dim # Adds the FC input dimension to the settings dictionary
     settings["Noise Points"] = noise_points # Adds the noise points to the settings dictionary
     settings["Train Split"] = train_test_split_ratio # Adds the train split to the settings dictionary
     settings["Val/Test Split"] = val_test_split_ratio   # Adds the val/test split to the settings dictionary
@@ -1357,37 +1322,72 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
 
 
 
-    #%% - Setup model, loss criteria and optimiser    
-    # Initialize the encoder and decoder
-    encoder = Encoder(latent_dim, print_encoder_debug, fc_input_dim)
-    decoder = Decoder(latent_dim, print_decoder_debug, fc_input_dim)
+    #%% - Setup model, loss criteria and optimiser   
+    if start_from_pretrained_model and pt_style  == "V2":  # REMOVE CHECK FORM PT_STYLE ONCE ALL MODELS HAVE BEEN CONVERTED TO NEW STYLE
 
-    encoder, decoder, dtype = set_model_precision(encoder, decoder, precision) # Sets the precision of the encoder and decoder based on user input and returns the dtype variable used in the rest of the code
+        # Load the saved model data
+        checkpoint = torch.load(pretrained_model_path)   # dOES THIS REQUIRE MAP LOCATION IF LOADING INTO CUDA????? TEST !
+
+        # Set correct variables for the model
+        latent_dim = checkpoint['latent_dim']
+        fc_input_dim = checkpoint["fc_input_dim"]
+        precision = checkpoint["precision"]
+
+        # Update saved settings 
+        settings["Latent Dimension"] = latent_dim
+        settings["Precision"] = precision
+        settings["FC Input Dim"] = fc_input_dim
+
+        # Load the Encoder and Decoder classes by executing the script content directly using exec()
+        exec(checkpoint["autoencoder_py_file_script"])
+
+        encoder = Encoder(checkpoint['latent_dim'], False, checkpoint["fc_input_dim"])
+        decoder = Decoder(checkpoint['latent_dim'], False, checkpoint["fc_input_dim"])
+
+        # Load the state dicts
+        encoder.load_state_dict(checkpoint['encoder_state_dict'])
+        decoder.load_state_dict(checkpoint['decoder_state_dict'])        
+
+        # precision already set so just updating the dtype variable for rest of program, no need for value error check as must have been valid to run in previous model train
+        if precision == "16":
+            dtype = torch.float16
+        elif precision == "32":
+            dtype = torch.float32
+        elif precision == "64":
+            dtype = torch.float64
+
+
+    else:
+        # Initialize the encoder and decoder
+        encoder = Encoder(latent_dim, print_encoder_debug, fc_input_dim)
+        decoder = Decoder(latent_dim, print_decoder_debug, fc_input_dim)
+        encoder, decoder, dtype = set_model_precision(encoder, decoder, precision) # Sets the precision of the encoder and decoder based on user input and returns the dtype variable used in the rest of the code
+
+        # OLD V1 STYLE MODEL LOAD, REMOVE THIS IF CLAUSE ONCE OLD MODELS HAVE BEEN CONVERTED TO NEW STYLE 
+        if start_from_pretrained_model and pt_style == "V1":
+
+            # load the full state dictionary into memory
+            full_state_dict = torch.load(pretrained_model_path, map_location=device)
+            # load the state dictionaries into the models
+            encoder.load_state_dict(full_state_dict['encoder_state_dict'])
+            decoder.load_state_dict(full_state_dict['decoder_state_dict'])
+
 
     # Define the optimizer
     params_to_optimize = [{'params': encoder.parameters()} ,{'params': decoder.parameters()}] #Selects what to optimise, 
     optim = torch.optim.Adam(params_to_optimize, lr=learning_rate, weight_decay=optim_w_decay)
 
+    if start_from_pretrained_model and load_pretrained_optimiser:
+        # load the optimizer state dictionary, if user requested
+        optim.load_state_dict(checkpoint['optimizer_state_dict'])
+
     # Initalise Model on compute device
     encoder.to(device)   #Moves encoder to selected device, CPU/GPU
     decoder.to(device)   #Moves decoder to selected device, CPU/GPU
 
-    # Load in pretrained weights and biases, if user requested
-    if start_from_pretrained_model:
-
-        # load the full state dictionary into memory
-        full_state_dict = torch.load(pretrained_model_path, map_location=device)
-        # load the state dictionaries into the models
-        encoder.load_state_dict(full_state_dict['encoder_state_dict'])
-        decoder.load_state_dict(full_state_dict['decoder_state_dict'])
-
-        if load_pretrained_optimser:
-            # load the optimizer state dictionary, if user requested
-            optim.load_state_dict(full_state_dict['optimizer_state_dict'])
-
     if compile_model:
-        encoder = torch.compile(encoder, mode="default")
-        decoder = torch.compile(decoder, mode="default")
+        encoder = torch.compile(encoder, mode=compile_mode)
+        decoder = torch.compile(decoder, mode=compile_mode)
 
 
 

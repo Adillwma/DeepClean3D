@@ -184,7 +184,7 @@ class ACBLoss(torch.nn.Module):
 
 
 class TrippleLoss(torch.nn.Module):
-    def __init__(self, zero_weighting=1, nonzero_weighting=1, ff_weighting=1e-8, time_weighting=1, tp_weighting=1, fp_weighting=1, fn_weighting=1, tn_weighting=1, punishment=0.05, reduction='mean'):
+    def __init__(self, zero_weighting=1, nonzero_weighting=1, ff_weighting=1e-8, time_weighting=1, tp_weighting=1, fp_weighting=1, fn_weighting=1, tn_weighting=1, punishment=0.1, reduction='mean'):
         """
         Initializes the ACB-MSE Loss Function class with weighting coefficients.
 
