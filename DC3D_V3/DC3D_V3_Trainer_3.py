@@ -1356,22 +1356,11 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
         elif precision == "64":
             dtype = torch.float64
 
-
     else:
         # Initialize the encoder and decoder
         encoder = Encoder(latent_dim, print_encoder_debug, fc_input_dim)
         decoder = Decoder(latent_dim, print_decoder_debug, fc_input_dim)
         encoder, decoder, dtype = set_model_precision(encoder, decoder, precision) # Sets the precision of the encoder and decoder based on user input and returns the dtype variable used in the rest of the code
-
-        # OLD V1 STYLE MODEL LOAD, REMOVE THIS IF CLAUSE ONCE OLD MODELS HAVE BEEN CONVERTED TO NEW STYLE 
-        if start_from_pretrained_model and pt_style == "V1":
-
-            # load the full state dictionary into memory
-            full_state_dict = torch.load(pretrained_model_path, map_location=device)
-            # load the state dictionaries into the models
-            encoder.load_state_dict(full_state_dict['encoder_state_dict'])
-            decoder.load_state_dict(full_state_dict['decoder_state_dict'])
-
 
     # Define the optimizer
     params_to_optimize = [{'params': encoder.parameters()} ,{'params': decoder.parameters()}] #Selects what to optimise, 
