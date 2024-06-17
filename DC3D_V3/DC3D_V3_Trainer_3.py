@@ -161,127 +161,115 @@ Possible improvements:
 
 ### ~~~~~  Label loss plots y axis programatically based on user loss function selection
 """
- 
-# NOTE to users: First epoch will always run slower when using a new dataset or after a computer restart as system memory is being trained, subsequent epochs should take ~50% of the time of the first epoch
-# NOTE to users: The 'nonzero_weighting' parameter is a great way to adjust the sensetivity of the training result. Values around 0.1 will be very cautious in predicting hits, whilst moving to around 1.0 will be very confident in predicting hits. This is a great way to adjust the sensetivity of the model to your needs. Low values are better for direct net output, whilst higher values are better for masking output.
 
 #%% - First time setup
-
-# NOTE: This section should be set when running on a new machine or when first setting up the program, once set it should not need to be changed again unless you want to change the default paths for the datasets and results folders
-dataset_paths = ["N:/Yr 3 Project Datasets/[V3]_RDT_50K/"]#,    # Path to the dataset folder, this is the folder that contains your dataset folders, not a dataset folder itself. This allows fast switching between datasets by changing just the dataset title below without having to change the full path each time
-                 #"N:/Yr 3 Project Datasets/V3_RDT_150K/",
-#]   #"B:\\"#                  
-
 results_output_path = "N:/Yr 3 Project Results/"             # Path to the results output folder, this is the folder that will contains all your results folders, not the results folder for a particular run.
 
+dataset_paths = ["N:/Yr 3 Project Datasets/[V3]_RDT_50K/"]#,    # Path to the dataset folder, this is the folder that contains your dataset folders, not a dataset folder itself. This allows fast switching between datasets by changing just the dataset title below without having to change the full path each time
+                 #"N:/Yr 3 Project Datasets/V3_RDT_150K/",
+#]               #"B:\\"#                  
+
+
 #%% - Data Path Settings
+model_save_name = "T013_low_punishment"      # Name of the model to be saved, this will be the name of the folder that the model is saved in
+model_checkpoint_interval = 10               # Number of epochs between each model checkpoint save, set to False for no checkpointing. If set to a value then the model will save a checkpoint of the model and optimiser state dicts at the end of each 'model_checkpointing_interval' epochs
+timeout_time = False                         # Time in minuits to wait before stopping training, set to False to disable time based stopping. {Default = False}. NOTE! Program will allow the epoch currently in progress to conclude before stopping.
 
-# get the last folder in the path to use as the dataset title
-#"REMOVE"  #"V2_1K_Fast"#  "RF_5K"#"PDT 10K" #"RDT 10K MOVE" #'RDT 500K 1000ToF' #"RDT 10K MOVE" #"RDT 50KM"# "Dataset 37_X15K Perfect track recovery" #"Dataset 24_X10Ks"           #"Dataset 12_X10K" ###### TRAIN DATASET : NEED TO ADD TEST DATASET?????
-model_save_name = "T010_low_punishment" #'Parabola6 no norm to loss' #"T2"#"RDT 500K 1000ToF timed"#"2023 Testing - RDT100K n100"#"2023 Testing - RDT10K NEW" #"RDT 100K 30s 200n Fixed"#"RDT 50KM tdim1000 AE2PROTECT 30 sig 200NP LD10"     #"D27 100K ld8"#"Dataset 18_X_rotshiftlarge"
+#%% - Training Hyperparameter Settings
+num_epochs = 2                               # Set max number of epochs to run for. {Default = 100}
+batch_size = 200                             # Set batch size - number of Images to pull per batch. {Default = 64}
+learning_rate = 0.0008                       # Set optimiser learning rate. {Default = 1e-3}
+optim_w_decay = 1e-05                        # Set optimiser weight decay for regularisation. {Default = 1e-5}
+precision = 32                               # Set the precision of the data and model (16, 32 or 64) NOTE 16 only availble if runing on supported GPU hardware. {Default = 32}
+ 
+# Architecture Settings
+latent_dim = 19                              # Set number of nodes in the latent space, the bottleneck layer. {Default = 12}
+fc_input_dim = 124                           # Set number of nodes in the intermediate fully connected layers. {Default = 128}
+dropout_prob = 0.2                           # [NOTE Not connected yet] Set dropout probability. {Default = 0.2}
+reconstruction_threshold = 0.5               # MUST BE BETWEEN 0-1  #Threshold for 3d reconstruction, values below this confidence level are discounted. {Default = 0.5}
 
-model_checkpointing = True                   # If set to true then the model will save a checkpoint of the model and optimiser state dicts at the end of each 'model_checkpointing_interval' epochs
-model_checkpoint_interval = 10                # Number of epochs between each model checkpoint save
+#%% - Image Preprocessing Settings
+signal_points = (30, 100)                    # Set the number of signal points to add
+noise_points = (0, 300)                      # Set the number of noise points to add
+x_std_dev = 0                                # (mm) Set the standard deviation of the detectors error in the x axis
+y_std_dev = 0                                # (mm) Set the standard deviation of the detectors error in the y axis
+tof_std_dev = 0                              # (ns) Set the standard deviation of the detectors error in the time of flight 
 
-timeout_time = False                  # Numerical value: Time in minuits to wait before stopping training, set to False to disable time based stopping. Default is False. NOTE! Program will allow the epoch currently in progress to conclude before stopping.
+#%% - Dataset Settings
+train_test_split_ratio = 0.9                 # Set the ratio of the dataset to be used for training (Hyperparameter)
 
 # Data Loader Settings
-preprocess_on_gpu = False                     # Only woirks if cuda gpu is found, else will defulat back to cpu preprocess
-inject_seed = True          # COMBINE WITH BELOW, FALSE OR VALUE                 # Reinjects the original seeding value to deterministically recreate the same noise and signal points each epoch, this is useful for testing the effect of different hyperparameters on the same data or for allowing the training to see same images multiple times to improve performance
-inject_seed_interval = 1                     # Number of epochs between each seed injection
-shuffle_train_data = False       #FIX CURRENLT BREAKS CODE CAUSING SAME ERROR AS FP16 i.e NANS IN ACBMSE RETURNING INT AS 0 FOR LOSS             # If set to true then will shuffle the training data each epoch
 large_data_bundles_size = 10000              # Bundle size of dataset, 1 for V1 ~0.98MB, 1000 for V2 ~98MB. [Planned 10K for V3 = ~980MB]
 number_of_bundles_to_memory = 1              # Essentially the 'Large batch Size' i.e how many bundles to load into memory at once [Must be less than or equal to the number of bundles in the dataset on disk]
-data_loader_workers = 0       #BROKEN! INVESTIGATE!               # Number of workers to use for the data loader, 0 means all data loading will be done on the main thread, 1 means one worker will be used to load data in the background, 2 means two workers will be used etc. 
+
+preprocess_on_gpu = False                    # Only woirks if cuda gpu is found, else will defulat back to cpu preprocess
+shuffle_train_data = False #FIX CURRENLT BREAKS CODE CAUSING SAME ERROR AS FP16 i.e NANS IN ACBMSE RETURNING INT AS 0 FOR LOSS             # If set to true then will shuffle the training data each epoch
+data_loader_workers = 0# FIX!                # Number of workers to use for the data loader, 0 means all data loading will be done on the main thread, 1 means one worker will be used to load data in the background, 2 means two workers will be used etc. 
+pin_memory = False                           # [default = False] If set to true then the data loader will pin the memory for faster data transfer to the GPU, if set to false then the data loader will not pin the memory
+
+inject_seed_interval = 10                    # Number of epochs between each seed injection, set to False for no seed injection. Reinjects the original seeding value to deterministically recreate the same noise and signal points each epoch, this is useful for testing the effect of different hyperparameters on the same data or for allowing the training to see same images multiple times to improve performance
+seeding_value = 10 #None                     # None gives no seeeding to RNG, if the value is set this is used for the RNG seeding for numpy, and torch libraries. {Default = None}
 
 # Input Data Settings
 TORCHSIM_data = False                        #!!!!!!!!!!!!!!!!!!!!!!
-time_dimension = 1000                        # User controll to set the number of time steps in the data
-xdim = 88                                    # Currently useless as the neural net isnot able to accept dynamicly sized inputs
-ydim = 128                                   # Currently useless, as above so below
-channels = 1      #CONNECT                   # User controll to set the number of channels in the data
+time_dimension = 1000                        # Set the number of time steps in the data
+xdim = 88                                    # Set the x dimension of the data in pixels
+ydim = 128                                   # Set the y dimension of the data in pixels
+channels = 1      #CONNECT                   # Set the number of channels in the data
 
-#%% - Training Hyperparameter Settings
-num_epochs = 200                           # User controll to set number of epochs (Hyperparameter)
-batch_size = 200# 200 #6 looks good                # User controll to set batch size - number of Images to pull per batch (Hyperparameter) 
-learning_rate = 0.0008                       # User controll to set optimiser learning rate (Hyperparameter)
-optim_w_decay = 1e-05                        # User controll to set optimiser weight decay for regularisation (Hyperparameter)
-precision = 32                      #  [16, 32, 0r 64] 16 only availble if runing on supported GPU       # User controll to set the precision of the data and model (16, 32 or 64)
- 
-# Architecture Settings
-latent_dim = 19                               # User controll to set number of nodes in the latent space, the bottleneck layer (Hyperparameter)
-fc_input_dim = 124                           # User controll to set number of nodes in the fc2 layer (Hyperparameter)
-dropout_prob = 0.2                           # [NOTE Not connected yet] User controll to set dropout probability (Hyperparameter)
-reconstruction_threshold = 0.5               # MUST BE BETWEEN 0-1  #Threshold for 3d reconstruction, values below this confidence level are discounted
-
-#%% - Dataset Settings
-train_test_split_ratio = 0.9                            # User controll to set the ratio of the dataset to be used for training (Hyperparameter)
+use_physical_values_for_plot_axis = True     # If false then axis are label by pixel indicies, if true then axis are labelled by physical units
+x_length = 800                               # mm
+y_length = 1500                              # mm
+time_length = 1000                           # ns
 
 #%% - Loss Function Settings
-loss_vs_sparse_img = False    #NOTE: Tested!            # User controll to set if the loss is calculated against the sparse image or the full image (Hyperparameter)
-loss_function_selection = "TrippleLoss" #"LayeredLoss"# #"ACB_MSE"                      # Select loss function (string):# "MAE", "MSE", "SSE", "BCE", "ACB_MSE", "ffACB_MSE", "Split_Loss", "True3D", "Simple3D", "ACB3D", "Fast3D", "WPR_Loss"
-renorm_for_loss_calc = False                             # User controll to set if the loss is calculated against the renormalised image or the network output data (Hyperparameter)
+loss_vs_sparse_img = False    #NOTE: Tested!             # Set if the loss is calculated against the sparse image or the full image (Hyperparameter)
+loss_function_selection = "TrippleLoss"                  # Select loss function (string):# "MAE", "MSE", "SSE", "BCE", "ACB_MSE", "ffACB_MSE", "Split_Loss", "True3D", "Simple3D", "ACB3D", "Fast3D", "WPR_Loss"
+renorm_for_loss_calc = False                             # Set if the loss is calculated against the renormalised image or the network output data (Hyperparameter)
 
-# Weights used for ACBMSE and varients
-zero_weighting = 1                                      # User controll to set zero weighting for ACBMSE or ffACBMSE (Hyperparameter)
-nonzero_weighting = 1#0.4 #0.4                          # User controll to set non zero weighting for ACBMSE or ffACBMSE  (Hyperparameter)
-fullframe_weighting = 1 #1.5                          # User controll to set full frame weighting for ffACBMSE (Hyperparameter) [# Only used for ffACBMSE loss function]
-time_weighting = 1                                    # User controll to set time weighting for ffACBMSE (Hyperparameter) [# Only used for ffACBMSE loss function]
-time_penalty = 10
-tp_weighting = 1                                      # User controll to set time point weighting for ffACBMSE (Hyperparameter) [# Only used for ffACBMSE loss function]
-tp_penalty = 10
-tn_weighting = 1                                      # User controll to set frame point weighting for ffACBMSE (Hyperparameter) [# Only used for ffACBMSE loss function]
-tn_penalty = 10
-fp_weighting = 1                                      # User controll to set frame point weighting for ffACBMSE (Hyperparameter) [# Only used for ffACBMSE loss function]
-fn_weighting = 1                                      # User controll to set frame point weighting for ffACBMSE (Hyperparameter) [# Only used for ffACBMSE loss function]
-ff_loss = 'mse'                                         # User controll to set loss function for full frame loss (Hyperparameter) [# Only used for ffACBMSE loss function] # "MAE", "MSE", "SSE", "BCE"
+# ACB
+zero_weighting = 1                                      # Set zero weighting for ACBMSE or ffACBMSE (Hyperparameter)
+nonzero_weighting = 1#0.4 #0.4                          # Set non zero weighting for ACBMSE or ffACBMSE  (Hyperparameter)
+
+# Weights used for ACBMSE, Triple loss and varients
+time_weighting = 1                                      # Set time weighting for ffACBMSE (Hyperparameter) [# Only used for ffACBMSE loss function]
+tp_weighting = 1                                        # Set time point weighting for ffACBMSE (Hyperparameter) [# Only used for ffACBMSE loss function]
+tn_weighting = 1                                        # Set frame point weighting for ffACBMSE (Hyperparameter) [# Only used for ffACBMSE loss function]
+fp_weighting = 1                                        # Set frame point weighting for ffACBMSE (Hyperparameter) [# Only used for ffACBMSE loss function]
+fn_weighting = 1                                        # Set frame point weighting for ffACBMSE (Hyperparameter) [# Only used for ffACBMSE loss function]
+loss_penalty = 0.1
+loss_reduction = 'mean'
+fullframe_weighting = 1e-6 #1.5                         # Set full frame weighting for ffACBMSE (Hyperparameter) [# Only used for ffACBMSE loss function]
+ff_loss = 'mse'                                         # Set loss function for full frame loss (Hyperparameter) [# Only used for ffACBMSE loss function] # "MAE", "MSE", "SSE", "BCE"
 
 # Selections for split loss function
 zeros_loss_choice = 1                                   # Select loss function for zero values (Hyperparameter): 0 = Maxs_Loss_Func, 1 = torch.nn.MSELoss(), 2 = torch.nn.BCELoss(), 3 = torch.nn.L1Loss(), 4 = ada_SSE_loss
 nonzero_loss_choice = 1                                 # Select loss function for non zero values (Hyperparameter): 0 = Maxs_Loss_Func, 1 = torch.nn.MSELoss(), 2 = torch.nn.BCELoss(), 3 = torch.nn.L1Loss(), 4 = ada_SSE_loss
 
-#%% - Image Preprocessing Settings
-signal_points = (30, 100) #500                                     # User controll to set the number of signal points to add
-noise_points = (0, 300) #(0,50) #0 #200#0#100                                 # User controll to set the number of noise points to add
-x_std_dev = 0                                                # (mm) User controll to set the standard deviation of the detectors error in the x axis
-y_std_dev = 0                                                # (mm) User controll to set the standard deviation of the detectors error in the y axis
-tof_std_dev = 0                                             # (ns) User controll to set the standard deviation of the detectors error in the time of flight 
-
-
 #%% - Pretraining settings
-start_from_pretrained_model = True          # If set to true then the model will load the pretrained model and optimiser state dicts from the path below
-load_pretrained_optimser = True              # Only availible if above is set to true - (pretrain seems to perform better if this is set to true)
+start_from_pretrained_model = True                      # If set to true then the model will load the pretrained model and optimiser state dicts from the path below
+load_pretrained_optimser = True                         # Only availible if above is set to true - (pretrain seems to perform better if this is set to true)
+
 pretrained_model_path = r'N:\Yr 3 Project Results\Online_RUN_020_PTfrom online19 PTfrm47 - Training Results\Model_Checkpoints\Epoch_170\Statedicts_checkpoint_epoch_170.pth'      # Specify the path to the saved full state dictionary for pretraining
 
 #%% - Normalisation Settings 
 masking_optimised_binary_norm = False        # If set to true then the model will use the binary normalisation method optimised for masking output. Otherwise will use the gaped custom normalisation optimised for the direct network output
 
-
 #%% - New beta feature settings 
 compile_model = False    # NOT AVAILIBE ON WINDOWS!                    # [default = True] If set to true then the model will be compiled using torch.compile for faster execution, if set to false then the model will not be compiled further information is availible at: 
-pin_memory = False                            # [default = False] If set to true then the data loader will pin the memory for faster data transfer to the GPU, if set to false then the data loader will not pin the memory
-
 
 # Neural Net Telemetry
 record_weights = False                       # If set to true then the model will record the weights of the network at the end of each epoch
 record_biases = False                        # If set to true then the model will record the biases of the network at the end of each epoch
 record_activity = False                      # If set to true then the model will record the activations of the network at the end of each epoch
-flush_network_hooks = True                   # If set to true then the model will flush the network hooks to disk periodically, this is useful for reducing memory usage but will slow down training due to the time taken to flush the hooks
-hook_flush_interval = 1          #FIX!            # Number of epochs between each flush of the network hooks to disk, larger values will consume more memory but will reduce the overhead of flushing the hooks to disk
-hook_max_memory_usage = 0.5         #CONNECT!         # Maximum memory usage in GB before the hooks are flushed to disk, this is useful for reducing memory usage but will slow down training due to the time taken to flush the hooks
-
-### NEW PHYSICAL GROUNDING FOR UNITS
-use_physical_values_for_plot_axis = True    # If false then axis are label by pixel indicies, if true then axis are labelled by physical units
-x_length = 800                               # mm
-y_length = 1500                              # mm
-time_length = 1000                           # ns
+hook_flush_interval = 1          #FIX!            # Number of epochs between each flush of the network hooks to disk or set to False for no flush. Larger values will consume more memory but will reduce the overhead of flushing the hooks to disk    # If set to true then the model will flush the network hooks to disk periodically, this is useful for reducing memory usage but will slow down training due to the time taken to flush the hooks
+hook_max_memory_usage = 0.5         #CONNECT!         # Maximum memory usage in GB before the hooks are automatically flushed to disk, this is useful for reducing memory usage but will slow down training due to the time taken to flush the hooks
 
 #%% - Visulisation Settings
 plot_or_save = 1                             # [default = 1] 0 prints plots to terminal (blocking till closed), If set to 1 then saves all end of epoch printouts to disk (non-blocking), if set to 2 then saves outputs whilst also printing for user (blocking till closed)
 save_all_raw_plot_data = False                # [default = False] If set to true then all raw data for plots is saved to disk for replotting and analysis later
 
-
-# During training plots
+## During training plots
 print_every_other = 1                        # [default = 2] 1 is to save/print all training plots every epoch, 2 is every other epoch, 3 is every 3rd epoch etc
 num_to_plot = 10 # 2d plots                   # [default = 10] Number of images to plot during training
 
@@ -299,7 +287,7 @@ comparative_loss_paths = [r'N:\Yr 3 Project Results\RDT 10K 1000ToF timed - Trai
                           ] 
 
 
-# Post training plots
+## Post training plots
 plot_train_loss = True                       # [default = True]       
 plot_test_loss = True                        # [default = True]
 plot_validation_loss = True                  # [default = True]               
@@ -324,35 +312,32 @@ debug_noise_function = False                    # [default = False]
 debug_loader_batch = False                      # SAFELY REMOVE THIS PARAM!!!  #(Default = False) //INPUT 0 or 1//   #Setting debug loader batch will print to user the images taken in by the dataoader in this current batch and print the corresponding labels
 debug_model_exporter  = False                   # [default = False]
 
-
 full_dataset_integrity_check = False            # [Default = False] V slow  #Checks the integrity of the dataset by checking shape of each item as opposed to when set to false which only checks one single random file in the dataset
 full_dataset_distribution_check = False         # [Default = False] V slow  #Checks the distribution of the dataset , false maesn no distributionn check is done
-
-seeding_value = 10 #None                        # [Default = None] None gives no seeeding to RNG, if the value is set this is used for the RNG seeding for numpy, and torch libraries
 
 use_execution_timer = True    #FIX!!     ###CONNECT!! # [Default = True] Uses the execution timer to time each module in the process
 run_profiler = False                            # [Default = False] Runs the cProfiler on the training loop to check for bottlenecks and slow functions
 run_pytorch_profiler = False
 
 #%% Hyperparameter Optimisation Settings  
-optimise_hyperparameter = False                               # User controll to set if hyperparameter optimisation is used
-hyperparam_to_optimise = 'zero_weighting'                     # User controll to set which hyperparameter to optimise  - options are: 'batch_size', 'learning_rate', 'optim_w_decay', 'dropout_prob', 'loss_function_selection', 'conv_layers', 'conv_filter_multiplier', 'latent_dim'
+optimise_hyperparameter = False                               # Set if hyperparameter optimisation is used
+hyperparam_to_optimise = 'zero_weighting'                     # Set which hyperparameter to optimise  - options are: 'batch_size', 'learning_rate', 'optim_w_decay', 'dropout_prob', 'loss_function_selection', 'conv_layers', 'conv_filter_multiplier', 'latent_dim'
 set_optimisiation_list_manually = [0.3, 0.5, 0.7, 1.0, 1.3]   # Set this param = to your list i.e [[12, 120], 35, 87]
-val_set_on = False                                            # User controll to set if a validation set is used
-val_test_split_ratio = 0.9                                    # This needs to be better explained its actually test_val ration ratehr than oterh way round     # [NOTE LEAVE AT 0.5, is for future update, not working currently] User controll to set the ratio of the non-training data to be used for validation as opposed to testing (Hyperparameter)
+val_set_on = False                                            # Set if a validation set is used
+val_test_split_ratio = 0.9                                    # This needs to be better explained its actually test_val ration ratehr than oterh way round     # [NOTE LEAVE AT 0.5, is for future update, not working currently] Set the ratio of the non-training data to be used for validation as opposed to testing (Hyperparameter)
 
-# Simple Performance Measure
-print_validation_results = True                               # User controll to set if the validation results are printed to terminal 
-plot_training_time = True                                     # User controll to set if the training time is plotted 
+## Simple Performance Measure
+print_validation_results = True                               # Set if the validation results are printed to terminal 
+plot_training_time = True                                     # Set if the training time is plotted 
 
-# Full Performance Analysis - Performed in addition to and seperatly from the validation stage for automatic data analysis
+## Full Performance Analysis - Performed in addition to and seperatly from the validation stage for automatic data analysis
 perf_analysis_num_files = 5000                                                                     # Number of files to test
 perf_analysis_plot = 100                                                                           # The number of results to print imshow plots for for each model tested, set to False for none
 perf_analysis_dataset_dir = (r"N:\\Yr 3 Project Datasets\\PERF VALIDATION SETS\\40K 100N 30S\\")   # Directory of dataset to test - (Best to use totally unseen data files that are not contianed within the train, test or validation sets)
 debug_hpo_perf_analysis = False
 
 
-
+################################### END OF USER SETTINGS ###################################
 
 #%% - Load in Dependencies
 # External Libraries
@@ -1449,7 +1434,7 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
             execution_timer.record_time(event_name="Epoch", event_type="start") #records the time the program started
 
             #### IMPLEMNT THIS TO INJECT SEED VAULE AGAIN WEACH EPOCH SO THAT  THE TRAINING DATA IS THE DETERMINISTICALLY THE SAME EACH EPOCH NOT FRESH EACH TIME
-            if inject_seed and epoch % inject_seed_interval == 0:
+            if inject_seed_interval and epoch % inject_seed_interval == 0:
                 torch.manual_seed(T_seed)
                 np.random.seed(N_seed)
 
@@ -1556,7 +1541,7 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
             epoch_avg_loss_false_positive_xy.append(np.mean(avg_loss_false_positive_xy))
 
             # check if current epoch is a multiple of 'model_checkpoint_interval' and if so save the model
-            if model_checkpointing and epoch % model_checkpoint_interval == 0 and epoch != 0:
+            if model_checkpoint_interval and epoch % model_checkpoint_interval == 0 and epoch != 0:
                 full_model_export(True, model_output_dir, model_checkpoints_dir, epoch, encoder, decoder, optim, latent_dim, fc_input_dim, precision, Encoder, debug_model_exporter=False)
 
             if epoch % hook_flush_interval == 0 and epoch != 0:
@@ -1659,7 +1644,7 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
 
     if plot_pixel_threshold_telemetry:
         Out_Label = graphics_dir + f'{model_save_name} - Reconstruction Threshold Telemetry - Epoch {epoch}.png'
-        plot_telemetry(telemetry, signal_points, xdim*ydim, Out_Label, plot_or_save=plot_or_save)
+        plot_telemetry(telemetry, signal_points, xdim*ydim, Out_Label, plot_or_save)
 
     if plot_pixel_difference:
         num_diff_noised, num_same_noised, num_diff_cleaned, num_same_cleaned, im_diff_noised, im_diff_cleaned = AE_visual_difference(in_data, noisy_data, rec_data)

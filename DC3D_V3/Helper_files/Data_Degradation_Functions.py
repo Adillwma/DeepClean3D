@@ -53,7 +53,9 @@ def add_noise_points_to_batch(input_image_batch, noise_points=100, reconstructio
 # Function to add n noise points to each image in a tensor batch 
 def add_noise_points_to_batch_prenorm(input_image_batch, noise_points=100, time_dimension=100):
     """
-    This function will take a batch of images and add noise_points number of random noise points to each image in the batch. Intended use case is adding noise points to the image before the custom normalisation is applied, the noise points added will be integers between 1 and 'time_dimension' which is the max timestep.
+    This function will take a batch of images and add noise_points number of random noise points to each image in the batch.
+    Intended use case is adding noise points to the image before the custom normalisation is applied, 
+    the noise points added will be integers between 1 and 'time_dimension' which is the max timestep.
 
     Args:
         input_image_batch (torch tensor): The input image batch to be degraded. Shape [B, C, H, W]  
@@ -64,18 +66,28 @@ def add_noise_points_to_batch_prenorm(input_image_batch, noise_points=100, time_
         image_batch (torch tensor): The degraded image batch. Shape [B, C, H, W]
     """
     image_batch = input_image_batch.clone()
-    B, C, H, W = image_batch.shape
+    B, _, H, W = image_batch.shape
 
     if noise_points > 0:
         num_pixels = H * W
-        selected_coords = torch.randperm(num_pixels, device=image_batch.device)[:noise_points]
-        x_coords, y_coords = torch.div(selected_coords, W, rounding_mode='floor'), selected_coords % W
+
+        # Generate different coordinates for each image in the batch
+        selected_coords = torch.randint(0, num_pixels, (B, noise_points), device=image_batch.device)
+        x_coords = selected_coords // W
+        y_coords = selected_coords % W
+
+        # Generate noise values
         noise_values = torch.randint(1, time_dimension, (B, noise_points), dtype=image_batch.dtype, device=image_batch.device)
 
-        batch_indices = torch.arange(B, device=image_batch.device).view(-1, 1).expand(B, noise_points)
-        image_batch[batch_indices, 0, x_coords, y_coords] = noise_values
+        # Create a batch index for each noise point
+        batch_indices = torch.arange(B, device=image_batch.device).unsqueeze(1).expand(-1, noise_points)
+
+        # Simulating occlusion caused by 2D embedding, finding those pixels in the batch set to be replaced by noise that have a value below the noise value and replace them with the noise value
+        condition = image_batch[batch_indices, 0, x_coords, y_coords] < noise_values
+        image_batch[batch_indices, 0, x_coords, y_coords] = torch.where(condition, noise_values, image_batch[batch_indices, 0, x_coords, y_coords])
 
     return image_batch
+
 
 # Function to create sparse signal from a fully dense signal
 def create_sparse_signal(input_image_batch, signal_points=2, linear=False):

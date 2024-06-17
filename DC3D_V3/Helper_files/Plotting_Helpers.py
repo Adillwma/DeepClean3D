@@ -227,7 +227,7 @@ def comparitive_loss_plot(x_list, y_list, legend_label_list, x_label, y_label, t
     plot_save_choice(plot_or_save, save_path) 
 
 # Plots the confidence telemetry data
-def plot_telemetry(telemetry, true_num_of_signal_points, save_path, plot_or_save):
+def plot_telemetryOLD(telemetry, true_num_of_signal_points, save_path, plot_or_save):
     """
     Plots the 'lit pixel count' and 'unlit pixel count' telemetry data over time, compared to true number of signal points for comparison. Used to track the recovery performance.
 
@@ -248,6 +248,57 @@ def plot_telemetry(telemetry, true_num_of_signal_points, save_path, plot_or_save
     plt.ylabel("Number of Signal Points")
     plt.grid(alpha=0.2)
     plt.legend()
+    plot_save_choice(plot_or_save, save_path)
+
+def plot_telemetry(telemetry, true_num_of_signal_points, total_photons, save_path, plot_or_save):
+    """
+    Plots the 'lit pixel count' and 'unlit pixel count' telemetry data over time, compared to true number of signal points for comparison. Used to track the recovery performance.
+
+    Args:
+        telemetry (list): A list of the telemetry data to be plotted
+        true_num_of_signal_points (int): The true number of signal points in the data set
+        plot_or_save (int): A flag to set if the plot is printed to terminal or saved to disk. 0 prints plots to terminal (blocking till closed), If set to 1 then saves all end of epoch printouts to disk (non-blocking), if set to 2 then saves outputs whilst also printing for user (blocking till closed)
+
+    Generates:
+        A plot of the telemetry data, saved to disk or shown depending on program wide 'plot_or_save' setting
+    """
+    tele = np.array(telemetry)
+    fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True, figsize=(10, 8))
+
+    # First plot
+    ax1.plot(tele[:,0], tele[:,1], color='r', label="Points above threshold")
+    ax1.set_title("Reconstruction threshold telemetry per epoch")
+    ax1.set_ylabel("Number of Signal Points")
+    ax1.grid(alpha=0.2)
+
+    # check if true_num_of_signal_points is a scalar or a tuple
+    if isinstance(true_num_of_signal_points, int):
+        ax1.axhline(y=true_num_of_signal_points, color='r', linestyle='dashed', label="True number of signal points")
+    else:
+        ax1.axhline(y=true_num_of_signal_points[0], color='r', linestyle='dashed', label="True number of signal points")
+        ax1.axhline(y=true_num_of_signal_points[1], color='r', linestyle='dashed')
+
+
+    # Second plot
+    ax2.plot(tele[:,0], tele[:,2], color='b', label="Points below threshold")
+    ax2.set_xlabel("Epoch number")
+    ax2.set_ylabel("Number of Blanks")
+    ax2.grid(alpha=0.2)
+
+    # check if true_num_of_signal_points is a scalar or a tuple again?? do it in one! or save a var saying it is true or false
+    if isinstance(true_num_of_signal_points, int):
+        ax2.axhline(y=total_photons-true_num_of_signal_points, color='b', linestyle='dashed', label="True number of blanks")
+    else:
+        ax2.axhline(y=total_photons-true_num_of_signal_points[0], color='b', linestyle='dashed', label="True number of blanks")
+        ax2.axhline(y=total_photons-true_num_of_signal_points[1], color='b', linestyle='dashed')
+
+    # Combine legends
+    lines_labels = [ax.get_legend_handles_labels() for ax in fig.axes]
+    lines, labels = [sum(lol, []) for lol in zip(*lines_labels)]
+    fig.legend(lines, labels, loc='lower center', ncol=2)
+
+    # Adjust layout to make room for the legend
+    plt.tight_layout(rect=[0, 0.05, 1, 1])
     plot_save_choice(plot_or_save, save_path)
 
 
