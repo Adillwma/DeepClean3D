@@ -1,13 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-DC3D Autoencoder V8 Protected with dynamic input helper 
+DC3D_Dynamic_Autoencoder
 Created on Mon Feb 20 2022
-author: Adill Al-Ashgar
+Author: Adill Al-Ashgar
 University of Bristol   
-
-# Convoloution + Linear Autoencoder
-
-### Possible Improvements
 """
 
 #%% - Dependancies

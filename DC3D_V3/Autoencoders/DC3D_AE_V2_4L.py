@@ -1,16 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-DC3D Autoencoder V1 Protected   
-Created on Mon Feb 20 2022
-authors: Adill Al-Ashgar & Max Carter
+DC3D_AE_V2_4L.py
+Author: Adill Al-Ashgar
 University of Bristol   
-
-# Convoloution + Linear Autoencoder
-
-### Possible Improvements
-# [TESTING!] Fix activation tracking
-# 
-# 
 """
 
 #%% - Dependancies
