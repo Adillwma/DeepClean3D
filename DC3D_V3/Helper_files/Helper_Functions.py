@@ -202,22 +202,22 @@ def plot_save_choice(plot_or_save, output_file_path=None, dpi=None):
             3 neither saves nor shows any plots, immediately closed (useful for debugging).
         output_file_path (str): The path to save the plot to. Only needed if plot_or_save is set to 1 or 2.
     """
-    if plot_or_save == 0:
+    if plot_or_save == 0 or plot_or_save == "show":
         plt.show()
-    elif plot_or_save == 1:  
+    elif plot_or_save == 1 or plot_or_save == "save":  
         if dpi is not None:
             plt.savefig(output_file_path, format='png', dpi=dpi)
         else:
             plt.savefig(output_file_path, format='png')     
         plt.close()
     
-    elif plot_or_save == 2:
+    elif plot_or_save == 2 or plot_or_save == "both":
         if dpi is not None:
             plt.savefig(output_file_path, format='png', dpi=dpi)
         else:
             plt.savefig(output_file_path, format='png')   
         plt.show()
-    elif plot_or_save == 3:
+    elif plot_or_save == 3 or plot_or_save == "none":
         plt.close()
     else:
         raise ValueError("Invalid 'plot_or_save' value set for 'plot_save_choice' function call. "

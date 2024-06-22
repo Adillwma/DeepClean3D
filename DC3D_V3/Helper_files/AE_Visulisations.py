@@ -86,7 +86,7 @@ from torchviz import make_dot
 
 
 
-def Graphviz_visulisation(encoder, decoder, precision, batch_size, x_dim, y_dim, output_folder):
+def Graphviz_visulisation(encoder, decoder, precision, batch_size, chanels, x_dim, y_dim, output_folder):
     """
     Using GraphViz: GraphViz is a popular open-source graph visualization software that can be used to visualize the 
     structure of a PyTorch network. This code uses the torchviz graphviz wrapper to generate a GraphViz dot file from 
@@ -107,7 +107,7 @@ def Graphviz_visulisation(encoder, decoder, precision, batch_size, x_dim, y_dim,
     else:
         raise ValueError("Graphviz_visulisation precision must be 16, 32, or 64")
     
-    x = torch.randn(batch_size, 1, 128, 88, dtype=dtype) # dummy input tensor
+    x = torch.randn(batch_size, chanels, y_dim, x_dim, dtype=dtype) # dummy input tensor
     dot = make_dot(model(x), params=dict(model.named_parameters()), show_attrs=True, show_saved=True)
 
     # Save the dot file
