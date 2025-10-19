@@ -51,7 +51,7 @@ def add_noise_points_to_batch(input_image_batch, noise_points=100, reconstructio
     return image_batch
 
 # Function to add n noise points to each image in a tensor batch 
-def add_noise_points_to_batch_prenorm(input_image_batch, noise_points=100, time_dimension=100):
+def add_noise_points_to_batch_prenorm(input_image_batch, noise_points:int, time_dimension:int):
     """
     This function will take a batch of images and add noise_points number of random noise points to each image in the batch.
     Intended use case is adding noise points to the image before the custom normalisation is applied, 
@@ -90,7 +90,7 @@ def add_noise_points_to_batch_prenorm(input_image_batch, noise_points=100, time_
 
 
 # Function to create sparse signal from a fully dense signal
-def create_sparse_signal(input_image_batch, signal_points=2, linear=False):
+def create_sparse_signal(input_image_batch, signal_points:int, linear=False):
 
     """
     This function will take a batch of images and randomly select signal_points number of non-zero values to keep in each image, zeroing out all other values i.e if signal_points = 2 then only 2 non-zero values will be kept in each image and all other non zero values will be zeroed out, effectivly simulating a very sparse signal
@@ -121,7 +121,7 @@ def create_sparse_signal(input_image_batch, signal_points=2, linear=False):
     return output_image_batch
 
 # Function to add shift in x, y and ToF to a true signal point due to detector resoloution
-def simulate_detector_resolution(input_image_batch, x_std_dev_pixels, y_std_dev_pixels, tof_std_dev_pixels, time_dimension, device, clamp_photons_to_slice=True):
+def simulate_detector_resolution(input_image_batch, x_std_dev_pixels: int, y_std_dev_pixels: int, tof_std_dev_pixels: int, time_dimension: int, device: torch.device, clamp_photons_to_slice=True):
     """
     This function will add a random shift taken from a gaussain std deviation in x, y or ToF to each non-zero pixel in the image tensor to simulate detector resoloution limits
 
@@ -182,7 +182,7 @@ def simulate_detector_resolution(input_image_batch, x_std_dev_pixels, y_std_dev_
     image_batch_all[:, 0, :, :] = shifted_image_tensor
     return image_batch_all
 
-def signal_degredation(signal_settings, image_batch, physical_scale_parameters, time_dimension, device, timer=None):
+def signal_degredation(signal_settings, image_batch, physical_scale_parameters: list[float], time_dimension: int, device: torch.device, timer=None):
     """
     Sequentially applies the differnt signal degredation functions to the input image batch and returns the output of each stage
 

@@ -3,8 +3,13 @@ import pickle
 import torch
 
 def find_data(path):
+    ONLINE = False
+    if "Online" in path:
+        print("Online", path)
+        ONLINE = True
 
     filenames = os.listdir(path)
+
     # find the filepath for a file that ends with .pth and begins with "Statedicts"
     for file in filenames:
         # check if already processed the folder (for multiple future runs on same main results folder)
@@ -49,36 +54,50 @@ def find_data(path):
         script
     except NameError:
         script = None
+        if ONLINE:
+            print("No script found in Online folder")   
     
     try:
         encoder_state_dict
     except NameError:
         encoder_state_dict = None   
+        if ONLINE:
+            print("No encoder_state_dict found in Online folder")
 
     try:
         decoder_state_dict
     except NameError:
         decoder_state_dict = None
+        if ONLINE:
+            print("No decoder_state_dict found in Online folder")
 
     try:
         optimiser_state_dict
     except NameError:
         optimiser_state_dict = None
+        if ONLINE:
+            print("No optimiser_state_dict found in Online folder")
 
     try:
         fc_input_dim
     except NameError:
         fc_input_dim = None
+        if ONLINE:
+            print("No fc_input_dim found in Online folder")
 
     try:
         precision
     except NameError:
         precision = None
+        if ONLINE:
+            print("No precision found in Online folder")
 
     try:
         latent_dim
     except NameError:
         latent_dim = None
+        if ONLINE:
+            print("No latent_dim found in Online folder")
 
     if script != None and encoder_state_dict != None and decoder_state_dict != None and optimiser_state_dict != None and fc_input_dim != None and precision != None and latent_dim != None:
 
@@ -95,7 +114,7 @@ def find_data(path):
 
         # Save the model checkpoint data back to same folder with the name Combined_V2_checkpoint
         torch.save(model_checkpoint_data, path + "\\Combined_V2_checkpoint.pth")
-
+        print("Model checkpoint data saved to: ", path + "\\Combined_V2_checkpoint.pth")
         return True
     
     else:
@@ -103,27 +122,34 @@ def find_data(path):
 
 
 
-main_path = r"N:\Yr 3 Project Results"  #r"N:\Yr 3 Project Results\\"
+main_path = r"N:\Yr 3 Project Results" 
 
 model_checpoint_folder_paths = []
 model_deployment_folder_paths = []
 # scan every folder and sub folder of the main path to find every single folder path that includes the terms "Model_Checkpoints" or "Model_Deployment" and add each to a seperate list
 for root, dirs, files in os.walk(main_path):
     for dir in dirs:
-        if "Model_Checkpoints" in dir:
-            # walk through each subfolder in the Model_Checkpoints folder to find the data
-            for root2, dirs2, files2 in os.walk(os.path.join(root, dir)):
-                for dir2 in dirs2:
-                    data = find_data(os.path.join(root2, dir2))
-                    if data:
-                        model_checpoint_folder_paths.append(os.path.join(root2, dir2))
+        for root2, dirs2, files2 in os.walk(os.path.join(root, dir)):
+            # run through all subdirs in dir
+            if "Model_Checkpoints" in dirs2:
+                # iterate through each folder containign each checkpoint
+                for root3, dirs3, files3 in os.walk(os.path.join(root, dir, "Model_Checkpoints")):
+                    for dir3 in dirs3:
+                        # find the data in each checkpoint folder
+                        data = find_data(os.path.join(root, dir, "Model_Checkpoints", dir3))
+                        if data:
+                            model_checpoint_folder_paths.append(os.path.join(root, dir, "Model_Checkpoints"))
 
-    
-        if "Model_Deployment" in dir:
-            data = find_data(os.path.join(root, dir))
-            if data:
-                model_deployment_folder_paths.append(os.path.join(root, dir))
+            if "Model_Deployment" in dirs2:
+                #print(os.path.join(root, dir))  
+                data = find_data(os.path.join(root, dir))
+                if data:
+                    model_deployment_folder_paths.append(os.path.join(root, dir))
+                
+    break 
+
+print(len(model_checpoint_folder_paths))
+print(len(model_deployment_folder_paths))
 
 print(model_checpoint_folder_paths)
 print(model_deployment_folder_paths)
-
