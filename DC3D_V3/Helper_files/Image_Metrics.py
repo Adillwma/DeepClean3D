@@ -2,6 +2,8 @@
 import torch
 import numpy as np
 from skimage.metrics import structural_similarity, normalized_mutual_information, normalized_root_mse
+from torchmetrics.functional import structural_similarity_index_measure as ssimlocal
+
 
 # Nomalised Root Mean Squared Error (NMSRE)
 def NMSRE(clean_input, noised_target):
@@ -47,7 +49,7 @@ def PSNR(clean_input, noised_target, time_dimension):
     The calculated PSNR value.
     """
     mse = torch.mean(torch.pow(clean_input - noised_target, 2))   #Finds the mean square error
-    max_value = time_dimension
+    max_value = 1.0
     psnr = 10 * torch.log10((max_value**2) / mse)
     return (float(psnr.cpu().numpy()))
 
@@ -99,7 +101,7 @@ def SSIM(clean_input, noised_target, time_dimension):
     """
     clean_image = clean_input.detach().cpu().numpy()
     recovered_image = noised_target.detach().cpu().numpy()
-    return structural_similarity(clean_image, recovered_image, data_range=float(time_dimension))
+    return structural_similarity(clean_image, recovered_image, data_range=float(1.0))
 
 #Correlation Coefficent
 def correlation_coeff(clean_input, noised_target):
@@ -219,17 +221,242 @@ def compare_images_pixels(target_image, reconstructed_image, debug_mode=False):
 
 
 
+#####################################
 
 
+# Nomalised Root Mean Squared Error (NMSRE)
+def NMSRE2(clean_input, noised_target):
+    inp = clean_input.detach().numpy()
+    tar = noised_target.detach().numpy()
+    norm_rootmnsq = normalized_root_mse(inp, tar)
+    return float(norm_rootmnsq)
+
+#Signal to Noise Ratio (SNR)
+
+def SNR2(clean_inputs, noised_targets):
+    """
+    Calculates the average Signal to Noise Ratio (SNR) for a batch of clean signals and noisy signals.
+    SNR is defined as the ratio of the magnitude of the signal and the magnitude of the noise.
+    
+    Args:
+    clean_inputs (torch.Tensor): The original signals with shape (batch_size, ...).
+    noised_targets (torch.Tensor): The signals with added noise with shape (batch_size, ...).
+    
+    Returns:
+    float: The average SNR value for the batch in db.
+    """
+    # Calculate signal power
+    signal_power = torch.mean(torch.pow(clean_inputs, 2), dim=tuple(range(1, clean_inputs.dim())))
+    
+    # Calculate noise power
+    noise = clean_inputs - noised_targets
+    noise_power = torch.mean(torch.pow(noise, 2), dim=tuple(range(1, clean_inputs.dim())))
+    
+    # Calculate SNR for each example in the batch
+    snr = 10 * torch.log10(signal_power / noise_power)
+    
+    # Calculate and return the average SNR across the batch
+    average_snr = torch.mean(snr)
+    
+    return float(average_snr.cpu().numpy())
+
+#Peak Signal-to-Noise Ratio (PSNR):
+def PSNR2(clean_input, noised_target, time_dimension, normalised=True):
+    """
+    Calculates the average Peak Signal to Noise Ratio (PSNR) for a batch of clean and noisy signals.
+    PSNR is defined as the ratio of the maximum possible power of a signal and the power of corrupting noise.
+
+    Args:
+    clean_inputs (torch.Tensor): The original signals with shape (batch_size, ...).
+    noised_targets (torch.Tensor): The noisy signals with shape (batch_size, ...).
+    time_dimension (float): The maximum possible value of the signal. # ACTUALLY AS IN NORMALISED SPACE THIS SHOULD BE SET TO 1???
+
+    Returns:
+    float: The average PSNR value for the batch.
+    """
+    if normalised:
+        time_dimension = 1.0 # ACTUALLY AS IN NORMALISED SPACE THIS SHOULD BE SET TO 1?
+
+    # Calculate mean square error (MSE) for each example in the batch
+    mse = torch.mean(torch.pow(clean_input - noised_target, 2), dim=tuple(range(1, clean_input.dim())))
+    
+    # Calculate PSNR for each example in the batch
+    psnr = 10 * torch.log10((time_dimension ** 2) / mse)
+    
+    # Calculate and return the average PSNR across the batch
+    average_psnr = torch.mean(psnr)
+    
+    return float(average_psnr.cpu().numpy())
+
+#Mean Squared Error (MSE):
+def MSE2(clean_input, noised_target):
+    """
+    Mean Squared Error (MSE)
+
+    Args:
+    clean_input (torch.Tensor): The original image.
+    noised_target (torch.Tensor): The recovered image.
+    
+    Returns:
+    The calculated Mean Squared Error value.
+    """
+    mse = torch.mean((clean_input - noised_target) ** 2)
+    return mse.item()
+
+#Mean Absolute Error (MAE):
+def MAE2(clean_input, noised_target):
+    """
+    Mean Absolute Error (MAE)
+
+    Args:
+    clean_input (torch.Tensor): The original image.
+    noised_target (torch.Tensor): The recovered image.
+    
+    Returns:
+    The calculated Mean Absolute Error value.
+    """
+    return torch.mean(torch.abs(clean_input - noised_target)).item()
+
+#Structural Similarity Index (SSIM):
+def SSIM2(clean_input, noised_target, time_dimension, normalised=True):
+    """
+    Structural Similarity Index Measure (SSIM), is a perceptual quality index that measures the structural similarity between 
+    two images. SSIM takes into account the structural information of an image, such as luminance, contrast, and structure, 
+    and compares the two images based on these factors. SSIM is based on a three-part similarity metric that considers the 
+    structural information in the image, the dynamic range of the image, and the luminance information of the image. SSIM is 
+    designed to provide a more perceptually relevant measure of image similarity than traditional metrics such as Mean Squared 
+    Error or Peak Signal-to-Noise Ratio.
+
+    Args:
+    clean_input (torch.Tensor): The original image.
+    noised_target (torch.Tensor): The recovered image.
+    
+    Returns:
+    The calculated Structural Similarity Index Measure value.
+    """
+    if normalised:
+        time_dimension = 1.0
+    else:
+        time_dimension = float(time_dimension)
+    
+    return ssimlocal(clean_input, noised_target, data_range=time_dimension).item()
+
+#Correlation Coefficent
+def correlation_coeff2(clean_input, noised_target):
+    
+    """
+    Correlation coefficient is a scalar value that measures the linear relationship between two signals. The correlation 
+    coefficient ranges from -1 to 1, where a value of 1 indicates a perfect positive linear relationship, a value of -1 indicates 
+    a perfect negative linear relationship, and a value of 0 indicates no linear relationship between the two signals. Correlation 
+    coefficient only measures the linear relationship between two signals, and does not take into account the structure of the signals.
+
+    ρ = cov(x,y) / (stddev(x) * stddev(y))
+
+    The function first computes the mean and standard deviation of each tensor, and then subtracts the mean from each element 
+    to get the centered tensors x_center and y_center. The numerator is the sum of the element-wise product of x_center 
+    and y_center, and the denominator is the product of the standard deviations of the two centered tensors multiplied by the 
+    number of elements in the tensor. The function returns the value of the correlation coefficient ρ as the ratio of the numerator 
+    and denominator.
+
+    Args:
+    clean_input (torch.Tensor): The original image.
+    noised_target (torch.Tensor): The recovered image.
+    
+    Returns:
+    The calculated correlation coefficient value.
+    """
+    clean_mean = clean_input.mean()
+    noised_mean = noised_target.mean()
+    clean_std = clean_input.std(unbiased=False)  # unbiased=False for consistent calculation of std deviations
+    noised_std = noised_target.std(unbiased=False)  
+    
+    clean_centered = clean_input - clean_mean
+    noised_centered = noised_target - noised_mean
+    
+    numerator = (clean_centered * noised_centered).sum()
+    denominator = clean_std * noised_std * clean_input.numel()
+    
+    return float((numerator / denominator).item())
+
+#Mutual Information:
+def NomalisedMutualInformation2(clean_input, noised_target):
+    clean_image = clean_input.numpy()
+    recovered_image = noised_target.numpy()
+    return normalized_mutual_information(clean_image, recovered_image)-1 # ???? -1 ???? 
+
+def compare_images_pixels2(target_image, reconstructed_image, debug_mode=False): 
+    """
+    Takes in the clean image and the denoised image and compares them to find the percentages of signal spatial retention, signal temporal retention, and the raw count of false positives and false negatives.
+
+    Args:
+        target_image (torch tensor): The clean image
+        reconstructed_image (torch tensor): The denoised image
+        debug_mode (bool): If True, the function will print out the total number of pixels, the true signal points, and the true zero points in the target image. Default = False
+        
+    Returns:
+        signal_spatial_retention_percentage (float): The percentage of signal spatial retention
+        signal_temporal_retention_percentage (float): The percentage of signal temporal retention
+        false_positive_count_raw (int): The raw count of false positives
+        false_negative_count_raw (int): The raw count of false negatives
+    """
+    
+    # determine the total number of pixels in the data
+    total_pixels = target_image.numel()
+    if debug_mode:
+        print("Total Pixels: ", total_pixels)
+
+    # Genrates a index mask for the zero values in the target image
+    zero_mask = (target_image == 0)
+
+    # Inverts the zero mask to get the non-zero mask from the target image indicating the signal points
+    nonzero_mask = ~zero_mask
+
+    # True Number of Signal Points in the Target Image
+    true_signal_points = len(target_image[nonzero_mask])
+    if debug_mode:
+        print("True Signal Points: ", true_signal_points)
+
+    # True Zero Points in the Target Image
+    true_zero_points = len(target_image[zero_mask])
+    if debug_mode:
+        print("True Zero Points: ", true_zero_points)
 
 
+    # detemine how many of the values in the reconstructed image that fall in the nonzero mask are non zero
+    signal_spatial_retention_raw = len(reconstructed_image[nonzero_mask].nonzero())
+    if debug_mode:
+        print("Signal Spatial Retention Raw: ", signal_spatial_retention_raw)
+    signal_spatial_retention_percentage = (signal_spatial_retention_raw / len(reconstructed_image[nonzero_mask])) * 100
+    if debug_mode:
+        print("Signal Spatial Retention Percentage: ", signal_spatial_retention_percentage, "%")
+
+    # determine how many of those indexs have matching ToF values
+    values_in_recon = reconstructed_image[nonzero_mask]
+    values_in_target = target_image[nonzero_mask]
+    signal_temporal_retention_raw = len(values_in_recon[values_in_recon == values_in_target])
+    if debug_mode:
+        print("Signal Temporal Retention Raw: ", signal_temporal_retention_raw)
+    signal_temporal_retention_percentage = (signal_temporal_retention_raw / len(reconstructed_image[nonzero_mask])) * 100
+    if debug_mode:
+        print("Signal Temporal Retention Percentage: ", signal_temporal_retention_percentage, "%")
 
 
+    # determine how many of the values in the reconstructed image that fall under the zero mask are not zero 
+    false_positive_count_raw = len(reconstructed_image[zero_mask].nonzero())
+    if debug_mode:
+        print("False Positive Count: ", false_positive_count_raw)
 
 
+    # Determine how many of the values in the reconstructed image that fall under the non zero mask are zero
+    data = reconstructed_image[nonzero_mask]
+    false_negative_count_raw = len(data[data == 0])
+    if debug_mode:
+        print("False negative count: ", false_negative_count_raw)
+
+    return signal_spatial_retention_percentage, signal_temporal_retention_percentage, false_positive_count_raw, false_negative_count_raw
 
 
-
+#############################################
 
 
 #### ADD IN THESE NEW METRICS TOO !!!!

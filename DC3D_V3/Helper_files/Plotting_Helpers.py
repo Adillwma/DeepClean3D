@@ -9,6 +9,7 @@ from matplotlib.projections import register_projection
 from matplotlib.projections.polar import PolarAxes
 from matplotlib.spines import Spine
 from matplotlib.transforms import Affine2D
+import torch
 
 # Source: https://matplotlib.org/stable/gallery/specialty_plots/radar_chart.html
 def radar_factory(num_vars, frame='circle'):
@@ -112,7 +113,7 @@ def create_radar_plot(categories, dictionarys_list, model_names_list):
     
     """
     theta = radar_factory(len(categories), frame='polygon')
-    normalisation_factors = [(0, 1), (-1000, 1000), (-1000, 1000), (0.995,1), (-1,1), (0,1), (0,100), (0,100), (200, 0)]
+    normalisation_factors = [(0, 100), (-2000, 2000), (-2000, 2000), (-1, 1), (-1,1), (0,1), (0,100), (0,100), (200, 0)]
 
     fig, ax = plt.subplots(figsize=(9, 9), nrows=1, ncols=1, subplot_kw=dict(projection='radar'))
     fig.subplots_adjust(wspace=0.25, hspace=0.20, top=0.85, bottom=0.05)
@@ -127,7 +128,7 @@ def create_radar_plot(categories, dictionarys_list, model_names_list):
             data_list.append((dictionary[metric][-1] - normalisation_factors[idx][0]) / (normalisation_factors[idx][1] - normalisation_factors[idx][0]))
             #print(metric, " NORMALISED:", (dictionary[metric][-1] - normalisation_factors[idx][0]) / (normalisation_factors[idx][1] - normalisation_factors[idx][0]))
 
-        ax.plot(theta, data_list, color=color, label=title)
+        ax.plot(theta, data_list, color=color, label=title + f"\nAreaScore: {polygon_area_polar(torch.tensor(data_list), torch.tensor(theta))}")
         ax.fill(theta, data_list, facecolor=color, alpha=0.25, label='_nolegend_')
     
             # add title 
@@ -141,6 +142,159 @@ def create_radar_plot(categories, dictionarys_list, model_names_list):
     legend = ax.legend(loc=(0.9, .95), labelspacing=0.1, fontsize='small')
 
     return fig
+
+
+def create_tri_radar_plot(categories, dictionarys_list, model_names_list):
+    """
+    Creates a radar plot of the given data for only the three main metrics
+
+    Args:
+        categories (list): A list of the categories to be plotted
+        dictionarys_list (list): A list of dictionaries containing the data to be plotted
+        model_names_list (list): A list of the names of the models to be plotted
+
+    Returns:
+        fig (matplotlib.figure.Figure): The figure object containing the radar plot for the three main metrics
+    
+    """
+    theta = radar_factory(3, frame='polygon')
+    normalisation_factors = [(0,100), (0,100), (200, 0)]
+
+    fig, ax = plt.subplots(figsize=(9, 9), nrows=1, ncols=1, subplot_kw=dict(projection='radar'))
+    fig.subplots_adjust(wspace=0.25, hspace=0.20, top=0.85, bottom=0.05)
+    #print("Categories:", categories)    
+
+    # create list of spread out colours from a cmap of len len(dictionarys_list) 
+    cmap = plt.get_cmap('viridis')
+    colors_list = [cmap(i) for i in np.linspace(0, 1, len(dictionarys_list))]
+    for dictionary, color, title in zip(dictionarys_list, colors_list, model_names_list):        
+        data_list = []
+        idx = 0
+        for metric in categories:
+            if metric == 'epoch_avg_loss_true_positive_xy' or metric == 'epoch_avg_loss_true_positive_tof' or metric == 'epoch_avg_loss_false_positive_xy':
+                data_list.append((dictionary[metric][-1] - normalisation_factors[idx][0]) / (normalisation_factors[idx][1] - normalisation_factors[idx][0]))
+                #print(metric, " NORMALISED:", (dictionary[metric][-1] - normalisation_factors[idx][0]) / (normalisation_factors[idx][1] - normalisation_factors[idx][0]))
+                idx += 1
+
+        ax.plot(theta, data_list, color=color, label=title + f"\nAreaScore: {polygon_area_polar(torch.tensor(data_list), torch.tensor(theta))}")
+        ax.fill(theta, data_list, facecolor=color, alpha=0.25, label='_nolegend_')
+    
+            # add title 
+        #ax.set_title(title + f"\n{}", weight='bold', size='medium', position=(0.5, 1.1), horizontalalignment='center', verticalalignment='center')
+    titles = ['S%', 'T%', 'FP']
+    ax.set_varlabels(titles)
+    ax.set_rgrids([0.2, 0.4, 0.6, 0.8])
+    ax.set_rlim(0, 1)
+
+    # add legend relative to top-left plot
+    legend = ax.legend(loc=(0.9, .95), labelspacing=0.1, fontsize='small')
+
+    return fig
+
+import numpy as np
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+
+
+def create_3d_radar_plot(categories, dictionary, model_name):
+    """
+    Creates a radar plot of the given data
+
+    Args:
+        categories (list): A list of the categories to be plotted
+        dictionarys_list (list): A list of dictionaries containing the data to be plotted
+        model_names_list (list): A list of the names of the models to be plotted
+
+    Returns:
+        fig (matplotlib.figure.Figure): The figure object containing the 3d radar plot
+    
+    """
+    theta = radar_factory(len(categories), frame='polygon')
+    normalisation_factors = [(0,100), (0,100), (200, 0)]
+
+    fig = plt.figure(figsize=(10, 10))
+    ax = fig.add_subplot(111, projection='3d')
+
+
+
+    # Offset between each radar plot
+    z_offset = 1
+
+
+    for epoch in range (len(dictionary[categories[0]])):     
+        #print("3d Epoch:", epoch)  
+        data_list = []
+        for idx, metric in enumerate(categories):
+            data_list.append((dictionary[metric][epoch] - normalisation_factors[idx][0]) / (normalisation_factors[idx][1] - normalisation_factors[idx][0]))
+            #print(metric, " NORMALISED:", (dictionary[metric][-1] - normalisation_factors[idx][0]) / (normalisation_factors[idx][1] - normalisation_factors[idx][0]))
+
+        #ax.plot(theta, data_list, label=model_name + f"\nAreaScore: {polygon_area_polar(torch.tensor(data_list), torch.tensor(theta))}")
+        #ax.fill(theta, data_list, alpha=0.25, label='_nolegend_')
+    
+        xs = np.array(theta)
+        ys = np.array(data_list)
+        zs = np.array([epoch * z_offset] * (len(categories) + 1))
+
+        xs = np.concatenate([xs, [xs[0]]])  # Complete the loop
+        ys = np.concatenate([ys, [ys[0]]])  # Complete the loop
+
+        print("xs:", xs)
+        print("ys:", ys)
+        print("zs:", zs)
+
+        # Plot the outline of the radar plot
+        ax.plot(xs, zs, ys, label=model_name + f"\nAreaScore: {polygon_area_polar(torch.tensor(ys), torch.tensor(xs))}")
+        
+        # Create the filled polygon
+        verts = [(x, z, y) for x, z, y in zip(xs, zs, ys)]
+        poly = Poly3DCollection([verts], alpha=0.25)
+        ax.add_collection3d(poly)
+
+    # add legend relative to top-left plot
+    ax.legend(loc=(0.9, .95), labelspacing=0.1, fontsize='small')
+
+
+    # Set the labels and limits
+    ax.set_xlabel('Metric')
+    ax.set_ylabel('Epoch')
+    ax.set_zlabel('Values')
+    ax.set_yticks([epoch * z_offset for epoch in range(len(dictionary[categories[0]]))])
+    ax.set_yticklabels([f'Slice {epoch+1}' for epoch in range(len(dictionary[categories[0]]))])
+
+    # Set the view angle
+    ax.view_init(30, 140)
+
+    return fig
+
+def polygon_area_polar(r, theta):
+    """
+    Calculate the area of a polygon given its vertices in polar coordinates.
+    
+    Parameters:
+    r (torch.Tensor): Tensor containing the radial distances of the vertices.
+    theta (torch.Tensor): Tensor containing the angles of the vertices in radians.
+    
+    Returns:
+    area (float): The area of the polygon.
+    """
+    # Convert polar coordinates to Cartesian coordinates
+    x = r * torch.cos(theta)
+    y = r * torch.sin(theta)
+    
+    # Shift vertices by one position
+    x_shifted = torch.roll(x, shifts=-1)
+    y_shifted = torch.roll(y, shifts=-1)
+    
+    # Calculate the terms in the Shoelace formula
+    term1 = torch.dot(x, y_shifted)
+    term2 = torch.dot(y, x_shifted)
+    
+    # Apply the Shoelace formula
+    area = 0.5 * torch.abs(term1 - term2)
+    
+    return area.item()
+
 
 def loss_plot_trainval(x_list, y_list, train_val_list, legend_label_list, x_label, y_label, title, save_path, plot_or_save):
     """
