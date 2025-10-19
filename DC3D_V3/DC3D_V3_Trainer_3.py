@@ -4,10 +4,17 @@
 # University of Bristol
 # adill@neuralworkx.com
 
+from pickle import FALSE
+import torch
+
 """
 Possible improvements:
 
+### ~~~~~ FIX: 'Epoch Times' list not being appended to correctly, only final? epoch time recorded?? (Obbserved taling the mean of the array always rssults in 1/2 of the total processing time)? 
+
 ### ~~~~~ [DONE!] FIX: Datalaoder calls for every individual sample in the ifnal bacth instead of loading them all at once in a singl eslice with the rang eof index's ... this will require reevaluation of the metho dused to iterate the large datloader as woul dno longe rbe checking index by index ?
+
+### ~~~~~ [DONE!] FIX: INcorrct average epoch time calculation in final summary
 
 ### ~~~~~ FIX: async load the large datlaoder
 
@@ -163,34 +170,39 @@ Possible improvements:
 """
 
 #%% - First time setup
-results_output_path = "N:/Yr 3 Project Results/"             # Path to the results output folder, this is the folder that will contains all your results folders, not the results folder for a particular run.
+results_output_path = "N:/DeepClean3D Project Folder/Yr 3 Project Results/"             # Path to the results output folder, this is the folder that will contains all your results folders, not the results folder for a particular run.
 
-dataset_paths = ["N:/Yr 3 Project Datasets/V3_PDT_10K/"]#,    # Path to the dataset folder, this is the folder that contains your dataset folders, not a dataset folder itself. This allows fast switching between datasets by changing just the dataset title below without having to change the full path each time
-                 #"N:/Yr 3 Project Datasets/V3_RDT_150K/",
-#]               #"B:\\"#                  
+dataset_paths = ["N:/DeepClean3D Project Folder/Yr 3 Project Datasets/V3_PDT_10K/"]
+
+#dataset_paths = ["N:/Yr 3 Project Datasets/[V3]_RDT_50K/",    # Path to the dataset folder, this is the folder that contains your dataset folders, not a dataset folder itself. This allows fast switching between datasets by changing just the dataset title below without having to change the full path each time
+#                 #"N:/Yr 3 Project Datasets/V3_RDT_150K/",
+#                 #"B:/[V3]_RDT_1M/",
+#                ]                             
 
 
 #%% - Data Path Settings
-model_save_name = "T016_low_punishment"      # Name of the model to be saved, this will be the name of the folder that the model is saved in
-model_checkpoint_interval = 10               # Number of epochs between each model checkpoint save, set to False for no checkpointing. If set to a value then the model will save a checkpoint of the model and optimiser state dicts at the end of each 'model_checkpointing_interval' epochs
+model_save_name = "ProcessTest016"      # Name of the model to be saved, this will be the name of the folder that the model is saved in
+model_checkpoint_interval = False               # Number of epochs between each model checkpoint save, set to False for no checkpointing. If set to a value then the model will save a checkpoint of the model and optimiser state dicts at the end of each 'model_checkpointing_interval' epochs
 timeout_time = False                         # Time in minuits to wait before stopping training, set to False to disable time based stopping. {Default = False}. NOTE! Program will allow the epoch currently in progress to conclude before stopping.
 
 #%% - Training Hyperparameter Settings
-num_epochs = 200                               # Set max number of epochs to run for. {Default = 100}
+num_epochs = 20                              # Set max number of epochs to run for. {Default = 100}
 batch_size = 200                             # Set batch size - number of Images to pull per batch. {Default = 64}
-learning_rate = 0.002                       # Set optimiser learning rate. {Default = 1e-3}
+learning_rate = 0.003                       # Set optimiser learning rate. {Default = 1e-3}
 optim_w_decay = 1e-05                        # Set optimiser weight decay for regularisation. {Default = 1e-5}
 precision = 32                               # Set the precision of the data and model (16, 32 or 64) NOTE 16 only availble if runing on supported GPU hardware. {Default = 32}
  
 # Architecture Settings
-latent_dim = 19                              # Set number of nodes in the latent space, the bottleneck layer. {Default = 12}
-fc_input_dim = 124                           # Set number of nodes in the intermediate fully connected layers. {Default = 128}
+latent_dim = 128                              # Set number of nodes in the latent space, the bottleneck layer. {Default = 12}
+fc_input_dim = 128                           # Set number of nodes in the intermediate fully connected layers. {Default = 128}
 dropout_prob = 0.2                           # [NOTE Not connected yet] Set dropout probability. {Default = 0.2}
+activation_function = torch.nn.ReLU(True)    # Set activation function for the network. {Default = nn.ReLU()}
+
 reconstruction_threshold = 0.5               # MUST BE BETWEEN 0-1  #Threshold for 3d reconstruction, values below this confidence level are discounted. {Default = 0.5}
 
 #%% - Image Preprocessing Settings
-signal_points = (30, 100)                    # Set the number of signal points to add
-noise_points = (0, 300)                      # Set the number of noise points to add
+signal_points = 300#(25, 35)                    # Set the number of signal points to add
+noise_points = (0, 100)                      # Set the number of noise points to add
 x_std_dev = 0                                # (mm) Set the standard deviation of the detectors error in the x axis
 y_std_dev = 0                                # (mm) Set the standard deviation of the detectors error in the y axis
 tof_std_dev = 0                              # (ns) Set the standard deviation of the detectors error in the time of flight 
@@ -199,7 +211,7 @@ tof_std_dev = 0                              # (ns) Set the standard deviation o
 train_test_split_ratio = 0.9                 # Set the ratio of the dataset to be used for training (Hyperparameter)
 
 # Data Loader Settings
-large_data_bundles_size = 10000              # Bundle size of dataset, 1 for V1 ~0.98MB, 1000 for V2 ~98MB. [Planned 10K for V3 = ~980MB]
+large_data_bundles_size = 10000              # Bundle size of dataset, 1 for V1 ~0.98MB, 1000 for V2 ~98MB, 10K for V3 = ~980MB
 number_of_bundles_to_memory = 1              # Essentially the 'Large batch Size' i.e how many bundles to load into memory at once [Must be less than or equal to the number of bundles in the dataset on disk]
 
 preprocess_on_gpu = False                    # Only woirks if cuda gpu is found, else will defulat back to cpu preprocess
@@ -223,7 +235,7 @@ y_length = 1500                              # mm
 time_length = 1000                           # ns
 
 #%% - Loss Function Settings
-loss_vs_sparse_img = False    #NOTE: Tested!             # Set if the loss is calculated against the sparse image or the full image (Hyperparameter)
+loss_vs_sparse_img = False                               # Set if the loss is calculated against the sparse image or the full image (Hyperparameter)
 loss_function_selection = "TrippleLoss"                  # Select loss function (string):# "MAE", "MSE", "SSE", "BCE", "ACB_MSE", "ffACB_MSE", "Split_Loss", "True3D", "Simple3D", "ACB3D", "Fast3D", "WPR_Loss"
 renorm_for_loss_calc = False                             # Set if the loss is calculated against the renormalised image or the network output data (Hyperparameter)
 
@@ -233,13 +245,13 @@ nonzero_weighting = 1#0.4 #0.4                          # Set non zero weighting
 
 # Weights used for ACBMSE, Triple loss and varients
 time_weighting = 1                                      # Set time weighting for ffACBMSE (Hyperparameter) [# Only used for ffACBMSE loss function]
-tp_weighting = 1                                        # Set time point weighting for ffACBMSE (Hyperparameter) [# Only used for ffACBMSE loss function]
-tn_weighting = 1                                        # Set frame point weighting for ffACBMSE (Hyperparameter) [# Only used for ffACBMSE loss function]
+tp_weighting = 0.8                                        # Set time point weighting for ffACBMSE (Hyperparameter) [# Only used for ffACBMSE loss function]
+tn_weighting = 0.5                                        # Set frame point weighting for ffACBMSE (Hyperparameter) [# Only used for ffACBMSE loss function]
 fp_weighting = 1                                        # Set frame point weighting for ffACBMSE (Hyperparameter) [# Only used for ffACBMSE loss function]
 fn_weighting = 1                                        # Set frame point weighting for ffACBMSE (Hyperparameter) [# Only used for ffACBMSE loss function]
 loss_penalty = 0.1
 loss_reduction = 'mean'
-fullframe_weighting = 1e-6 #1.5                         # Set full frame weighting for ffACBMSE (Hyperparameter) [# Only used for ffACBMSE loss function]
+fullframe_weighting = 0.1 #1.5                         # Set full frame weighting for ffACBMSE (Hyperparameter) [# Only used for ffACBMSE loss function]
 ff_loss = 'mse'                                         # Set loss function for full frame loss (Hyperparameter) [# Only used for ffACBMSE loss function] # "MAE", "MSE", "SSE", "BCE"
 
 # Selections for split loss function
@@ -247,11 +259,10 @@ zeros_loss_choice = 1                                   # Select loss function f
 nonzero_loss_choice = 1                                 # Select loss function for non zero values (Hyperparameter): 0 = Maxs_Loss_Func, 1 = torch.nn.MSELoss(), 2 = torch.nn.BCELoss(), 3 = torch.nn.L1Loss(), 4 = ada_SSE_loss
 
 #%% - Pretraining settings
-start_from_pretrained_model = True                      # If set to true then the model will load the pretrained model and optimiser state dicts from the path below
+start_from_pretrained_model = False                      # If set to true then the model will load the pretrained model and optimiser state dicts from the path below
 load_pretrained_optimiser = True                         # Only availible if above is set to true - (pretrain seems to perform better if this is set to true)
 
-pretrained_model_path = r'N:\Yr 3 Project Results\Online_RUN_020_PTfrom online19 PTfrm47 - Training Results\Model_Checkpoints\Epoch_170\Statedicts_checkpoint_epoch_170.pth'      # Specify the path to the saved full state dictionary for pretraining
-pt_style = "V2"    # V1 for legacy model, V2 for new models
+pretrained_model_path = r'N:\Yr 3 Project Results\Online_RUN_020_PTfrom online19 PTfrm47 - Training Results\Model_Checkpoints\Epoch_170\Combined_V2_checkpoint.pth'      # Specify the path to the saved full state dictionary for pretraining
 
 #%% - Normalisation Settings 
 masking_optimised_binary_norm = False        # If set to true then the model will use the binary normalisation method optimised for masking output. Otherwise will use the gaped custom normalisation optimised for the direct network output
@@ -268,7 +279,7 @@ hook_flush_interval = 1          #FIX!            # Number of epochs between eac
 hook_max_memory_usage = 0.5         #CONNECT!         # Maximum memory usage in GB before the hooks are automatically flushed to disk, this is useful for reducing memory usage but will slow down training due to the time taken to flush the hooks
 
 #%% - Visulisation Settings
-plot_or_save = 1                             # [default = 1] 0 prints plots to terminal (blocking till closed), If set to 1 then saves all end of epoch printouts to disk (non-blocking), if set to 2 then saves outputs whilst also printing for user (blocking till closed)
+plot_or_save = 'save'                            # [default = 1] 0 prints plots to terminal (blocking till closed), If set to 1 then saves all end of epoch printouts to disk (non-blocking), if set to 2 then saves outputs whilst also printing for user (blocking till closed)
 save_all_raw_plot_data = False                # [default = False] If set to true then all raw data for plots is saved to disk for replotting and analysis later
 
 ## During training plots
@@ -278,8 +289,8 @@ num_to_plot = 10 # 2d plots                   # [default = 10] Number of images 
 plot_live_time_loss = True                   # [default = True] Generate plot of live training loss vs time during trainig which is overwritten each epoch, this is useful for seeing how the training is progressing
 plot_live_training_loss = True               # [default = True] Generate plot of live training loss vs epoch during trainig which is overwritten each epoch, this is useful for seeing how the training is progressing
 
-plot_comparative_loss = True
-comparative_live_loss = True                 # [default = True] Adds comparative lines to the live plots, the models for comparison are selected below
+plot_comparative_loss = False
+comparative_live_loss = False                 # [default = True] Adds comparative lines to the live plots, the models for comparison are selected below
 slide_live_plot_size = 0                     # [default = 0] Number of epochs to show on the live plot (if set to 0 then will show all epochs)
 comparative_loss_titles = ["S1 10K", "S1 100K", "S1 500K", "S2 10K"]
 comparative_loss_paths = [r'N:\Yr 3 Project Results\RDT 10K 1000ToF timed - Training Results\\',   # Settings V1
@@ -335,7 +346,7 @@ plot_training_time = True                                     # Set if the train
 ## Full Performance Analysis - Performed in addition to and seperatly from the validation stage for automatic data analysis
 perf_analysis_num_files = 5000                                                                     # Number of files to test
 perf_analysis_plot = 100                                                                           # The number of results to print imshow plots for for each model tested, set to False for none
-perf_analysis_dataset_dir = (r"N:\\Yr 3 Project Datasets\\PERF VALIDATION SETS\\40K 100N 30S\\")   # Directory of dataset to test - (Best to use totally unseen data files that are not contianed within the train, test or validation sets)
+perf_analysis_dataset_dir = (r"N:\\DeepClean3D Project Folder\\Yr 3 Project Datasets\\PERF VALIDATION SETS\\40K 100N 30S\\")   # Directory of dataset to test - (Best to use totally unseen data files that are not contianed within the train, test or validation sets)
 debug_hpo_perf_analysis = False
 
 
@@ -374,7 +385,7 @@ from Helper_files.DC3D_Core_Functions import *
 #from train_test_val import train_epoch, test_epoch, validation_routine
 from Helper_files.Network_Hooks import *
 from Helper_files.Plotting_Helpers import *
-from Autoencoders.DC3D_Autoencoder_V1_Protected2_V2 import Encoder, Decoder    # - Autoencoder
+from Autoencoders.DC3D_AE_V2_2L import Encoder, Decoder    # - Autoencoder
 from Helper_files.Helper_Functions import *   # - Helper functions
 from Helper_files.Image_Metrics import *    # - Image metrics
 from Helper_files.AE_Visulisations import *   # - Visulisations 
@@ -405,6 +416,7 @@ weights_data = {}
 biases_data = {}
 
 
+#%% - Performance Profiling and Logging Setup
 if use_execution_timer:
     execution_timer = Execution_Timer()
 
@@ -418,13 +430,14 @@ if run_profiler:
     profiler = cProfile.Profile()      # Create a cProfile object to store the profiler data
 
 if run_pytorch_profiler:
-    torch_profiler = torch.profiler.profile(activities=[torch.profiler.ProfilerActivity.CPU, torch.profiler.ProfilerActivity.CUDA],
-                                            schedule=torch.profiler.schedule(wait=1, warmup=1, active=3, repeat=2),
-                                            on_trace_ready=torch.profiler.tensorboard_trace_handler('./log'),
-                                            record_shapes=True,
-                                            profile_memory=True,
-                                            with_stack=True
-                                            )
+    torch_profiler = torch.profiler.profile(profile_memory=True)
+    #torch.profiler.profile(activities=[torch.profiler.ProfilerActivity.CPU, torch.profiler.ProfilerActivity.CUDA],
+    #                                        schedule=torch.profiler.schedule(wait=1, warmup=1, active=3, repeat=2),
+    #                                        on_trace_ready=torch.profiler.tensorboard_trace_handler('./log'),
+    #                                        record_shapes=True,
+    #                                        profile_memory=True,
+    #                                        with_stack=True
+    #                                        )
 
     # Start the profiler
     torch_profiler.start()
@@ -436,14 +449,19 @@ if comparative_live_loss:
 
 #%% - Data Gathering Functions
 ### CLEAN UP THIS FUCNTION !!!!!!!!!!!!
-def full_model_export(checkpoint, model_output_dir, model_checkpoints_dir, epoch, encoder, decoder, optim, latent_dim, fc_input_dim, precision, Encoder, debug_model_exporter=False):
+def full_model_export(checkpoint_save, checkpoint, model_output_dir, model_checkpoints_dir, epoch, encoder, decoder, optim, latent_dim, fc_input_dim, precision, Encoder, debug_model_exporter=False):
 
     def save_model_data(output_path, output_filename, encoder, decoder, optim, latent_dim, fc_input_dim, precision, model_output_dir, model_save_name, checkpoint, model_checkpoints_dir, epoch, debug_model_exporter=False):
         # Get the directory name of the current Python file for the autoencoder export
         search_dir = os.path.abspath(__file__)
         search_dir = os.path.dirname(search_dir)
 
-        autoencoder_py_file_script, AE_file_name = Robust_model_export2(Encoder, search_dir, debug=debug_model_exporter) #Only need to run on encoder as encoder and decoder are both in the same file so both get saved this way
+
+        if start_from_pretrained_model:
+            autoencoder_py_file_script = checkpoint["autoencoder_py_file_script"]
+            AE_file_name = "DC3D_Autoencoder_V1_Protected2_V2"  # REPLACE WITH USING THE THIRSD LIN EOF THE AUTOENCODER FILE TEXT ONCE FILES HAVE BEEN UPDATED
+        else:
+            autoencoder_py_file_script, AE_file_name = Robust_model_export2(Encoder, search_dir, debug=debug_model_exporter) #Only need to run on encoder as encoder and decoder are both in the same file so both get saved this way
 
         torch.save({'encoder_state_dict': encoder.state_dict(),
                     'decoder_state_dict': decoder.state_dict(),
@@ -457,7 +475,7 @@ def full_model_export(checkpoint, model_output_dir, model_checkpoints_dir, epoch
         
         return AE_file_name
 
-    if checkpoint:
+    if checkpoint_save:
         model_checkpoints_path = model_checkpoints_dir + f"Epoch_{epoch}\\"
         os.makedirs(model_checkpoints_path, exist_ok=True)
         new_combined_filename = model_checkpoints_path + f"Combined_checkpoint_epoch_{epoch}.pth"
@@ -474,7 +492,7 @@ def full_model_export(checkpoint, model_output_dir, model_checkpoints_dir, epoch
 
     
 # Tracks network output pixel value distribution as histogram pre-reconstruction threshold and renomalisation to understand the effect of the reconstruction thresholding
-def belief_telemetry(data, reconstruction_threshold, epoch, settings, plot_or_save=0):
+def belief_telemetry(data:"tensor", reconstruction_threshold: float, epoch: int, plot_or_save="save") -> tuple[int, int]:
 
     """
     This function creates histogram plots of the pixel values recorded by the belief telemtry system [which needs renaming and reworking to simplify. (should be reconstruction thresholding telemtetry?)]  whihc records the values directly out of the netwrok before our reconstruction thresholding in the custom renomalisation is applied. This is important to keep ttrack of what is occusring before our iytput processing as it may be hiding errors.
@@ -488,7 +506,7 @@ def belief_telemetry(data, reconstruction_threshold, epoch, settings, plot_or_sa
         plot_or_save (int): A flag to set if the plot is printed to terminal or saved to disk. 0 prints plots to terminal (blocking till closed), If set to 1 then saves all end of epoch printouts to disk (non-blocking), if set to 2 then saves outputs whilst also printing for user (blocking till closed)
 
     Generates: 
-        A histogram plot saved to disk
+        Histogram plot, either printed to terminal or saved to disk based on the plot_or_save flag
 
     Returns:
         above_threshold (int): The number of pixels in the image above the reconstruction threshold
@@ -513,7 +531,7 @@ def belief_telemetry(data, reconstruction_threshold, epoch, settings, plot_or_sa
     below_threshold = (data2 < reconstruction_threshold).sum()
     return (above_threshold, below_threshold)
                 
-#Combine all performance metrics into simple test script
+
 def quantify_loss_performance(clean_input_batch, noised_target_batch, time_dimension):
     """
     This function compares each image in the batch to its corresponding target image and calculates a range of enhanced performance metrics for each. The results for each metric are then avaeraged over the batch and this average is appended to the corresponding list of average metrics results for each epoch which is tracked eleshwehre in the enhanced performance tracking system
@@ -527,52 +545,25 @@ def quantify_loss_performance(clean_input_batch, noised_target_batch, time_dimen
         Appends the average performance metrics for the batch to the corresponding list of average metrics results for each epoch which is tracked eleshwehre in the enhanced performance tracking system and needs simplifying and condensing!!!
 
     """
-    loss_mse = []
-    loss_mae = []
-    loss_snr = []
-    loss_psnr = []
-    loss_ssim = []
-    loss_nmi = []
-    loss_cc = []
-    loss_true_positive_xy = []
-    loss_true_positive_tof = []
-    loss_false_positive_xy = [] 
-    #loss_false_negative_xy = []
-    #loss_nrmse = []
-
-    for i in range(len(clean_input_batch)): # iterates through batch 
-        clean_input = clean_input_batch[i][0] # removes channel dim 
-        noised_target = noised_target_batch[i][0]
-
-        # Appends the performance metrics for each image in the batch to the corresponding list of metrics results for each epoch
-        #loss_nrmse.append(NMSRE(clean_input, noised_target))
-        loss_mse.append(MSE(clean_input, noised_target))
-        loss_mae.append(MAE(clean_input, noised_target))
-        loss_snr.append(SNR(clean_input, noised_target))
-        loss_psnr.append(PSNR(clean_input, noised_target, time_dimension))
-        loss_ssim.append(SSIM(clean_input, noised_target, time_dimension))
-        loss_nmi.append(NomalisedMutualInformation(clean_input, noised_target))
-        loss_cc.append(correlation_coeff(clean_input, noised_target))
-
-        percentage_of_true_positive_xy, percentage_of_true_positive_tof, numof_false_positives_xy, num_false_negative_xy = compare_images_pixels(clean_input, noised_target)
-        loss_true_positive_xy.append(percentage_of_true_positive_xy)
-        loss_true_positive_tof.append(percentage_of_true_positive_tof)
-        loss_false_positive_xy.append(numof_false_positives_xy)
-        #loss_false_negative_xy.append(num_false_negative_xy)
+    batch_size = len(clean_input_batch)
 
     # Calculates the mean of the performance metrics for the batch and appends this to the corresponding list of average metrics results for each epoch
     #avg_loss_nrmse.append(np.mean(loss_nrmse))
-    avg_loss_mse.append(np.mean(loss_mse))
-    avg_loss_mae.append(np.mean(loss_mae))
-    avg_loss_snr.append(np.mean(loss_snr))
-    avg_loss_psnr.append(np.mean(loss_psnr))
-    avg_loss_ssim.append(np.mean(loss_ssim))
-    avg_loss_nmi.append(np.mean(loss_nmi))
-    avg_loss_cc.append(np.mean(loss_cc))
-    avg_loss_true_positive_xy.append(np.mean(loss_true_positive_xy))
-    avg_loss_true_positive_tof.append(np.mean(loss_true_positive_tof))
-    avg_loss_false_positive_xy.append(np.mean(loss_false_positive_xy))
-    #avg_loss_false_negative_xy.append(np.mean(loss_false_negative_xy)
+    avg_loss_mse.append(MSE2(clean_input_batch.squeeze(1), noised_target_batch.squeeze(1)))
+    avg_loss_mae.append(MAE2(clean_input_batch.squeeze(1), noised_target_batch.squeeze(1)))
+    avg_loss_snr.append(SNR2(clean_input_batch.squeeze(1), noised_target_batch.squeeze(1)))
+    avg_loss_psnr.append(PSNR2(clean_input_batch.squeeze(1), noised_target_batch.squeeze(1), time_dimension))
+    avg_loss_ssim.append(SSIM2(clean_input_batch, noised_target_batch, time_dimension))
+    avg_loss_nmi.append(NomalisedMutualInformation2(clean_input_batch.squeeze(1), noised_target_batch.squeeze(1)))
+    avg_loss_cc.append(correlation_coeff2(clean_input_batch.squeeze(1), noised_target_batch.squeeze(1)))
+
+    percentage_of_true_positive_xy, percentage_of_true_positive_tof, numof_false_positives_xy, num_false_negative_xy = compare_images_pixels2(clean_input_batch.squeeze(1), noised_target_batch.squeeze(1))    
+    avg_loss_true_positive_xy.append(percentage_of_true_positive_xy)
+    avg_loss_true_positive_tof.append(percentage_of_true_positive_tof)
+    avg_loss_false_positive_xy.append(numof_false_positives_xy / batch_size)
+    #avg_loss_false_negative_xy.append(loss_false_negative_xy / batch_size)
+
+
 
 def create_comparison_plot_data(slide_live_plot_size, epoch, max_epoch_reached, comparative_live_loss, comparative_loss_titles, comparative_epoch_times, comparative_history_da, data=history_da['train_loss']):
 
@@ -950,6 +941,8 @@ def test_epoch(encoder, decoder, device, dataloader, loss_fn, time_dimension=100
         for data in iterator: 
             image_batch, sparse_output_batch, sparse_and_resolution_limited_batch, noised_sparse_reslimited_batch = data
 
+
+
             if masking_optimised_binary_norm:
                 normalised_batch = mask_optimised_normalisation(noised_sparse_reslimited_batch)
                 image_batch_norm = mask_optimised_normalisation(image_batch)
@@ -988,8 +981,9 @@ def test_epoch(encoder, decoder, device, dataloader, loss_fn, time_dimension=100
             performance_test_data = gaped_renormalisation(decoded_data.clone(), reconstruction_threshold, time_dimension) # Clone the decoded data to avoid modifying the original
 
             #Run additional perfomrnace metrics
+            execution_timer.record_time(event_name="Testing-performance_metrics", event_type="start")
             quantify_loss_performance(performance_test_comparator, performance_test_data, time_dimension)
-
+            execution_timer.record_time(event_name="Testing-performance_metrics", event_type="stop")
 
             if len(imgs) < n:
                 num_to_append = min(n - len(imgs), len(image_batch))
@@ -1003,8 +997,99 @@ def test_epoch(encoder, decoder, device, dataloader, loss_fn, time_dimension=100
                 maskrec_imgs.append(masking_recovery(noised_sparse_reslimited_batch[:num_to_append].cpu(), output_data, time_dimension, debug_masking_function))
 
         if plot_pixel_threshold_telemetry and epoch % print_every_other == 0 and epoch !=0:   
-            above_threshold, below_threshold = belief_telemetry(decoded_data[0][0].cpu(), reconstruction_threshold, epoch, settings, plot_or_save)    #calls the belief_telemetry function to generate the telemetry plots
+            above_threshold, below_threshold = belief_telemetry(decoded_data[0][0].cpu(), reconstruction_threshold, epoch, plot_or_save)    #calls the belief_telemetry function to generate the telemetry plots
             telemetry.append([epoch, above_threshold, below_threshold]) #appends the telemetry data to the telemetry list
+
+        imgs = torch.cat(imgs, dim=0)[:n]
+        sparse_imgs = torch.cat(sparse_imgs, dim=0)[:n]
+        reslim_imgs = torch.cat(reslim_imgs, dim=0)[:n]
+        noised_imgs = torch.cat(noised_imgs, dim=0)[:n]
+        recovered_imgs = torch.cat(recovered_imgs, dim=0)[:n]
+        maskrec_imgs = torch.cat(maskrec_imgs, dim=0)[:n]
+
+        end_of_epoch_plotting_data = list(zip(imgs, sparse_imgs, reslim_imgs, noised_imgs, recovered_imgs, maskrec_imgs))
+        
+    return loss_total/batches, end_of_epoch_plotting_data
+
+def test_epoch2(encoder, decoder, device, dataloader, loss_fn, time_dimension=100, reconstruction_threshold=0.5, masking_optimised_binary_norm=False, loss_vs_sparse_img=False, renorm_for_loss_calc=False, debug_masking_function=False):
+
+    imgs = []
+    sparse_imgs = []
+    reslim_imgs = []
+    noised_imgs = []
+    recovered_imgs = []
+    maskrec_imgs = []
+    n = 10 
+
+    # Set evaluation mode for encoder and decoder
+    encoder.eval() # Evaluation mode for the encoder
+    decoder.eval() # Evaluation mode for the decoder
+    with torch.no_grad(): # No need to track the gradients
+
+        loss_total = 0.0
+        batches = 0
+        
+        iterator = tqdm(dataloader, desc='Testing', leave=False, colour="yellow", dynamic_ncols=True, postfix="Starting")           
+        for data in iterator: 
+            image_batch, sparse_output_batch, sparse_and_resolution_limited_batch, noised_sparse_reslimited_batch = data
+
+            # Move all data to the GPU at once
+            image_batch = image_batch.to(device)
+            sparse_output_batch = sparse_output_batch.to(device)
+            sparse_and_resolution_limited_batch = sparse_and_resolution_limited_batch.to(device)
+            noised_sparse_reslimited_batch = noised_sparse_reslimited_batch.to(device)
+
+            if masking_optimised_binary_norm:
+                normalised_batch = mask_optimised_normalisation(noised_sparse_reslimited_batch)
+                image_batch_norm = mask_optimised_normalisation(image_batch)
+            else:
+                normalised_batch = gaped_normalisation(noised_sparse_reslimited_batch, reconstruction_threshold, time_dimension)
+                image_batch_norm = gaped_normalisation(image_batch, reconstruction_threshold, time_dimension)
+            
+            image_clean = image_batch_norm # Data already on device
+            image_noisy = normalised_batch # Data already on device
+
+            # Encode and decode data
+            encoded_data = encoder(image_noisy) # Encode the noised image batch
+            decoded_data = decoder(encoded_data) # Decode the encoded image batch
+
+            if loss_vs_sparse_img:
+                loss_comparator = sparse_output_batch
+            else:
+                loss_comparator = image_clean
+
+            # Evaluate loss
+            if renorm_for_loss_calc:
+                data_for_loss = gaped_renormalisation(decoded_data, reconstruction_threshold, time_dimension)
+                loss_comparator = gaped_renormalisation(loss_comparator, reconstruction_threshold, time_dimension)
+            else:
+                data_for_loss = decoded_data
+
+            # Compute the loss
+            loss = loss_fn(data_for_loss, loss_comparator)
+            batches += 1
+            loss_total += loss.item()
+
+            iterator.set_postfix({'Partial Batch Loss': loss.data.item()})
+
+            # Run additional performance metrics
+            performance_test_comparator = gaped_renormalisation(loss_comparator.clone(), reconstruction_threshold, time_dimension)
+            performance_test_data = gaped_renormalisation(decoded_data.clone(), reconstruction_threshold, time_dimension)
+            quantify_loss_performance(performance_test_comparator, performance_test_data, time_dimension)
+
+            if len(imgs) < n:
+                num_to_append = min(n - len(imgs), len(image_batch))
+                imgs.append(image_batch[:num_to_append].cpu())
+                sparse_imgs.append(sparse_output_batch[:num_to_append].cpu())
+                reslim_imgs.append(sparse_and_resolution_limited_batch[:num_to_append].cpu())
+                noised_imgs.append(noised_sparse_reslimited_batch[:num_to_append].cpu())
+                output_data = gaped_renormalisation(decoded_data[:num_to_append], reconstruction_threshold, time_dimension).cpu()
+                recovered_imgs.append(output_data)
+                maskrec_imgs.append(masking_recovery(noised_sparse_reslimited_batch[:num_to_append].cpu(), output_data, time_dimension, debug_masking_function))
+
+        if plot_pixel_threshold_telemetry and epoch % print_every_other == 0 and epoch != 0:   
+            above_threshold, below_threshold = belief_telemetry(decoded_data[0][0].cpu(), reconstruction_threshold, epoch, plot_or_save)
+            telemetry.append([epoch, above_threshold, below_threshold])
 
         imgs = torch.cat(imgs, dim=0)[:n]
         sparse_imgs = torch.cat(sparse_imgs, dim=0)[:n]
@@ -1088,18 +1173,22 @@ def validation_routine(encoder, decoder, device, dataloader, loss_fn, time_dimen
     return loss_total/batches
 
 
+#%% - Set compute device
+if torch.cuda.is_available():        
+    device = torch.device("cuda")  # Nvidia GPU is prefered if availible      
+
+elif hasattr(torch.backends, 'mps') and torch.backends.mps.is_available():  
+    device = torch.device("mps")  # Apple Silicon, Metal Performance Shaders
+
+else:                                                                       
+    device = torch.device("cpu")  # Fallback to CPU if no supported GPU is availible    
+
 #%% - Program begins
 print("\n \nProgram Initalised - Welcome to DC3D Trainer")  #prints the welcome message
-execution_timer.record_time(event_name="Program Initialisation", event_type="start") #records the time the program started
-
-# Following section checks if a CUDA enabled GPU is available. If found it is selected as the 'device' to perform the tensor opperations. If no CUDA GPU is found the 'device' is set to CPU (much slower) 
-if torch.cuda.is_available():                                               # Nvidia GPU
-    device = torch.device("cuda")         
-elif hasattr(torch.backends, 'mps') and torch.backends.mps.is_available():  # Apple Silicon, Metal Performance Shaders
-    device = torch.device("mps")
-else:                                                                       # CPU
-    device = torch.device("cpu")                                            
 print(f'Selected compute device: {device}\n')  #Informs user if running on CPU or GPU
+
+if use_execution_timer:
+    execution_timer.record_time(event_name="Program Initialisation", event_type="start") #records the time the program started
 
 if run_profiler:
     # Start profiling
@@ -1160,7 +1249,7 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
     epoch_avg_loss_false_positive_xy = []
 
     # Initialises pixel belief telemetry
-    telemetry = [[0, 0, xdim * ydim]]                # Initalises the telemetry memory, starting values are 0, 0.5, 0.5 which corrspond to epoch(0), above_threshold(0.5), below_threshold(0.5)
+    telemetry = []# [[0, 0, xdim * ydim]]                # Initalises the telemetry memory, starting values are 0, 0.5, 0.5 which corrspond to epoch(0), above_threshold(0.5), below_threshold(0.5)
     
     # Create a summary writer
     if use_tensorboard:
@@ -1323,15 +1412,17 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
 
 
     #%% - Setup model, loss criteria and optimiser   
-    if start_from_pretrained_model and pt_style  == "V2":  # REMOVE CHECK FORM PT_STYLE ONCE ALL MODELS HAVE BEEN CONVERTED TO NEW STYLE
+    if start_from_pretrained_model: 
 
         # Load the saved model data
-        checkpoint = torch.load(pretrained_model_path)   # dOES THIS REQUIRE MAP LOCATION IF LOADING INTO CUDA????? TEST !
+        checkpoint = torch.load(pretrained_model_path, map_location=device)   # map_location to the currently used device enusures that a model trainied on a different device type is loaded correctly
 
         # Set correct variables for the model
         latent_dim = checkpoint['latent_dim']
         fc_input_dim = checkpoint["fc_input_dim"]
-        precision = checkpoint["precision"]
+
+        dtype = torch.float32   # remove once fixed!!!! BUG
+        precision = 32 #checkpoint["precision"]   BUG
 
         # Update saved settings 
         settings["Latent Dimension"] = latent_dim
@@ -1348,19 +1439,33 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
         encoder.load_state_dict(checkpoint['encoder_state_dict'])
         decoder.load_state_dict(checkpoint['decoder_state_dict'])        
 
+        print("PRECISION:", precision)
+
         # precision already set so just updating the dtype variable for rest of program, no need for value error check as must have been valid to run in previous model train
-        if precision == "16":
-            dtype = torch.float16
-        elif precision == "32":
-            dtype = torch.float32
-        elif precision == "64":
-            dtype = torch.float64
+        #if precision == "16":
+        #    dtype = torch.float16
+        #elif precision == "32":
+        #    dtype = torch.float32
+        #elif precision == "64":
+        #    dtype = torch.float64
+
 
     else:
         # Initialize the encoder and decoder
-        encoder = Encoder(latent_dim, print_encoder_debug, fc_input_dim)
-        decoder = Decoder(latent_dim, print_decoder_debug, fc_input_dim)
+        encoder = Encoder(latent_dim, fc_input_dim, activation_function, print_encoder_debug)
+        decoder = Decoder(latent_dim, fc_input_dim, activation_function, print_decoder_debug)
         encoder, decoder, dtype = set_model_precision(encoder, decoder, precision) # Sets the precision of the encoder and decoder based on user input and returns the dtype variable used in the rest of the code
+
+
+        # REMOVE AND FIX THE NEED FOR THIS DUMMY CHECKPOINT DATA IF NOT LOADING FROM PT MODEL
+        checkpoint = {}
+        #checkpoint['optimizer_state_dict'] = None
+        #checkpoint['encoder_state_dict'] = None
+        #checkpoint['decoder_state_dict'] = None
+        #checkpoint['autoencoder_py_file_script'] = None
+        #checkpoint['latent_dim'] = latent_dim
+        #checkpoint['fc_input_dim'] = fc_input_dim
+        #checkpoint['precision'] = precision
 
     # Define the optimizer
     params_to_optimize = [{'params': encoder.parameters()} ,{'params': decoder.parameters()}] #Selects what to optimise, 
@@ -1412,9 +1517,9 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
     print("Training Initiated\nPress Ctr + c to exit and save the model during training.\n")
     start_time = time.time()                     # Begin the training timer
 
-    epoch_times_list = []                        # Creates a variable called epoch_times_list which is an empty list. values are latter appeneded to the list by way of epoch_times_list.append(x)
+    epoch_times_list = []                        
     history_da['train_loss']  = []
-    history_da['test_loss'] = []                 # Just creates a variable called history_da which contains two lists, 'train_loss' and 'val_loss' which are both empty to start with. value are latter appeneded to the two lists by way of history_da['val_loss'].append(x)
+    history_da['test_loss'] = []                
 
     try:                                         # Try except clause allows user to exit training gracefully whilst still retaiing a saved model and ouput plots
         loop_range = tqdm(range(1, num_epochs+1), desc='Epochs', colour='red', dynamic_ncols=True, postfix="Starting")
@@ -1531,7 +1636,7 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
 
             # check if current epoch is a multiple of 'model_checkpoint_interval' and if so save the model
             if model_checkpoint_interval and epoch % model_checkpoint_interval == 0 and epoch != 0:
-                full_model_export(True, model_output_dir, model_checkpoints_dir, epoch, encoder, decoder, optim, latent_dim, fc_input_dim, precision, Encoder, debug_model_exporter=False)
+                full_model_export(True, checkpoint, model_output_dir, model_checkpoints_dir, epoch, encoder, decoder, optim, latent_dim, fc_input_dim, precision, Encoder, debug_model_exporter=False)
 
             if epoch % hook_flush_interval == 0 and epoch != 0:
                 write_hook_data_to_disk_and_clear(activations, weights_data, biases_data, epoch, dir)
@@ -1604,23 +1709,6 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
 
     #%% - Output Visulisations
     ###Loss function plots
-    """
-    if plot_train_loss:
-        Out_Label =  graphics_dir + f'{model_save_name} - Train loss - Epoch {epoch}.png'
-        loss_plot(epochs_range, history_da['train_loss'], "Epoch number", f"Train loss ({loss_fn_label})", "Training loss", Out_Label, plot_or_save)
-
-        Out_Label = graphics_dir + f'{model_save_name} - Train loss v Time - Epoch {epoch}.png'
-        loss_plot(epoch_times_list, history_da['train_loss'], "Training Time (s)", f"Train loss ({loss_fn_label})", "Training Time v Loss", Out_Label, plot_or_save)
-
-
-    if plot_test_loss:
-        Out_Label =  graphics_dir + f'{model_save_name} - Val loss - Epoch {epoch}.png'
-        loss_plot(epochs_range, history_da['test_loss'], "Epoch number", f"Test loss ({loss_fn_label})", "Test loss", Out_Label, plot_or_save)
-
-        Out_Label = graphics_dir + f'{model_save_name} - Val loss v Time - Epoch {epoch}.png'
-        loss_plot(epoch_times_list, history_da['test_loss'], "Training Time (s)", f"Test loss ({loss_fn_label})", "Training Time v Loss", Out_Label, plot_or_save)
-    """
-
     Out_Label = graphics_dir + f'{model_save_name} - Train and Val loss v epoch Comb - Epoch {epoch}.png'
     loss_plot_trainval([epochs_range, epochs_range], [history_da['train_loss'], history_da['test_loss']], ["train", "test"], [model_save_name, model_save_name], "Epoch number", f"Loss ({loss_fn_label})", "Train and Val loss v Epoch", Out_Label, plot_or_save)
 
@@ -1653,7 +1741,7 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
         ax2.imshow(im_diff_cleaned, cmap='gray')
         ax2.set_title('Original -> Cleaned Img')
 
-        # Add title for the whole figure
+        # Add title for the whole figure    
         fig.suptitle('Pixel-wise Difference Comparisons')
         
         Out_Label = graphics_dir + f'{model_save_name} - Pixel Difference Epoch {epoch}.png'
@@ -1686,12 +1774,30 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
         plot_save_choice(plot_or_save, Out_Label)
 
 
-           
+        fig = create_tri_radar_plot(categories, [detailed_performance_loss_dict], [model_save_name])
+
+        #categories = ['epoch_avg_loss_true_positive_xy', 'epoch_avg_loss_true_positive_tof', 'epoch_avg_loss_false_positive_xy']
+
+        #fig = create_radar_plot(categories, [detailed_performance_loss_dict], [model_save_name])
+        Out_Label = graphics_dir + f'{model_save_name} - Normalised Tri-Radar Epoch {epoch}.png'
+        plot_save_choice(plot_or_save, Out_Label)
+
+        categories = ['epoch_avg_loss_true_positive_xy', 'epoch_avg_loss_true_positive_tof', 'epoch_avg_loss_false_positive_xy']
+        fig = create_3d_radar_plot(categories, detailed_performance_loss_dict, model_save_name)
+        Out_Label = graphics_dir + f'{model_save_name} - Normalised 3D Radars per Epoch.png'
+        plot_save_choice(plot_or_save, Out_Label)
+
+    #if plot_loss_heatmap:
+    #    Out_Label = graphics_dir + f'{model_save_name} - Loss Heatmap Epoch {epoch}.png'
+    #    plot_loss_heatmap(loss_fn, encoder, decoder, device, test_loader, Out_Label, plot_or_save)
+
+
+
     if plot_Graphwiz:
-        Graphviz_visulisation(encoder, decoder, precision, batch_size, xdim, ydim, graphics_dir)
+        Graphviz_visulisation(encoder, decoder, precision, batch_size, channels, xdim, ydim, graphics_dir)
 
     #%% - Export model, statedicts and required variables for inference to disk    
-    AE_file_name = full_model_export(False, model_output_dir, model_checkpoints_dir, epoch, encoder, decoder, optim, latent_dim, fc_input_dim, precision, Encoder, debug_model_exporter=False)
+    AE_file_name = full_model_export(False, checkpoint, model_output_dir, model_checkpoints_dir, epoch, encoder, decoder, optim, latent_dim, fc_input_dim, precision, Encoder, debug_model_exporter=False)
 
     #%% - Export all data logged to disk in form of .txt file in the output dir
     print("\nSaving inputs, model stats and results to .txt file in output dir...")
@@ -1712,6 +1818,8 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
         output_file.write(("Model ID: " + model_save_name + f"\nTrained on device: {device}\n"))   # Write the model ID and device used to train the model to the file
         output_file.write((f"Max Epoch Reached: {max_epoch_reached}\n"))  # Write the max epoch reached during training to the file
         output_file.write((f"Training Time: {format_time(training_time)}\n")) # Write the training time to the file
+        #output_file.write((f"Avg Epoch Time: {format_time(np.mean(epoch_times_list))}\n")) # Write the training time per epoch to the file
+        output_file.write((f"Avg Epoch Time: {format_time(training_time/max_epoch_reached)}\n")) # Write the training time per epoch to the file
 
         output_file.write((f"\nTorch Seed Val to Reproduce Run: {T_seed}\n")) 
         output_file.write((f"Numpy Seed Val to Reproduce Run: {N_seed}\n")) 
@@ -1739,7 +1847,7 @@ for HTO_val in val_loop_range: #val_loop is the number of times the model will b
         output_file.write(f"start_from_pretrained_model: {start_from_pretrained_model}\n")
         if start_from_pretrained_model:
             output_file.write(f"pretrained_model_path: {pretrained_model_path}\n")
-            output_file.write(f"load_pretrained_optimser: {load_pretrained_optimser}\n")  
+            output_file.write(f"load_pretrained_optimiser: {load_pretrained_optimiser}\n")  
         
         output_file.write("\n \nFull Data Readouts:\n") 
         for key, value in full_data_output.items(): 
@@ -1833,9 +1941,6 @@ execution_timer.record_time(event_name="Program Debrief", event_type="stop") #re
 print("\nProgram Complete - Shutting down...\n")    
 
 if run_profiler:
-    # Print the profiling results
-    #profiler.print_stats()
-
     # save the profiling results to a file
     profiler.dump_stats('profiler_results.prof')
 
