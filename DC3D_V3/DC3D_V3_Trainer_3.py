@@ -4,11 +4,14 @@
 # University of Bristol
 # adill@neuralworkx.com
 
-from pickle import FALSE
+from pickle import FALSE  #??? 
+from sympy import use   ##???
 import torch
 
 """
 Possible improvements:
+
+### ~~~~ Auto name and number each model (use a local stoareg file to track model numbber) add model number to file info and use to auto genrate a model family tree when pretraining from others 
 
 ### ~~~~~ FIX: 'Epoch Times' list not being appended to correctly, only final? epoch time recorded?? (Obbserved taling the mean of the array always rssults in 1/2 of the total processing time)? 
 
@@ -172,33 +175,35 @@ Possible improvements:
 #%% - First time setup
 results_output_path = "N:/DeepClean3D Project Folder/Yr 3 Project Results/"             # Path to the results output folder, this is the folder that will contains all your results folders, not the results folder for a particular run.
 
-dataset_paths = ["N:/DeepClean3D Project Folder/Yr 3 Project Datasets/V3_PDT_10K/"]
+dataset_paths = [#"N:/DeepClean3D Project Folder/Yr 3 Project Datasets/V3_PDT_10K/",
+                 #"N:/DeepClean3D Project Folder/Yr 3 Project Datasets/[V3]_RDT_50K/",    # Path to the dataset folder, this is the folder that contains your dataset folders, not a dataset folder itself. This allows fast switching between datasets by changing just the dataset title below without having to change the full path each time
+                "N:/DeepClean3D Project Folder/Yr 3 Project Datasets/V3_RDT_150K/",
+               ]                             
 
-#dataset_paths = ["N:/Yr 3 Project Datasets/[V3]_RDT_50K/",    # Path to the dataset folder, this is the folder that contains your dataset folders, not a dataset folder itself. This allows fast switching between datasets by changing just the dataset title below without having to change the full path each time
-#                 #"N:/Yr 3 Project Datasets/V3_RDT_150K/",
-#                 #"B:/[V3]_RDT_1M/",
-#                ]                             
-
+counters_local_filepath = 'DC3D_V3/Local_Program_Data/counters.json'
 
 #%% - Data Path Settings
-model_save_name = "ProcessTest016"      # Name of the model to be saved, this will be the name of the folder that the model is saved in
-model_checkpoint_interval = False               # Number of epochs between each model checkpoint save, set to False for no checkpointing. If set to a value then the model will save a checkpoint of the model and optimiser state dicts at the end of each 'model_checkpointing_interval' epochs
+model_save_name = "Long150K_AdamW"      # Name of the model to be saved, this will be the name of the folder that the model is saved in
+model_checkpoint_interval = 20               # Number of epochs between each model checkpoint save, set to False for no checkpointing. If set to a value then the model will save a checkpoint of the model and optimiser state dicts at the end of each 'model_checkpointing_interval' epochs
 timeout_time = False                         # Time in minuits to wait before stopping training, set to False to disable time based stopping. {Default = False}. NOTE! Program will allow the epoch currently in progress to conclude before stopping.
 
 #%% - Training Hyperparameter Settings
-num_epochs = 20                              # Set max number of epochs to run for. {Default = 100}
-batch_size = 200                             # Set batch size - number of Images to pull per batch. {Default = 64}
-learning_rate = 0.003                       # Set optimiser learning rate. {Default = 1e-3}
-optim_w_decay = 1e-05                        # Set optimiser weight decay for regularisation. {Default = 1e-5}
+num_epochs = 500                              # Set max number of epochs to run for. {Default = 100}
+batch_size = 250                             # Set batch size - number of samples to pull per batch. {Default = 64}
+learning_rate = 0.004                       # Set optimiser learning rate. {Default = 1e-3}
+optim_w_decay = 1e-07  #1e-05                       # Set optimiser weight decay for regularisation. {Default = 1e-5}
 precision = 32                               # Set the precision of the data and model (16, 32 or 64) NOTE 16 only availble if runing on supported GPU hardware. {Default = 32}
  
 # Architecture Settings
-latent_dim = 128                              # Set number of nodes in the latent space, the bottleneck layer. {Default = 12}
+latent_dim = 24                              # Set number of nodes in the latent space, the bottleneck layer. {Default = 12}
 fc_input_dim = 128                           # Set number of nodes in the intermediate fully connected layers. {Default = 128}
 dropout_prob = 0.2                           # [NOTE Not connected yet] Set dropout probability. {Default = 0.2}
 activation_function = torch.nn.ReLU(True)    # Set activation function for the network. {Default = nn.ReLU()}
+use_adamw_optimiser = True                  # If set to true then AdamW optimiser is used, if false then Adam optimiser is used.
 
-reconstruction_threshold = 0.5               # MUST BE BETWEEN 0-1  #Threshold for 3d reconstruction, values below this confidence level are discounted. {Default = 0.5}
+# Reconstruction Settings
+reconstruction_threshold = 0.25               # MUST BE BETWEEN 0-1  #Threshold for 3d reconstruction, values below this confidence level are discounted. {Default = 0.5}
+quantise_reconstructed_output = False  #CONNECT!¬! IMPLEMENT!!          # If set to true then the reconstructed output will be quantised 
 
 #%% - Image Preprocessing Settings
 signal_points = 300#(25, 35)                    # Set the number of signal points to add
@@ -247,11 +252,11 @@ nonzero_weighting = 1#0.4 #0.4                          # Set non zero weighting
 time_weighting = 1                                      # Set time weighting for ffACBMSE (Hyperparameter) [# Only used for ffACBMSE loss function]
 tp_weighting = 0.8                                        # Set time point weighting for ffACBMSE (Hyperparameter) [# Only used for ffACBMSE loss function]
 tn_weighting = 0.5                                        # Set frame point weighting for ffACBMSE (Hyperparameter) [# Only used for ffACBMSE loss function]
-fp_weighting = 1                                        # Set frame point weighting for ffACBMSE (Hyperparameter) [# Only used for ffACBMSE loss function]
-fn_weighting = 1                                        # Set frame point weighting for ffACBMSE (Hyperparameter) [# Only used for ffACBMSE loss function]
+fp_weighting = 1.8                                        # Set frame point weighting for ffACBMSE (Hyperparameter) [# Only used for ffACBMSE loss function]
+fn_weighting = 1.8                                        # Set frame point weighting for ffACBMSE (Hyperparameter) [# Only used for ffACBMSE loss function]
 loss_penalty = 0.1
 loss_reduction = 'mean'
-fullframe_weighting = 0.1 #1.5                         # Set full frame weighting for ffACBMSE (Hyperparameter) [# Only used for ffACBMSE loss function]
+fullframe_weighting = 0.001 #1.5                         # Set full frame weighting for ffACBMSE (Hyperparameter) [# Only used for ffACBMSE loss function]
 ff_loss = 'mse'                                         # Set loss function for full frame loss (Hyperparameter) [# Only used for ffACBMSE loss function] # "MAE", "MSE", "SSE", "BCE"
 
 # Selections for split loss function
@@ -268,7 +273,7 @@ pretrained_model_path = r'N:\Yr 3 Project Results\Online_RUN_020_PTfrom online19
 masking_optimised_binary_norm = False        # If set to true then the model will use the binary normalisation method optimised for masking output. Otherwise will use the gaped custom normalisation optimised for the direct network output
 
 #%% - New beta feature settings 
-compile_model = False    # NOT AVAILIBE ON WINDOWS!                    # [default = True] If set to true then the model will be compiled using torch.compile for faster execution, if set to false then the model will not be compiled further information is availible at: 
+compile_model = False    # NOT AVAILIBE ON WINDOWS?!                    # [default = True] If set to true then the model will be compiled using torch.compile for faster execution, if set to false then the model will not be compiled further information is availible at: 
 compile_mode = 'default' # mode for the torch.compile, can be set to default, reduce-overhead or max-autotune, see here: https://pytorch.org/docs/stable/generated/torch.compile.html for more information
 
 # Neural Net Telemetry
@@ -289,14 +294,14 @@ num_to_plot = 10 # 2d plots                   # [default = 10] Number of images 
 plot_live_time_loss = True                   # [default = True] Generate plot of live training loss vs time during trainig which is overwritten each epoch, this is useful for seeing how the training is progressing
 plot_live_training_loss = True               # [default = True] Generate plot of live training loss vs epoch during trainig which is overwritten each epoch, this is useful for seeing how the training is progressing
 
-plot_comparative_loss = False
-comparative_live_loss = False                 # [default = True] Adds comparative lines to the live plots, the models for comparison are selected below
+plot_comparative_loss = True
+comparative_live_loss = True                 # [default = True] Adds comparative lines to the live plots, the models for comparison are selected below
 slide_live_plot_size = 0                     # [default = 0] Number of epochs to show on the live plot (if set to 0 then will show all epochs)
 comparative_loss_titles = ["S1 10K", "S1 100K", "S1 500K", "S2 10K"]
-comparative_loss_paths = [r'N:\Yr 3 Project Results\RDT 10K 1000ToF timed - Training Results\\',   # Settings V1
-                          r'N:\Yr 3 Project Results\RDT 100K 1000ToF timed - Training Results\\',  # Settings V1
-                          r'N:\Yr 3 Project Results\RDT 500K 1000ToF timed - Training Results\\',  # Settings V1
-                          r'N:\Yr 3 Project Results\RDT 10K S2 - Training Results\\'               # Settings V2
+comparative_loss_paths = [r'N:\DeepClean3D Project Folder\Yr 3 Project Results\RDT 10K 1000ToF timed - Training Results\\',   # Settings V1
+                          r'N:\DeepClean3D Project Folder\Yr 3 Project Results\RDT 100K 1000ToF timed - Training Results\\',  # Settings V1
+                          r'N:\DeepClean3D Project Folder\Yr 3 Project Results\RDT 500K 1000ToF timed - Training Results\\',  # Settings V1
+                          r'N:\DeepClean3D Project Folder\Yr 3 Project Results\RDT 10K S2 - Training Results\\'               # Settings V2
                           ] 
 
 
@@ -350,12 +355,73 @@ perf_analysis_dataset_dir = (r"N:\\DeepClean3D Project Folder\\Yr 3 Project Data
 debug_hpo_perf_analysis = False
 
 
-################################### END OF USER SETTINGS ###################################
+#%% ################################## END OF USER SETTINGS ###################################
+
+def override_globals_with_cli():
+    """
+    Detects top-level user-defined variables (excluding functions, modules,
+    and built-ins), exposes them as CLI arguments, and overrides them if provided.
+    Supports int, float, str, bool, list, dict with automatic type conversion.
+    """
+    import argparse
+    import types
+
+    def convert_value(val):
+        """Convert string to int or float if possible, else leave as string."""
+        try:
+            if '.' in val:
+                return float(val)
+            else:
+                return int(val)
+        except ValueError:
+            return val
+    
+    # Filter globals: only variables that are not callable, not modules, and do not start with "_"
+    user_vars = {
+        k: v for k, v in globals().items()
+        if not k.startswith("_") and not isinstance(v, (types.FunctionType, types.ModuleType))
+    }
+
+    parser = argparse.ArgumentParser(description="Override user settings from command line")
+
+    for var, val in user_vars.items():
+        if isinstance(val, bool):
+            parser.add_argument(f"--{var}", dest=var, action='store_true', help=f"Set {var} True")
+            parser.add_argument(f"--no-{var}", dest=var, action='store_false', help=f"Set {var} False")
+            parser.set_defaults(**{var: val})
+        elif isinstance(val, list):
+            parser.add_argument(f"--{var}", type=str, help=f"Override {var} as comma-separated list", default=",".join(map(str, val)))
+        elif isinstance(val, dict):
+            parser.add_argument(f"--{var}", type=str, help=f"Override {var} as key=value pairs, comma-separated", default=",".join(f"{k}={v}" for k,v in val.items()))
+        else:
+            parser.add_argument(f"--{var}", type=type(val), help=f"Override {var}", default=val)
+
+    args = parser.parse_args()
+
+    # Override globals dynamically
+    for var, val in user_vars.items():
+        arg_value = getattr(args, var)
+        if isinstance(val, bool):
+            globals()[var] = arg_value
+        elif isinstance(val, list):
+            globals()[var] = [convert_value(v.strip()) for v in arg_value.split(",")]
+        elif isinstance(val, dict):
+            d = {}
+            if arg_value:
+                for item in arg_value.split(","):
+                    k, v = item.split("=")
+                    d[k.strip()] = convert_value(v.strip())
+            globals()[var] = d
+        else:
+            globals()[var] = arg_value
+
+override_globals_with_cli()  # This function will overide any of the above global settings with command line inputs if they are provided
 
 #%% - Load in Dependencies
 # External Libraries
 import os
 import time     # Used to time the training loop
+import json
 import torch
 from datetime import datetime 
 import torchvision 
@@ -395,6 +461,33 @@ from Helper_files.Data_Degradation_Functions import *   # Data Degredation Funct
 
 
 #%% - HACKS NEED FIXING!!!
+
+# Set the Model ID for this run and dynamically add to save path title
+with open(counters_local_filepath, 'r') as f:
+    counters = json.load(f)
+
+counters["Model_ID"] += 1
+model_id = counters["Model_ID"]
+
+# Save updated counter
+with open(counters_local_filepath, 'w') as f:
+    json.dump(counters, f)
+
+model_save_name = f"MID{model_id}__{model_save_name}" # Model name with incremented ID
+
+
+
+
+# Set the parent ID if this is a child run from a pretrained model
+if start_from_pretrained_model:
+    parent_model_id = extract_model_id_from_path(pretrained_model_path)
+else:
+    parent_model_id = None
+    
+
+
+
+# Set print every other to not exceed num_epochs
 if print_every_other > num_epochs:                                                                   
     print_every_other = num_epochs
 
@@ -403,6 +496,7 @@ results_output_path_1 = results_output_path  # HACK FOR HYPERPARAM OPTIMISATION 
 history_da = {'train_loss':[], 'test_loss':[], 'val_loss':[], 'HTO_val':[], 'training_time':[]}      # Needs better placement???
 max_epoch_reached = 0                                                                                # In case user exits before end of first epoch 
 
+# Physical scaling parameters for plotting
 time_scale = time_dimension / time_length                                                            # ns per t pixel   # MOVE THESE LINES ELSEWHERE TO CLEAN UP
 x_scale = xdim / x_length                                                                            # mm per x pixel
 y_scale = ydim / y_length                                                                            # mm per y pixel
@@ -414,6 +508,8 @@ input_signal_settings = [signal_points, x_std_dev, y_std_dev, tof_std_dev, noise
 activations = {}
 weights_data = {}
 biases_data = {}
+
+
 
 
 #%% - Performance Profiling and Logging Setup
@@ -1184,780 +1280,788 @@ else:
     device = torch.device("cpu")  # Fallback to CPU if no supported GPU is availible    
 
 #%% - Program begins
-print("\n \nProgram Initalised - Welcome to DC3D Trainer")  #prints the welcome message
-print(f'Selected compute device: {device}\n')  #Informs user if running on CPU or GPU
 
-if use_execution_timer:
-    execution_timer.record_time(event_name="Program Initialisation", event_type="start") #records the time the program started
 
-if run_profiler:
-    # Start profiling
-    profiler.enable()
+if __name__ == "__main__":
+    print("\n \nProgram Initalised - Welcome to DC3D Trainer")  #prints the welcome message
+    print(f'Selected compute device: {device}\n')  #Informs user if running on CPU or GPU
 
-#%% - # Hyperparameter Optimiser
-if optimise_hyperparameter:
-    HTO_values = set_optimisiation_list_manually
-    print(f"Hyperparameter optimisation is enabled, the following hyperparameters will be optimised: {hyperparam_to_optimise}")
-    val_loop_range = HTO_values #val_loop_range is the number of values in the HTO_values list, i.e. the number of times the model will be trained and evaluated
-else: 
-    val_loop_range = range(1,2,1)
-
-for HTO_val in val_loop_range: #val_loop is the number of times the model will be trained and evaluated
-    if optimise_hyperparameter:
-        globals()[hyperparam_to_optimise] = HTO_val
-        print(f"Current Test: {hyperparam_to_optimise} value = {HTO_val}\n")
-
-    #%% - # Input / Output Path Initialisation
-    if optimise_hyperparameter:
-        results_output_path = results_output_path_1 + model_save_name + "_" + hyperparam_to_optimise + f" Optimisation\\{HTO_val}\\"
-
-    # Create output directory if it doesn't exist
-    dir = results_output_path + model_save_name + " - Training Results/"
-    os.makedirs(dir, exist_ok=True)
-
-    # Create output directory for images if it doesn't exist
-    graphics_dir = dir + "Output_Graphics/"
-    os.makedirs(graphics_dir, exist_ok=True)
-
-    raw_plotdata_output_dir = dir + "Raw_Data_Output/"
-    os.makedirs(raw_plotdata_output_dir, exist_ok=True)
-
-    model_output_dir = dir + "Model_Deployment/"
-    os.makedirs(model_output_dir, exist_ok=True)
-
-    model_checkpoints_dir = dir + "Model_Checkpoints/"
-    os.makedirs(model_checkpoints_dir, exist_ok=True)
-
-    full_activity_filepath = dir + model_save_name + " - Activity.npz"
-    full_netsum_filepath = dir + model_save_name + " - Network Summary.txt"
-
-    # Joins up the parts of the differnt input dataset load paths
-    train_dirs = [dataset_path + 'Data/' for dataset_path in dataset_paths]
-
-
-    #%% - Bodge clean up 
-    ###CLEAN UP THIS METHOD TO SOMTHING BETTER!!!!!!
-    epoch_avg_loss_mse = []
-    epoch_avg_loss_mae = []
-    epoch_avg_loss_snr = []
-    epoch_avg_loss_psnr = []
-    epoch_avg_loss_ssim = []
-    epoch_avg_loss_nmi = []
-    epoch_avg_loss_cc = []
-    epoch_avg_loss_true_positive_xy = []
-    epoch_avg_loss_true_positive_tof = []
-    epoch_avg_loss_false_positive_xy = []
-
-    # Initialises pixel belief telemetry
-    telemetry = []# [[0, 0, xdim * ydim]]                # Initalises the telemetry memory, starting values are 0, 0.5, 0.5 which corrspond to epoch(0), above_threshold(0.5), below_threshold(0.5)
-    
-    # Create a summary writer
-    if use_tensorboard:
-        writer = SummaryWriter()
-    else:
-        writer = None
-
-
-    #%% - Initialises seeding values to RNGs
-    if seeding_value:
-        torch.manual_seed(seeding_value)
-        np.random.seed(seeding_value)
-        print("Seeding with value:", seeding_value)
-    else:
-        torch.seed()                                    # Set the seed for the RNGs
-        np.random.seed()
-
-    T_seed = torch.initial_seed()           # Seed for PyTorch RNGs
-    N_seed = np.random.get_state()[1][0]    # Seed for NumPy RNGs
-
-
-    #%% - Set loss function choice
-
-    # Set loss function choice for split loss (if loss function choice is set to ada weighted custom split loss)
-    availible_split_loss_functions = [torch.nn.MSELoss(), torch.nn.BCELoss(), torch.nn.L1Loss(), ada_SSE_loss]    # List of all availible loss functions is set to ada_weighted_custom_split_loss
-    split_loss_functions = [availible_split_loss_functions[zeros_loss_choice], availible_split_loss_functions[nonzero_loss_choice]] # Sets loss functions based on user input
-
-
-    # List of all availible loss functions - add new loss functions here by adding name and function to dictionary as key and value. Code is her so that falls inside the hyperparam optimser loop so the loss function init params can also be optimised, i.e weights for ACB loss etc.
-    availible_loss_functions_dict = {
-        "MAE": torch.nn.L1Loss(),                                                                      # Mean Absolute Error Loss from PyTorch Library
-        "MSE": torch.nn.MSELoss(),                                                                     # Mean Squared Error Loss from PyTorch Library
-        "SSE": ada_SSE_loss,                                                                           # Sum of Squared Error Loss (Custom)
-        "BCE": torch.nn.BCELoss(),   
-
-        "LayeredLoss": LayeredLoss(zero_weighting, nonzero_weighting),                                                                  # Custom Layered Loss Function
-        "TrippleLoss": TrippleLoss(zero_weighting, nonzero_weighting),                                                                  # Custom Tripple Loss Function
-                                                                                                                                          # Binary Cross Entropy Loss from PyTorch Library
-        "ACB_MSE": ACBLoss(zero_weighting, nonzero_weighting),                                                                # My Original Automatically Class Balanced MSE Loss using Class balancing by frequency
-        "ffACB_MSE": ffACBLoss(zero_weighting, nonzero_weighting, fullframe_weighting),                                       # Update to ACB_MSE, adds new term to the loss function that calulates mse over the full frame with its own weighting
-        "Split_Loss": ada_weighted_custom_split_loss(split_loss_functions, zero_weighting, nonzero_weighting),                # Uses my automatic class balancing to split the loss function into two parts, one for zero values and one for non-zero values but instead of using MSE as my ACBMSE implementation this just leaves the loss function open to user setting, and uniquly allows user to select differnt loss fucntion for each class.
-
-        "True3D": True3DLoss(zero_weighting=1, nonzero_weighting=1, timesteps=1000),                                                                          # 3D Loss function that uses the true 3D image as the target, rather than the 2D projection, (Warning: Very Slow)
-        "Simple3D": simple3Dloss(zero_weighting=1, nonzero_weighting=1, virtual_t_weighting=1, virtual_x_weighting=1, virtual_y_weighting=1, timesteps=1000), # Simplified 3D loss function (Warning: Very Slow)
-        "ACB3D": ACBLoss3D(zero_weighting, nonzero_weighting, virtual_t_weighting=1, virtual_x_weighting=None, virtual_y_weighting=None, timesteps=1000), # Adds my automatic class balancing to the 3D loss function (Warning: Very Slow)
-        "Fast3D": NEWESTACB3dloss2024(batch_size, ydim, xdim),                                                                                             # Fast 3D loss method that instea of projecting 2D back to 3D and filling the cube with the values, it unravels the 2D back to an array of 3D coordinates (4D if counting the batch dim) then compares these directly ratehr than taking the next step to fill the cube. This is much faster than the other 3D loss functions and is the current prefered method for 3D loss, although has not demonstared benefits above the 2D ACB loss functions so far.
-
-        "WPR_Loss": WeightedPerfectRecoveryLoss(),           # Custom loss function that contains a weighting term that encorages the network to have points follow the correct gradient ??? 
-    }
-
-    # Accessing the selected loss function and label
-    loss_fn_label = loss_function_selection                    # Sets loss function label, used on plots and data to clearly identify loss function
-    loss_fn = availible_loss_functions_dict[loss_fn_label]       # Sets loss function based on user input of parameter loss_function_selection
-
-
-
-    #%% - Create record of all user input settings, to add to output data for testing and keeping track of settings
-    settings = {}  # Creates empty dictionary to store settings 
-    settings["Epochs"] = num_epochs     # Adds the number of epochs to the settings dictionary
-    settings["Batch Size"] = batch_size # Adds the batch size to the settings dictionary
-    settings["Learning Rate"] = learning_rate # Adds the learning rate to the settings dictionary
-    settings["Optimiser Decay"] = optim_w_decay # Adds the optimiser decay to the settings dictionary
-    settings["Dropout Probability"] = dropout_prob # Adds the dropout probability to the settings dictionary
-    settings["Latent Dimension"] = latent_dim # Adds the latent dimension to the settings dictionary
-    settings["FC Input Dim"] = fc_input_dim # Adds the FC input dimension to the settings dictionary
-    settings["Noise Points"] = noise_points # Adds the noise points to the settings dictionary
-    settings["Train Split"] = train_test_split_ratio # Adds the train split to the settings dictionary
-    settings["Val/Test Split"] = val_test_split_ratio   # Adds the val/test split to the settings dictionary
-    settings["Dataset/s used"] = [path.rstrip('/').split('/')[-1] for path in dataset_paths] # Adds the dataset titles to the settings dictionary
-    settings["Time Dimension"] = time_dimension # Adds the time dimension to the settings dictionary
-    settings["Seed Val"] = seeding_value # Adds the seed value to the settings dictionary
-    settings["Reconstruction Threshold"] = reconstruction_threshold # Adds the reconstruction threshold to the settings dictionary
-    settings["Precision"] = precision
-    settings["shuffle_train_data"] = shuffle_train_data
-    settings["record_weights"] = record_weights
-    settings["record_biases"] = record_biases
-    settings["record_activity"] = record_activity
-    settings["timeout_time"] = timeout_time
-
-    #%% - Dataset Pre-tests
-    #if full_dataset_integrity_check: #if full_dataset_integrity_check is set to True, then the scan type is set to full (slow)
-    #    scantype = "full"
-    #else:
-    #    scantype = "quick"
-
-
-    ###### NOTE! REMOVE TESTS FOR DATASET AND INCLUDE THEM IN THE DATSET GENRATOR INSTEAD TO AVOID REPETETIVE CHECKS OF THE SAME SETS OVER AND OVER AGAIN !!!!
-    # CHECK: Dataset Integrity Check
-    #print(f"Testing training dataset integrity, with {scantype} scan")                                 # Prints the scan type
-    #dataset_integrity_check(train_dir, full_test=full_dataset_integrity_check, print_output=True)      # Checks the integrity of the training dataset
-
-    # CHECK: Dataset Distribution Check
-    #if full_dataset_distribution_check:                                                                                         # If full_dataset_distribution_check is set to True, then the dataset distribution is checked
-    #    print("\nTesting training dataset signal distribution")
-    #    dataset_distribution_tester(train_dir, time_dimension, ignore_zero_vals_on_plot=True, output_image_dir=graphics_dir)    # Checks the distribution of the training dataset
-
-    # CHECK: Num of images in path greater than batch size choice? 
-    num_of_files_in_path = sum(len(os.listdir(dir_path)) for dir_path in train_dirs) * large_data_bundles_size                                                      # Number of files in path
-    if num_of_files_in_path < batch_size:                                                                                              # If the number of files in the path is less than the batch size, user is promted to input a new batch size
-        print(f"Error, the path selected has {num_of_files_in_path} image files, which is {(batch_size - num_of_files_in_path)} less than the chosen batch size. Please select a batch size less than the total number of images in the directory")
-        batch_err_message = "Choose new batch size, must be less than total amount of images in directory", (num_of_files_in_path)                               # Creates the error message
-        batch_size = int(input(batch_err_message))                                                                                                               # NOTE: Not sure why input message is printing with wierd brakets and speech marks in the terminal? Investigate???
-
-    # Report type of gradient descent to user
-    print(f"{num_of_files_in_path} files in path. // Batch size = {batch_size}\nLearning via: {batch_learning(num_of_files_in_path, batch_size)}\n")   # Prints the number of files in the path and the batch size and the resultant type of batch learning
-
-    #%% - Data Loader & Preperation
-
-
-
-    # Creates the dataset
-    train_dataset = MTN_Dataset(train_dirs, large_data_bundles_size, number_of_bundles_to_memory, device, shuffle_train_data, preprocess_on_gpu, precision, timer=execution_timer)
-
-    # Dataset Partitioning
-    m = len(train_dataset)  # m is the length of the train_dataset, i.e., the number of images in the dataset
-    train_split = int(m * train_test_split_ratio)  # train_split is the ratio of train images to be used in the training set as opposed to non_training set
-
-    # Sequentially split the dataset
-    train_indices = list(range(train_split))
-    non_training_indices = list(range(train_split, m))
-
-    train_data = Subset(train_dataset, train_indices)
-    non_training_data = Subset(train_dataset, non_training_indices)
-
-    m2 = len(non_training_data)  # m2 is the length of the non_training_data, i.e., the number of images in the dataset
-
-    if val_set_on:
-        val_split = int(m2 * val_test_split_ratio)  # val_split is the ratio of non-train images to be used in the validation set as opposed to the test set
-        test_indices = non_training_indices[:m2 - val_split]
-        val_indices = non_training_indices[m2 - val_split:]
-
-        test_data = Subset(train_dataset, test_indices)
-        val_data = Subset(train_dataset, val_indices)
-    else:
-        test_data = non_training_data
-        val_data = non_training_data
-
-    # Generating Dataloaders WITH THE WAY I HAVE STORED DATA IN MEMORY IS THIS CAUSING A 3X IN SIZE IN MEMORY????
-    train_loader = StackedDatasetLoader(input_signal_settings, physical_scale_parameters, time_dimension, device, preprocess_on_gpu, precision, dataset=train_data, batch_size=batch_size, num_workers=data_loader_workers, timer=execution_timer) # Shuffle is handled by the dataset, set with the variable 'shuffle_data'. It must not be applied here otherwise will induce errors in the logic based on index value
-    test_loader = StackedDatasetLoader(input_signal_settings, physical_scale_parameters, time_dimension, device, preprocess_on_gpu, precision, dataset=test_data, batch_size=batch_size, num_workers=data_loader_workers, timer=execution_timer) # Shuffle is handled by the dataset, set with the variable 'shuffle_data'. It must not be applied here otherwise will induce errors in the logic based on index value
-    valid_loader = StackedDatasetLoader(input_signal_settings, physical_scale_parameters, time_dimension, device, preprocess_on_gpu, precision, dataset=val_data, batch_size=batch_size, num_workers=data_loader_workers, timer=execution_timer) # Shuffle is handled by the dataset, set with the variable 'shuffle_data'. It must not be applied here otherwise will induce errors in the logic based on index value
-
-    train_batch_sampler = torch.utils.data.BatchSampler(torch.utils.data.SequentialSampler(train_data), 
-                                                batch_size=batch_size, 
-                                                drop_last=False)
-
-    test_batch_sampler = torch.utils.data.BatchSampler(torch.utils.data.SequentialSampler(test_data), 
-                                                batch_size=batch_size, 
-                                                drop_last=False)
-
-    val_batch_sampler = torch.utils.data.BatchSampler(torch.utils.data.SequentialSampler(val_data), 
-                                                batch_size=batch_size, 
-                                                drop_last=False)
-
-    # Generating Dataloaders WITH THE WAY I HAVE STORED DATA IN MEMORY IS THIS CAUSING A 3X IN SIZE IN MEMORY????
-    train_loader = StackedDatasetLoader(input_signal_settings, physical_scale_parameters, time_dimension, device, preprocess_on_gpu, precision, dataset=train_data, batch_sampler=train_batch_sampler,  timer=execution_timer) # Shuffle is handled by the dataset, set with the variable 'shuffle_data'. It must not be applied here otherwise will induce errors in the logic based on index value
-    test_loader = StackedDatasetLoader(input_signal_settings, physical_scale_parameters, time_dimension, device, preprocess_on_gpu, precision, dataset=test_data, batch_sampler=test_batch_sampler,  timer=execution_timer) # Shuffle is handled by the dataset, set with the variable 'shuffle_data'. It must not be applied here otherwise will induce errors in the logic based on index value
-    valid_loader = StackedDatasetLoader(input_signal_settings, physical_scale_parameters, time_dimension, device, preprocess_on_gpu, precision, dataset=val_data, batch_sampler=val_batch_sampler, timer=execution_timer) # Shuffle is handled by the dataset, set with the variable 'shuffle_data'. It must not be applied here otherwise will induce errors in the logic based on index value
-
-
-
-    #%% - Setup model, loss criteria and optimiser   
-    if start_from_pretrained_model: 
-
-        # Load the saved model data
-        checkpoint = torch.load(pretrained_model_path, map_location=device)   # map_location to the currently used device enusures that a model trainied on a different device type is loaded correctly
-
-        # Set correct variables for the model
-        latent_dim = checkpoint['latent_dim']
-        fc_input_dim = checkpoint["fc_input_dim"]
-
-        dtype = torch.float32   # remove once fixed!!!! BUG
-        precision = 32 #checkpoint["precision"]   BUG
-
-        # Update saved settings 
-        settings["Latent Dimension"] = latent_dim
-        settings["Precision"] = precision
-        settings["FC Input Dim"] = fc_input_dim
-
-        # Load the Encoder and Decoder classes by executing the script content directly using exec()
-        exec(checkpoint["autoencoder_py_file_script"])
-
-        encoder = Encoder(checkpoint['latent_dim'], False, checkpoint["fc_input_dim"])
-        decoder = Decoder(checkpoint['latent_dim'], False, checkpoint["fc_input_dim"])
-
-        # Load the state dicts
-        encoder.load_state_dict(checkpoint['encoder_state_dict'])
-        decoder.load_state_dict(checkpoint['decoder_state_dict'])        
-
-        print("PRECISION:", precision)
-
-        # precision already set so just updating the dtype variable for rest of program, no need for value error check as must have been valid to run in previous model train
-        #if precision == "16":
-        #    dtype = torch.float16
-        #elif precision == "32":
-        #    dtype = torch.float32
-        #elif precision == "64":
-        #    dtype = torch.float64
-
-
-    else:
-        # Initialize the encoder and decoder
-        encoder = Encoder(latent_dim, fc_input_dim, activation_function, print_encoder_debug)
-        decoder = Decoder(latent_dim, fc_input_dim, activation_function, print_decoder_debug)
-        encoder, decoder, dtype = set_model_precision(encoder, decoder, precision) # Sets the precision of the encoder and decoder based on user input and returns the dtype variable used in the rest of the code
-
-
-        # REMOVE AND FIX THE NEED FOR THIS DUMMY CHECKPOINT DATA IF NOT LOADING FROM PT MODEL
-        checkpoint = {}
-        #checkpoint['optimizer_state_dict'] = None
-        #checkpoint['encoder_state_dict'] = None
-        #checkpoint['decoder_state_dict'] = None
-        #checkpoint['autoencoder_py_file_script'] = None
-        #checkpoint['latent_dim'] = latent_dim
-        #checkpoint['fc_input_dim'] = fc_input_dim
-        #checkpoint['precision'] = precision
-
-    # Define the optimizer
-    params_to_optimize = [{'params': encoder.parameters()} ,{'params': decoder.parameters()}] #Selects what to optimise, 
-    optim = torch.optim.Adam(params_to_optimize, lr=learning_rate, weight_decay=optim_w_decay)
-
-    if start_from_pretrained_model and load_pretrained_optimiser:
-        # load the optimizer state dictionary, if user requested
-        optim.load_state_dict(checkpoint['optimizer_state_dict'])
-
-    # Initalise Model on compute device
-    encoder.to(device)   #Moves encoder to selected device, CPU/GPU
-    decoder.to(device)   #Moves decoder to selected device, CPU/GPU
-
-    if compile_model:
-        encoder = torch.compile(encoder, mode=compile_mode)
-        decoder = torch.compile(decoder, mode=compile_mode)
-
-
-
-    #%% - Prepare Network Summary
-    # Set evaluation mode for encoder and decoder
-
-    with torch.no_grad(): # No need to track the gradients
-        
-        # Create dummy input tensor
-        enc_input_tensor = torch.randn(batch_size, channels, ydim, xdim, dtype=dtype) 
-            
-        # Join the encoder and decoder models
-        full_network_model = torch.nn.Sequential(encoder, decoder)   #should this be done with no_grad?
-
-        # Generate network summary and then convert to string
-        model_stats = summary(full_network_model, input_data=enc_input_tensor, device=device, verbose=0)
-        summary_str = str(model_stats)             
-
-        # Print Encoder/Decoder Network Summary to terminal if user requested (Regardless of user setting, network summary is always added to the final .txt output file along with the final model)
-        if print_network_summary:
-            print(summary_str)
-
-
-    #%% - Add Activation data hooks to encoder and decoder layers
-    if record_activity or record_weights or record_biases:   # MOVE TO FUCNTION AND THEN TO HELPER FUCNS FILE FOR CLEANER CODE
-        register_network_hooks(encoder, decoder, record_activity, record_weights, record_biases, activations, weights_data, biases_data)
-
-    #%% - Running Training Loop
-
-    execution_timer.record_time(event_name="Program Initialisation", event_type="stop") #records the time the program started
-
-
-    print("Training Initiated\nPress Ctr + c to exit and save the model during training.\n")
-    start_time = time.time()                     # Begin the training timer
-
-    epoch_times_list = []                        
-    history_da['train_loss']  = []
-    history_da['test_loss'] = []                
-
-    try:                                         # Try except clause allows user to exit training gracefully whilst still retaiing a saved model and ouput plots
-        loop_range = tqdm(range(1, num_epochs+1), desc='Epochs', colour='red', dynamic_ncols=True, postfix="Starting")
-        epoch_start_time = time.time()           # Starts the epoch timer
-        for epoch in loop_range:                 # For loop that iterates over the number of epochs where 'epoch' takes the values (0) to (num_epochs - 1)
-            execution_timer.record_time(event_name="Epoch", event_type="start") #records the time the program started
-
-            #### IMPLEMNT THIS TO INJECT SEED VAULE AGAIN WEACH EPOCH SO THAT  THE TRAINING DATA IS THE DETERMINISTICALLY THE SAME EACH EPOCH NOT FRESH EACH TIME
-            if inject_seed_interval and epoch % inject_seed_interval == 0:
-                torch.manual_seed(T_seed)
-                np.random.seed(N_seed)
-
-            ###CLEAN UP THIS METHOD TO SOMTHING BETTER!!!!!!
-            avg_loss_mse = []
-            avg_loss_mae = []
-            avg_loss_snr = []
-            avg_loss_psnr = []
-            avg_loss_ssim = []
-            avg_loss_nmi = []
-            avg_loss_cc = []
-            avg_loss_true_positive_xy = []
-            avg_loss_true_positive_tof = []
-            avg_loss_false_positive_xy = []
-
-            ### Training (use the training function)
-            execution_timer.record_time(event_name="Training", event_type="start") #records the time the program started
-            train_loss=train_epoch(epoch, 
-                                    encoder, 
-                                    decoder, 
-                                    device, 
-                                    train_loader, 
-                                    loss_fn, 
-                                    optim,
-                                    time_dimension,
-                                    reconstruction_threshold,
-                                    masking_optimised_binary_norm,
-                                    loss_vs_sparse_img,
-                                    renorm_for_loss_calc,
-                                    use_tensorboard,
-                                    writer,
-                                    )
-            execution_timer.record_time(event_name="Training", event_type="stop") #records the time the program started
-
-            ### Testing (use the testing function)
-            execution_timer.record_time(event_name="Testing", event_type="start") #records the time the program started
-            test_loss, end_of_epoch_plotting_data = test_epoch(encoder, 
-                                    decoder, 
-                                    device, 
-                                    test_loader, 
-                                    loss_fn,
-                                    time_dimension,
-                                    reconstruction_threshold,
-                                    masking_optimised_binary_norm,
-                                    loss_vs_sparse_img,
-                                    renorm_for_loss_calc,
-                                    )
-            execution_timer.record_time(event_name="Testing", event_type="stop") #records the time the program started
-
-
-            loop_range.set_postfix({'Train Loss': train_loss, 'Test Loss': test_loss})
-
-
-            if epoch % print_every_other == 0 and epoch != 0:         
-                execution_timer.record_time(event_name="Plotting Function", event_type="start") #records the time the program started           
-                # Run plotting function for training feedback and telemetry.
-                encoder.eval()
-                decoder.eval()
-                returned_data_from_plotting_function = plot_epoch_data(end_of_epoch_plotting_data,
-                                                                        epoch, 
-                                                                        model_save_name, 
-                                                                        time_dimension, 
-                                                                        reconstruction_threshold,
-                                                                        signal_points,
-                                                                        graphics_dir,
-                                                                        plot_or_save,
-                                                                        num_to_plot,
-                                                                        )
-                
-                number_of_true_signal_points, number_of_recovered_signal_points, in_data, noisy_data, rec_data = returned_data_from_plotting_function
-                if save_all_raw_plot_data:
-                    save_variable(number_of_true_signal_points, f'Epoch {epoch}_number_of_true_signal_points', raw_plotdata_output_dir, force_pickle=True)
-                    save_variable(number_of_recovered_signal_points, f'Epoch {epoch}_number_of_recovered_signal_points', raw_plotdata_output_dir, force_pickle=True)
-                    save_variable(in_data, f'Epoch {epoch}_input_list', raw_plotdata_output_dir, force_pickle=True)
-                    save_variable(noisy_data, f'Epoch {epoch}_noised_list', raw_plotdata_output_dir, force_pickle=True)
-                    save_variable(rec_data, f'Epoch {epoch}_recovered_list', raw_plotdata_output_dir, force_pickle=True)
-        
-                encoder.train()
-                decoder.train()
-                execution_timer.record_time(event_name="Plotting Function", event_type="stop") #records the time the program started
-
-            execution_timer.record_time(event_name="Epoch Results", event_type="start") #records the time the program started      
-
-            epoch_end_time = time.time()
-            epoch_time = epoch_end_time - epoch_start_time
-            epoch_times_list.append(epoch_time) 
-
-            # Update the epoch reached counter  
-            max_epoch_reached = epoch    
-                
-            history_da['train_loss'].append(train_loss)
-            history_da['test_loss'].append(test_loss)
-
-            ###CLEAN UP THIS METHOD TO SOMTHING BETTER!!!!!!
-            epoch_avg_loss_mse.append(np.mean(avg_loss_mse))
-            epoch_avg_loss_mae.append(np.mean(avg_loss_mae))
-            epoch_avg_loss_snr.append(np.mean(avg_loss_snr))
-            epoch_avg_loss_psnr.append(np.mean(avg_loss_psnr))
-            epoch_avg_loss_ssim.append(np.mean(avg_loss_ssim))
-            epoch_avg_loss_nmi.append(np.mean(avg_loss_nmi))
-            epoch_avg_loss_cc.append(np.mean(avg_loss_cc))
-            epoch_avg_loss_true_positive_xy.append(np.mean(avg_loss_true_positive_xy))
-            epoch_avg_loss_true_positive_tof.append(np.mean(avg_loss_true_positive_tof))
-            epoch_avg_loss_false_positive_xy.append(np.mean(avg_loss_false_positive_xy))
-
-            # check if current epoch is a multiple of 'model_checkpoint_interval' and if so save the model
-            if model_checkpoint_interval and epoch % model_checkpoint_interval == 0 and epoch != 0:
-                full_model_export(True, checkpoint, model_output_dir, model_checkpoints_dir, epoch, encoder, decoder, optim, latent_dim, fc_input_dim, precision, Encoder, debug_model_exporter=False)
-
-            if epoch % hook_flush_interval == 0 and epoch != 0:
-                write_hook_data_to_disk_and_clear(activations, weights_data, biases_data, epoch, dir)
-
-            ### Live Comparison Plots
-            if plot_comparative_loss:
-                create_comparison_plot_data(slide_live_plot_size, epoch, max_epoch_reached, comparative_live_loss, comparative_loss_titles, comparative_epoch_times, comparative_history_da, data=history_da['train_loss'])
-            execution_timer.record_time(event_name="Epoch Results", event_type="stop") #records the time the program started
-            execution_timer.record_time(event_name="Epoch", event_type="stop") #records the time the program started
-
-            ### Training Timeout Check
-            if timeout_time:
-                if time.time() - start_time > timeout_time * 60:  #convert timeout time from minuits to seconds
-                    print("Training timed out, exiting training loop")
-                    break
-            
-            pass # end of try clause, if all goes well and user doesen't request an early exit then the training loop will end here
-
-    # If user presses Ctr + c to exit training loop, this handles the exception and allows the code to run its final data and model saving etc before exiting        
-    except KeyboardInterrupt:
-        print("Keyboard interrupt detected. Exiting training gracefully...")
-    
-    execution_timer.record_time(event_name="Program Debrief", event_type="start") #records the time the program started
+    if use_execution_timer:
+        execution_timer.record_time(event_name="Program Initialisation", event_type="start") #records the time the program started
 
     if run_profiler:
-        # Stop profiling
-        profiler.disable()
+        # Start profiling
+        profiler.enable()
 
-    #%% - After Training
-    encoder.eval()
-    decoder.eval()    
-    
-    # Stop timing the training process and calculate the total training time
-    end_time = time.time()
-    training_time = end_time - start_time
-
-    # Report the training time
-    print(f"\nTotal Training Cycle Took {training_time:.2f} seconds")
-
-    # Build Dictionary to collect all output data for .txt file
-    full_data_output = {}
-    full_data_output["Train Loss"] = round(history_da['train_loss'][-1], 3)
-    full_data_output["Test Loss"] = round(history_da['test_loss'][-1], 3)   #Val loss calulaton is broken? check it above
-
-    detailed_performance_loss_dict={}
-    detailed_performance_loss_dict["epoch_avg_loss_mse"] = epoch_avg_loss_mse
-    detailed_performance_loss_dict["epoch_avg_loss_snr"] = epoch_avg_loss_snr
-    detailed_performance_loss_dict["epoch_avg_loss_psnr"] = epoch_avg_loss_psnr
-    detailed_performance_loss_dict["epoch_avg_loss_ssim"] = epoch_avg_loss_ssim
-    detailed_performance_loss_dict["epoch_avg_loss_nmi"] = epoch_avg_loss_nmi
-    detailed_performance_loss_dict["epoch_avg_loss_cc"] = epoch_avg_loss_cc
-    detailed_performance_loss_dict["epoch_avg_loss_true_positive_xy"] = epoch_avg_loss_true_positive_xy
-    detailed_performance_loss_dict["epoch_avg_loss_true_positive_tof"] = epoch_avg_loss_true_positive_tof
-    detailed_performance_loss_dict["epoch_avg_loss_false_positive_xy"] = epoch_avg_loss_false_positive_xy
-
-
-    #%% - Save any remaining unsaved raw plot data
-    epochs_range = range(1,len(history_da["train_loss"])+1) 
-    if save_all_raw_plot_data:     ##FIND bETTER PLACE FOR THIS
-        save_variable(np.array(epochs_range), "epochs_range", raw_plotdata_output_dir)  #!!!!!! testing raw plot outputter!!!!
-
-        save_variable(history_da, "history_da", raw_plotdata_output_dir) 
-
-        save_variable(epoch_times_list, "epoch_times_list", raw_plotdata_output_dir) 
-
-        save_variable(settings, "settings", raw_plotdata_output_dir)
-
-        save_variable(detailed_performance_loss_dict, "detailed_performance_loss", raw_plotdata_output_dir)
-
-
-    #%% - Output Visulisations
-    ###Loss function plots
-    Out_Label = graphics_dir + f'{model_save_name} - Train and Val loss v epoch Comb - Epoch {epoch}.png'
-    loss_plot_trainval([epochs_range, epochs_range], [history_da['train_loss'], history_da['test_loss']], ["train", "test"], [model_save_name, model_save_name], "Epoch number", f"Loss ({loss_fn_label})", "Train and Val loss v Epoch", Out_Label, plot_or_save)
-
-    Out_Label = graphics_dir + f'{model_save_name} - Train and Val loss v Time Comb - Epoch {epoch}.png'
-    loss_plot_trainval([epoch_times_list, epoch_times_list], [history_da['train_loss'], history_da['test_loss']], ["train", "test"], [model_save_name, model_save_name], "Training Time (s)", f"Loss ({loss_fn_label})", "Train and Val loss v Time", Out_Label, plot_or_save)
-
-    if plot_detailed_performance_loss: 
-        Out_Label = graphics_dir + f'{model_save_name} - Detailed Performance loss - Epoch {epoch}.png'
-        draw_detailed_performance_loss_plots(epochs_range, epoch_avg_loss_mse, epoch_avg_loss_snr, epoch_avg_loss_psnr, epoch_avg_loss_ssim, epoch_avg_loss_nmi, epoch_avg_loss_cc, epoch_avg_loss_true_positive_xy, epoch_avg_loss_true_positive_tof, epoch_avg_loss_false_positive_xy, Out_Label, plot_or_save)
-
-    if plot_pixel_threshold_telemetry:
-        Out_Label = graphics_dir + f'{model_save_name} - Reconstruction Threshold Telemetry - Epoch {epoch}.png'
-        plot_telemetry(telemetry, signal_points, xdim*ydim, Out_Label, plot_or_save)
-
-    if plot_pixel_difference:
-        num_diff_noised, num_same_noised, num_diff_cleaned, num_same_cleaned, im_diff_noised, im_diff_cleaned = AE_visual_difference(in_data, noisy_data, rec_data)
-        full_data_output["num_diff_noised"] = num_diff_noised
-        full_data_output["num_same_noised"] = num_same_noised
-        full_data_output["num_diff_cleaned"] = num_diff_cleaned
-        full_data_output["num_same_cleaned"] = num_same_cleaned
-
-        # Create a new figure
-        fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2, figsize=(8, 4))
-
-        # Plot the im_diff_noised subplot
-        ax1.imshow(im_diff_noised, cmap='gray')
-        ax1.set_title('Original -> Noised Img')
-
-        # Plot the im_diff_cleaned subplot
-        ax2.imshow(im_diff_cleaned, cmap='gray')
-        ax2.set_title('Original -> Cleaned Img')
-
-        # Add title for the whole figure    
-        fig.suptitle('Pixel-wise Difference Comparisons')
-        
-        Out_Label = graphics_dir + f'{model_save_name} - Pixel Difference Epoch {epoch}.png'
-        plot_save_choice(plot_or_save, Out_Label)  
-
-    if plot_latent_generations:
-        def show_image(img):
-            npimg = img.numpy()
-            plt.imshow(np.transpose(npimg, (1, 2, 0)))
-
-        img_recon = Generative_Latent_information_Visulisation(encoder, decoder, latent_dim, device, test_loader, reconstruction_threshold, time_dimension)
-        
-        fig, ax = plt.subplots(figsize=(20, 8.5))
-        show_image(torchvision.utils.make_grid(img_recon[:100],10,10, pad_value=100))
-        plt.axis("off")
-        Out_Label = graphics_dir + f'{model_save_name} - Latent Generation Epoch {epoch}.png'
-        plot_save_choice(plot_or_save, Out_Label)  
-
-    if plot_higher_dim:
-        Out_Label_1 = graphics_dir + f'{model_save_name} - Higher Dimensisions Epoch {epoch}.png'
-        Out_Label_2 = graphics_dir + f'{model_save_name} - TSNE Epoch {epoch}.png'
-        Reduced_Dimension_Data_Representations(encoder, device, train_dataset, Out_Label_1, Out_Label_2, plot_or_save)
-        
-    if plot_normalised_radar:
-        # Data for the radar plot
-        categories = list(map(str, detailed_performance_loss_dict.keys())) # Names of each performance measure
-
-        fig = create_radar_plot(categories, [detailed_performance_loss_dict], [model_save_name])
-        Out_Label = graphics_dir + f'{model_save_name} - Normalised Radar Epoch {epoch}.png'
-        plot_save_choice(plot_or_save, Out_Label)
-
-
-        fig = create_tri_radar_plot(categories, [detailed_performance_loss_dict], [model_save_name])
-
-        #categories = ['epoch_avg_loss_true_positive_xy', 'epoch_avg_loss_true_positive_tof', 'epoch_avg_loss_false_positive_xy']
-
-        #fig = create_radar_plot(categories, [detailed_performance_loss_dict], [model_save_name])
-        Out_Label = graphics_dir + f'{model_save_name} - Normalised Tri-Radar Epoch {epoch}.png'
-        plot_save_choice(plot_or_save, Out_Label)
-
-        categories = ['epoch_avg_loss_true_positive_xy', 'epoch_avg_loss_true_positive_tof', 'epoch_avg_loss_false_positive_xy']
-        fig = create_3d_radar_plot(categories, detailed_performance_loss_dict, model_save_name)
-        Out_Label = graphics_dir + f'{model_save_name} - Normalised 3D Radars per Epoch.png'
-        plot_save_choice(plot_or_save, Out_Label)
-
-    #if plot_loss_heatmap:
-    #    Out_Label = graphics_dir + f'{model_save_name} - Loss Heatmap Epoch {epoch}.png'
-    #    plot_loss_heatmap(loss_fn, encoder, decoder, device, test_loader, Out_Label, plot_or_save)
-
-
-
-    if plot_Graphwiz:
-        Graphviz_visulisation(encoder, decoder, precision, batch_size, channels, xdim, ydim, graphics_dir)
-
-    #%% - Export model, statedicts and required variables for inference to disk    
-    AE_file_name = full_model_export(False, checkpoint, model_output_dir, model_checkpoints_dir, epoch, encoder, decoder, optim, latent_dim, fc_input_dim, precision, Encoder, debug_model_exporter=False)
-
-    #%% - Export all data logged to disk in form of .txt file in the output dir
-    print("\nSaving inputs, model stats and results to .txt file in output dir...")
-    #Comparison of true signal points to recovered signal points
-    try: 
-        #print("True signal points",number_of_true_signal_points)
-        #print("Recovered signal points: ",number_of_recovered_signal_points, "\n")
-        full_data_output["true_signal_points"] = number_of_true_signal_points  # Save the number of true signal points to the full_data_output dictionary
-        full_data_output["recovered_signal_points"] = number_of_recovered_signal_points  # Save the number of recovered signal points to the full_data_output dictionary
-    except:
-        pass
-    
-    # Save .txt Encoder/Decoder Network Summary
-    with open(full_netsum_filepath, 'w', encoding='utf-8') as output_file:    #utf_8 encoding needed as default (cp1252) unable to write special charecters present in the summary
-        # Write the local date and time to the file
-        TD_now = datetime.now()         # Get the current local date and time
-        output_file.write(f"Date data taken: {TD_now.strftime('%Y-%m-%d %H:%M:%S')}\n")     # Write the current local date and time to the file
-        output_file.write(("Model ID: " + model_save_name + f"\nTrained on device: {device}\n"))   # Write the model ID and device used to train the model to the file
-        output_file.write((f"Max Epoch Reached: {max_epoch_reached}\n"))  # Write the max epoch reached during training to the file
-        output_file.write((f"Training Time: {format_time(training_time)}\n")) # Write the training time to the file
-        #output_file.write((f"Avg Epoch Time: {format_time(np.mean(epoch_times_list))}\n")) # Write the training time per epoch to the file
-        output_file.write((f"Avg Epoch Time: {format_time(training_time/max_epoch_reached)}\n")) # Write the training time per epoch to the file
-
-        output_file.write((f"\nTorch Seed Val to Reproduce Run: {T_seed}\n")) 
-        output_file.write((f"Numpy Seed Val to Reproduce Run: {N_seed}\n")) 
-        if seeding_value:
-            output_file.write((f"User Set Seeding: True\n"))
-        else:
-            output_file.write((f"User Set Seeding: False\n"))
-        
-        output_file.write("\nInput Settings:\n")  # Write the input settings to the file
-        for key, value in settings.items():
-            output_file.write(f"{key}: {value}\n")
-        
-        output_file.write("\nLoss Function Settings:\n")    # Write the loss function settings to the file
-        output_file.write(f"Loss Function Choice: {loss_fn}\n")
-        if loss_function_selection == 0:
-            output_file.write(f"zero_weighting: {zero_weighting}\n")
-            output_file.write(f"nonzero_weighting: {nonzero_weighting}\n")    
-        if loss_function_selection == 6:
-            output_file.write(f"Split Loss Functions Selected (Hits, Non-Hits): {split_loss_functions}\n")
-
-        output_file.write("\nNormalisation:\n")     # Write the normalisation settings to the file
-        output_file.write(f"Mask optimised binary norm: {masking_optimised_binary_norm}\n") 
-
-        output_file.write("\nPre Training:\n")   # Write the pre training settings to the file
-        output_file.write(f"start_from_pretrained_model: {start_from_pretrained_model}\n")
-        if start_from_pretrained_model:
-            output_file.write(f"pretrained_model_path: {pretrained_model_path}\n")
-            output_file.write(f"load_pretrained_optimiser: {load_pretrained_optimiser}\n")  
-        
-        output_file.write("\n \nFull Data Readouts:\n") 
-        for key, value in full_data_output.items(): 
-            output_file.write(f"{key}: {value}\n") 
-
-        output_file.write("\nPython Lib Versions:\n") # Write the python library versions to the file
-        output_file.write((f"PyTorch: {torch.__version__}\n"))  
-        output_file.write((f"Torchvision: {torchvision.__version__}\n"))     
-        output_file.write((f"Numpy: {np.__version__}\n")) 
-        output_file.write((f"Pandas: {pd.__version__}\n")) 
-        #output_file.write((f"MPL: {plt.__version__}\n"))
-
-        output_file.write("\nAutoencoder Network:\n")  # Write the autoencoder network settings to the file
-        output_file.write((f"AE File ID: {AE_file_name}\n"))    # Write the autoencoder network file ID to the file
-        output_file.write("\n" + summary_str)   # Write the autoencoder network summary to the file
-
-        output_file.write("\nTraining System Information:\n") 
-        system_information = get_system_information()  # Get the system information using helper function
-        output_file.write("\n" + system_information)  # Write the system information to the file
-    print("- Completed -")
-
+    #%% - # Hyperparameter Optimiser
     if optimise_hyperparameter:
-        val_loss = validation_routine(  encoder, 
+        HTO_values = set_optimisiation_list_manually
+        print(f"Hyperparameter optimisation is enabled, the following hyperparameters will be optimised: {hyperparam_to_optimise}")
+        val_loop_range = HTO_values #val_loop_range is the number of values in the HTO_values list, i.e. the number of times the model will be trained and evaluated
+    else: 
+        val_loop_range = range(1,2,1)
+
+    for HTO_val in val_loop_range: #val_loop is the number of times the model will be trained and evaluated
+        if optimise_hyperparameter:
+            globals()[hyperparam_to_optimise] = HTO_val
+            print(f"Current Test: {hyperparam_to_optimise} value = {HTO_val}\n")
+
+        #%% - # Input / Output Path Initialisation
+        if optimise_hyperparameter:
+            results_output_path = results_output_path_1 + model_save_name + "_" + hyperparam_to_optimise + f" Optimisation\\{HTO_val}\\"
+
+        # Create output directory if it doesn't exist
+        dir = results_output_path + model_save_name + " - Training Results/"
+        os.makedirs(dir, exist_ok=True)
+
+        # Create output directory for images if it doesn't exist
+        graphics_dir = dir + "Output_Graphics/"
+        os.makedirs(graphics_dir, exist_ok=True)
+
+        raw_plotdata_output_dir = dir + "Raw_Data_Output/"
+        os.makedirs(raw_plotdata_output_dir, exist_ok=True)
+
+        model_output_dir = dir + "Model_Deployment/"
+        os.makedirs(model_output_dir, exist_ok=True)
+
+        model_checkpoints_dir = dir + "Model_Checkpoints/"
+        os.makedirs(model_checkpoints_dir, exist_ok=True)
+
+        full_activity_filepath = dir + model_save_name + " - Activity.npz"
+        full_netsum_filepath = dir + model_save_name + " - Network Summary.txt"
+
+        # Joins up the parts of the differnt input dataset load paths
+        train_dirs = [dataset_path + 'Data/' for dataset_path in dataset_paths]
+
+
+        #%% - Bodge clean up 
+        ###CLEAN UP THIS METHOD TO SOMTHING BETTER!!!!!!
+        epoch_avg_loss_mse = []
+        epoch_avg_loss_mae = []
+        epoch_avg_loss_snr = []
+        epoch_avg_loss_psnr = []
+        epoch_avg_loss_ssim = []
+        epoch_avg_loss_nmi = []
+        epoch_avg_loss_cc = []
+        epoch_avg_loss_true_positive_xy = []
+        epoch_avg_loss_true_positive_tof = []
+        epoch_avg_loss_false_positive_xy = []
+
+        # Initialises pixel belief telemetry
+        telemetry = []# [[0, 0, xdim * ydim]]                # Initalises the telemetry memory, starting values are 0, 0.5, 0.5 which corrspond to epoch(0), above_threshold(0.5), below_threshold(0.5)
+        
+        # Create a summary writer
+        if use_tensorboard:
+            writer = SummaryWriter()
+        else:
+            writer = None
+
+
+        #%% - Initialises seeding values to RNGs
+        if seeding_value:
+            torch.manual_seed(seeding_value)
+            np.random.seed(seeding_value)
+            print("Seeding with value:", seeding_value)
+        else:
+            torch.seed()                                    # Set the seed for the RNGs
+            np.random.seed()
+
+        T_seed = torch.initial_seed()           # Seed for PyTorch RNGs
+        N_seed = np.random.get_state()[1][0]    # Seed for NumPy RNGs
+
+
+        #%% - Set loss function choice
+
+        # Set loss function choice for split loss (if loss function choice is set to ada weighted custom split loss)
+        availible_split_loss_functions = [torch.nn.MSELoss(), torch.nn.BCELoss(), torch.nn.L1Loss(), ada_SSE_loss]    # List of all availible loss functions is set to ada_weighted_custom_split_loss
+        split_loss_functions = [availible_split_loss_functions[zeros_loss_choice], availible_split_loss_functions[nonzero_loss_choice]] # Sets loss functions based on user input
+
+
+        # List of all availible loss functions - add new loss functions here by adding name and function to dictionary as key and value. Code is her so that falls inside the hyperparam optimser loop so the loss function init params can also be optimised, i.e weights for ACB loss etc.
+        availible_loss_functions_dict = {
+            "MAE": torch.nn.L1Loss(),                                                                      # Mean Absolute Error Loss from PyTorch Library
+            "MSE": torch.nn.MSELoss(),                                                                     # Mean Squared Error Loss from PyTorch Library
+            "SSE": ada_SSE_loss,                                                                           # Sum of Squared Error Loss (Custom)
+            "BCE": torch.nn.BCELoss(),   
+
+            "LayeredLoss": LayeredLoss(zero_weighting, nonzero_weighting),                                                                  # Custom Layered Loss Function
+            "TrippleLoss": TrippleLoss(zero_weighting, nonzero_weighting),                                                                  # Custom Tripple Loss Function
+                                                                                                                                            # Binary Cross Entropy Loss from PyTorch Library
+            "ACB_MSE": ACBLoss(zero_weighting, nonzero_weighting),                                                                # My Original Automatically Class Balanced MSE Loss using Class balancing by frequency
+            "ffACB_MSE": ffACBLoss(zero_weighting, nonzero_weighting, fullframe_weighting),                                       # Update to ACB_MSE, adds new term to the loss function that calulates mse over the full frame with its own weighting
+            "Split_Loss": ada_weighted_custom_split_loss(split_loss_functions, zero_weighting, nonzero_weighting),                # Uses my automatic class balancing to split the loss function into two parts, one for zero values and one for non-zero values but instead of using MSE as my ACBMSE implementation this just leaves the loss function open to user setting, and uniquly allows user to select differnt loss fucntion for each class.
+
+            "True3D": True3DLoss(zero_weighting=1, nonzero_weighting=1, timesteps=1000),                                                                          # 3D Loss function that uses the true 3D image as the target, rather than the 2D projection, (Warning: Very Slow)
+            "Simple3D": simple3Dloss(zero_weighting=1, nonzero_weighting=1, virtual_t_weighting=1, virtual_x_weighting=1, virtual_y_weighting=1, timesteps=1000), # Simplified 3D loss function (Warning: Very Slow)
+            "ACB3D": ACBLoss3D(zero_weighting, nonzero_weighting, virtual_t_weighting=1, virtual_x_weighting=None, virtual_y_weighting=None, timesteps=1000), # Adds my automatic class balancing to the 3D loss function (Warning: Very Slow)
+            "Fast3D": NEWESTACB3dloss2024(batch_size, ydim, xdim),                                                                                             # Fast 3D loss method that instea of projecting 2D back to 3D and filling the cube with the values, it unravels the 2D back to an array of 3D coordinates (4D if counting the batch dim) then compares these directly ratehr than taking the next step to fill the cube. This is much faster than the other 3D loss functions and is the current prefered method for 3D loss, although has not demonstared benefits above the 2D ACB loss functions so far.
+
+            "WPR_Loss": WeightedPerfectRecoveryLoss(),           # Custom loss function that contains a weighting term that encorages the network to have points follow the correct gradient ??? 
+        }
+
+        # Accessing the selected loss function and label
+        loss_fn_label = loss_function_selection                    # Sets loss function label, used on plots and data to clearly identify loss function
+        loss_fn = availible_loss_functions_dict[loss_fn_label]       # Sets loss function based on user input of parameter loss_function_selection
+
+
+
+        #%% - Create record of all user input settings, to add to output data for testing and keeping track of settings
+        settings = {}  # Creates empty dictionary to store settings 
+        settings["Epochs"] = num_epochs     # Adds the number of epochs to the settings dictionary
+        settings["Batch Size"] = batch_size # Adds the batch size to the settings dictionary
+        settings["Learning Rate"] = learning_rate # Adds the learning rate to the settings dictionary
+        settings["Optimiser Decay"] = optim_w_decay # Adds the optimiser decay to the settings dictionary
+        settings["Dropout Probability"] = dropout_prob # Adds the dropout probability to the settings dictionary
+        settings["Latent Dimension"] = latent_dim # Adds the latent dimension to the settings dictionary
+        settings["FC Input Dim"] = fc_input_dim # Adds the FC input dimension to the settings dictionary
+        settings["Noise Points"] = noise_points # Adds the noise points to the settings dictionary
+        settings["Train Split"] = train_test_split_ratio # Adds the train split to the settings dictionary
+        settings["Val/Test Split"] = val_test_split_ratio   # Adds the val/test split to the settings dictionary
+        settings["Dataset/s used"] = [path.rstrip('/').split('/')[-1] for path in dataset_paths] # Adds the dataset titles to the settings dictionary
+        settings["Time Dimension"] = time_dimension # Adds the time dimension to the settings dictionary
+        settings["Seed Val"] = seeding_value # Adds the seed value to the settings dictionary
+        settings["Reconstruction Threshold"] = reconstruction_threshold # Adds the reconstruction threshold to the settings dictionary
+        settings["Precision"] = precision
+        settings["shuffle_train_data"] = shuffle_train_data
+        settings["record_weights"] = record_weights
+        settings["record_biases"] = record_biases
+        settings["record_activity"] = record_activity
+        settings["timeout_time"] = timeout_time
+
+        #%% - Dataset Pre-tests
+        #if full_dataset_integrity_check: #if full_dataset_integrity_check is set to True, then the scan type is set to full (slow)
+        #    scantype = "full"
+        #else:
+        #    scantype = "quick"
+
+
+        ###### NOTE! REMOVE TESTS FOR DATASET AND INCLUDE THEM IN THE DATSET GENRATOR INSTEAD TO AVOID REPETETIVE CHECKS OF THE SAME SETS OVER AND OVER AGAIN !!!!
+        # CHECK: Dataset Integrity Check
+        #print(f"Testing training dataset integrity, with {scantype} scan")                                 # Prints the scan type
+        #dataset_integrity_check(train_dir, full_test=full_dataset_integrity_check, print_output=True)      # Checks the integrity of the training dataset
+
+        # CHECK: Dataset Distribution Check
+        #if full_dataset_distribution_check:                                                                                         # If full_dataset_distribution_check is set to True, then the dataset distribution is checked
+        #    print("\nTesting training dataset signal distribution")
+        #    dataset_distribution_tester(train_dir, time_dimension, ignore_zero_vals_on_plot=True, output_image_dir=graphics_dir)    # Checks the distribution of the training dataset
+
+        # CHECK: Num of images in path greater than batch size choice? 
+        num_of_files_in_path = sum(len(os.listdir(dir_path)) for dir_path in train_dirs) * large_data_bundles_size                                                      # Number of files in path
+        if num_of_files_in_path < batch_size:                                                                                              # If the number of files in the path is less than the batch size, user is promted to input a new batch size
+            print(f"Error, the path selected has {num_of_files_in_path} image files, which is {(batch_size - num_of_files_in_path)} less than the chosen batch size. Please select a batch size less than the total number of images in the directory")
+            batch_err_message = "Choose new batch size, must be less than total amount of images in directory", (num_of_files_in_path)                               # Creates the error message
+            batch_size = int(input(batch_err_message))                                                                                                               # NOTE: Not sure why input message is printing with wierd brakets and speech marks in the terminal? Investigate???
+
+        # Report type of gradient descent to user
+        print(f"{num_of_files_in_path} files in path. // Batch size = {batch_size}\nLearning via: {batch_learning(num_of_files_in_path, batch_size)}\n")   # Prints the number of files in the path and the batch size and the resultant type of batch learning
+
+        #%% - Data Loader & Preperation
+
+
+
+        # Creates the dataset
+        train_dataset = MTN_Dataset(train_dirs, large_data_bundles_size, number_of_bundles_to_memory, device, shuffle_train_data, preprocess_on_gpu, precision, timer=execution_timer)
+
+        # Dataset Partitioning
+        m = len(train_dataset)  # m is the length of the train_dataset, i.e., the number of images in the dataset
+        train_split = int(m * train_test_split_ratio)  # train_split is the ratio of train images to be used in the training set as opposed to non_training set
+
+        # Sequentially split the dataset
+        train_indices = list(range(train_split))
+        non_training_indices = list(range(train_split, m))
+
+        train_data = Subset(train_dataset, train_indices)
+        non_training_data = Subset(train_dataset, non_training_indices)
+
+        m2 = len(non_training_data)  # m2 is the length of the non_training_data, i.e., the number of images in the dataset
+
+        if val_set_on:
+            val_split = int(m2 * val_test_split_ratio)  # val_split is the ratio of non-train images to be used in the validation set as opposed to the test set
+            test_indices = non_training_indices[:m2 - val_split]
+            val_indices = non_training_indices[m2 - val_split:]
+
+            test_data = Subset(train_dataset, test_indices)
+            val_data = Subset(train_dataset, val_indices)
+        else:
+            test_data = non_training_data
+            val_data = non_training_data
+
+        # Generating Dataloaders WITH THE WAY I HAVE STORED DATA IN MEMORY IS THIS CAUSING A 3X IN SIZE IN MEMORY????
+        train_loader = StackedDatasetLoader(input_signal_settings, physical_scale_parameters, time_dimension, device, preprocess_on_gpu, precision, dataset=train_data, batch_size=batch_size, num_workers=data_loader_workers, timer=execution_timer) # Shuffle is handled by the dataset, set with the variable 'shuffle_data'. It must not be applied here otherwise will induce errors in the logic based on index value
+        test_loader = StackedDatasetLoader(input_signal_settings, physical_scale_parameters, time_dimension, device, preprocess_on_gpu, precision, dataset=test_data, batch_size=batch_size, num_workers=data_loader_workers, timer=execution_timer) # Shuffle is handled by the dataset, set with the variable 'shuffle_data'. It must not be applied here otherwise will induce errors in the logic based on index value
+        valid_loader = StackedDatasetLoader(input_signal_settings, physical_scale_parameters, time_dimension, device, preprocess_on_gpu, precision, dataset=val_data, batch_size=batch_size, num_workers=data_loader_workers, timer=execution_timer) # Shuffle is handled by the dataset, set with the variable 'shuffle_data'. It must not be applied here otherwise will induce errors in the logic based on index value
+
+        train_batch_sampler = torch.utils.data.BatchSampler(torch.utils.data.SequentialSampler(train_data), 
+                                                    batch_size=batch_size, 
+                                                    drop_last=False)
+
+        test_batch_sampler = torch.utils.data.BatchSampler(torch.utils.data.SequentialSampler(test_data), 
+                                                    batch_size=batch_size, 
+                                                    drop_last=False)
+
+        val_batch_sampler = torch.utils.data.BatchSampler(torch.utils.data.SequentialSampler(val_data), 
+                                                    batch_size=batch_size, 
+                                                    drop_last=False)
+
+        # Generating Dataloaders WITH THE WAY I HAVE STORED DATA IN MEMORY IS THIS CAUSING A 3X IN SIZE IN MEMORY????
+        train_loader = StackedDatasetLoader(input_signal_settings, physical_scale_parameters, time_dimension, device, preprocess_on_gpu, precision, dataset=train_data, batch_sampler=train_batch_sampler,  timer=execution_timer) # Shuffle is handled by the dataset, set with the variable 'shuffle_data'. It must not be applied here otherwise will induce errors in the logic based on index value
+        test_loader = StackedDatasetLoader(input_signal_settings, physical_scale_parameters, time_dimension, device, preprocess_on_gpu, precision, dataset=test_data, batch_sampler=test_batch_sampler,  timer=execution_timer) # Shuffle is handled by the dataset, set with the variable 'shuffle_data'. It must not be applied here otherwise will induce errors in the logic based on index value
+        valid_loader = StackedDatasetLoader(input_signal_settings, physical_scale_parameters, time_dimension, device, preprocess_on_gpu, precision, dataset=val_data, batch_sampler=val_batch_sampler, timer=execution_timer) # Shuffle is handled by the dataset, set with the variable 'shuffle_data'. It must not be applied here otherwise will induce errors in the logic based on index value
+
+
+
+        #%% - Setup model, loss criteria and optimiser   
+        if start_from_pretrained_model: 
+
+            # Load the saved model data
+            checkpoint = torch.load(pretrained_model_path, map_location=device)   # map_location to the currently used device enusures that a model trainied on a different device type is loaded correctly
+
+            # Set correct variables for the model
+            latent_dim = checkpoint['latent_dim']
+            fc_input_dim = checkpoint["fc_input_dim"]
+
+            dtype = torch.float32   # remove once fixed!!!! BUG
+            precision = 32 #checkpoint["precision"]   BUG
+
+            # Update saved settings 
+            settings["Latent Dimension"] = latent_dim
+            settings["Precision"] = precision
+            settings["FC Input Dim"] = fc_input_dim
+
+            # Load the Encoder and Decoder classes by executing the script content directly using exec()
+            exec(checkpoint["autoencoder_py_file_script"])
+
+            encoder = Encoder(checkpoint['latent_dim'], False, checkpoint["fc_input_dim"])
+            decoder = Decoder(checkpoint['latent_dim'], False, checkpoint["fc_input_dim"])
+
+            # Load the state dicts
+            encoder.load_state_dict(checkpoint['encoder_state_dict'])
+            decoder.load_state_dict(checkpoint['decoder_state_dict'])        
+
+            print("PRECISION:", precision)
+
+            # precision already set so just updating the dtype variable for rest of program, no need for value error check as must have been valid to run in previous model train
+            #if precision == "16":
+            #    dtype = torch.float16
+            #elif precision == "32":
+            #    dtype = torch.float32
+            #elif precision == "64":
+            #    dtype = torch.float64
+
+
+        else:
+            # Initialize the encoder and decoder
+            encoder = Encoder(latent_dim, fc_input_dim, activation_function, print_encoder_debug)
+            decoder = Decoder(latent_dim, fc_input_dim, activation_function, print_decoder_debug)
+            encoder, decoder, dtype = set_model_precision(encoder, decoder, precision) # Sets the precision of the encoder and decoder based on user input and returns the dtype variable used in the rest of the code
+
+
+            # REMOVE AND FIX THE NEED FOR THIS DUMMY CHECKPOINT DATA IF NOT LOADING FROM PT MODEL
+            checkpoint = {}
+            #checkpoint['optimizer_state_dict'] = None
+            #checkpoint['encoder_state_dict'] = None
+            #checkpoint['decoder_state_dict'] = None
+            #checkpoint['autoencoder_py_file_script'] = None
+            #checkpoint['latent_dim'] = latent_dim
+            #checkpoint['fc_input_dim'] = fc_input_dim
+            #checkpoint['precision'] = precision
+
+        # Define the optimizer
+        params_to_optimize = [{'params': encoder.parameters()} ,{'params': decoder.parameters()}] #Selects what to optimise, 
+        if use_adamw_optimiser:
+            optim = torch.optim.AdamW(params_to_optimize, lr=learning_rate, weight_decay=optim_w_decay)
+        else:
+            optim = torch.optim.Adam(params_to_optimize, lr=learning_rate, weight_decay=optim_w_decay)
+
+        if start_from_pretrained_model and load_pretrained_optimiser:
+            # load the optimizer state dictionary, if user requested
+            optim.load_state_dict(checkpoint['optimizer_state_dict'])
+
+        # Initalise Model on compute device
+        encoder.to(device)   #Moves encoder to selected device, CPU/GPU
+        decoder.to(device)   #Moves decoder to selected device, CPU/GPU
+
+        if compile_model:
+            encoder = torch.compile(encoder, mode=compile_mode)
+            decoder = torch.compile(decoder, mode=compile_mode)
+
+
+
+        #%% - Prepare Network Summary
+        # Set evaluation mode for encoder and decoder
+
+        with torch.no_grad(): # No need to track the gradients
+            
+            # Create dummy input tensor
+            enc_input_tensor = torch.randn(batch_size, channels, ydim, xdim, dtype=dtype) 
+                
+            # Join the encoder and decoder models
+            full_network_model = torch.nn.Sequential(encoder, decoder)   #should this be done with no_grad?
+
+            # Generate network summary and then convert to string
+            model_stats = summary(full_network_model, input_data=enc_input_tensor, device=device, verbose=0)
+            summary_str = str(model_stats)             
+
+            # Print Encoder/Decoder Network Summary to terminal if user requested (Regardless of user setting, network summary is always added to the final .txt output file along with the final model)
+            if print_network_summary:
+                print(summary_str)
+
+
+        #%% - Add Activation data hooks to encoder and decoder layers
+        if record_activity or record_weights or record_biases:   # MOVE TO FUCNTION AND THEN TO HELPER FUCNS FILE FOR CLEANER CODE
+            register_network_hooks(encoder, decoder, record_activity, record_weights, record_biases, activations, weights_data, biases_data)
+
+        #%% - Running Training Loop
+
+        execution_timer.record_time(event_name="Program Initialisation", event_type="stop") #records the time the program started
+
+
+        print("Training Initiated\nPress Ctr + c to exit and save the model during training.\n")
+        start_time = time.time()                     # Begin the training timer
+
+        epoch_times_list = []                        
+        history_da['train_loss']  = []
+        history_da['test_loss'] = []                
+
+        try:                                         # Try except clause allows user to exit training gracefully whilst still retaiing a saved model and ouput plots
+            loop_range = tqdm(range(1, num_epochs+1), desc='Epochs', colour='red', dynamic_ncols=True, postfix="Starting")
+            epoch_start_time = time.time()           # Starts the epoch timer
+            for epoch in loop_range:                 # For loop that iterates over the number of epochs where 'epoch' takes the values (0) to (num_epochs - 1)
+                execution_timer.record_time(event_name="Epoch", event_type="start") #records the time the program started
+
+                #### IMPLEMNT THIS TO INJECT SEED VAULE AGAIN WEACH EPOCH SO THAT  THE TRAINING DATA IS THE DETERMINISTICALLY THE SAME EACH EPOCH NOT FRESH EACH TIME
+                if inject_seed_interval and epoch % inject_seed_interval == 0:
+                    torch.manual_seed(T_seed)
+                    np.random.seed(N_seed)
+
+                ###CLEAN UP THIS METHOD TO SOMTHING BETTER!!!!!!
+                avg_loss_mse = []
+                avg_loss_mae = []
+                avg_loss_snr = []
+                avg_loss_psnr = []
+                avg_loss_ssim = []
+                avg_loss_nmi = []
+                avg_loss_cc = []
+                avg_loss_true_positive_xy = []
+                avg_loss_true_positive_tof = []
+                avg_loss_false_positive_xy = []
+
+                ### Training (use the training function)
+                execution_timer.record_time(event_name="Training", event_type="start") #records the time the program started
+                train_loss=train_epoch(epoch, 
+                                        encoder, 
                                         decoder, 
                                         device, 
-                                        valid_loader, 
+                                        train_loader, 
+                                        loss_fn, 
+                                        optim,
+                                        time_dimension,
+                                        reconstruction_threshold,
+                                        masking_optimised_binary_norm,
+                                        loss_vs_sparse_img,
+                                        renorm_for_loss_calc,
+                                        use_tensorboard,
+                                        writer,
+                                        )
+                execution_timer.record_time(event_name="Training", event_type="stop") #records the time the program started
+
+                ### Testing (use the testing function)
+                execution_timer.record_time(event_name="Testing", event_type="start") #records the time the program started
+                test_loss, end_of_epoch_plotting_data = test_epoch(encoder, 
+                                        decoder, 
+                                        device, 
+                                        test_loader, 
                                         loss_fn,
                                         time_dimension,
                                         reconstruction_threshold,
                                         masking_optimised_binary_norm,
                                         loss_vs_sparse_img,
-                                        renorm_for_loss_calc)
+                                        renorm_for_loss_calc,
+                                        )
+                execution_timer.record_time(event_name="Testing", event_type="stop") #records the time the program started
+
+
+                loop_range.set_postfix({'Train Loss': train_loss, 'Test Loss': test_loss})
+
+
+                if epoch % print_every_other == 0 and epoch != 0:         
+                    execution_timer.record_time(event_name="Plotting Function", event_type="start") #records the time the program started           
+                    # Run plotting function for training feedback and telemetry.
+                    encoder.eval()
+                    decoder.eval()
+                    returned_data_from_plotting_function = plot_epoch_data(end_of_epoch_plotting_data,
+                                                                            epoch, 
+                                                                            model_save_name, 
+                                                                            time_dimension, 
+                                                                            reconstruction_threshold,
+                                                                            signal_points,
+                                                                            graphics_dir,
+                                                                            plot_or_save,
+                                                                            num_to_plot,
+                                                                            )
+                    
+                    number_of_true_signal_points, number_of_recovered_signal_points, in_data, noisy_data, rec_data = returned_data_from_plotting_function
+                    if save_all_raw_plot_data:
+                        save_variable(number_of_true_signal_points, f'Epoch {epoch}_number_of_true_signal_points', raw_plotdata_output_dir, force_pickle=True)
+                        save_variable(number_of_recovered_signal_points, f'Epoch {epoch}_number_of_recovered_signal_points', raw_plotdata_output_dir, force_pickle=True)
+                        save_variable(in_data, f'Epoch {epoch}_input_list', raw_plotdata_output_dir, force_pickle=True)
+                        save_variable(noisy_data, f'Epoch {epoch}_noised_list', raw_plotdata_output_dir, force_pickle=True)
+                        save_variable(rec_data, f'Epoch {epoch}_recovered_list', raw_plotdata_output_dir, force_pickle=True)
+            
+                    encoder.train()
+                    decoder.train()
+                    execution_timer.record_time(event_name="Plotting Function", event_type="stop") #records the time the program started
+
+                execution_timer.record_time(event_name="Epoch Results", event_type="start") #records the time the program started      
+
+                epoch_end_time = time.time()
+                epoch_time = epoch_end_time - epoch_start_time
+                epoch_times_list.append(epoch_time) 
+
+                # Update the epoch reached counter  
+                max_epoch_reached = epoch    
+                    
+                history_da['train_loss'].append(train_loss)
+                history_da['test_loss'].append(test_loss)
+
+                ###CLEAN UP THIS METHOD TO SOMTHING BETTER!!!!!!
+                epoch_avg_loss_mse.append(np.mean(avg_loss_mse))
+                epoch_avg_loss_mae.append(np.mean(avg_loss_mae))
+                epoch_avg_loss_snr.append(np.mean(avg_loss_snr))
+                epoch_avg_loss_psnr.append(np.mean(avg_loss_psnr))
+                epoch_avg_loss_ssim.append(np.mean(avg_loss_ssim))
+                epoch_avg_loss_nmi.append(np.mean(avg_loss_nmi))
+                epoch_avg_loss_cc.append(np.mean(avg_loss_cc))
+                epoch_avg_loss_true_positive_xy.append(np.mean(avg_loss_true_positive_xy))
+                epoch_avg_loss_true_positive_tof.append(np.mean(avg_loss_true_positive_tof))
+                epoch_avg_loss_false_positive_xy.append(np.mean(avg_loss_false_positive_xy))
+
+                # check if current epoch is a multiple of 'model_checkpoint_interval' and if so save the model
+                if model_checkpoint_interval and epoch % model_checkpoint_interval == 0 and epoch != 0:
+                    full_model_export(True, checkpoint, model_output_dir, model_checkpoints_dir, epoch, encoder, decoder, optim, latent_dim, fc_input_dim, precision, Encoder, debug_model_exporter=False)
+
+                if epoch % hook_flush_interval == 0 and epoch != 0:
+                    write_hook_data_to_disk_and_clear(activations, weights_data, biases_data, epoch, dir)
+
+                ### Live Comparison Plots
+                if plot_comparative_loss:
+                    create_comparison_plot_data(slide_live_plot_size, epoch, max_epoch_reached, comparative_live_loss, comparative_loss_titles, comparative_epoch_times, comparative_history_da, data=history_da['train_loss'])
+                execution_timer.record_time(event_name="Epoch Results", event_type="stop") #records the time the program started
+                execution_timer.record_time(event_name="Epoch", event_type="stop") #records the time the program started
+
+                ### Training Timeout Check
+                if timeout_time:
+                    if time.time() - start_time > timeout_time * 60:  #convert timeout time from minuits to seconds
+                        print("Training timed out, exiting training loop")
+                        break
                 
-        history_da['val_loss'].append(val_loss)
-        history_da['HTO_val'].append(HTO_val)
-        history_da['training_time'].append(training_time)
+                pass # end of try clause, if all goes well and user doesen't request an early exit then the training loop will end here
 
-        if print_validation_results:
-            print("\n# VALIDATION RESULTS #")
-            print(f"{hyperparam_to_optimise} value: ", HTO_val)
-            print("Train loss: ", train_loss)
-            print("Test loss: ", test_loss)
-            print("Val loss: ", val_loss)
-            print(f"Total Training time: {format_time(training_time)}", )
+        # If user presses Ctr + c to exit training loop, this handles the exception and allows the code to run its final data and model saving etc before exiting        
+        except KeyboardInterrupt:
+            print("Keyboard interrupt detected. Exiting training gracefully...")
+        
+        execution_timer.record_time(event_name="Program Debrief", event_type="start") #records the time the program started
 
-        print("\n\n- Model Training Completed -\n \n \n \n") 
+        if run_profiler:
+            # Stop profiling
+            profiler.disable()
 
-#%% - Plot the validation loss and training time for each hyperparameter value
-if optimise_hyperparameter:
-    history_da['Hyperparameter_to_optimise'] = hyperparam_to_optimise
-    if plot_validation_loss:
-        Out_Label =  results_output_path_1 + model_save_name + "_" + hyperparam_to_optimise + r" Optimisation\\" + f'{model_save_name} - Val loss - Epoch {epoch}.png'
-        loss_plot(history_da['HTO_val'], history_da['val_loss'], hyperparam_to_optimise, "Val loss (MSE)", "Validation loss", Out_Label, plot_or_save)
+        #%% - After Training
+        encoder.eval()
+        decoder.eval()    
+        
+        # Stop timing the training process and calculate the total training time
+        end_time = time.time()
+        training_time = end_time - start_time
 
-    if plot_training_time:
-        Out_Label =  results_output_path_1 + model_save_name + "_" + hyperparam_to_optimise + r" Optimisation\\" +  f'{model_save_name} - Training time - Epoch {epoch}.png'
-        loss_plot(history_da['HTO_val'], history_da['training_time'], hyperparam_to_optimise, "Training time (s)", "Training time", Out_Label, plot_or_save)
-    
-    print("Hyperparameter optimisation complete.\nExtracting optimisation data to Excel file...")
-    netsum_directory = results_output_path_1 + model_save_name + "_" + hyperparam_to_optimise + r" Optimisation\\"                 # set the directory path where the txt files are located
-    #print("directory to grab txt data from, seems not to be working, check dir is correct !!!!!!!: ", netsum_directory)
-    excel_output_path = netsum_directory + hyperparam_to_optimise + " Optimisation - Settings.xlsx"    # set the output path for the Excel file
-    extract_data_to_excel(netsum_directory, excel_output_path)    
-    colour_code_excel_file(excel_output_path)        # COMINE THE EXCELL CODE TO ONE¬¬¬!!!!
-    print("Extraction complete\n \n")
+        # Report the training time
+        print(f"\nTotal Training Cycle Took {training_time:.2f} seconds")
 
-    #%% Prepare analysis of output models perfromance
+        # Build Dictionary to collect all output data for .txt file
+        full_data_output = {}
+        full_data_output["Train Loss"] = round(history_da['train_loss'][-1], 3)
+        full_data_output["Test Loss"] = round(history_da['test_loss'][-1], 3)   #Val loss calulaton is broken? check it above
 
-    # Run the full performance tests
-    output_file_path = netsum_directory + 'Analysis\\'  # directory to save output to
-    os.makedirs(output_file_path, exist_ok=True)
-    model_names = []
-    pretrained_model_folder_paths = []
-    for i, HTOsetting in enumerate(history_da['HTO_val']):
-        model_names.append(model_save_name + "_" + hyperparam_to_optimise + "_" + str(HTOsetting))
-        pretrained_model_folder_paths.append(netsum_directory + str(HTOsetting) + f'\\{model_save_name} - Training Results\Model_Deployment\\')
-    
-    ### NOTE FIX!!!!!!!!!!!!!!!!!!!!!!!
-    run_full_perf_tests(num_files=perf_analysis_num_files, 
-                        plot=perf_analysis_plot, 
-                        save_recovered_data=True, 
-                        dataset_dir=perf_analysis_dataset_dir, 
-                        output_file_path=output_file_path, 
-                        model_names=model_names, 
-                        pretrained_model_folder_paths=pretrained_model_folder_paths,  
-                        debug_mode = debug_hpo_perf_analysis)
-
-execution_timer.record_time(event_name="Program Debrief", event_type="stop") #records the time the program started
-
-#%% - End of Program - Printing message to notify user!
-print("\nProgram Complete - Shutting down...\n")    
-
-if run_profiler:
-    # save the profiling results to a file
-    profiler.dump_stats('profiler_results.prof')
-
-    # use snakeviz to view the profiling results in a browser
-    command = "snakeviz -s profiler_results.prof"
-    os.system(command)
+        detailed_performance_loss_dict={}
+        detailed_performance_loss_dict["epoch_avg_loss_mse"] = epoch_avg_loss_mse
+        detailed_performance_loss_dict["epoch_avg_loss_snr"] = epoch_avg_loss_snr
+        detailed_performance_loss_dict["epoch_avg_loss_psnr"] = epoch_avg_loss_psnr
+        detailed_performance_loss_dict["epoch_avg_loss_ssim"] = epoch_avg_loss_ssim
+        detailed_performance_loss_dict["epoch_avg_loss_nmi"] = epoch_avg_loss_nmi
+        detailed_performance_loss_dict["epoch_avg_loss_cc"] = epoch_avg_loss_cc
+        detailed_performance_loss_dict["epoch_avg_loss_true_positive_xy"] = epoch_avg_loss_true_positive_xy
+        detailed_performance_loss_dict["epoch_avg_loss_true_positive_tof"] = epoch_avg_loss_true_positive_tof
+        detailed_performance_loss_dict["epoch_avg_loss_false_positive_xy"] = epoch_avg_loss_false_positive_xy
 
 
-if run_pytorch_profiler:
-    # Stop the profiler
-    torch_profiler.stop()
-    print(torch_profiler.key_averages().table(sort_by="cuda_time_total", row_limit=10))
+        #%% - Save any remaining unsaved raw plot data
+        epochs_range = range(1,len(history_da["train_loss"])+1) 
+        if save_all_raw_plot_data:     ##FIND bETTER PLACE FOR THIS
+            save_variable(np.array(epochs_range), "epochs_range", raw_plotdata_output_dir)  #!!!!!! testing raw plot outputter!!!!
 
-print("Generating execution timer plot...")
-fig = execution_timer.return_plot(dark_mode=True)
-fig.set_size_inches(28.5, 10.8)
-Out_Label = graphics_dir + f'{model_save_name} - Execution Timer.png'
-plot_save_choice(plot_or_save, Out_Label, dpi=100)  
+            save_variable(history_da, "history_da", raw_plotdata_output_dir) 
 
-print("- Completed -")
+            save_variable(epoch_times_list, "epoch_times_list", raw_plotdata_output_dir) 
+
+            save_variable(settings, "settings", raw_plotdata_output_dir)
+
+            save_variable(detailed_performance_loss_dict, "detailed_performance_loss", raw_plotdata_output_dir)
+
+
+        #%% - Output Visulisations
+        ###Loss function plots
+        Out_Label = graphics_dir + f'{model_save_name} - Train and Val loss v epoch Comb - Epoch {epoch}.png'
+        loss_plot_trainval([epochs_range, epochs_range], [history_da['train_loss'], history_da['test_loss']], ["train", "test"], [model_save_name, model_save_name], "Epoch number", f"Loss ({loss_fn_label})", "Train and Val loss v Epoch", Out_Label, plot_or_save)
+
+        Out_Label = graphics_dir + f'{model_save_name} - Train and Val loss v Time Comb - Epoch {epoch}.png'
+        loss_plot_trainval([epoch_times_list, epoch_times_list], [history_da['train_loss'], history_da['test_loss']], ["train", "test"], [model_save_name, model_save_name], "Training Time (s)", f"Loss ({loss_fn_label})", "Train and Val loss v Time", Out_Label, plot_or_save)
+
+        if plot_detailed_performance_loss: 
+            Out_Label = graphics_dir + f'{model_save_name} - Detailed Performance loss - Epoch {epoch}.png'
+            draw_detailed_performance_loss_plots(epochs_range, epoch_avg_loss_mse, epoch_avg_loss_snr, epoch_avg_loss_psnr, epoch_avg_loss_ssim, epoch_avg_loss_nmi, epoch_avg_loss_cc, epoch_avg_loss_true_positive_xy, epoch_avg_loss_true_positive_tof, epoch_avg_loss_false_positive_xy, Out_Label, plot_or_save)
+
+        if plot_pixel_threshold_telemetry:
+            Out_Label = graphics_dir + f'{model_save_name} - Reconstruction Threshold Telemetry - Epoch {epoch}.png'
+            plot_telemetry(telemetry, signal_points, xdim*ydim, Out_Label, plot_or_save)
+
+        if plot_pixel_difference:
+            num_diff_noised, num_same_noised, num_diff_cleaned, num_same_cleaned, im_diff_noised, im_diff_cleaned = AE_visual_difference(in_data, noisy_data, rec_data)
+            full_data_output["num_diff_noised"] = num_diff_noised
+            full_data_output["num_same_noised"] = num_same_noised
+            full_data_output["num_diff_cleaned"] = num_diff_cleaned
+            full_data_output["num_same_cleaned"] = num_same_cleaned
+
+            # Create a new figure
+            fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2, figsize=(8, 4))
+
+            # Plot the im_diff_noised subplot
+            ax1.imshow(im_diff_noised, cmap='gray')
+            ax1.set_title('Original -> Noised Img')
+
+            # Plot the im_diff_cleaned subplot
+            ax2.imshow(im_diff_cleaned, cmap='gray')
+            ax2.set_title('Original -> Cleaned Img')
+
+            # Add title for the whole figure    
+            fig.suptitle('Pixel-wise Difference Comparisons')
+            
+            Out_Label = graphics_dir + f'{model_save_name} - Pixel Difference Epoch {epoch}.png'
+            plot_save_choice(plot_or_save, Out_Label)  
+
+        if plot_latent_generations:
+            def show_image(img):
+                npimg = img.numpy()
+                plt.imshow(np.transpose(npimg, (1, 2, 0)))
+
+            img_recon = Generative_Latent_information_Visulisation(encoder, decoder, latent_dim, device, test_loader, reconstruction_threshold, time_dimension)
+            
+            fig, ax = plt.subplots(figsize=(20, 8.5))
+            show_image(torchvision.utils.make_grid(img_recon[:100],10,10, pad_value=100))
+            plt.axis("off")
+            Out_Label = graphics_dir + f'{model_save_name} - Latent Generation Epoch {epoch}.png'
+            plot_save_choice(plot_or_save, Out_Label)  
+
+        if plot_higher_dim:
+            Out_Label_1 = graphics_dir + f'{model_save_name} - Higher Dimensisions Epoch {epoch}.png'
+            Out_Label_2 = graphics_dir + f'{model_save_name} - TSNE Epoch {epoch}.png'
+            Reduced_Dimension_Data_Representations(encoder, device, train_dataset, Out_Label_1, Out_Label_2, plot_or_save)
+            
+        if plot_normalised_radar:
+            # Data for the radar plot
+            categories = list(map(str, detailed_performance_loss_dict.keys())) # Names of each performance measure
+
+            fig = create_radar_plot(categories, [detailed_performance_loss_dict], [model_save_name])
+            Out_Label = graphics_dir + f'{model_save_name} - Normalised Radar Epoch {epoch}.png'
+            plot_save_choice(plot_or_save, Out_Label)
+
+
+            fig = create_tri_radar_plot(categories, [detailed_performance_loss_dict], [model_save_name])
+
+            #categories = ['epoch_avg_loss_true_positive_xy', 'epoch_avg_loss_true_positive_tof', 'epoch_avg_loss_false_positive_xy']
+
+            #fig = create_radar_plot(categories, [detailed_performance_loss_dict], [model_save_name])
+            Out_Label = graphics_dir + f'{model_save_name} - Normalised Tri-Radar Epoch {epoch}.png'
+            plot_save_choice(plot_or_save, Out_Label)
+
+            categories = ['epoch_avg_loss_true_positive_xy', 'epoch_avg_loss_true_positive_tof', 'epoch_avg_loss_false_positive_xy']
+            fig = create_3d_radar_plot(categories, detailed_performance_loss_dict, model_save_name)
+            Out_Label = graphics_dir + f'{model_save_name} - Normalised 3D Radars per Epoch.png'
+            plot_save_choice(plot_or_save, Out_Label)
+
+        #if plot_loss_heatmap:
+        #    Out_Label = graphics_dir + f'{model_save_name} - Loss Heatmap Epoch {epoch}.png'
+        #    plot_loss_heatmap(loss_fn, encoder, decoder, device, test_loader, Out_Label, plot_or_save)
+
+
+
+        if plot_Graphwiz:
+            Graphviz_visulisation(encoder, decoder, precision, batch_size, channels, xdim, ydim, graphics_dir)
+
+        #%% - Export model, statedicts and required variables for inference to disk    
+        AE_file_name = full_model_export(False, checkpoint, model_output_dir, model_checkpoints_dir, epoch, encoder, decoder, optim, latent_dim, fc_input_dim, precision, Encoder, debug_model_exporter=False)
+
+        #%% - Export all data logged to disk in form of .txt file in the output dir
+        print("\nSaving inputs, model stats and results to .txt file in output dir...")
+        #Comparison of true signal points to recovered signal points
+        try: 
+            #print("True signal points",number_of_true_signal_points)
+            #print("Recovered signal points: ",number_of_recovered_signal_points, "\n")
+            full_data_output["true_signal_points"] = number_of_true_signal_points  # Save the number of true signal points to the full_data_output dictionary
+            full_data_output["recovered_signal_points"] = number_of_recovered_signal_points  # Save the number of recovered signal points to the full_data_output dictionary
+        except:
+            pass
+        
+        # Save .txt Encoder/Decoder Network Summary
+        with open(full_netsum_filepath, 'w', encoding='utf-8') as output_file:    #utf_8 encoding needed as default (cp1252) unable to write special charecters present in the summary
+            # Write the local date and time to the file
+            TD_now = datetime.now()         # Get the current local date and time
+            output_file.write(f"Date data taken: {TD_now.strftime('%Y-%m-%d %H:%M:%S')}\n")     # Write the current local date and time to the file
+            output_file.write(("Model Name: " + model_save_name + f"\nTrained on device: {device}\n"))   # Write the model ID and device used to train the model to the file
+            output_file.write((f"Model_ID: {model_id}\n"))   # Write the model ID to the file
+            output_file.write((f"Max Epoch Reached: {max_epoch_reached}\n"))  # Write the max epoch reached during training to the file
+            output_file.write((f"Training Time: {format_time(training_time)}\n")) # Write the training time to the file
+            #output_file.write((f"Avg Epoch Time: {format_time(np.mean(epoch_times_list))}\n")) # Write the training time per epoch to the file
+            output_file.write((f"Avg Epoch Time: {format_time(training_time/max_epoch_reached)}\n")) # Write the training time per epoch to the file
+
+            output_file.write((f"\nTorch Seed Val to Reproduce Run: {T_seed}\n")) 
+            output_file.write((f"Numpy Seed Val to Reproduce Run: {N_seed}\n")) 
+            if seeding_value:
+                output_file.write((f"User Set Seeding: True\n"))
+            else:
+                output_file.write((f"User Set Seeding: False\n"))
+            
+            output_file.write("\nInput Settings:\n")  # Write the input settings to the file
+            for key, value in settings.items():
+                output_file.write(f"{key}: {value}\n")
+            
+            output_file.write("\nLoss Function Settings:\n")    # Write the loss function settings to the file
+            output_file.write(f"Loss Function Choice: {loss_fn}\n")
+            if loss_function_selection == 0:
+                output_file.write(f"zero_weighting: {zero_weighting}\n")
+                output_file.write(f"nonzero_weighting: {nonzero_weighting}\n")    
+            if loss_function_selection == 6:
+                output_file.write(f"Split Loss Functions Selected (Hits, Non-Hits): {split_loss_functions}\n")
+
+            output_file.write("\nNormalisation:\n")     # Write the normalisation settings to the file
+            output_file.write(f"Mask optimised binary norm: {masking_optimised_binary_norm}\n") 
+
+            output_file.write("\nPre Training:\n")   # Write the pre training settings to the file
+            output_file.write(f"start_from_pretrained_model: {start_from_pretrained_model}\n")
+            output_file.write(f"parent_model_id: {parent_model_id}\n")
+            if start_from_pretrained_model:
+                output_file.write(f"pretrained_model_path: {pretrained_model_path}\n")
+                output_file.write(f"load_pretrained_optimiser: {load_pretrained_optimiser}\n")  
+            
+            output_file.write("\n \nFull Data Readouts:\n") 
+            for key, value in full_data_output.items(): 
+                output_file.write(f"{key}: {value}\n") 
+
+            output_file.write("\nPython Lib Versions:\n") # Write the python library versions to the file
+            output_file.write((f"PyTorch: {torch.__version__}\n"))  
+            output_file.write((f"Torchvision: {torchvision.__version__}\n"))     
+            output_file.write((f"Numpy: {np.__version__}\n")) 
+            output_file.write((f"Pandas: {pd.__version__}\n")) 
+            #output_file.write((f"MPL: {plt.__version__}\n"))
+
+            output_file.write("\nAutoencoder Network:\n")  # Write the autoencoder network settings to the file
+            output_file.write((f"AE File ID: {AE_file_name}\n"))    # Write the autoencoder network file ID to the file
+            output_file.write("\n" + summary_str)   # Write the autoencoder network summary to the file
+
+            output_file.write("\nTraining System Information:\n") 
+            system_information = get_system_information()  # Get the system information using helper function
+            output_file.write("\n" + system_information)  # Write the system information to the file
+        print("- Completed -")
+
+        if optimise_hyperparameter:
+            val_loss = validation_routine(  encoder, 
+                                            decoder, 
+                                            device, 
+                                            valid_loader, 
+                                            loss_fn,
+                                            time_dimension,
+                                            reconstruction_threshold,
+                                            masking_optimised_binary_norm,
+                                            loss_vs_sparse_img,
+                                            renorm_for_loss_calc)
+                    
+            history_da['val_loss'].append(val_loss)
+            history_da['HTO_val'].append(HTO_val)
+            history_da['training_time'].append(training_time)
+
+            if print_validation_results:
+                print("\n# VALIDATION RESULTS #")
+                print(f"{hyperparam_to_optimise} value: ", HTO_val)
+                print("Train loss: ", train_loss)
+                print("Test loss: ", test_loss)
+                print("Val loss: ", val_loss)
+                print(f"Total Training time: {format_time(training_time)}", )
+
+            print("\n\n- Model Training Completed -\n \n \n \n") 
+
+    #%% - Plot the validation loss and training time for each hyperparameter value
+    if optimise_hyperparameter:
+        history_da['Hyperparameter_to_optimise'] = hyperparam_to_optimise
+        if plot_validation_loss:
+            Out_Label =  results_output_path_1 + model_save_name + "_" + hyperparam_to_optimise + r" Optimisation\\" + f'{model_save_name} - Val loss - Epoch {epoch}.png'
+            loss_plot(history_da['HTO_val'], history_da['val_loss'], hyperparam_to_optimise, "Val loss (MSE)", "Validation loss", Out_Label, plot_or_save)
+
+        if plot_training_time:
+            Out_Label =  results_output_path_1 + model_save_name + "_" + hyperparam_to_optimise + r" Optimisation\\" +  f'{model_save_name} - Training time - Epoch {epoch}.png'
+            loss_plot(history_da['HTO_val'], history_da['training_time'], hyperparam_to_optimise, "Training time (s)", "Training time", Out_Label, plot_or_save)
+        
+        print("Hyperparameter optimisation complete.\nExtracting optimisation data to Excel file...")
+        netsum_directory = results_output_path_1 + model_save_name + "_" + hyperparam_to_optimise + r" Optimisation\\"                 # set the directory path where the txt files are located
+        #print("directory to grab txt data from, seems not to be working, check dir is correct !!!!!!!: ", netsum_directory)
+        excel_output_path = netsum_directory + hyperparam_to_optimise + " Optimisation - Settings.xlsx"    # set the output path for the Excel file
+        extract_data_to_excel(netsum_directory, excel_output_path)    
+        colour_code_excel_file(excel_output_path)        # COMINE THE EXCELL CODE TO ONE¬¬¬!!!!
+        print("Extraction complete\n \n")
+
+        #%% Prepare analysis of output models perfromance
+
+        # Run the full performance tests
+        output_file_path = netsum_directory + 'Analysis\\'  # directory to save output to
+        os.makedirs(output_file_path, exist_ok=True)
+        model_names = []
+        pretrained_model_folder_paths = []
+        for i, HTOsetting in enumerate(history_da['HTO_val']):
+            model_names.append(model_save_name + "_" + hyperparam_to_optimise + "_" + str(HTOsetting))
+            pretrained_model_folder_paths.append(netsum_directory + str(HTOsetting) + f'\\{model_save_name} - Training Results\Model_Deployment\\')
+        
+        ### NOTE FIX!!!!!!!!!!!!!!!!!!!!!!!
+        run_full_perf_tests(num_files=perf_analysis_num_files, 
+                            plot=perf_analysis_plot, 
+                            save_recovered_data=True, 
+                            dataset_dir=perf_analysis_dataset_dir, 
+                            output_file_path=output_file_path, 
+                            model_names=model_names, 
+                            pretrained_model_folder_paths=pretrained_model_folder_paths,  
+                            debug_mode = debug_hpo_perf_analysis)
+
+    execution_timer.record_time(event_name="Program Debrief", event_type="stop") #records the time the program started
+
+    #%% - End of Program - Printing message to notify user!
+    print("\nProgram Complete - Shutting down...\n")    
+
+    if run_profiler:
+        # save the profiling results to a file
+        profiler.dump_stats('profiler_results.prof')
+
+        # use snakeviz to view the profiling results in a browser
+        command = "snakeviz -s profiler_results.prof"
+        os.system(command)
+
+
+    if run_pytorch_profiler:
+        # Stop the profiler
+        torch_profiler.stop()
+        print(torch_profiler.key_averages().table(sort_by="cuda_time_total", row_limit=10))
+
+    print("Generating execution timer plot...")
+    fig = execution_timer.return_plot(dark_mode=True)
+    fig.set_size_inches(28.5, 10.8)
+    Out_Label = graphics_dir + f'{model_save_name} - Execution Timer.png'
+    plot_save_choice(plot_or_save, Out_Label, dpi=100)  
+
+    print("- Completed -")
