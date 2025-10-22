@@ -474,9 +474,9 @@ def load_comparative_data(comparative_loss_paths, plot_live_training_loss, plot_
 def draw_detailed_performance_loss_plots(epochs_range, epoch_avg_loss_mse, epoch_avg_loss_snr, epoch_avg_loss_psnr, epoch_avg_loss_ssim, epoch_avg_loss_nmi, epoch_avg_loss_cc, epoch_avg_loss_true_positive_xy, epoch_avg_loss_true_positive_tof, epoch_avg_loss_false_positive_xy, save_path, plot_or_save):
     fig, axs = plt.subplots(nrows=3, ncols=3, figsize=(15, 15))
     axs[0, 0].plot(epochs_range, epoch_avg_loss_mse)
-    axs[0, 0].set_title("Mean Absolute Error")
+    axs[0, 0].set_title("Mean Sq Error")
     axs[0, 0].set_xlabel("Epoch number")
-    axs[0, 0].set_ylabel("MAE")
+    axs[0, 0].set_ylabel("MSE")
     axs[0, 0].grid(alpha=0.2) 
 
     axs[0, 1].plot(epochs_range, epoch_avg_loss_snr)
