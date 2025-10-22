@@ -1,15 +1,33 @@
-# DeepClean Trainer v0.1.3
-# Build created on Tuesday June 4th 2024
+# DeepClean Trainer v1.5.0
+# Build created on Tuesday October 22nd 2025
 # Author: Adill Al-Ashgar
 # University of Bristol
 # adill@neuralworkx.com
 
-from pickle import FALSE  #??? 
-from sympy import use   ##???
+#from pickle import FALSE  #??? 
+#from sympy import use   ##???
 import torch
 
 """
 Possible improvements:
+
+#### ~~~~
+
+#### ~~~~
+
+#### ~~~~
+
+#### ~~~~
+
+#### ~~~~
+
+#### ~~~~
+
+#### ~~~~
+
+#### ~~~~
+
+#### ~~~~ Fix the belif telemety output to be integer as described, make sure all downstream is okay with it not being a tensor anymore!
 
 ### ~~~~ Auto name and number each model (use a local stoareg file to track model numbber) add model number to file info and use to auto genrate a model family tree when pretraining from others 
 
@@ -199,11 +217,11 @@ latent_dim = 24                              # Set number of nodes in the latent
 fc_input_dim = 128                           # Set number of nodes in the intermediate fully connected layers. {Default = 128}
 dropout_prob = 0.2                           # [NOTE Not connected yet] Set dropout probability. {Default = 0.2}
 activation_function = torch.nn.ReLU(True)    # Set activation function for the network. {Default = nn.ReLU()}
-use_adamw_optimiser = True                  # If set to true then AdamW optimiser is used, if false then Adam optimiser is used.
+use_adamw_optimiser = True                   # If set to true then AdamW optimiser is used, if false then Adam optimiser is used.
 
 # Reconstruction Settings
 reconstruction_threshold = 0.25               # MUST BE BETWEEN 0-1  #Threshold for 3d reconstruction, values below this confidence level are discounted. {Default = 0.5}
-quantise_reconstructed_output = False  #CONNECT!¬! IMPLEMENT!!          # If set to true then the reconstructed output will be quantised 
+quantise_reconstructed_output = True          #[SHOULD BE TRUE ALWAYS!] # If set to true then the reconstructed output will be quantised in the 2D and 3D plots and for the detailed performance metrics calulations
 
 #%% - Image Preprocessing Settings
 signal_points = 300#(25, 35)                    # Set the number of signal points to add
@@ -241,7 +259,7 @@ time_length = 1000                           # ns
 
 #%% - Loss Function Settings
 loss_vs_sparse_img = False                               # Set if the loss is calculated against the sparse image or the full image (Hyperparameter)
-loss_function_selection = "TrippleLoss"                  # Select loss function (string):# "MAE", "MSE", "SSE", "BCE", "ACB_MSE", "ffACB_MSE", "Split_Loss", "True3D", "Simple3D", "ACB3D", "Fast3D", "WPR_Loss"
+loss_function_selection = "TrippleLossNI_CS"                  # Select loss function (string):# "MAE", "MSE", "SSE", "BCE", "ACB_MSE", "ffACB_MSE", "Split_Loss", "True3D", "Simple3D", "ACB3D", "Fast3D", "WPR_Loss"
 renorm_for_loss_calc = False                             # Set if the loss is calculated against the renormalised image or the network output data (Hyperparameter)
 
 # ACB
@@ -250,13 +268,13 @@ nonzero_weighting = 1#0.4 #0.4                          # Set non zero weighting
 
 # Weights used for ACBMSE, Triple loss and varients
 time_weighting = 1                                      # Set time weighting for ffACBMSE (Hyperparameter) [# Only used for ffACBMSE loss function]
-tp_weighting = 0.8                                        # Set time point weighting for ffACBMSE (Hyperparameter) [# Only used for ffACBMSE loss function]
-tn_weighting = 0.5                                        # Set frame point weighting for ffACBMSE (Hyperparameter) [# Only used for ffACBMSE loss function]
-fp_weighting = 1.8                                        # Set frame point weighting for ffACBMSE (Hyperparameter) [# Only used for ffACBMSE loss function]
-fn_weighting = 1.8                                        # Set frame point weighting for ffACBMSE (Hyperparameter) [# Only used for ffACBMSE loss function]
+tp_weighting = 8                                        # Set time point weighting for ffACBMSE (Hyperparameter) [# Only used for ffACBMSE loss function]
+tn_weighting = 1                                        # Set frame point weighting for ffACBMSE (Hyperparameter) [# Only used for ffACBMSE loss function]
+fp_weighting = 1                                        # Set frame point weighting for ffACBMSE (Hyperparameter) [# Only used for ffACBMSE loss function]
+fn_weighting = 10                                        # Set frame point weighting for ffACBMSE (Hyperparameter) [# Only used for ffACBMSE loss function]
 loss_penalty = 0.1
 loss_reduction = 'mean'
-fullframe_weighting = 0.001 #1.5                         # Set full frame weighting for ffACBMSE (Hyperparameter) [# Only used for ffACBMSE loss function]
+fullframe_weighting = 0.00001 #1.5                         # Set full frame weighting for ffACBMSE (Hyperparameter) [# Only used for ffACBMSE loss function]
 ff_loss = 'mse'                                         # Set loss function for full frame loss (Hyperparameter) [# Only used for ffACBMSE loss function] # "MAE", "MSE", "SSE", "BCE"
 
 # Selections for split loss function
@@ -431,7 +449,7 @@ from tqdm.auto import tqdm  # Progress bar, auto automtically selects between no
 from torchinfo import summary # function to get the summary of the model layers structure, trainable parameters and memory usage
 import matplotlib.pyplot as plt     
 from matplotlib.ticker import FuncFormatter
-from torch.utils.tensorboard import SummaryWriter, FileWriter
+from torch.utils.tensorboard.writer import SummaryWriter, FileWriter
 import cProfile
 from torch.utils.data import Subset
 import torch.profiler
@@ -588,7 +606,7 @@ def full_model_export(checkpoint_save, checkpoint, model_output_dir, model_check
 
     
 # Tracks network output pixel value distribution as histogram pre-reconstruction threshold and renomalisation to understand the effect of the reconstruction thresholding
-def belief_telemetry(data:"tensor", reconstruction_threshold: float, epoch: int, plot_or_save="save") -> tuple[int, int]:
+def belief_telemetry(data:torch.Tensor, reconstruction_threshold: float, epoch: int, plot_or_save="save") -> tuple[int, int]:
 
     """
     This function creates histogram plots of the pixel values recorded by the belief telemtry system [which needs renaming and reworking to simplify. (should be reconstruction thresholding telemtetry?)]  whihc records the values directly out of the netwrok before our reconstruction thresholding in the custom renomalisation is applied. This is important to keep ttrack of what is occusring before our iytput processing as it may be hiding errors.
@@ -625,14 +643,14 @@ def belief_telemetry(data:"tensor", reconstruction_threshold: float, epoch: int,
 
     above_threshold = (data2 >= reconstruction_threshold).sum()
     below_threshold = (data2 < reconstruction_threshold).sum()
-    return (above_threshold, below_threshold)
+    return (above_threshold, below_threshold)   # REPLACE WITH return (int(above_threshold.item()), int(below_threshold.item())) once everything downstream has been checked for compatibility!
                 
 
 def quantify_loss_performance(clean_input_batch, noised_target_batch, time_dimension):
     """
     This function compares each image in the batch to its corresponding target image and calculates a range of enhanced performance metrics for each. The results for each metric are then avaeraged over the batch and this average is appended to the corresponding list of average metrics results for each epoch which is tracked eleshwehre in the enhanced performance tracking system
 
-    Args:
+        Args:
         clean_input_batch (torch tensor): The input image batch. Shape [B, C, H, W]
         noised_target_batch (torch tensor): The target image batch. Shape [B, C, H, W]
         time_dimension (int): The number of time steps in the data set, used to set the upper limit of the noise point values. Default = 100  
@@ -642,7 +660,7 @@ def quantify_loss_performance(clean_input_batch, noised_target_batch, time_dimen
 
     """
     batch_size = len(clean_input_batch)
-
+    
     # Calculates the mean of the performance metrics for the batch and appends this to the corresponding list of average metrics results for each epoch
     #avg_loss_nrmse.append(np.mean(loss_nrmse))
     avg_loss_mse.append(MSE2(clean_input_batch.squeeze(1), noised_target_batch.squeeze(1)))
@@ -719,7 +737,7 @@ def create_comparison_plot_data(slide_live_plot_size, epoch, max_epoch_reached, 
 #%% - Train, Test, Val and Plot Functions
 
 ### Plotting function
-def plot_epoch_data(end_of_epoch_plotting_data, epoch, model_save_name, time_dimension, reconstruction_threshold, signal_points, graphics_dir, plot_or_save, n=10):       #Defines a function for plotting the output of the autoencoder. And also the input + clean training data? Function takes inputs, 'encoder' and 'decoder' which are expected to be classes (defining the encode and decode nets), 'n' which is the number of ?????Images in the batch????, and 'noise_factor' which is a multiplier for the magnitude of the added noise allowing it to be scaled in intensity.  
+def plot_epoch_data(end_of_epoch_plotting_data, epoch, model_save_name, time_dimension, reconstruction_threshold, signal_points, graphics_dir, plot_or_save, n=10, quantise_time_domain=False):       #Defines a function for plotting the output of the autoencoder. And also the input + clean training data? Function takes inputs, 'encoder' and 'decoder' which are expected to be classes (defining the encode and decode nets), 'n' which is the number of ?????Images in the batch????, and 'noise_factor' which is a multiplier for the magnitude of the added noise allowing it to be scaled in intensity.  
     
     """
     Plots the output of the autoencoder in a variety of ways to track its perfromance and abilities during the training cycle. 
@@ -737,6 +755,7 @@ def plot_epoch_data(end_of_epoch_plotting_data, epoch, model_save_name, time_dim
         tof_std_dev (float) or (tuple): The standard deviation of the gaussian distribution to draw the ToF shift from. If given as float then number will be constant over training, if given as tuple then a random value will be selected from the range given for each batch. Default = 0
         physical_scale_parameters (list): A list of the physical scale parameters for the data set. Default = [1,1,1]
         n is the number of images to plot in the 2d comparison. Default = 10
+        quantise_time_domain (bool): A flag to set if the time domain should be quantised to integer values for plotting. Default = False
 
     Generates:
         A variety of plots showing the output of the autoencoder
@@ -771,6 +790,13 @@ def plot_epoch_data(end_of_epoch_plotting_data, epoch, model_save_name, time_dim
         rec_im = recovered_batch.cpu().numpy()
         masked_im = recovered_masking_batch.cpu().numpy()
 
+        if quantise_time_domain:
+            in_im = np.round(in_im)
+            sparse_im = np.round(sparse_im)
+            reslim_im = np.round(reslim_im)
+            noise_im = np.round(noise_im)
+            rec_im = np.round(rec_im)
+            masked_im = np.round(masked_im)
 
         #cmap = cm.get_cmap('viridis')
         #cmap.set_under('k') # set the color for 0 to black ('k')
@@ -965,7 +991,7 @@ def train_epoch(epoch, encoder, decoder, device, dataloader, loss_fn, optimizer,
 
         execution_timer.record_time(event_name="Training-backward", event_type="start")
         # Backward pass
-        optimizer.zero_grad() # Reset the gradients
+        optimizer.zero_grad() # Reset the gradients - IS THIS CORRECT???
         loss.backward() # Compute the gradients
         optimizer.step() # Update the parameters
 
@@ -1073,8 +1099,9 @@ def test_epoch(encoder, decoder, device, dataloader, loss_fn, time_dimension=100
 
             iterator.set_postfix({'Partial Batch Loss': loss.data.item()})
 
-            performance_test_comparator = gaped_renormalisation(loss_comparator.clone(), reconstruction_threshold, time_dimension) # Clone the loss comparator to avoid modifying the original
-            performance_test_data = gaped_renormalisation(decoded_data.clone(), reconstruction_threshold, time_dimension) # Clone the decoded data to avoid modifying the original
+            performance_test_comparator = gaped_renormalisation(loss_comparator.clone(), reconstruction_threshold, time_dimension) #DOES THIS NEED TO BE DETACHED??? # Clone the loss comparator to avoid modifying the original
+            performance_test_data = gaped_renormalisation(decoded_data.clone(), reconstruction_threshold, time_dimension, quantise_reconstructed_output) #DOES THIS NEED TO BE DETACHED??? # Clone the decoded data to avoid modifying the original
+
 
             #Run additional perfomrnace metrics
             execution_timer.record_time(event_name="Testing-performance_metrics", event_type="start")
@@ -1088,7 +1115,7 @@ def test_epoch(encoder, decoder, device, dataloader, loss_fn, time_dimension=100
                 reslim_imgs.append(sparse_and_resolution_limited_batch[:num_to_append])
                 noised_imgs.append(noised_sparse_reslimited_batch[:num_to_append])
                 
-                output_data = gaped_renormalisation(decoded_data[:num_to_append].cpu(), reconstruction_threshold, time_dimension)        # Renormalise output data   avoiding doing it to the entire batch, just the required num of images for the following plotting etc    
+                output_data = gaped_renormalisation(decoded_data[:num_to_append].cpu(), reconstruction_threshold, time_dimension, quantise_reconstructed_output)        # Renormalise output data   avoiding doing it to the entire batch, just the required num of images for the following plotting etc    
                 recovered_imgs.append(output_data) 
                 maskrec_imgs.append(masking_recovery(noised_sparse_reslimited_batch[:num_to_append].cpu(), output_data, time_dimension, debug_masking_function))
 
@@ -1385,9 +1412,14 @@ if __name__ == "__main__":
             "BCE": torch.nn.BCELoss(),   
 
             "LayeredLoss": LayeredLoss(zero_weighting, nonzero_weighting),                                                                  # Custom Layered Loss Function
-            "TrippleLoss": TrippleLoss(zero_weighting, nonzero_weighting),                                                                  # Custom Tripple Loss Function
+            "TrippleLoss": TrippleLoss(zero_weighting, nonzero_weighting, fullframe_weighting, time_weighting, tp_weighting, fp_weighting, fn_weighting, tn_weighting, loss_penalty, 'mean'),                                                                  # Custom Tripple Loss Function
+            "TrippleLossNI": TrippleLossNI(fullframe_weighting, tp_weighting, fp_weighting, fn_weighting, tn_weighting),                                                 # Tripple Loss Function without time weighting
+            "TrippleLossNI_CS": TrippleLossNI_CS(fullframe_weighting, tp_weighting, fp_weighting, fn_weighting, tn_weighting),                                                 
                                                                                                                                             # Binary Cross Entropy Loss from PyTorch Library
-            "ACB_MSE": ACBLoss(zero_weighting, nonzero_weighting),                                                                # My Original Automatically Class Balanced MSE Loss using Class balancing by frequency
+            "ACB_MSE": ACBLoss(zero_weighting, nonzero_weighting),     
+            "ACBLossNI" : ACBLossNI(zero_weighting, nonzero_weighting),                                                   # My Original Automatically Class Balanced MSE Loss using Class balancing by number of points
+    
+                                                                                                                     # My Original Automatically Class Balanced MSE Loss using Class balancing by frequency
             "ffACB_MSE": ffACBLoss(zero_weighting, nonzero_weighting, fullframe_weighting),                                       # Update to ACB_MSE, adds new term to the loss function that calulates mse over the full frame with its own weighting
             "Split_Loss": ada_weighted_custom_split_loss(split_loss_functions, zero_weighting, nonzero_weighting),                # Uses my automatic class balancing to split the loss function into two parts, one for zero values and one for non-zero values but instead of using MSE as my ACBMSE implementation this just leaves the loss function open to user setting, and uniquly allows user to select differnt loss fucntion for each class.
 
@@ -1698,6 +1730,7 @@ if __name__ == "__main__":
                                                                             graphics_dir,
                                                                             plot_or_save,
                                                                             num_to_plot,
+                                                                            quantise_reconstructed_output,
                                                                             )
                     
                     number_of_true_signal_points, number_of_recovered_signal_points, in_data, noisy_data, rec_data = returned_data_from_plotting_function
@@ -1726,9 +1759,9 @@ if __name__ == "__main__":
 
                 ###CLEAN UP THIS METHOD TO SOMTHING BETTER!!!!!!
                 epoch_avg_loss_mse.append(np.mean(avg_loss_mse))
-                epoch_avg_loss_mae.append(np.mean(avg_loss_mae))
-                epoch_avg_loss_snr.append(np.mean(avg_loss_snr))
-                epoch_avg_loss_psnr.append(np.mean(avg_loss_psnr))
+                epoch_avg_loss_mae.append(np.mean(avg_loss_mae)) # USelass really so probably depreciate!
+                epoch_avg_loss_snr.append(np.mean(avg_loss_snr))  # USelass really so probably depreciate!
+                epoch_avg_loss_psnr.append(np.mean(avg_loss_psnr)) 
                 epoch_avg_loss_ssim.append(np.mean(avg_loss_ssim))
                 epoch_avg_loss_nmi.append(np.mean(avg_loss_nmi))
                 epoch_avg_loss_cc.append(np.mean(avg_loss_cc))

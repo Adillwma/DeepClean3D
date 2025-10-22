@@ -33,21 +33,10 @@ def gaped_normalisation(data, reconstruction_threshold, time_dimension=100):
     """
     data = torch.where(data > 0, (((data / time_dimension) / (1 / (1 - reconstruction_threshold))) + reconstruction_threshold), 0 ) 
     
-    """
-    print(data.shape)
-    print(type(data))
-    print(data)
-    if data is torch.Tensor:    
-        data = torch.where(data > 0, (((data / time_dimension) / (1 / (1 - reconstruction_threshold))) + reconstruction_threshold), 0 )
-    elif data is np.array:
-        data = np.where(data > 0, (((data / time_dimension) / (1 / (1 - reconstruction_threshold))) + reconstruction_threshold), 0 )
-    else:
-        raise ValueError("ERROR: The data type is not recognised by the gaped_normalisation function, please use a torch tensor or a numpy array")
-    """
     return data
 
 # Custom renormalisation function
-def gaped_renormalisation(data, reconstruction_threshold, time_dimension=100):
+def gaped_renormalisation(data, reconstruction_threshold, time_dimension=100, quantise_time_domain=False):
     """
     torch version of our Renormalisation function that renormalises values in range [reconstruction_threshold < value <= 1] to new range of [0 < renorm_value <= 'time_dimension'] removing any values that fell below the 'reconstruction_threshold' by setting thwm to zero. All zero values are left untouched. This is used for the direct network output.
 
@@ -60,14 +49,11 @@ def gaped_renormalisation(data, reconstruction_threshold, time_dimension=100):
         data (torch tensor): The renormalised data.
     """
     data = torch.where(data > reconstruction_threshold, ((data - reconstruction_threshold)*(1 / (1 - reconstruction_threshold))) * (time_dimension), 0)
-    """
-    if data is torch.Tensor:
-        data = torch.where(data > reconstruction_threshold, ((data - reconstruction_threshold)*(1 / (1 - reconstruction_threshold))) * (time_dimension), 0)
-    elif data is np.array:
-        data = np.where(data > reconstruction_threshold, ((data - reconstruction_threshold)*(1 / (1 - reconstruction_threshold))) * (time_dimension), 0)
-    else:
-        raise ValueError("ERROR: The data type is not recognised by the gaped_renormalisation function, please use a torch tensor or a numpy array")
-    """
+    
+    if quantise_time_domain:
+        # We quantise all the values in the data to time_dimension steps ranging from 0 to time_dimension (including the limits)
+        data = torch.round(data) # USes bankers rounding (round half to even) to avoid sytematic bias
+        
     return data
 
 # 3D Reconstruction function
