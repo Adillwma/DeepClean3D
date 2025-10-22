@@ -1,7 +1,6 @@
 from audioop import avg
 import signal
 import torch
-import numpy as np
 
 
 # In Use
@@ -66,7 +65,7 @@ class ACBLoss(torch.nn.Module):
 # Current ACB Loss Function
 class ACBLossNI(torch.nn.Module):
 
-    def __init__(self, zero_weighting=1, nonzero_weighting=1, reduction='mean'):
+    def __init__(self, zero_weighting=1, nonzero_weighting=1):
         """
         Initializes the ACB-MSE Loss Function class with weighting coefficients.
 
@@ -77,8 +76,7 @@ class ACBLossNI(torch.nn.Module):
         super().__init__()   
         self.zero_weighting = zero_weighting
         self.nonzero_weighting = nonzero_weighting
-        self.mse_loss = torch.nn.MSELoss(reduction=reduction)
-        self.reduction = reduction
+        self.mse_loss = torch.nn.MSELoss(reduction='mean')
 
     def forward(self, reconstructed_image, target_image):
         """
@@ -101,16 +99,29 @@ class ACBLossNI(torch.nn.Module):
 
         ## INSTEAD OF ALL THIS CHEACKING FOR NANS WE CAN JUST CHECK THE LENGTHS OF THE TENSORS BEFORE TRYING TO CALCULATE MSE AND AVOID THE NAN ISSUES ALTOGETHER - Follow up note, this may not be the best idea 
 
-        # make assert checking that both zero and nonzero loss are not nan at once
-        assert not (torch.isnan(zero_loss) and torch.isnan(nonzero_loss)),"A fatal error has occured in the ACBMSE loss function with both loss values returning NaN, please investigate your inputs to verify they are correct."
+        all_classes = {
+            'ZL': zero_loss,
+            'NZL': nonzero_loss,
+        }
 
-        if torch.isnan(zero_loss): # Handles the case where there are no zero pixels in the target image at all
-            avg_weighted_mse_loss = self.nonzero_weighting * nonzero_loss
-        if torch.isnan(nonzero_loss): # Handles the case where there are no nonzero pixels in the target image at all
-            avg_weighted_mse_loss = self.zero_weighting * zero_loss
+        present_classes = {k: v for k, v in all_classes.items() if not torch.isnan(v)}
+
+        # Checking that both zero and nonzero loss are not nan at once
+        if len(present_classes) == 0:
+            raise ValueError("A fatal error has occured in the ACBMSE loss function with both loss values returning NaN, please investigate your inputs to verify they are correct.")
+
+        if len(present_classes) == 1:
+            only_key = next(iter(present_classes))
+            if only_key == 'ZL':  # Handles the case where there are no nonzero pixels in the target image at all
+                return self.zero_weighting * zero_loss
+            else: # Handles the case where there are no zero pixels in the target image at all
+                return self.nonzero_weighting * nonzero_loss
+
         else:
-            avg_weighted_mse_loss = np.mean( [ (self.zero_weighting * zero_loss), (self.nonzero_weighting * nonzero_loss) ] )
-        return avg_weighted_mse_loss
+            return torch.mean(torch.stack([
+                self.zero_weighting * zero_loss,
+                self.nonzero_weighting * nonzero_loss
+            ]))
 
 
 # Tripple Loss Functions work across the four classes: True Positive, False Positive, False Negative, True Negative
@@ -167,11 +178,6 @@ class TrippleLoss(torch.nn.Module):
         signalmasked_target = target_image[nonzero_mask]
         zeromasked_target = target_image[zero_mask]
 
-        # Time domain 
-        #time_domain_match_mask = (signalmasked_output == target_image[nonzero_mask])           # determine how many of those indexs have matching ToF values
-        #Time_Match = self.MSE(reconstructed_image[nonzero_mask][time_domain_match_mask], target_image[nonzero_mask][time_domain_match_mask])
-
-        # Spatial domain 
         ## Signal Masked Output Stats
         false_negative_mask = (signalmasked_output == 0)   
         true_positive_mask = ~false_negative_mask        
@@ -212,7 +218,7 @@ class TrippleLoss(torch.nn.Module):
 # ACBNI-ClassLoss
 class TrippleLossNI(torch.nn.Module):
 
-    def __init__(self, zero_weighting=1, nonzero_weighting=1, ff_weighting=1e-8, time_weighting=1, tp_weighting=1, fp_weighting=1, fn_weighting=1, tn_weighting=1, punishment=0.1, reduction='mean'):
+    def __init__(self, ff_weighting=1e-8, tp_weighting=1, fp_weighting=1, fn_weighting=1, tn_weighting=1):
         """
         Initializes the ACB-MSE Loss Function class with weighting coefficients.
 
@@ -225,10 +231,8 @@ class TrippleLossNI(torch.nn.Module):
         self.FPW = fp_weighting
         self.FNW = fn_weighting
         self.TNW = tn_weighting
-        self.time_weight = time_weighting
         self.ff_weight = ff_weighting
-        self.punishment = punishment
-        self.MSE = torch.nn.MSELoss(reduction=reduction)
+        self.MSE = torch.nn.MSELoss(reduction='mean')
 
 
         
@@ -243,15 +247,6 @@ class TrippleLossNI(torch.nn.Module):
         Returns:
 
         """
-
-        device = reconstructed_image.device
-        dtype = reconstructed_image.dtype
-
-        # Helper to create device/dtype-safe scalar
-        def scalar(val):
-            return torch.tensor(val, device=device, dtype=dtype) 
-    
-
         zero_mask = (target_image == 0)           # Genrates a index mask for the zero values in the target image
         nonzero_mask = ~zero_mask           # Inverts the zero mask to get the non-zero mask from the target image indicating the signal points
 
@@ -261,11 +256,7 @@ class TrippleLossNI(torch.nn.Module):
         signalmasked_target = target_image[nonzero_mask]
         zeromasked_target = target_image[zero_mask]
 
-        # Time domain 
-        #time_domain_match_mask = (signalmasked_output == target_image[nonzero_mask])           # determine how many of those indexs have matching ToF values
-        #Time_Match = self.MSE(reconstructed_image[nonzero_mask][time_domain_match_mask], target_image[nonzero_mask][time_domain_match_mask])
-
-        # Spatial domain 
+       
         ## Signal Masked Output Stats
         false_negative_mask = (signalmasked_output == 0)   
         true_positive_mask = ~false_negative_mask        
@@ -285,46 +276,49 @@ class TrippleLossNI(torch.nn.Module):
         TNL = self.MSE(true_negatives, zeromasked_target[true_negative_mask])
         FPL = self.MSE(false_positives, zeromasked_target[false_positive_mask])
 
-        # THIS SECTION SHOULD BE REMOVED IN FAVOU OF CHECKING THE LENGTHS OF THE FALSE/TRUE POS/NEG TENSORS BBEFORE TRYING TO CALCULATE MSE, THOSE THAT ARE OF 0 LENGTH SHOUd JUST BE LEFT OUT OF THE CALULATION AND THE AVARGING OVER CLASSES DEALW ITH IT GRACEFULLY
-        if torch.isnan(FNL): # Handles the case where there are no nonzero pixels in the target? image at all
-            FNL = scalar(0.0)
-        if torch.isnan(FPL): # Handles the case where there are no nonzero pixels in the target? image at all
-            FPL = scalar(0.0)
-        if torch.isnan(TNL): # Handles the case where there are no zero pixels in the target? image at all
-            TNL = scalar(0.0)
-        if torch.isnan(TPL): # Handles the case where there are no zero pixels in the target? image at all
-            TPL = scalar(0.0)
-        #if torch.isnan(Time_Match): # Handles the case where there are no signal points with matching time values in the target image at all
-        #    Time_Match = self.punishment
 
         full_frame_loss = self.MSE(reconstructed_image, target_image)  # ESSENTIALLy TIME LOSS ACROSS WHOLE SENSOR
 
-        avg_weighted_loss = np.mean( [(self.TPW * TPL), (self.FNW * FNL), (self.FPW * FPL), (self.TNW * TNL), (self.ff_weight * full_frame_loss)] )
+        all_classes = {    # Full frame not included as it always exists
+            'FNL': FNL * self.FNW, # Has no effect on the nan check and is simpler to do this here then later
+            'FPL': FPL * self.FPW,
+            'TNL': TNL * self.TNW,
+            'TPL': TPL * self.TPW,
+        }
+
+        present_classes = {k: v for k, v in all_classes.items() if not torch.isnan(v)}
+
+        if len(present_classes) == 0:
+            raise ValueError("A fatal error has occured in the TrippleLossNI_CS loss function with all loss values returning NaN, please investigate your inputs to verify they are correct.")
+        
+        # Add the FFL to the present classes as it always exists
+        present_classes['FFL'] = full_frame_loss * self.ff_weight
+
+        avg_weighted_loss = torch.mean(torch.stack(list(present_classes.values())))
+
         return avg_weighted_loss
 
 # Experimental Tripple Loss Function (..._CS = carrot & stick) - Builds on TrippleLossNI. Now the false detetctions classes are added to the mean of the rest so act as punishments 
 # ACBNI-ClassLoss-CS
 class TrippleLossNI_CS(torch.nn.Module):
 
-    def __init__(self, zero_weighting=1, nonzero_weighting=1, ff_weighting=1e-8, time_weighting=1, tp_weighting=1, fp_weighting=1, fn_weighting=1, tn_weighting=1, punishment=0.1, reduction='mean'):
+    def __init__(self, ff_weighting=1e-8, tp_weighting=1, fp_weighting=1, fn_weighting=1, tn_weighting=1):
         """
-        Initializes the ACB-MSE Loss Function class with weighting coefficients.
-
+        Inititalises the Tripple Loss NI CS class with weighting coefficients.
         Args:
-        - zero_weighting: a scalar weighting coefficient for the MSE loss of zero pixels
-        - nonzero_weighting: a scalar weighting coefficient for the MSE loss of non-zero pixels
+        - ff_weighting: a scalar weighting coefficient for the MSE loss of the full frame
+        - tp_weighting: a scalar weighting coefficient for the MSE loss of true positives
+        - fp_weighting: a scalar weighting coefficient for the MSE loss of false positives
+        - fn_weighting: a scalar weighting coefficient for the MSE loss of false negatives
+        - tn_weighting: a scalar weighting coefficient for the MSE loss of true negatives
         """
         super().__init__()   
         self.TPW = tp_weighting
         self.FPW = fp_weighting
         self.FNW = fn_weighting
         self.TNW = tn_weighting
-        self.time_weight = time_weighting
         self.ff_weight = ff_weighting
-        self.punishment = punishment
-        self.MSE = torch.nn.MSELoss(reduction=reduction)
-
-
+        self.MSE = torch.nn.MSELoss(reduction='mean')
         
     def forward(self, reconstructed_image, target_image):
         """
@@ -336,16 +330,7 @@ class TrippleLossNI_CS(torch.nn.Module):
             
         Returns:
 
-        """
-
-        device = reconstructed_image.device
-        dtype = reconstructed_image.dtype
-
-        # Helper to create device/dtype-safe scalar
-        def scalar(val):
-            return torch.tensor(val, device=device, dtype=dtype) 
-    
-
+        """    
         zero_mask = (target_image == 0)           # Genrates a index mask for the zero values in the target image
         nonzero_mask = ~zero_mask           # Inverts the zero mask to get the non-zero mask from the target image indicating the signal points
 
@@ -355,11 +340,6 @@ class TrippleLossNI_CS(torch.nn.Module):
         signalmasked_target = target_image[nonzero_mask]
         zeromasked_target = target_image[zero_mask]
 
-        # Time domain 
-        #time_domain_match_mask = (signalmasked_output == target_image[nonzero_mask])           # determine how many of those indexs have matching ToF values
-        #Time_Match = self.MSE(reconstructed_image[nonzero_mask][time_domain_match_mask], target_image[nonzero_mask][time_domain_match_mask])
-
-        # Spatial domain 
         ## Signal Masked Output Stats
         false_negative_mask = (signalmasked_output == 0)   
         true_positive_mask = ~false_negative_mask        
@@ -379,21 +359,27 @@ class TrippleLossNI_CS(torch.nn.Module):
         TNL = self.MSE(true_negatives, zeromasked_target[true_negative_mask])
         FPL = self.MSE(false_positives, zeromasked_target[false_positive_mask])
 
-        # THIS SECTION SHOULD BE REMOVED IN FAVOU OF CHECKING THE LENGTHS OF THE FALSE/TRUE POS/NEG TENSORS BBEFORE TRYING TO CALCULATE MSE, THOSE THAT ARE OF 0 LENGTH SHOUd JUST BE LEFT OUT OF THE CALULATION AND THE AVARGING OVER CLASSES DEALW ITH IT GRACEFULLY
-        if torch.isnan(FNL): # Handles the case where there are no nonzero pixels in the target? image at all
-            FNL = scalar(0.0)
-        if torch.isnan(FPL): # Handles the case where there are no nonzero pixels in the target? image at all
-            FPL = scalar(0.0)
-        if torch.isnan(TNL): # Handles the case where there are no zero pixels in the target? image at all
-            TNL = scalar(0.0)
-        if torch.isnan(TPL): # Handles the case where there are no zero pixels in the target? image at all
-            TPL = scalar(0.0)
-        #if torch.isnan(Time_Match): # Handles the case where there are no signal points with matching time values in the target image at all
-        #    Time_Match = self.punishment
-
         full_frame_loss = self.MSE(reconstructed_image, target_image)  # ESSENTIALLy TIME LOSS ACROSS WHOLE SENSOR
 
-        avg_weighted_loss = np.mean( [(self.TPW * TPL), (self.TNW * TNL), (self.ff_weight * full_frame_loss)] ) + (self.FNW * FNL) + (self.FPW * FPL) # False detetctions are added to the mean sum, now they act as punishments!
+        all_classes = {    # Full frame not included as it always exists
+            'FNL': FNL * self.FNW, # Has no effect on the nan check and is simpler to do this here then later
+            'FPL': FPL * self.FPW,
+            'TNL': TNL * self.TNW,
+            'TPL': TPL * self.TPW,
+        }
+
+        present_classes = {k: v for k, v in all_classes.items() if not torch.isnan(v)}
+
+        if len(present_classes) == 0:
+            raise ValueError("A fatal error has occured in the TrippleLossNI_CS loss function with all loss values returning NaN, please investigate your inputs to verify they are correct.")
+
+        # Add the FFL to the present classes as it always exists
+        present_classes['FFL'] = full_frame_loss * self.ff_weight
+
+        # create the mean tensor excluding false detections
+        mean_classes = {k: v for k, v in present_classes.items() if k not in ['FNL', 'FPL']}
+        avg_weighted_loss = torch.mean(torch.stack(list(mean_classes.values()))) + present_classes.get('FNL', 0) + present_classes.get('FPL', 0)
+
         return avg_weighted_loss
 
 # Experimental Tripple Loss Function - Adds
