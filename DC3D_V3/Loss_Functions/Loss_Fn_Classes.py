@@ -1,7 +1,402 @@
+from audioop import avg
 import signal
 import torch
+import numpy as np
 
 
+# In Use
+# ACB family loss fucntion work sacross the two domain classes: Zero and Non-Zero
+
+#Original ACB Loss Function (DEPRECIATED)
+class ACBLoss(torch.nn.Module):
+
+    def __init__(self, zero_weighting=1, nonzero_weighting=1, reduction='mean'):
+        """
+        Initializes the ACB-MSE Loss Function class with weighting coefficients.
+
+        Args:
+        - zero_weighting: a scalar weighting coefficient for the MSE loss of zero pixels
+        - nonzero_weighting: a scalar weighting coefficient for the MSE loss of non-zero pixels
+        """
+        super().__init__()   
+        self.zero_weighting = zero_weighting
+        self.nonzero_weighting = nonzero_weighting
+        self.mse_loss = torch.nn.MSELoss(reduction=reduction)
+        self.reduction = reduction
+
+    def forward(self, reconstructed_image, target_image):
+        """
+        Calculates the weighted mean squared error (MSE) loss between target_image and reconstructed_image.
+        The loss for zero pixels in the target_image is weighted by zero_weighting, and the loss for non-zero
+        pixels is weighted by nonzero_weighting.
+
+        Args:
+        - target_image: a tensor of shape (B, C, H, W) containing the target image
+        - reconstructed_image: a tensor of shape (B, C, H, W) containing the reconstructed image
+
+        Returns:
+        - weighted_mse_loss: a scalar tensor containing the weighted MSE loss
+        """
+        zero_mask = (target_image == 0)
+        nonzero_mask = ~zero_mask
+
+        zero_loss = self.mse_loss(reconstructed_image[zero_mask], target_image[zero_mask])
+        nonzero_loss = self.mse_loss(reconstructed_image[nonzero_mask], target_image[nonzero_mask])
+    
+
+        #print("Reduction is none")
+        #output = torch.zeros_like(target_image)
+        #output[zero_mask] = zero_loss * self.zero_weighting
+        #output[nonzero_mask] = nonzero_loss * self.nonzero_weighting
+        #return output
+        
+    
+        # make assert checking that both zero and nonzero loss are not nan at once
+        assert not (torch.isnan(zero_loss) and torch.isnan(nonzero_loss)),"A fatal error has occured in the ACBMSE loss function with both loss values returning NaN, please investigate your inputs to verify they are correct."
+
+        if torch.isnan(zero_loss): # Handles the case where there are no zero pixels in the target image at all
+            zero_loss = 0
+        if torch.isnan(nonzero_loss): # Handles the case where there are no nonzero pixels in the target image at all
+            nonzero_loss = 0
+
+        weighted_mse_loss = (self.zero_weighting * zero_loss) + (self.nonzero_weighting * nonzero_loss)
+        
+        return weighted_mse_loss
+
+# Current ACB Loss Function
+class ACBLossNI(torch.nn.Module):
+
+    def __init__(self, zero_weighting=1, nonzero_weighting=1, reduction='mean'):
+        """
+        Initializes the ACB-MSE Loss Function class with weighting coefficients.
+
+        Args:
+        - zero_weighting: a scalar weighting coefficient for the MSE loss of zero pixels
+        - nonzero_weighting: a scalar weighting coefficient for the MSE loss of non-zero pixels
+        """
+        super().__init__()   
+        self.zero_weighting = zero_weighting
+        self.nonzero_weighting = nonzero_weighting
+        self.mse_loss = torch.nn.MSELoss(reduction=reduction)
+        self.reduction = reduction
+
+    def forward(self, reconstructed_image, target_image):
+        """
+        Calculates the weighted mean squared error (MSE) loss between target_image and reconstructed_image.
+        The loss for zero pixels in the target_image is weighted by zero_weighting, and the loss for non-zero
+        pixels is weighted by nonzero_weighting.
+
+        Args:
+        - target_image: a tensor of shape (B, C, H, W) containing the target image
+        - reconstructed_image: a tensor of shape (B, C, H, W) containing the reconstructed image
+
+        Returns:
+        - weighted_mse_loss: a scalar tensor containing the weighted MSE loss
+        """
+        zero_mask = (target_image == 0)
+        nonzero_mask = ~zero_mask
+
+        zero_loss = self.mse_loss(reconstructed_image[zero_mask], target_image[zero_mask])
+        nonzero_loss = self.mse_loss(reconstructed_image[nonzero_mask], target_image[nonzero_mask])
+
+        ## INSTEAD OF ALL THIS CHEACKING FOR NANS WE CAN JUST CHECK THE LENGTHS OF THE TENSORS BEFORE TRYING TO CALCULATE MSE AND AVOID THE NAN ISSUES ALTOGETHER - Follow up note, this may not be the best idea 
+
+        # make assert checking that both zero and nonzero loss are not nan at once
+        assert not (torch.isnan(zero_loss) and torch.isnan(nonzero_loss)),"A fatal error has occured in the ACBMSE loss function with both loss values returning NaN, please investigate your inputs to verify they are correct."
+
+        if torch.isnan(zero_loss): # Handles the case where there are no zero pixels in the target image at all
+            avg_weighted_mse_loss = self.nonzero_weighting * nonzero_loss
+        if torch.isnan(nonzero_loss): # Handles the case where there are no nonzero pixels in the target image at all
+            avg_weighted_mse_loss = self.zero_weighting * zero_loss
+        else:
+            avg_weighted_mse_loss = np.mean( [ (self.zero_weighting * zero_loss), (self.nonzero_weighting * nonzero_loss) ] )
+        return avg_weighted_mse_loss
+
+
+# Tripple Loss Functions work across the four classes: True Positive, False Positive, False Negative, True Negative
+#Original Tripple Loss Function (DEPRECIATED)
+# ACB-ClassLoss
+class TrippleLoss(torch.nn.Module):
+
+    def __init__(self, zero_weighting=1, nonzero_weighting=1, ff_weighting=1e-8, time_weighting=1, tp_weighting=1, fp_weighting=1, fn_weighting=1, tn_weighting=1, punishment=0.1, reduction='mean'):
+        """
+        Initializes the ACB-MSE Loss Function class with weighting coefficients.
+
+        Args:
+        - zero_weighting: a scalar weighting coefficient for the MSE loss of zero pixels
+        - nonzero_weighting: a scalar weighting coefficient for the MSE loss of non-zero pixels
+        """
+        super().__init__()   
+        self.TPW = tp_weighting
+        self.FPW = fp_weighting
+        self.FNW = fn_weighting
+        self.TNW = tn_weighting
+        self.time_weight = time_weighting
+        self.ff_weight = ff_weighting
+        self.punishment = punishment
+        self.MSE = torch.nn.MSELoss(reduction=reduction)
+
+
+        
+    def forward(self, reconstructed_image, target_image):
+        """
+        Takes in the clean image and the denoised image and compares them to find the percentages of signal spatial retention, signal temporal retention, and the raw count of false positives and false negatives.
+
+        Args:
+            target_image (torch tensor): The clean image
+            reconstructed_image (torch tensor): The denoised image
+            
+        Returns:
+
+        """
+
+        device = reconstructed_image.device
+        dtype = reconstructed_image.dtype
+
+        # Helper to create device/dtype-safe scalar
+        def scalar(val):
+            return torch.tensor(val, device=device, dtype=dtype) 
+    
+
+        zero_mask = (target_image == 0)           # Genrates a index mask for the zero values in the target image
+        nonzero_mask = ~zero_mask           # Inverts the zero mask to get the non-zero mask from the target image indicating the signal points
+
+        signalmasked_output = reconstructed_image[nonzero_mask]           # detemine how many of the values in the reconstructed image that fall in the nonzero mask are non zero
+        zeromasked_output = reconstructed_image[zero_mask]           # determine how many of the values in the reconstructed image that fall under the zero mask are not zero
+
+        signalmasked_target = target_image[nonzero_mask]
+        zeromasked_target = target_image[zero_mask]
+
+        # Time domain 
+        #time_domain_match_mask = (signalmasked_output == target_image[nonzero_mask])           # determine how many of those indexs have matching ToF values
+        #Time_Match = self.MSE(reconstructed_image[nonzero_mask][time_domain_match_mask], target_image[nonzero_mask][time_domain_match_mask])
+
+        # Spatial domain 
+        ## Signal Masked Output Stats
+        false_negative_mask = (signalmasked_output == 0)   
+        true_positive_mask = ~false_negative_mask        
+    
+        false_negatives = signalmasked_output[false_negative_mask] 
+        true_positives = signalmasked_output[true_positive_mask] 
+
+        FNL = self.MSE(false_negatives, signalmasked_target[false_negative_mask])
+        TPL = self.MSE(true_positives, signalmasked_target[true_positive_mask])
+
+        ## Zero Masked Output Stats
+        true_negative_mask = (zeromasked_output == 0)
+        false_positive_mask = ~true_negative_mask
+        true_negatives = zeromasked_output[true_negative_mask] 
+        false_positives = zeromasked_output[false_positive_mask] 
+
+        TNL = self.MSE(true_negatives, zeromasked_target[true_negative_mask])
+        FPL = self.MSE(false_positives, zeromasked_target[false_positive_mask])
+
+        if torch.isnan(FNL): # Handles the case where there are no nonzero pixels in the target? image at all
+            FNL = scalar(0.0)
+        if torch.isnan(FPL): # Handles the case where there are no nonzero pixels in the target? image at all
+            FPL = scalar(0.0)
+        if torch.isnan(TNL): # Handles the case where there are no zero pixels in the target? image at all
+            TNL = scalar(self.punishment)
+        if torch.isnan(TPL): # Handles the case where there are no zero pixels in the target? image at all
+            TPL = scalar(self.punishment)
+        #if torch.isnan(Time_Match): # Handles the case where there are no signal points with matching time values in the target image at all
+        #    Time_Match = self.punishment
+
+        full_frame_loss = self.MSE(reconstructed_image, target_image)  # ESSENTIALL TIME LOSS ACROSS WHOLE SENSOR
+
+        weighted_loss = (self.TPW * TPL) + (self.FNW * FNL) + (self.FPW * FPL) + (self.TNW * TNL) + (self.ff_weight * full_frame_loss) #+ (self.time_weight * Time_Match)# 
+        
+        return weighted_loss
+
+# Current Tripple Loss Function (...NI = number invarient)- Adds averaging by class count to the weighted loss instead of summing the losses. This balances across the number of classes! now balnced for number of samples per class and also numbe rof classes! Also way to gracefully deela with missing classes. 
+# ACBNI-ClassLoss
+class TrippleLossNI(torch.nn.Module):
+
+    def __init__(self, zero_weighting=1, nonzero_weighting=1, ff_weighting=1e-8, time_weighting=1, tp_weighting=1, fp_weighting=1, fn_weighting=1, tn_weighting=1, punishment=0.1, reduction='mean'):
+        """
+        Initializes the ACB-MSE Loss Function class with weighting coefficients.
+
+        Args:
+        - zero_weighting: a scalar weighting coefficient for the MSE loss of zero pixels
+        - nonzero_weighting: a scalar weighting coefficient for the MSE loss of non-zero pixels
+        """
+        super().__init__()   
+        self.TPW = tp_weighting
+        self.FPW = fp_weighting
+        self.FNW = fn_weighting
+        self.TNW = tn_weighting
+        self.time_weight = time_weighting
+        self.ff_weight = ff_weighting
+        self.punishment = punishment
+        self.MSE = torch.nn.MSELoss(reduction=reduction)
+
+
+        
+    def forward(self, reconstructed_image, target_image):
+        """
+        Takes in the clean image and the denoised image and compares them to find the percentages of signal spatial retention, signal temporal retention, and the raw count of false positives and false negatives.
+
+        Args:
+            target_image (torch tensor): The clean image
+            reconstructed_image (torch tensor): The denoised image
+            
+        Returns:
+
+        """
+
+        device = reconstructed_image.device
+        dtype = reconstructed_image.dtype
+
+        # Helper to create device/dtype-safe scalar
+        def scalar(val):
+            return torch.tensor(val, device=device, dtype=dtype) 
+    
+
+        zero_mask = (target_image == 0)           # Genrates a index mask for the zero values in the target image
+        nonzero_mask = ~zero_mask           # Inverts the zero mask to get the non-zero mask from the target image indicating the signal points
+
+        signalmasked_output = reconstructed_image[nonzero_mask]           # detemine how many of the values in the reconstructed image that fall in the nonzero mask are non zero
+        zeromasked_output = reconstructed_image[zero_mask]           # determine how many of the values in the reconstructed image that fall under the zero mask are not zero
+
+        signalmasked_target = target_image[nonzero_mask]
+        zeromasked_target = target_image[zero_mask]
+
+        # Time domain 
+        #time_domain_match_mask = (signalmasked_output == target_image[nonzero_mask])           # determine how many of those indexs have matching ToF values
+        #Time_Match = self.MSE(reconstructed_image[nonzero_mask][time_domain_match_mask], target_image[nonzero_mask][time_domain_match_mask])
+
+        # Spatial domain 
+        ## Signal Masked Output Stats
+        false_negative_mask = (signalmasked_output == 0)   
+        true_positive_mask = ~false_negative_mask        
+    
+        false_negatives = signalmasked_output[false_negative_mask] 
+        true_positives = signalmasked_output[true_positive_mask] 
+
+        FNL = self.MSE(false_negatives, signalmasked_target[false_negative_mask])
+        TPL = self.MSE(true_positives, signalmasked_target[true_positive_mask])
+
+        ## Zero Masked Output Stats
+        true_negative_mask = (zeromasked_output == 0)
+        false_positive_mask = ~true_negative_mask
+        true_negatives = zeromasked_output[true_negative_mask] 
+        false_positives = zeromasked_output[false_positive_mask] 
+
+        TNL = self.MSE(true_negatives, zeromasked_target[true_negative_mask])
+        FPL = self.MSE(false_positives, zeromasked_target[false_positive_mask])
+
+        # THIS SECTION SHOULD BE REMOVED IN FAVOU OF CHECKING THE LENGTHS OF THE FALSE/TRUE POS/NEG TENSORS BBEFORE TRYING TO CALCULATE MSE, THOSE THAT ARE OF 0 LENGTH SHOUd JUST BE LEFT OUT OF THE CALULATION AND THE AVARGING OVER CLASSES DEALW ITH IT GRACEFULLY
+        if torch.isnan(FNL): # Handles the case where there are no nonzero pixels in the target? image at all
+            FNL = scalar(0.0)
+        if torch.isnan(FPL): # Handles the case where there are no nonzero pixels in the target? image at all
+            FPL = scalar(0.0)
+        if torch.isnan(TNL): # Handles the case where there are no zero pixels in the target? image at all
+            TNL = scalar(0.0)
+        if torch.isnan(TPL): # Handles the case where there are no zero pixels in the target? image at all
+            TPL = scalar(0.0)
+        #if torch.isnan(Time_Match): # Handles the case where there are no signal points with matching time values in the target image at all
+        #    Time_Match = self.punishment
+
+        full_frame_loss = self.MSE(reconstructed_image, target_image)  # ESSENTIALLy TIME LOSS ACROSS WHOLE SENSOR
+
+        avg_weighted_loss = np.mean( [(self.TPW * TPL), (self.FNW * FNL), (self.FPW * FPL), (self.TNW * TNL), (self.ff_weight * full_frame_loss)] )
+        return avg_weighted_loss
+
+# Experimental Tripple Loss Function (..._CS = carrot & stick) - Builds on TrippleLossNI. Now the false detetctions classes are added to the mean of the rest so act as punishments 
+# ACBNI-ClassLoss-CS
+class TrippleLossNI_CS(torch.nn.Module):
+
+    def __init__(self, zero_weighting=1, nonzero_weighting=1, ff_weighting=1e-8, time_weighting=1, tp_weighting=1, fp_weighting=1, fn_weighting=1, tn_weighting=1, punishment=0.1, reduction='mean'):
+        """
+        Initializes the ACB-MSE Loss Function class with weighting coefficients.
+
+        Args:
+        - zero_weighting: a scalar weighting coefficient for the MSE loss of zero pixels
+        - nonzero_weighting: a scalar weighting coefficient for the MSE loss of non-zero pixels
+        """
+        super().__init__()   
+        self.TPW = tp_weighting
+        self.FPW = fp_weighting
+        self.FNW = fn_weighting
+        self.TNW = tn_weighting
+        self.time_weight = time_weighting
+        self.ff_weight = ff_weighting
+        self.punishment = punishment
+        self.MSE = torch.nn.MSELoss(reduction=reduction)
+
+
+        
+    def forward(self, reconstructed_image, target_image):
+        """
+        Takes in the clean image and the denoised image and compares them to find the percentages of signal spatial retention, signal temporal retention, and the raw count of false positives and false negatives.
+
+        Args:
+            target_image (torch tensor): The clean image
+            reconstructed_image (torch tensor): The denoised image
+            
+        Returns:
+
+        """
+
+        device = reconstructed_image.device
+        dtype = reconstructed_image.dtype
+
+        # Helper to create device/dtype-safe scalar
+        def scalar(val):
+            return torch.tensor(val, device=device, dtype=dtype) 
+    
+
+        zero_mask = (target_image == 0)           # Genrates a index mask for the zero values in the target image
+        nonzero_mask = ~zero_mask           # Inverts the zero mask to get the non-zero mask from the target image indicating the signal points
+
+        signalmasked_output = reconstructed_image[nonzero_mask]           # detemine how many of the values in the reconstructed image that fall in the nonzero mask are non zero
+        zeromasked_output = reconstructed_image[zero_mask]           # determine how many of the values in the reconstructed image that fall under the zero mask are not zero
+
+        signalmasked_target = target_image[nonzero_mask]
+        zeromasked_target = target_image[zero_mask]
+
+        # Time domain 
+        #time_domain_match_mask = (signalmasked_output == target_image[nonzero_mask])           # determine how many of those indexs have matching ToF values
+        #Time_Match = self.MSE(reconstructed_image[nonzero_mask][time_domain_match_mask], target_image[nonzero_mask][time_domain_match_mask])
+
+        # Spatial domain 
+        ## Signal Masked Output Stats
+        false_negative_mask = (signalmasked_output == 0)   
+        true_positive_mask = ~false_negative_mask        
+    
+        false_negatives = signalmasked_output[false_negative_mask] 
+        true_positives = signalmasked_output[true_positive_mask] 
+
+        FNL = self.MSE(false_negatives, signalmasked_target[false_negative_mask])
+        TPL = self.MSE(true_positives, signalmasked_target[true_positive_mask])
+
+        ## Zero Masked Output Stats
+        true_negative_mask = (zeromasked_output == 0)
+        false_positive_mask = ~true_negative_mask
+        true_negatives = zeromasked_output[true_negative_mask] 
+        false_positives = zeromasked_output[false_positive_mask] 
+
+        TNL = self.MSE(true_negatives, zeromasked_target[true_negative_mask])
+        FPL = self.MSE(false_positives, zeromasked_target[false_positive_mask])
+
+        # THIS SECTION SHOULD BE REMOVED IN FAVOU OF CHECKING THE LENGTHS OF THE FALSE/TRUE POS/NEG TENSORS BBEFORE TRYING TO CALCULATE MSE, THOSE THAT ARE OF 0 LENGTH SHOUd JUST BE LEFT OUT OF THE CALULATION AND THE AVARGING OVER CLASSES DEALW ITH IT GRACEFULLY
+        if torch.isnan(FNL): # Handles the case where there are no nonzero pixels in the target? image at all
+            FNL = scalar(0.0)
+        if torch.isnan(FPL): # Handles the case where there are no nonzero pixels in the target? image at all
+            FPL = scalar(0.0)
+        if torch.isnan(TNL): # Handles the case where there are no zero pixels in the target? image at all
+            TNL = scalar(0.0)
+        if torch.isnan(TPL): # Handles the case where there are no zero pixels in the target? image at all
+            TPL = scalar(0.0)
+        #if torch.isnan(Time_Match): # Handles the case where there are no signal points with matching time values in the target image at all
+        #    Time_Match = self.punishment
+
+        full_frame_loss = self.MSE(reconstructed_image, target_image)  # ESSENTIALLy TIME LOSS ACROSS WHOLE SENSOR
+
+        avg_weighted_loss = np.mean( [(self.TPW * TPL), (self.TNW * TNL), (self.ff_weight * full_frame_loss)] ) + (self.FNW * FNL) + (self.FPW * FPL) # False detetctions are added to the mean sum, now they act as punishments!
+        return avg_weighted_loss
+
+# Experimental Tripple Loss Function - Adds
 
 ##### NEW NEW NEW !!!
 class NEWESTACB3dloss2024(torch.nn.Module):
@@ -127,246 +522,6 @@ class ada_weighted_custom_split_loss(torch.nn.Module):
         
         return weighted_split_loss
 
-
-class ACBLoss(torch.nn.Module):
-    def __init__(self, zero_weighting=1, nonzero_weighting=1, reduction='mean'):
-        """
-        Initializes the ACB-MSE Loss Function class with weighting coefficients.
-
-        Args:
-        - zero_weighting: a scalar weighting coefficient for the MSE loss of zero pixels
-        - nonzero_weighting: a scalar weighting coefficient for the MSE loss of non-zero pixels
-        """
-        super().__init__()   
-        self.zero_weighting = zero_weighting
-        self.nonzero_weighting = nonzero_weighting
-        self.mse_loss = torch.nn.MSELoss(reduction=reduction)
-        self.reduction = reduction
-
-    def forward(self, reconstructed_image, target_image):
-        """
-        Calculates the weighted mean squared error (MSE) loss between target_image and reconstructed_image.
-        The loss for zero pixels in the target_image is weighted by zero_weighting, and the loss for non-zero
-        pixels is weighted by nonzero_weighting.
-
-        Args:
-        - target_image: a tensor of shape (B, C, H, W) containing the target image
-        - reconstructed_image: a tensor of shape (B, C, H, W) containing the reconstructed image
-
-        Returns:
-        - weighted_mse_loss: a scalar tensor containing the weighted MSE loss
-        """
-        zero_mask = (target_image == 0)
-        nonzero_mask = ~zero_mask
-
-        zero_loss = self.mse_loss(reconstructed_image[zero_mask], target_image[zero_mask])
-        nonzero_loss = self.mse_loss(reconstructed_image[nonzero_mask], target_image[nonzero_mask])
-    
-
-        #print("Reduction is none")
-        #output = torch.zeros_like(target_image)
-        #output[zero_mask] = zero_loss * self.zero_weighting
-        #output[nonzero_mask] = nonzero_loss * self.nonzero_weighting
-        #return output
-        
-    
-        # make assert checking that both zero and nonzero loss are not nan at once
-        assert not (torch.isnan(zero_loss) and torch.isnan(nonzero_loss)),"A fatal error has occured in the ACBMSE loss function with both loss values returning NaN, please investigate your inputs to verify they are correct."
-
-        if torch.isnan(zero_loss): # Handles the case where there are no zero pixels in the target image at all
-            zero_loss = 0
-        if torch.isnan(nonzero_loss): # Handles the case where there are no nonzero pixels in the target image at all
-            nonzero_loss = 0
-
-        weighted_mse_loss = (self.zero_weighting * zero_loss) + (self.nonzero_weighting * nonzero_loss)
-        
-        return weighted_mse_loss
-
-
-
-class TrippleLoss(torch.nn.Module):
-    def __init__(self, zero_weighting=1, nonzero_weighting=1, ff_weighting=1e-8, time_weighting=1, tp_weighting=1, fp_weighting=1, fn_weighting=1, tn_weighting=1, punishment=0.1, reduction='mean'):
-        """
-        Initializes the ACB-MSE Loss Function class with weighting coefficients.
-
-        Args:
-        - zero_weighting: a scalar weighting coefficient for the MSE loss of zero pixels
-        - nonzero_weighting: a scalar weighting coefficient for the MSE loss of non-zero pixels
-        """
-        super().__init__()   
-        self.TPW = tp_weighting
-        self.FPW = fp_weighting
-        self.FNW = fn_weighting
-        self.TNW = tn_weighting
-        self.time_weight = time_weighting
-        self.ff_weight = ff_weighting
-        self.punishment = punishment
-        self.MSE = torch.nn.MSELoss(reduction=reduction)
-
-
-        
-    def forward(self, reconstructed_image, target_image):
-        """
-        Takes in the clean image and the denoised image and compares them to find the percentages of signal spatial retention, signal temporal retention, and the raw count of false positives and false negatives.
-
-        Args:
-            target_image (torch tensor): The clean image
-            reconstructed_image (torch tensor): The denoised image
-            
-        Returns:
-
-        """
-
-        device = reconstructed_image.device
-        dtype = reconstructed_image.dtype
-
-        # Helper to create device/dtype-safe scalar
-        def scalar(val):
-            return torch.tensor(val, device=device, dtype=dtype) 
-    
-
-        zero_mask = (target_image == 0)           # Genrates a index mask for the zero values in the target image
-        nonzero_mask = ~zero_mask           # Inverts the zero mask to get the non-zero mask from the target image indicating the signal points
-
-        signalmasked_output = reconstructed_image[nonzero_mask]           # detemine how many of the values in the reconstructed image that fall in the nonzero mask are non zero
-        zeromasked_output = reconstructed_image[zero_mask]           # determine how many of the values in the reconstructed image that fall under the zero mask are not zero
-
-        signalmasked_target = target_image[nonzero_mask]
-        zeromasked_target = target_image[zero_mask]
-
-        # Time domain 
-        #time_domain_match_mask = (signalmasked_output == target_image[nonzero_mask])           # determine how many of those indexs have matching ToF values
-        #Time_Match = self.MSE(reconstructed_image[nonzero_mask][time_domain_match_mask], target_image[nonzero_mask][time_domain_match_mask])
-
-        # Spatial domain 
-        ## Signal Masked Output Stats
-        false_negative_mask = (signalmasked_output == 0)   
-        true_positive_mask = ~false_negative_mask        
-    
-        false_negatives = signalmasked_output[false_negative_mask] 
-        true_positives = signalmasked_output[true_positive_mask] 
-
-        FNL = self.MSE(false_negatives, signalmasked_target[false_negative_mask])
-        TPL = self.MSE(true_positives, signalmasked_target[true_positive_mask])
-
-        ## Zero Masked Output Stats
-        true_negative_mask = (zeromasked_output == 0)
-        false_positive_mask = ~true_negative_mask
-        true_negatives = zeromasked_output[true_negative_mask] 
-        false_positives = zeromasked_output[false_positive_mask] 
-
-        TNL = self.MSE(true_negatives, zeromasked_target[true_negative_mask])
-        FPL = self.MSE(false_positives, zeromasked_target[false_positive_mask])
-
-        if torch.isnan(FNL): # Handles the case where there are no nonzero pixels in the target? image at all
-            FNL = scalar(0.0)
-        if torch.isnan(FPL): # Handles the case where there are no nonzero pixels in the target? image at all
-            FPL = scalar(0.0)
-        if torch.isnan(TNL): # Handles the case where there are no zero pixels in the target? image at all
-            TNL = scalar(self.punishment)
-        if torch.isnan(TPL): # Handles the case where there are no zero pixels in the target? image at all
-            TPL = scalar(self.punishment)
-        #if torch.isnan(Time_Match): # Handles the case where there are no signal points with matching time values in the target image at all
-        #    Time_Match = self.punishment
-
-        full_frame_loss = self.MSE(reconstructed_image, target_image)  # ESSENTIALL TIME LOSS ACROSS WHOLE SENSOR
-
-        weighted_loss = (self.TPW * TPL) + (self.FNW * FNL) + (self.FPW * FPL) + (self.TNW * TNL) + (self.ff_weight * full_frame_loss) #+ (self.time_weight * Time_Match)# 
-        
-        return weighted_loss
-
-
-class TrippleLossNEW(torch.nn.Module):
-    def __init__(self, zero_weighting=1, nonzero_weighting=1, ff_weighting=1e-8, time_weighting=1, tp_weighting=1, fp_weighting=1, fn_weighting=1, tn_weighting=1, punishment=0.1, reduction='mean'):
-        """
-        Initializes the ACB-MSE Loss Function class with weighting coefficients.
-
-        Args:
-        - zero_weighting: a scalar weighting coefficient for the MSE loss of zero pixels
-        - nonzero_weighting: a scalar weighting coefficient for the MSE loss of non-zero pixels
-        """
-        super().__init__()   
-        self.TPW = tp_weighting
-        self.FPW = fp_weighting
-        self.FNW = fn_weighting
-        self.TNW = tn_weighting
-        self.time_weight = time_weighting
-        self.ff_weight = ff_weighting
-        self.punishment = punishment
-        self.MSE = torch.nn.MSELoss(reduction=reduction)
-
-
-    def forward(self, reconstructed_image, target_image):
-        # numerically stable and device-aware implementation
-        device = reconstructed_image.device
-        dtype = reconstructed_image.dtype
-        zero_tol = 1e-6
-
-        # masks (using isclose for robust zero detection)
-        zero_mask = torch.isclose(target_image, torch.tensor(0.0, device=device, dtype=dtype), atol=zero_tol)
-        nonzero_mask = ~zero_mask
-
-        # sliced tensors reused
-        recon_non = reconstructed_image[nonzero_mask]
-        targ_non = target_image[nonzero_mask]
-        recon_zero = reconstructed_image[zero_mask]
-        targ_zero = target_image[zero_mask]
-
-        # Helper to create device/dtype-safe scalar
-        def scalar(val):
-            return torch.tensor(val, device=device, dtype=dtype)
-
-        # Time domain: use isclose for matching times
-        if recon_non.numel() == 0:
-            Time_Match = scalar(self.punishment)
-        else:
-            time_match_mask = torch.isclose(recon_non, targ_non, atol=1e-6)
-            if time_match_mask.any():
-                Time_Match = self.MSE(recon_non[time_match_mask], targ_non[time_match_mask])
-            else:
-                Time_Match = scalar(self.punishment)
-
-        # Spatial domain - signal positions
-        if recon_non.numel() == 0:
-            FNL = scalar(0.0)
-            TPL = scalar(0.0)
-        else:
-            false_negative_mask = torch.isclose(recon_non, scalar(0.0), atol=zero_tol)
-            true_positive_mask = ~false_negative_mask
-
-            if false_negative_mask.any():
-                FNL = self.MSE(recon_non[false_negative_mask], targ_non[false_negative_mask])
-            else:
-                FNL = scalar(0.0)
-
-            if true_positive_mask.any():
-                TPL = self.MSE(recon_non[true_positive_mask], targ_non[true_positive_mask])
-            else:
-                TPL = scalar(0.0)
-
-        # Spatial domain - zero/background positions
-        if recon_zero.numel() == 0:
-            # no background pixels in target; preserve original intent to penalize missing class via punishment
-            TNL = scalar(self.punishment)
-            FPL = scalar(0.0)
-        else:
-            true_negative_mask = torch.isclose(recon_zero, scalar(0.0), atol=zero_tol)
-            false_positive_mask = ~true_negative_mask
-
-            if true_negative_mask.any():
-                TNL = self.MSE(recon_zero[true_negative_mask], targ_zero[true_negative_mask])
-            else:
-                TNL = scalar(0.0)
-
-            if false_positive_mask.any():
-                FPL = self.MSE(recon_zero[false_positive_mask], targ_zero[false_positive_mask])
-            else:
-                FPL = scalar(0.0)
-
-        # Final weighted sum (time & full-frame left optional)
-        weighted_loss = (self.TPW * TPL) + (self.FNW * FNL) + (self.FPW * FPL) + (self.TNW * TNL)
-
-        return weighted_loss
 
 
 class LayeredLoss(torch.nn.Module):

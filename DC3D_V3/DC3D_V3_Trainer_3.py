@@ -1806,7 +1806,8 @@ if __name__ == "__main__":
 
             save_variable(settings, "settings", raw_plotdata_output_dir)
 
-            save_variable(detailed_performance_loss_dict, "detailed_performance_loss", raw_plotdata_output_dir)
+        # This one we will always save as its neccesary to compare models across different training runs that do not have equivelent loss fucntion scales.
+        save_variable(detailed_performance_loss_dict, "detailed_performance_loss", raw_plotdata_output_dir)
 
 
         #%% - Output Visulisations
