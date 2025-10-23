@@ -1,4 +1,5 @@
 from audioop import avg
+from calendar import c
 import signal
 import torch
 
@@ -277,7 +278,6 @@ class TrippleLossNI(torch.nn.Module):
         FPL = self.MSE(false_positives, zeromasked_target[false_positive_mask])
 
 
-        full_frame_loss = self.MSE(reconstructed_image, target_image)  # ESSENTIALLy TIME LOSS ACROSS WHOLE SENSOR
 
         all_classes = {    # Full frame not included as it always exists
             'FNL': FNL * self.FNW, # Has no effect on the nan check and is simpler to do this here then later
@@ -291,8 +291,10 @@ class TrippleLossNI(torch.nn.Module):
         if len(present_classes) == 0:
             raise ValueError("A fatal error has occured in the TrippleLossNI_CS loss function with all loss values returning NaN, please investigate your inputs to verify they are correct.")
         
-        # Add the FFL to the present classes as it always exists
-        present_classes['FFL'] = full_frame_loss * self.ff_weight
+        if self.ff_weight > 0:
+            # Add the FFL to the present classes as it always exists
+            full_frame_loss = self.MSE(reconstructed_image, target_image)  # ESSENTIALLy TIME LOSS ACROSS WHOLE SENSOR
+            present_classes['FFL'] = full_frame_loss * self.ff_weight
 
         avg_weighted_loss = torch.mean(torch.stack(list(present_classes.values())))
 
@@ -313,10 +315,10 @@ class TrippleLossNI_CS(torch.nn.Module):
         - tn_weighting: a scalar weighting coefficient for the MSE loss of true negatives
         """
         super().__init__()   
-        self.TPW = tp_weighting
-        self.FPW = fp_weighting
-        self.FNW = fn_weighting
-        self.TNW = tn_weighting
+        self.TPW = tp_weighting # True Positives - This is the time domain (and also in space)
+        self.FPW = fp_weighting # This is model hallucination/noise/distortion in the space domain
+        self.FNW = fn_weighting # This is signal in the space domain
+        self.TNW = tn_weighting # This is no signal in the space domain
         self.ff_weight = ff_weighting
         self.MSE = torch.nn.MSELoss(reduction='mean')
         
@@ -359,7 +361,7 @@ class TrippleLossNI_CS(torch.nn.Module):
         TNL = self.MSE(true_negatives, zeromasked_target[true_negative_mask])
         FPL = self.MSE(false_positives, zeromasked_target[false_positive_mask])
 
-        full_frame_loss = self.MSE(reconstructed_image, target_image)  # ESSENTIALLy TIME LOSS ACROSS WHOLE SENSOR
+
 
         all_classes = {    # Full frame not included as it always exists
             'FNL': FNL * self.FNW, # Has no effect on the nan check and is simpler to do this here then later
@@ -373,8 +375,12 @@ class TrippleLossNI_CS(torch.nn.Module):
         if len(present_classes) == 0:
             raise ValueError("A fatal error has occured in the TrippleLossNI_CS loss function with all loss values returning NaN, please investigate your inputs to verify they are correct.")
 
-        # Add the FFL to the present classes as it always exists
-        present_classes['FFL'] = full_frame_loss * self.ff_weight
+        if self.ff_weight > 0: # IF not needed we can save on this computation step
+                    
+            full_frame_loss = self.MSE(reconstructed_image, target_image)  # ESSENTIALLy TIME LOSS ACROSS WHOLE SENSOR
+            
+            # Add the FFL to the present classes as it always exists
+            present_classes['FFL'] = full_frame_loss * self.ff_weight
 
         # create the mean tensor excluding false detections
         mean_classes = {k: v for k, v in present_classes.items() if k not in ['FNL', 'FPL']}
