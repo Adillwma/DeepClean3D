@@ -18,11 +18,11 @@ Possible improvements:
 
 #### ~~~~
 
-#### ~~~~
+#### ~~~~ [DONE!] Fix issue in the time scale of the 3d plots?? seems non linear and also goes to 5000!?
 
-#### ~~~~
+#### ~~~~ Autodetect counters file on drive and if not found then create from fresh!
 
-#### ~~~~ Investigate discrepency between detailed performance metrics and the histogram + above/bbelow graphs for recon and detetcions
+#### ~~~~ Investigate discrepency between detailed performance metrics and the histogram + above/bbelow graphs for recon and detetcions --- THIS MAY BE DUE TO THE ACTUAL TARGET NOT HAVING 300 PIX IN IT AS WE USE THE SINGAAL POINTS USER SETTING IN THE GRAPHS, THE ACTUAL VALUE COULD BE LOWER IF THE TARGET STRATED WITH LESS THAN 300 BEFORE DEGREDATION!!!!
 
 #### ~~~~ update the plots to get more 3D plots and also to show 3D from birds eye view underneat each one
 
@@ -516,9 +516,9 @@ history_da = {'train_loss':[], 'test_loss':[], 'val_loss':[], 'HTO_val':[], 'tra
 max_epoch_reached = 0                                                                                # In case user exits before end of first epoch 
 
 # Physical scaling parameters for plotting
-time_scale = time_dimension / time_length                                                            # ns per t pixel   # MOVE THESE LINES ELSEWHERE TO CLEAN UP
-x_scale = xdim / x_length                                                                            # mm per x pixel
-y_scale = ydim / y_length                                                                            # mm per y pixel
+time_scale = time_length / time_dimension                                                            # ns per t pixel   # MOVE THESE LINES ELSEWHERE TO CLEAN UP
+x_scale =  x_length / xdim                                                                          # mm per x pixel
+y_scale = y_length / ydim                                                                          # mm per y pixel
 physical_scale_parameters = [x_scale, y_scale, time_scale]
 
 input_signal_settings = [signal_points, x_std_dev, y_std_dev, tof_std_dev, noise_points] #move!
@@ -760,9 +760,9 @@ def plot_epoch_data(end_of_epoch_plotting_data, epoch, model_save_name, time_dim
     
     """
     Plots the output of the autoencoder in a variety of ways to track its perfromance and abilities during the training cycle. 
-
+    
     Args:
-        end_of_epoch_plotting_data (torch tensor): The image batch. Shape [5, B=1, C=1, H, W]
+        end_of_epoch_plotting_data (torch tensor): The image batch. Shape [6, B=n, C=1, H, W]
         epoch (int): The current epoch number
         model_save_name (str): The name of the model being trained
         time_dimension (int): The number of time steps in the data set, used to set the upper limit of the noise point values amonst other things. Default = 100
@@ -878,49 +878,61 @@ def plot_epoch_data(end_of_epoch_plotting_data, epoch, model_save_name, time_dim
     in_im_3d, sparse_im, reslim_im, noise_im, rec_im_3d, masked_im = reconstruct_3D(in_im.squeeze(0), sparse_im.squeeze(0), reslim_im.squeeze(0), noise_im.squeeze(0), rec_im.squeeze(0), masked_im.squeeze(0)) #reconstructs the 3D image using the reconstruct_3D function
 
     # 3D Plottting
-    if rec_im.ndim != 1:                       # Checks if there are actually values in the reconstructed image, if not no image is aseved/plotted
+    if rec_im.ndim != 1:                       # Checks if there are actually values in the reconstructed image, if not no image is saved/plotted
         fig, axs = plt.subplots(2, 3, figsize=(32,20), subplot_kw={'projection': '3d'})
         ax1, ax2, ax3, ax4, ax5, ax6 = axs.flatten()
         fig.suptitle(f"3D Reconstruction - Epoch {epoch}") #sets the title of the plot
 
         ax1.set_title("Input Image") #sets the title of the plot
-        ax1.scatter(in_im_3d[:,0], in_im_3d[:,1], in_im_3d[:,2]) #plots the 3D scatter plot for input 
-
         ax2.set_title("Sparse Image") #sets the title of the plot
-        ax2.scatter(sparse_im[:,0], sparse_im[:,1], sparse_im[:,2]) #plots the 3D scatter plot for sparse image
-    
         ax3.set_title("Resolution Limited Image") #sets the title of the plot
-        ax3.scatter(reslim_im[:,0], reslim_im[:,1], reslim_im[:,2]) #plots the 3D scatter plot for reslim image
-
         ax4.set_title("Noised Image") #sets the title of the plot
-        ax4.scatter(noise_im[:,0], noise_im[:,1], noise_im[:,2]) #plots the 3D scatter plot for noised image
-
         ax5.set_title("Reconstructed Image") #sets the title of the plot
-        ax5.scatter(rec_im_3d[:,0], rec_im_3d[:,1], rec_im_3d[:,2]) #plots the 3D scatter plot for reconstructed image
+        ax6.set_title("Masked Reconstructed Image") #sets the title of the plot
 
-        try: ## NOTE THIS ERROR NEEDS FIXING. IT IS CAUSED BY A SITUATION WHERE DATA DOES COME BACK THAT IS GREATER THAN THE RECON CUTTOFF SO 3D PLOTS ARE GENERATED HOWVER NO POINTS LIE IN CORRECT PLACE FOR MASKING SO THE MASK CONTAINS NOTHING. THEN THE MASK WILL BE WRONG DIMS AND CASUE THE PLOT ERROR HERE. FIX
-            ax6.set_title("Masked Reconstructed Image") #sets the title of the plot
-            ax6.scatter(masked_im[:,0], masked_im[:,1], masked_im[:,2]) #plots the 3D scatter plot for masked image
-        except:
-            print("ERROR OCCURED IN MASKING 3D PLOT! INVESTIGATE!")
+        if use_physical_values_for_plot_axis:
+            ax1.scatter(in_im_3d[:,0] * physical_scale_parameters[0], in_im_3d[:,1] * physical_scale_parameters[1], in_im_3d[:,2] * physical_scale_parameters[2]) #plots the 3D scatter plot for input
+            ax2.scatter(sparse_im[:,0] * physical_scale_parameters[0], sparse_im[:,1] * physical_scale_parameters[1], sparse_im[:,2] * physical_scale_parameters[2]) #plots the 3D scatter plot for sparse image
+            ax3.scatter(reslim_im[:,0] * physical_scale_parameters[0], reslim_im[:,1] * physical_scale_parameters[1], reslim_im[:,2] * physical_scale_parameters[2]) #plots the 3D scatter plot for reslim image
+            ax4.scatter(noise_im[:,0] * physical_scale_parameters[0], noise_im[:,1] * physical_scale_parameters[1], noise_im[:,2] * physical_scale_parameters[2]) #plots the 3D scatter plot for noised image
+            ax5.scatter(rec_im_3d[:,0] * physical_scale_parameters[0], rec_im_3d[:,1] * physical_scale_parameters[1], rec_im_3d[:,2] * physical_scale_parameters[2]) #plots the 3D scatter plot for reconstructed image
+            try: ## NOTE THIS ERROR NEEDS FIXING. IT IS CAUSED BY A SITU
+                ax6.scatter(masked_im[:,0] * physical_scale_parameters[0], masked_im[:,1] * physical_scale_parameters[1], masked_im[:,2] * physical_scale_parameters[2]) #plots the 3D scatter plot for masked image
+            except:
+                print("ERROR OCCURED IN MASKING 3D PLOT! INVESTIGATE!")
+
+        else:
+            ax1.scatter(in_im_3d[:,0], in_im_3d[:,1], in_im_3d[:,2]) #plots the 3D scatter plot for input 
+            ax2.scatter(sparse_im[:,0], sparse_im[:,1], sparse_im[:,2]) #plots the 3D scatter plot for sparse image
+            ax3.scatter(reslim_im[:,0], reslim_im[:,1], reslim_im[:,2]) #plots the 3D scatter plot for reslim image
+            ax4.scatter(noise_im[:,0], noise_im[:,1], noise_im[:,2]) #plots the 3D scatter plot for noised image
+            ax5.scatter(rec_im_3d[:,0], rec_im_3d[:,1], rec_im_3d[:,2]) #plots the 3D scatter plot for reconstructed image
+            try: ## NOTE THIS ERROR NEEDS FIXING. IT IS CAUSED BY A SITUATION WHERE DATA DOES COME BACK THAT IS GREATER THAN THE RECON CUTTOFF SO 3D PLOTS ARE GENERATED HOWVER NO POINTS LIE IN CORRECT PLACE FOR MASKING SO THE MASK CONTAINS NOTHING. THEN THE MASK WILL BE WRONG DIMS AND CASUE THE PLOT ERROR HERE. FIX
+                ax6.scatter(masked_im[:,0], masked_im[:,1], masked_im[:,2]) #plots the 3D scatter plot for masked image
+            except:
+                print("ERROR OCCURED IN MASKING 3D PLOT! INVESTIGATE!")
 
 
         for ax in [ax1, ax2, ax3, ax4, ax5, ax6]:
-            ax.set_zlim(0, time_dimension)
-            ax.set_xlim(0, 128)
-            ax.set_ylim(0, 88)
-        
             if use_physical_values_for_plot_axis:
+                ax.set_xlim(0, 88 * physical_scale_parameters[0])
+                ax.set_ylim(0, 128 * physical_scale_parameters[1])
+                ax.set_zlim(0, time_dimension * physical_scale_parameters[2])  # Set z-axis limits based on physical scale
+
                 # Set axis labels
                 ax.set_xlabel('x (mm)')
                 ax.set_ylabel('y (mm)')
                 ax.set_zlabel('time (ns)')
-                # Apply tick format conversion for x, y, and z axes from 'pixels' to physical values
-                ax.xaxis.set_major_formatter(FuncFormatter(lambda x_scale, tick_number: tick_number * x_scale))
-                ax.yaxis.set_major_formatter(FuncFormatter(lambda y_scale, tick_number: tick_number * y_scale))
-                ax.zaxis.set_major_formatter(FuncFormatter(lambda time_scale, tick_number: tick_number * time_scale))
+                # # Apply tick format conversion for x, y, and z axes from 'pixels' to physical values
+                # ax.xaxis.set_major_formatter(FuncFormatter(lambda x_scale, tick_number: tick_number * x_scale))
+                # ax.yaxis.set_major_formatter(FuncFormatter(lambda y_scale, tick_number: tick_number * y_scale))
+                # ax.zaxis.set_major_formatter(FuncFormatter(lambda time_scale, tick_number: tick_number * time_scale))
             
             else:
+                ax.set_xlim(0, 88)
+                ax.set_ylim(0, 128)
+                ax.set_zlim(0, time_dimension)
+
                 # Set axis labels
                 ax.set_xlabel('x (pixels)')
                 ax.set_ylabel('y (pixels)')
