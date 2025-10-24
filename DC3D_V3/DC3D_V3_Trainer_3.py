@@ -6,6 +6,7 @@
 
 #from pickle import FALSE  #??? 
 #from sympy import use   ##???
+from xml.etree.ElementInclude import include
 import torch
 
 """
@@ -21,11 +22,11 @@ Possible improvements:
 
 #### ~~~~
 
-#### ~~~~
+#### ~~~~ Investigate discrepency between detailed performance metrics and the histogram + above/bbelow graphs for recon and detetcions
 
-#### ~~~~
+#### ~~~~ update the plots to get more 3D plots and also to show 3D from birds eye view underneat each one
 
-#### ~~~~
+#### ~~~~ Make a scheduler that allows for input parameter updates at set epoch schedules e.g singal points, etc 
 
 #### ~~~~ Fix the belif telemety output to be integer as described, make sure all downstream is okay with it not being a tensor anymore!
 
@@ -201,7 +202,7 @@ dataset_paths = [#"N:/DeepClean3D Project Folder/Yr 3 Project Datasets/V3_PDT_10
 counters_local_filepath = 'DC3D_V3/Local_Program_Data/counters.json'
 
 #%% - Data Path Settings
-model_save_name = "Long150K_AdamW"      # Name of the model to be saved, this will be the name of the folder that the model is saved in
+model_save_name = "Long150K_DC3Dv1_5"      # Name of the model to be saved, this will be the name of the folder that the model is saved in
 model_checkpoint_interval = 20               # Number of epochs between each model checkpoint save, set to False for no checkpointing. If set to a value then the model will save a checkpoint of the model and optimiser state dicts at the end of each 'model_checkpointing_interval' epochs
 timeout_time = False                         # Time in minuits to wait before stopping training, set to False to disable time based stopping. {Default = False}. NOTE! Program will allow the epoch currently in progress to conclude before stopping.
 
@@ -268,14 +269,14 @@ nonzero_weighting = 1#0.4 #0.4                          # Set non zero weighting
 
 # Weights used for ACBMSE, Triple loss and varients
 time_weighting = 1                                      # Set time weighting for ffACBMSE (Hyperparameter) [# Only used for ffACBMSE loss function]
-tp_weighting = 8                                        # Set time point weighting for ffACBMSE (Hyperparameter) [# Only used for ffACBMSE loss function]
+tp_weighting = 8 # Having this reletivly higher puts extra weight on correct  time values for real signal points                                       # Set time point weighting for ffACBMSE (Hyperparameter) [# Only used for ffACBMSE loss function]
 tn_weighting = 1                                        # Set frame point weighting for ffACBMSE (Hyperparameter) [# Only used for ffACBMSE loss function]
 fp_weighting = 1                                        # Set frame point weighting for ffACBMSE (Hyperparameter) [# Only used for ffACBMSE loss function]
-fn_weighting = 10                                        # Set frame point weighting for ffACBMSE (Hyperparameter) [# Only used for ffACBMSE loss function]
-loss_penalty = 0.1
-loss_reduction = 'mean'
-fullframe_weighting = 0.00001 #1.5                         # Set full frame weighting for ffACBMSE (Hyperparameter) [# Only used for ffACBMSE loss function]
-ff_loss = 'mse'                                         # Set loss function for full frame loss (Hyperparameter) [# Only used for ffACBMSE loss function] # "MAE", "MSE", "SSE", "BCE"
+fn_weighting = 10  # Having this reletivly higher puts exta punishment on not getting the signal points correct (this is to counter the pressure of a high tp_weighting which means guessing an incorrect time value is highly damaging, this could cause omdel to output all 0's for best loss so punishing this with a larger loss factor.)                                      # Set frame point weighting for ffACBMSE (Hyperparameter) [# Only used for ffACBMSE loss function]
+loss_penalty = 0.1 # DEFUNCT AND NEEDS CLEANING UP DOWNSTREAM
+loss_reduction = 'mean' # DEFUNCT AND NEEDS CLEANING UP DOWNSTREAM
+fullframe_weighting = 0#.00001 #1.5                         # Set full frame weighting for ffACBMSE and other wightewd losses. (If set to 0, bypasses the fullframe calulations for speed)
+ff_loss = 'mse'  # DEFUNCT AND NEEDS CLEANING UP DOWNSTREAM                                       # Set loss function for full frame loss (Hyperparameter) [# Only used for ffACBMSE loss function] # "MAE", "MSE", "SSE", "BCE"
 
 # Selections for split loss function
 zeros_loss_choice = 1                                   # Select loss function for zero values (Hyperparameter): 0 = Maxs_Loss_Func, 1 = torch.nn.MSELoss(), 2 = torch.nn.BCELoss(), 3 = torch.nn.L1Loss(), 4 = ada_SSE_loss
@@ -697,6 +698,11 @@ def create_comparison_plot_data(slide_live_plot_size, epoch, max_epoch_reached, 
     Generates:
         A plot of the live loss data vs epoch number, saved to disk
         A plot of the live loss data vs train time elapsed, saved to disk
+
+        A plot of the live MSE loss data vs epoch number, saved to disk
+        A plot of the live True Positive XY data vs epoch number, saved to disk
+        A plot of the live True Positive ToF data vs epoch number, saved to disk
+        A plot of the live False Positive XY data vs epoch number, saved to disk
     """
 
     ## Slide View
@@ -728,11 +734,24 @@ def create_comparison_plot_data(slide_live_plot_size, epoch, max_epoch_reached, 
             y_list.append(loss_dictionary['train_loss'])
     
     ## Create plots
-    # can have if staments here for protin time and epochs etc
+    # can have if staments here for protin time and epochs etc?
     Out_Label1 = dir + f'{model_save_name} - Live Train loss.png'
     comparitive_loss_plot(x_list_epochs, y_list, legend_label_list, "Epoch number", "Train loss (ACB-MSE)", "Live Training loss", Out_Label1, plot_or_save)
     Out_Label2 = dir + f'{model_save_name} - Live time loss.png'
     comparitive_loss_plot(x_list_time, y_list, legend_label_list, "Time (s)", "Train loss (ACB-MSE)", "Live Time loss", Out_Label2, plot_or_save)
+
+    # Also plots MSE as a way to compare between different runs as loss function and parameter changes make using loss a bad measure. ### ADD ABILITY TO GET COMPARATIVE PLOTS FOR THIS TOO!
+    Out_Label3 = dir + f'{model_save_name} - Live Train MSE loss.png'
+    comparitive_loss_plot(x_list_epochs, avg_loss_mse, legend_label_list, "Epoch number", "Train loss (MSE)", "Live Training MSE loss", Out_Label3, plot_or_save) # avg_loss_mse is a globbal var , bbut hte system need overhaulinng!
+
+    # Adds the true perfromance metric plots 
+    Out_Label4 = dir + f'{model_save_name} - Live True Positive XY.png'
+    comparitive_loss_plot(x_list_epochs, avg_loss_true_positive_xy, legend_label_list, "Epoch number", "True Positive XY (%)", "Live True Positive XY", Out_Label4, plot_or_save)
+    Out_Label5 = dir + f'{model_save_name} - Live True Positive ToF.png'
+    comparitive_loss_plot(x_list_epochs, avg_loss_true_positive_tof, legend_label_list, "Epoch number", "True Positive ToF (%)", "Live True Positive ToF", Out_Label5, plot_or_save)    
+    Out_Label6 = dir + f'{model_save_name} - Live False Positive XY.png'
+    comparitive_loss_plot(x_list_epochs, avg_loss_false_positive_xy, legend_label_list, "Epoch number", "False Positive XY (num)", "Live False Positive XY", Out_Label6, plot_or_save)
+
 
 #%% - Train, Test, Val and Plot Functions
 
@@ -1715,7 +1734,7 @@ if __name__ == "__main__":
 
                 loop_range.set_postfix({'Train Loss': train_loss, 'Test Loss': test_loss})
 
-
+                # Plotting Data
                 if epoch % print_every_other == 0 and epoch != 0:         
                     execution_timer.record_time(event_name="Plotting Function", event_type="start") #records the time the program started           
                     # Run plotting function for training feedback and telemetry.
