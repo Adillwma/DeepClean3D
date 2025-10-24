@@ -270,7 +270,7 @@ def compare_images_pixels(target_image, reconstructed_image, debug_mode=False):
     if debug_mode:
         print("False negative count: ", false_negative_count_raw)
 
-    return signal_spatial_retention_percentage, signal_temporal_retention_percentage, false_positive_count_raw, false_negative_count_raw
+    return signal_spatial_retention_percentage, signal_temporal_retention_percentage, false_positive_count_raw, false_negative_count_raw, signal_spatial_retention_raw, signal_temporal_retention_raw
 
 
 def image_loader(input_image_path):
@@ -293,11 +293,13 @@ def quantify_performance(clean_input, noised_target, label, debug_mode=False):
     performance['SSIM'] = SSIM(clean_input, noised_target)
     performance['Normalised Mutual Information'] = NomalisedMutualInformation(clean_input, noised_target)    #BROKEN
     performance['Correlation Coefficient'] = correlation_coeff(clean_input, noised_target)
-    percentage_of_true_positive_xy, percentage_of_true_positive_tof, numof_false_positives_xy, num_of_false_negative_x_y = compare_images_pixels(clean_input, noised_target)
+    percentage_of_true_positive_xy, percentage_of_true_positive_tof, numof_false_positives_xy, num_of_false_negative_x_y, signal_spatial_retention_raw, signal_temporal_retention_raw = compare_images_pixels(clean_input, noised_target)
     performance['Percentage of true pixels lit in recon'] = percentage_of_true_positive_xy
     performance['Percentage of true TOF pixels recon'] = percentage_of_true_positive_tof
     performance['Number of extra lit pixels in recon'] = numof_false_positives_xy
     #performance['Number of missing lit pixels in recon'] = num_of_false_negative_x_y   # ADD IN AND VERIFY
+    # performance['Raw Signal Spatial Retention'] = signal_spatial_retention_raw
+    # performance['Raw Signal Temporal Retention'] = signal_temporal_retention_raw
     return performance
 
 

@@ -121,7 +121,7 @@ def create_sparse_signal(input_image_batch, signal_points:int, linear=False):
     return output_image_batch
 
 # Function to add shift in x, y and ToF to a true signal point due to detector resoloution
-def simulate_detector_resolution(input_image_batch, x_std_dev_pixels: int, y_std_dev_pixels: int, tof_std_dev_pixels: int, time_dimension: int, device: torch.device, clamp_photons_to_slice=True):
+def simulate_detector_resolution(input_image_batch, x_std_dev_pixels: int, y_std_dev_pixels: int, tof_std_dev_pixels: int, time_dimension: int, device: torch.device, clamp_photons_to_slice=False):
     """
     This function will add a random shift taken from a gaussain std deviation in x, y or ToF to each non-zero pixel in the image tensor to simulate detector resoloution limits
 
@@ -182,7 +182,7 @@ def simulate_detector_resolution(input_image_batch, x_std_dev_pixels: int, y_std
     image_batch_all[:, 0, :, :] = shifted_image_tensor
     return image_batch_all
 
-def signal_degredation(signal_settings, image_batch, physical_scale_parameters: list[float], time_dimension: int, device: torch.device, timer=None):
+def signal_degredation(signal_settings, image_batch, physical_scale_parameters: list[float], time_dimension: int, device: torch.device, timer=None, clamp_photons_to_slice=False):
     """
     Sequentially applies the differnt signal degredation functions to the input image batch and returns the output of each stage
 
@@ -214,7 +214,7 @@ def signal_degredation(signal_settings, image_batch, physical_scale_parameters: 
     # Apply the detector resolution limits
     if x_std_dev_r != 0 or y_std_dev_r != 0 or tof_std_dev_r != 0:
         timer.record_time(event_name="Signal Degredation: Detector Resolution Limits", event_type="start")
-        sparse_and_resolution_limited_batch = simulate_detector_resolution(sparse_output_batch, x_std_dev_pixels, y_std_dev_pixels, tof_std_dev_pixels, time_dimension, device, clamp_photons_to_slice=True)
+        sparse_and_resolution_limited_batch = simulate_detector_resolution(sparse_output_batch, x_std_dev_pixels, y_std_dev_pixels, tof_std_dev_pixels, time_dimension, device, clamp_photons_to_slice)
         timer.record_time(event_name="Signal Degredation: Detector Resolution Limits", event_type="stop")
     else:
         sparse_and_resolution_limited_batch = sparse_output_batch.clone()

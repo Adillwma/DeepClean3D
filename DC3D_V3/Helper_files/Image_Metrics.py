@@ -214,7 +214,11 @@ def compare_images_pixels(target_image, reconstructed_image, debug_mode=False):
     if debug_mode:
         print("False negative count: ", false_negative_count_raw)
 
-    return signal_spatial_retention_percentage, signal_temporal_retention_percentage, false_positive_count_raw, false_negative_count_raw
+    
+    # Determine the true raw noise count (For Debugging purposes)
+    true_raw_noise_count = len(target_image[zero_mask].nonzero())
+
+    return signal_spatial_retention_percentage, signal_temporal_retention_percentage, false_positive_count_raw, false_negative_count_raw, true_raw_noise_count
 
 
 
@@ -453,7 +457,7 @@ def compare_images_pixels2(target_image, reconstructed_image, debug_mode=False):
     if debug_mode:
         print("False negative count: ", false_negative_count_raw)
 
-    return signal_spatial_retention_percentage, signal_temporal_retention_percentage, false_positive_count_raw, false_negative_count_raw
+    return signal_spatial_retention_percentage, signal_temporal_retention_percentage, false_positive_count_raw, false_negative_count_raw, signal_spatial_retention_raw, signal_temporal_retention_raw
 
 
 #############################################
