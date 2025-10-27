@@ -96,7 +96,11 @@ class Execution_Timer():
         self.data = {}
         self.t0 = time.perf_counter()         # set to current time 
 
-
+    def close(self): 
+        """ Automatically checks for all open events and closes them """
+        for event_name, event_data in self.data.items():
+            if event_data and event_data[-1][0] == "start":
+                self.record_time(event_name=event_name, event_type="stop")
 
 if __name__ == "__main__":
     execution_timer = Execution_Timer()
@@ -114,7 +118,7 @@ if __name__ == "__main__":
 
     execution_timer.record_time(event_name="Search for Higgs", event_type="start")
     time.sleep(1)
-    execution_timer.record_time(event_name="Search for Higgs", event_type="stop")
+    #execution_timer.record_time(event_name="Search for Higgs", event_type="stop")
     """
     execution_timer.record_time(event_name="Search for Dark Matter", event_type="start")
     time.sleep(2)
@@ -145,6 +149,9 @@ if __name__ == "__main__":
     execution_timer.record_time(event_name="Search for Dark Matter", event_type="stop")
 
     """
+    print("Program done, closing timer and generating plot")
+    execution_timer.close()
+
     fig = execution_timer.return_plot(dark_mode=True)
     plt.show()
 
