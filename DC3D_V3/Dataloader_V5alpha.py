@@ -91,7 +91,14 @@ class MTN_Dataset(Dataset):
     """
 
     def __init__(self, dataset_path_ondisk, large_data_bundles_size, large_batch_size, device, shuffle_data=False, preprocess_on_gpu=True, precision=64, timer=None):
-        self.file_paths = [os.path.join(dataset_path_ondisk, f) for f in os.listdir(dataset_path_ondisk) if f.endswith('.pt')]
+        
+                # check if the input is a list of directories or one single path and get all .npy files in the specified directorys
+        if isinstance(dataset_path_ondisk, list):
+            self.file_paths = [os.path.join(data_dir, f) for data_dir in dataset_path_ondisk for f in os.listdir(data_dir) if f.endswith('.pt')]
+        else:
+            self.file_paths = [os.path.join(dataset_path_ondisk, f) for f in os.listdir(dataset_path_ondisk) if f.endswith('.pt')]
+
+
         self.large_data_bundles_size = large_data_bundles_size
         self.large_batch_size = large_batch_size
         self.indices = list(range(self.large_data_bundles_size * self.large_batch_size))
@@ -101,8 +108,8 @@ class MTN_Dataset(Dataset):
         self.execution_timer = timer
         self.preprocess_on_gpu = preprocess_on_gpu
         self.dtype = {16: torch.float16, 32: torch.float32, 64: torch.float64}.get(precision)
-        if self.preprocess_on_gpu:                                     # If the user wants to preprocess the data on the GPU
-            self.device = device                                       # Set the device to the global processing device, i.e the GPU if one is availble, falling back to CPU if not
+        
+        self.device = device                                       # Set the device to the global processing device, i.e the GPU if one is availble, falling back to CPU if not
 
         self.loader = AsyncDataLoader(self.file_paths, self.execution_timer, self.device, precision)
 
@@ -110,14 +117,16 @@ class MTN_Dataset(Dataset):
         return len(self.file_paths) * self.large_data_bundles_size
     
     def call_for_bundles(self):
-        self.execution_timer.record_time(event_name=f"Waiting on async data load", event_type="start")
+        if self.execution_timer:
+            self.execution_timer.record_time(event_name=f"Waiting on async data load", event_type="start")
         data_loading = True
         while data_loading:
             try:
                 self.buffer_data, filename_report = self.loader.data_queue.get(timeout=0.1)  # Adjust timeout for data loading
                 #print(f"Data loaded from: {filename_report}")
                 data_loading = False
-                self.execution_timer.record_time(event_name=f"Waiting on async data load", event_type="stop")
+                if self.execution_timer:
+                    self.execution_timer.record_time(event_name=f"Waiting on async data load", event_type="stop")
                 self.loader.data_queue.task_done()
             except queue.Empty:
                 # If the queue is empty, check if the background loading is done
@@ -157,7 +166,9 @@ class MTN_Dataset(Dataset):
 
             for split_index, idx_list in enumerate(split_indices):                
                 if idx_list[0] % (self.large_data_bundles_size * self.large_batch_size) == 0: # If the index is a multiple of the bundle size then load a new bundle of data into memory
-                    self.execution_timer.record_time(event_name="Disk to Memory Load", event_type="start")
+
+                    if self.execution_timer:
+                        self.execution_timer.record_time(event_name="Disk to Memory Load", event_type="start")
 
                     # Load data from the buffer 
                     self.data = self.call_for_bundles()                    
@@ -166,10 +177,11 @@ class MTN_Dataset(Dataset):
                     self.shuffled_indices = self.indices.copy()
                     if self.shuffle_data:
                         random.shuffle(self.shuffled_indices)
+                    if self.execution_timer:
+                        self.execution_timer.record_time(event_name="Disk to Memory Load", event_type="stop")
 
-                    self.execution_timer.record_time(event_name="Disk to Memory Load", event_type="stop")
-
-                self.execution_timer.record_time(event_name="Memory to Network Load", event_type="start")
+                if self.execution_timer:
+                    self.execution_timer.record_time(event_name="Memory to Network Load", event_type="start")
 
                 idx_array = np.array(idx_list)
 
@@ -179,11 +191,14 @@ class MTN_Dataset(Dataset):
                 semi_batch = self.data[min_internal_bundle_idx : max_internal_bundle_idx+1]
                 semi_batchs.append(semi_batch)
 
-                self.execution_timer.record_time(event_name="Memory to Network Load", event_type="stop")
+                if self.execution_timer:
+                    self.execution_timer.record_time(event_name="Memory to Network Load", event_type="stop")
 
-            self.execution_timer.record_time(event_name="Memory to Network Cat", event_type="start")
+            if self.execution_timer:
+                self.execution_timer.record_time(event_name="Memory to Network Cat", event_type="start")
             batch = torch.cat(semi_batchs, dim=0)
-            self.execution_timer.record_time(event_name="Memory to Network Cat", event_type="stop")
+            if self.execution_timer:
+                self.execution_timer.record_time(event_name="Memory to Network Cat", event_type="stop")
             return batch
     
 class StackedDatasetLoader(DataLoader):
@@ -208,7 +223,7 @@ class StackedDatasetLoader(DataLoader):
     def _custom_processing(self, batch):
         signal_points, x_std_dev, y_std_dev, tof_std_dev, noise_points = self.input_signal_settings  # move directly into next line without breaking out?
         signal_settings = input_range_to_random_value(signal_points, x_std_dev, y_std_dev, tof_std_dev, noise_points) 
-        degraded_batches = signal_degredation(signal_settings, batch, self.physical_scale_parameters, self.time_dimension, self.device)
+        degraded_batches = signal_degredation(signal_settings, batch, self.physical_scale_parameters, self.time_dimension, self.device, timer=self.execution_timer)
         return degraded_batches   
 
     def __iter__(self):
@@ -218,10 +233,13 @@ class StackedDatasetLoader(DataLoader):
     def __next__(self):
         batch_indices = next(self.sample_iter)
         batch = self.dataset[batch_indices]
-        self.execution_timer.record_time(event_name="Data Degradation", event_type="start")
+
+        if self.execution_timer:
+            self.execution_timer.record_time(event_name="Data Degradation", event_type="start")
         degraded_data = self._custom_processing(batch)
         sparse_output_batch, sparse_and_resolution_limited_batch, noised_sparse_reslimited_batch = degraded_data
-        self.execution_timer.record_time(event_name="Data Degradation", event_type="stop") 
+        if self.execution_timer:
+            self.execution_timer.record_time(event_name="Data Degradation", event_type="stop")
 
         return batch, sparse_output_batch, sparse_and_resolution_limited_batch, noised_sparse_reslimited_batch
 
@@ -237,10 +255,10 @@ if __name__ == "__main__":
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     input_signal_settings = [signal_points, x_std_dev, y_std_dev, tof_std_dev, noise_points]
 
-    dataset_path_ondisk = r'N:\Yr 3 Project Datasets\[V3]_RDT_50K\Data\\'    # Path to the directory where the data files are stored on disk in bundles
+    dataset_path_ondisk = [r'N:\DeepClean3D Project Folder\Yr 3 Project Datasets\[V3]_RDT_50K\Data\\']    # Path to the directory where the data files are stored on disk in bundles
     large_data_bundles_size = 10000     # the number of individual files in each bundle
     number_of_bundles_to_memory = 1 # Essentially the 'Large batch Size' i.e how many bundles to load into memory at once [Must be less than or equal to the number of bundles in the dataset on disk]
-    small_batch_size = 5000            # Batch Size for loading into the neural net from the in memory bundles               
+    small_batch_size = 250            # Batch Size for loading into the neural net from the in memory bundles               
     shuffle_data = False             # Shuffle the data across both large and small batches
     preprocess_on_gpu = True        # Preprocess the data on the GPU if available, otherwise on the CPU
     precision = 64                   # The precision of the data to be loaded into the neural network
@@ -257,6 +275,7 @@ if __name__ == "__main__":
 
     small_dataloader = StackedDatasetLoader(input_signal_settings, physical_scale_parameters, time_dimension, device,  preprocess_on_gpu, precision, dataset=small_dataset, timer=execution_timer, batch_sampler=batch_sampler) # Shuffle is handled by the dataset, set with the variable 'shuffle_data'. It must not be applied here otherwise will induce errors in the logic based on index value
 
+    program_start_time = time.perf_counter()
     for epoch in range(5):
         for idx, data in tqdm(enumerate(small_dataloader)):
             execution_timer.record_time(event_name="Small Batch Presented", event_type="start")
@@ -266,6 +285,8 @@ if __name__ == "__main__":
             #if idx >= 30:
             #    break
     print('Done...')
+    program_end_time = time.perf_counter()
+    print(f"Total program time: {program_end_time - program_start_time} seconds")
 
     fig = execution_timer.return_plot(dark_mode=True)
     plt.show()

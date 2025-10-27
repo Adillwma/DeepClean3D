@@ -1,31 +1,39 @@
-# DeepClean Trainer v1.5.0
+# DeepClean Trainer v1.5.1
 # Build created on Tuesday October 22nd 2025
 # Author: Adill Al-Ashgar
 # University of Bristol
 # adill@neuralworkx.com
 
 
+
 import torch
+import tensorboard
 
 #%% - First time setup
-results_output_path = "N:/DeepClean3D Project Folder/Yr 3 Project Results/"             # Path to the results output folder, this is the folder that will contains all results folders, not the results folder for a particular run.
 
-dataset_paths = [#"N:/DeepClean3D Project Folder/Yr 3 Project Datasets/V3_PDT_10K/",
+results_output_path = "N:/DeepClean3D Project Folder/Yr 3 Project Results/"
+#results_output_path = "Output Results/"             # Path to the results output folder, this is the folder that will contains all results folders, not the results folder for a particular run.
+
+dataset_paths = [#"N:/DeepClean3D Project Folder/Yr 3 Project Datasets/V2_1K_FAST_RDT/",    # Path to the dataset folder
+                #"N:/DeepClean3D Project Folder/Yr 3 Project Datasets/V3_10K_FAST_RDT/",
+                #"N:/DeepClean3D Project Folder/Yr 3 Project Datasets/V3_PDT_10K/",
                  #"N:/DeepClean3D Project Folder/Yr 3 Project Datasets/[V3]_RDT_50K/",    # Path to the dataset folder
                 "N:/DeepClean3D Project Folder/Yr 3 Project Datasets/V3_RDT_150K/",
                ]                             
 
-counters_local_filepath = 'DC3D_V3/Local_Program_Data/counters.json'
+
 
 #%% - Run Settings
-model_save_name = " LongTest1"      # Name of the model to be saved, this will be the name of the folder that the model is saved in
-model_checkpoint_interval = 20               # Number of epochs between each model checkpoint save, set to False for no checkpointing. If set to a value then the model will save a checkpoint of the model and optimiser state dicts at the end of each 'model_checkpointing_interval' epochs
+model_save_name = "Long"      # Name of the model to be saved, this will be the name of the folder that the model is saved in
+num_epochs = 500                              # Set max number of epochs to run for. {Default = 100}
 timeout_time = False                         # Time in minuits to wait before stopping training, set to False to disable time based stopping. {Default = False}. NOTE! Program will allow the epoch currently in progress to conclude before stopping.
+
+model_checkpoint_interval = 20               # Number of epochs between each model checkpoint save, set to False for no checkpointing. If set to a value then the model will save a checkpoint of the model and optimiser state dicts at the end of each 'model_checkpointing_interval' epochs
+print_every_other = 1                        # [default = 2] 1 is to save/print all training plots every epoch, 2 is every other epoch, 3 is every 3rd epoch etc
+
 validation_mode = False                       # If set to True then validation mode is enabled, if False then training mode is used. In validation mode the model weights are not updated and the model is only evaluated on the validation dataset. {Default = False}
 
-
 #%% - Training Hyperparameter Settings
-num_epochs = 500                              # Set max number of epochs to run for. {Default = 100}
 batch_size = 250                             # Set batch size - number of samples to pull per batch. {Default = 64}
 learning_rate = 0.004                       # Set optimiser learning rate. {Default = 1e-3}
 optim_w_decay = 1e-07  #1e-05                       # Set optimiser weight decay for regularisation. {Default = 1e-5}
@@ -40,10 +48,10 @@ use_adamw_optimiser = True                   # If set to true then AdamW optimis
 
 # Reconstruction Settings
 reconstruction_threshold = 0.25               # MUST BE BETWEEN 0-1  #Threshold for 3d reconstruction, values below this confidence level are discounted. {Default = 0.5}
-quantise_reconstructed_output = True          #[SHOULD BE TRUE ALWAYS!] # If set to true then the reconstructed output will be quantised in the 2D and 3D plots and for the detailed performance metrics calulations
+quantise_reconstructed_output = True
 
 #%% - Image Preprocessing Settings
-signal_points = 300#(25, 35)                    # Set the number of signal points to add
+signal_points = (25, 35)                    # Set the number of signal points to add
 noise_points = (0, 100)                      # Set the number of noise points to add
 x_std_dev = 0                                # (mm) Set the standard deviation of the detectors error in the x axis
 y_std_dev = 0                                # (mm) Set the standard deviation of the detectors error in the y axis
@@ -78,7 +86,7 @@ time_length = 1000                           # ns
 
 #%% - Loss Function Settings
 loss_vs_sparse_img = False                               # Set if the loss is calculated against the sparse image or the full image (Hyperparameter)
-loss_function_selection = "TrippleLossNI_CS"                  # Select loss function (string):# "MAE", "MSE", "SSE", "BCE", "ACB_MSE", "ffACB_MSE", "Split_Loss", "True3D", "Simple3D", "ACB3D", "Fast3D", "WPR_Loss"
+loss_function_selection = "TrippleLossNI_CS"#"BINARY_PRED_MSE"#"TrippleLossNI_CS"                  # Select loss function (string):# "MAE", "MSE", "SSE", "BCE", "ACB_MSE", "ffACB_MSE", "Split_Loss", "True3D", "Simple3D", "ACB3D", "Fast3D", "WPR_Loss"
 renorm_for_loss_calc = False                             # Set if the loss is calculated against the renormalised image or the network output data (Hyperparameter)
 
 # ACB
@@ -121,11 +129,17 @@ hook_flush_interval = 1          #FIX!            # Number of epochs between eac
 hook_max_memory_usage = 0.5         #CONNECT!         # Maximum memory usage in GB before the hooks are automatically flushed to disk, this is useful for reducing memory usage but will slow down training due to the time taken to flush the hooks
 
 #%% - Visulisation Settings
-plot_or_save = 'save'                            # [default = 1] 0 prints plots to terminal (blocking till closed), If set to 1 then saves all end of epoch printouts to disk (non-blocking), if set to 2 then saves outputs whilst also printing for user (blocking till closed)
+create_local_plots = True   # If true then will genrate data for local plots
 save_all_raw_plot_data = False                # [default = False] If set to true then all raw data for plots is saved to disk for replotting and analysis later
+draw_local_plots = True    # IF true will draw plots localls
+plot_or_save = 'save'                            # [default = 1] 0 prints plots to terminal (blocking till closed), If set to 1 then saves all end of epoch printouts to disk (non-blocking), if set to 2 then saves outputs whilst also printing for user (blocking till closed)
+
+use_tensorboard = True                       # [default = False]
+auto_launch_tb_dashboard = True            # [default = True] If set to true then the tensorboard dashboard will automatically launch on training start
+tensorboard_logdir = "tensorboard_logs_dir/"              # [default = "runs/"] Directory to save tensorboard logs to
+
 
 ## During training plots
-print_every_other = 1                        # [default = 2] 1 is to save/print all training plots every epoch, 2 is every other epoch, 3 is every 3rd epoch etc
 num_to_plot = 10 # 2d plots                   # [default = 10] Number of images to plot during training
 
 plot_live_time_loss = True                   # [default = True] Generate plot of live training loss vs time during trainig which is overwritten each epoch, this is useful for seeing how the training is progressing
@@ -156,7 +170,6 @@ plot_latent_generations = True              # [default = True]
 plot_higher_dim = False                      # [default = True]  
 plot_Graphwiz = True                         # [default = True]       
 
-use_tensorboard = False                       # [default = False]
 
 #%% - Advanced Debugging Settings
 print_encoder_debug = False                     # [default = False]  
@@ -172,7 +185,7 @@ full_dataset_distribution_check = False         # [Default = False] V slow  #Che
 
 use_execution_timer = True    #FIX!!     ###CONNECT!! # [Default = True] Uses the execution timer to time each module in the process
 run_profiler = False                            # [Default = False] Runs the cProfiler on the training loop to check for bottlenecks and slow functions
-run_pytorch_profiler = False
+run_pytorch_profiler = False # FIX!!
 
 #%% Hyperparameter Optimisation Settings  
 optimise_hyperparameter = False                               # Set if hyperparameter optimisation is used
@@ -268,7 +281,7 @@ from tqdm.auto import tqdm  # Progress bar, auto automtically selects between no
 from torchinfo import summary # function to get the summary of the model layers structure, trainable parameters and memory usage
 import matplotlib.pyplot as plt     
 from matplotlib.ticker import FuncFormatter
-from torch.utils.tensorboard.writer import SummaryWriter, FileWriter
+#from torch.utils.tensorboard.writer import SummaryWriter, FileWriter
 import cProfile
 from torch.utils.data import Subset
 import torch.profiler
@@ -288,7 +301,8 @@ from Helper_files.model_perf_analysis2 import run_full_perf_tests               
 from Helper_files.ExecutionTimer import Execution_Timer
 
 #from Helper_files.Export_User_Settings import create_settings_dict
-from Dataloader_V4 import *
+#from Dataloader_V4 import *           # - Tiered DTM-MTN Dataloader
+from Dataloader_V5alpha import *     # - Async Tiered DTM-MTN Dataloader
 from Helper_files.DC3D_Core_Functions import *
 #from train_test_val import train_epoch, test_epoch, validation_routine
 from Helper_files.Network_Hooks import *
@@ -299,13 +313,19 @@ from Helper_files.Image_Metrics import *    # - Image metrics
 from Helper_files.AE_Visulisations import *   # - Visulisations 
 from Loss_Functions.Loss_Fn_Classes import *   # - Loss Functions
 from Helper_files.Data_Degradation_Functions import *   # Data Degredation Functions
+from Helper_files.Tensorboard_helpers import TensorBoardLogger
 
 
 
-#%% - HACKS NEED FIXING!!!
+#%% - Setup paths
+local_program_data_dir = 'DC3D_V3/Local_Program_Data/'
+
+# Create directories if they don't exist
+os.makedirs(local_program_data_dir, exist_ok=True)
+os.makedirs(results_output_path, exist_ok=True)
 
 
-# Set the Model ID for this run and dynamically add to save path title
+counters_local_filepath = local_program_data_dir + 'counters.json'
 try:
     with open(counters_local_filepath, 'r') as f:
         counters = json.load(f)
@@ -320,6 +340,16 @@ except FileNotFoundError:
 with open(counters_local_filepath, 'w') as f:
     json.dump(counters, f)
 
+
+
+#%% - HACKS NEED FIXING!!!
+
+
+
+
+# Set the Model ID for this run and dynamically add to save path title
+
+
 if validation_mode:
     num_epochs = 2
     model_id = f"{model_id}_VALMODE"
@@ -328,17 +358,14 @@ if validation_mode:
 model_save_name = f"MID{model_id}__{model_save_name}" # Model name with incremented ID
 
 
-
-
 # Set the parent ID if this is a child run from a pretrained model
 if start_from_pretrained_model:
     parent_model_id = extract_model_id_from_path(pretrained_model_path)
 else:
     parent_model_id = None
+
+   
     
-
-
-
 # Set print every other to not exceed num_epochs
 if print_every_other > num_epochs:                                                                   
     print_every_other = num_epochs
@@ -367,6 +394,8 @@ biases_data = {}
 #%% - Performance Profiling and Logging Setup
 if use_execution_timer:
     execution_timer = Execution_Timer()
+else:
+    execution_timer = None
 
 if compile_model:
     gaped_renormalisation = torch.compile(gaped_renormalisation)
@@ -374,21 +403,37 @@ if compile_model:
     reconstruct_3D = torch.compile(reconstruct_3D)
     signal_degredation = torch.compile(signal_degredation)
 
+if use_tensorboard:
+
+ # Create logger (auto-launches TensorBoard)
+    tensorboard_logger = TensorBoardLogger(logdir=tensorboard_logdir + model_save_name, rootdir=tensorboard_logdir, port=6006, auto_launch=auto_launch_tb_dashboard)
+
+    #  log text and model graph
+    tensorboard_logger.add_text("Model Save Name", model_save_name, 0)
+    tensorboard_logger.add_text("Model ID", str(model_id), 0)
+    #tensorboard_logger.add_graph(model, x[:1])
+    
+    if parent_model_id is not None:
+        tensorboard_logger.add_text("Parent Model ID", str(parent_model_id), 0)
+    else:
+        tensorboard_logger.add_text("Parent Model ID", "None", 0)
+
 if run_profiler:
     profiler = cProfile.Profile()      # Create a cProfile object to store the profiler data
 
 if run_pytorch_profiler:
-    torch_profiler = torch.profiler.profile(profile_memory=True)
-    #torch.profiler.profile(activities=[torch.profiler.ProfilerActivity.CPU, torch.profiler.ProfilerActivity.CUDA],
+    torch_profiler = torch.profiler.profile(activities=[torch.profiler.ProfilerActivity.CPU, torch.profiler.ProfilerActivity.CUDA],
+                                            on_trace_ready=torch.profiler.tensorboard_trace_handler('/pytorch_profiler_tracelog'),
+                                            record_shapes=True,
+                                            profile_memory=True)
+ 
+    # torch_profiler = torch.profiler.profile(activities=[torch.profiler.ProfilerActivity.CPU, torch.profiler.ProfilerActivity.CUDA],
     #                                        schedule=torch.profiler.schedule(wait=1, warmup=1, active=3, repeat=2),
     #                                        on_trace_ready=torch.profiler.tensorboard_trace_handler('./log'),
     #                                        record_shapes=True,
     #                                        profile_memory=True,
     #                                        with_stack=True
     #                                        )
-
-    # Start the profiler
-    torch_profiler.start()
 
 
 #%% - Load in Comparative Live Loss Data
@@ -629,7 +674,7 @@ def plot_epoch_data(end_of_epoch_plotting_data, epoch, model_save_name, time_dim
     number_of_recovered_signal_points = []
 
     # 2D Input/Output Comparison Plots 
-    plt.figure(figsize=(16,9))                                      #Sets the figure size
+    fig_2d = plt.figure(figsize=(16,9))                                      #Sets the figure size
     #loop = tqdm(range(n), desc='Plotting 2D Comparisons', leave=False, colour="green") 
     for i, (img, sparse_output_batch, sparse_and_resolution_limited_batch, noised_sparse_reslimited_batch, recovered_batch, recovered_masking_batch) in tqdm(enumerate(end_of_epoch_plotting_data), desc='Plotting 2D Comparisons', leave=False, colour="green", dynamic_ncols=True) :     # CLEAN UP START 
 
@@ -713,6 +758,12 @@ def plot_epoch_data(end_of_epoch_plotting_data, epoch, model_save_name, time_dim
 
     Out_Label = graphics_dir + f'{model_save_name} - Epoch {epoch}.png' #creates the name of the file to be saved
     plot_save_choice(plot_or_save, Out_Label) #saves the plot if plot_or_save is set to 1, if 0 it displays, if 2 it displays and saves
+
+    if use_tensorboard:
+        #tensorboard_logger.add_figure(f'2D/Epoch {epoch}', fig_2d, epoch)
+        tensorboard_logger.add_figure(f'2D/Reconstruction', fig_2d, epoch)
+
+
     plt.close()
 
     # 3D Reconstruction
@@ -759,35 +810,33 @@ def plot_epoch_data(end_of_epoch_plotting_data, epoch, model_save_name, time_dim
                 ax.set_xlim(0, 88 * physical_scale_parameters[0])
                 ax.set_ylim(0, 128 * physical_scale_parameters[1])
                 ax.set_zlim(0, time_dimension * physical_scale_parameters[2])  # Set z-axis limits based on physical scale
-
-                # Set axis labels
                 ax.set_xlabel('x (mm)')
                 ax.set_ylabel('y (mm)')
                 ax.set_zlabel('time (ns)')
-                # # Apply tick format conversion for x, y, and z axes from 'pixels' to physical values
-                # ax.xaxis.set_major_formatter(FuncFormatter(lambda x_scale, tick_number: tick_number * x_scale))
-                # ax.yaxis.set_major_formatter(FuncFormatter(lambda y_scale, tick_number: tick_number * y_scale))
-                # ax.zaxis.set_major_formatter(FuncFormatter(lambda time_scale, tick_number: tick_number * time_scale))
-            
             else:
                 ax.set_xlim(0, 88)
                 ax.set_ylim(0, 128)
                 ax.set_zlim(0, time_dimension)
-
-                # Set axis labels
                 ax.set_xlabel('x (pixels)')
                 ax.set_ylabel('y (pixels)')
                 ax.set_zlabel('time (pixels)')
-
+        
         fig.tight_layout()
 
         Out_Label = graphics_dir + f'{model_save_name} 3D Reconstruction - Epoch {epoch}.png' #creates the name of the file to be saved
         plot_save_choice(plot_or_save, Out_Label) #saves the plot if plot_or_save is set to 1, if 0 it displays, if 2 it displays and saves
 
+        if use_tensorboard:
+            # Save the image to tensorbboard
+            #tensorboard_logger.add_figure(f'3D/Epoch {epoch}', fig, epoch)
+            tensorboard_logger.add_figure(f'3D/Reconstruction', fig, epoch)
+
+        plt.close()
+
     return(number_of_true_signal_points, number_of_recovered_signal_points, in_im, noise_im, rec_im)        #returns the number of true signal points, number of recovered signal points, input image, noised image and reconstructed image 
 
 ### Training Function
-def train_epoch(epoch, encoder, decoder, device, dataloader, loss_fn, optimizer, time_dimension=100, reconstruction_threshold=0.5, masking_optimised_binary_norm=False, loss_vs_sparse_img=False, renorm_for_loss_calc=False, use_tensorboard=False, writer=None):
+def train_epoch(epoch, encoder, decoder, device, dataloader, loss_fn, optimizer, time_dimension=100, reconstruction_threshold=0.5, masking_optimised_binary_norm=False, loss_vs_sparse_img=False, renorm_for_loss_calc=False, use_tensorboard=False, tensorboard_logger=None):
     """
     Training loop for a single epoch
 
@@ -822,7 +871,8 @@ def train_epoch(epoch, encoder, decoder, device, dataloader, loss_fn, optimizer,
     iterator = tqdm(dataloader, desc='Batches', leave=False, dynamic_ncols=True, postfix="Starting")             
     for data in iterator: 
         image_batch, sparse_output_batch, _, noised_sparse_reslimited_batch = data
-        execution_timer.record_time(event_name="Training-preprocess", event_type="start")
+        if use_execution_timer:
+            execution_timer.record_time(event_name="Training-preprocess", event_type="start")
         # DATA PREPROCESSING
         with torch.no_grad(): # No need to track the gradients
             if masking_optimised_binary_norm:
@@ -838,16 +888,20 @@ def train_epoch(epoch, encoder, decoder, device, dataloader, loss_fn, optimizer,
         image_clean = normalised_inputs.to(device) # Move the clean image batch to the device
         image_sparse = norm_sparse_output_batch.to(device) # Move the sparse image batch to the device
         image_noisy = normalised_batch.to(device) # Move the noised image batch to the device
-        execution_timer.record_time(event_name="Training-preprocess", event_type="stop")
+        if use_execution_timer:
+            execution_timer.record_time(event_name="Training-preprocess", event_type="stop")
 
-        execution_timer.record_time(event_name="Training-forward", event_type="start")
+        if use_execution_timer:
+            execution_timer.record_time(event_name="Training-forward", event_type="start")
         # Encode data
         encoded_data = encoder(image_noisy) # Encode the noised image batch
         # Decode data
         decoded_data = decoder(encoded_data) # Decode the encoded image batch
-        execution_timer.record_time(event_name="Training-forward", event_type="stop")
+        if use_execution_timer:
+            execution_timer.record_time(event_name="Training-forward", event_type="stop")
 
-        execution_timer.record_time(event_name="Training-loss", event_type="start")
+        if use_execution_timer:
+            execution_timer.record_time(event_name="Training-loss", event_type="start")
         if loss_vs_sparse_img:
             loss_comparator = image_sparse
         else:
@@ -859,9 +913,10 @@ def train_epoch(epoch, encoder, decoder, device, dataloader, loss_fn, optimizer,
             loss_comparator = gaped_renormalisation(loss_comparator, reconstruction_threshold, time_dimension)
 
         loss = loss_fn(decoded_data, loss_comparator)  # Compute the loss between the decoded image batch and the clean image batch
-        execution_timer.record_time(event_name="Training-loss", event_type="stop")
+        if use_execution_timer:
+            execution_timer.record_time(event_name="Training-loss", event_type="stop")
+            execution_timer.record_time(event_name="Training-backward", event_type="start")
 
-        execution_timer.record_time(event_name="Training-backward", event_type="start")
         # Backward pass
         optimizer.zero_grad() # Reset the gradients - IS THIS CORRECT???
         loss.backward() # Compute the gradients
@@ -870,23 +925,23 @@ def train_epoch(epoch, encoder, decoder, device, dataloader, loss_fn, optimizer,
         batches += 1
         loss_total += loss.item()
         avg_epoch_loss = loss_total/batches
-        
-        execution_timer.record_time(event_name="Training-backward", event_type="stop")
-
-        execution_timer.record_time(event_name="Training-postprocess", event_type="start")
+        if use_execution_timer:
+            execution_timer.record_time(event_name="Training-backward", event_type="stop")
+            execution_timer.record_time(event_name="Training-postprocess", event_type="start")
         
         iterator.set_postfix({'Partial Batch Loss': loss.data.item()})
 
-        if use_tensorboard:
-            # Add the gradient values to Tensorboard
-            for name, param in encoder.named_parameters():
-                writer.add_histogram(name + '/grad', param.grad, global_step=epoch)
+        if use_execution_timer:
+            execution_timer.record_time(event_name="Training-postprocess", event_type="stop")
 
-            for name, param in decoder.named_parameters():
-                writer.add_histogram(name + '/grad', param.grad, global_step=epoch)
+    if use_tensorboard:
+        # Add the gradient values to Tensorboard for Biases and Weights
+        for name, param in encoder.named_parameters():
+            tensorboard_logger.add_histogram(name + '/grad', param.grad, global_step=epoch)
 
-            writer.add_scalar('Loss/train', avg_epoch_loss, epoch)
-        execution_timer.record_time(event_name="Training-postprocess", event_type="stop")
+        for name, param in decoder.named_parameters():
+            tensorboard_logger.add_histogram(name + '/grad', param.grad, global_step=epoch)
+
     return avg_epoch_loss
 
 ### Testing Function
@@ -976,9 +1031,11 @@ def test_epoch(encoder, decoder, device, dataloader, loss_fn, time_dimension=100
 
 
             #Run additional perfomrnace metrics
-            execution_timer.record_time(event_name="Testing-performance_metrics", event_type="start")
+            if use_execution_timer:
+                execution_timer.record_time(event_name="Testing-performance_metrics", event_type="start")
             quantify_loss_performance(performance_test_comparator, performance_test_data, time_dimension)
-            execution_timer.record_time(event_name="Testing-performance_metrics", event_type="stop")
+            if use_execution_timer:
+                execution_timer.record_time(event_name="Testing-performance_metrics", event_type="stop")
 
             if len(imgs) < n:
                 num_to_append = min(n - len(imgs), len(image_batch))
@@ -995,6 +1052,8 @@ def test_epoch(encoder, decoder, device, dataloader, loss_fn, time_dimension=100
             above_threshold, below_threshold = belief_telemetry(decoded_data[0][0].cpu(), reconstruction_threshold, epoch, plot_or_save)    #calls the belief_telemetry function to generate the telemetry plots
             telemetry.append([epoch, above_threshold, below_threshold]) #appends the telemetry data to the telemetry list
 
+
+
         imgs = torch.cat(imgs, dim=0)[:n]
         sparse_imgs = torch.cat(sparse_imgs, dim=0)[:n]
         reslim_imgs = torch.cat(reslim_imgs, dim=0)[:n]
@@ -1003,8 +1062,14 @@ def test_epoch(encoder, decoder, device, dataloader, loss_fn, time_dimension=100
         maskrec_imgs = torch.cat(maskrec_imgs, dim=0)[:n]
 
         end_of_epoch_plotting_data = list(zip(imgs, sparse_imgs, reslim_imgs, noised_imgs, recovered_imgs, maskrec_imgs))
-        
-    return loss_total/batches, end_of_epoch_plotting_data
+        end_of_epoch_plotting_data_tensor = torch.stack([torch.stack(item) for item in end_of_epoch_plotting_data])
+
+        avg_test_loss = loss_total/batches
+
+        # if use_tensorboard:
+        #     tensorboard_logger.add_scalar('PerBatchLoss/test', avg_train_loss, global_step=epoch)
+
+    return avg_test_loss, end_of_epoch_plotting_data, end_of_epoch_plotting_data_tensor
 
 def test_epoch2(encoder, decoder, device, dataloader, loss_fn, time_dimension=100, reconstruction_threshold=0.5, masking_optimised_binary_norm=False, loss_vs_sparse_img=False, renorm_for_loss_calc=False, debug_masking_function=False):
 
@@ -1094,8 +1159,8 @@ def test_epoch2(encoder, decoder, device, dataloader, loss_fn, time_dimension=10
         maskrec_imgs = torch.cat(maskrec_imgs, dim=0)[:n]
 
         end_of_epoch_plotting_data = list(zip(imgs, sparse_imgs, reslim_imgs, noised_imgs, recovered_imgs, maskrec_imgs))
-        
-    return loss_total/batches, end_of_epoch_plotting_data
+        end_of_epoch_plotting_data_tensor = torch.stack([torch.stack(item) for item in end_of_epoch_plotting_data])
+    return loss_total/batches, end_of_epoch_plotting_data, end_of_epoch_plotting_data_tensor
 
 ### Validation Function
 def validation_routine(encoder, decoder, device, dataloader, loss_fn, time_dimension=100, reconstruction_threshold=0.5, masking_optimised_binary_norm=False, loss_vs_sparse_img=False, renorm_for_loss_calc=False):
@@ -1165,7 +1230,14 @@ def validation_routine(encoder, decoder, device, dataloader, loss_fn, time_dimen
 
             iterator.set_postfix({'Partial Batch Loss': loss.data.item()})
     
-    return loss_total/batches
+    avg_val_loss = loss_total/batches
+
+
+
+    if use_tensorboard:
+        tensorboard_logger.add_scalar('PerBatchLoss/validation', avg_val_loss, global_step=epoch)
+
+    return avg_val_loss
 
 
 #%% - Set compute device
@@ -1177,6 +1249,10 @@ elif hasattr(torch.backends, 'mps') and torch.backends.mps.is_available():
 
 else:                                                                       
     device = torch.device("cpu")  # Fallback to CPU if no supported GPU is availible    
+
+if use_tensorboard:
+    # Save compute device info to Tensorboard
+    tensorboard_logger.add_text('Compute Device', str(device), global_step=0)
 
 #%% - Program begins
 
@@ -1212,6 +1288,10 @@ if __name__ == "__main__":
         # Create output directory if it doesn't exist
         dir = results_output_path + model_save_name + " - Training Results/"
         os.makedirs(dir, exist_ok=True)
+
+        if use_tensorboard:
+            # Save the main results directory path to tensorboard for reference
+            tensorboard_logger.add_text('Results Output Path', dir, global_step=0)
 
         # Create output directory for images if it doesn't exist
         graphics_dir = dir + "Output_Graphics/"
@@ -1249,11 +1329,6 @@ if __name__ == "__main__":
         # Initialises pixel belief telemetry
         telemetry = []# [[0, 0, xdim * ydim]]                # Initalises the telemetry memory, starting values are 0, 0.5, 0.5 which corrspond to epoch(0), above_threshold(0.5), below_threshold(0.5)
         
-        # Create a summary writer
-        if use_tensorboard:
-            writer = SummaryWriter()
-        else:
-            writer = None
 
 
         #%% - Initialises seeding values to RNGs
@@ -1282,6 +1357,8 @@ if __name__ == "__main__":
             "MSE": torch.nn.MSELoss(),                                                                     # Mean Squared Error Loss from PyTorch Library
             "SSE": ada_SSE_loss,                                                                           # Sum of Squared Error Loss (Custom)
             "BCE": torch.nn.BCELoss(),   
+            
+            "BINARY_PRED_MSE": BinaryPredMSELoss(),                                                               # Binary Prediction MSE Loss (Custom)
 
             "LayeredLoss": LayeredLoss(zero_weighting, nonzero_weighting),                                                                  # Custom Layered Loss Function
             "TrippleLoss": TrippleLoss(zero_weighting, nonzero_weighting, fullframe_weighting, time_weighting, tp_weighting, fp_weighting, fn_weighting, tn_weighting, loss_penalty, 'mean'),                                                                  # Custom Tripple Loss Function
@@ -1332,47 +1409,6 @@ if __name__ == "__main__":
         settings["record_activity"] = record_activity
         settings["timeout_time"] = timeout_time
 
-        ##  NEW TENSOBOARD IMPLETATION of saving the settings
-        if use_tensorboard:
-            writer.add_hparams(
-                {
-                    "lr": learning_rate,
-                    "batch_size": batch_size,
-                    "epochs": num_epochs,
-                    "weight_decay": optim_w_decay,
-                    "dropout": dropout_prob,
-                    "latent_dim": latent_dim,
-                    "fc_input_dim": fc_input_dim,
-                    "noise_points": noise_points,
-                    "train_split": train_test_split_ratio,
-                    "val_test_split": val_test_split_ratio,
-                    "time_dimension": time_dimension,
-                    "seed": seeding_value,
-                    "reconstruction_threshold": reconstruction_threshold,
-                    "precision": precision,
-                    "shuffle_train_data": shuffle_train_data,
-                    "record_weights": record_weights,
-                    "record_biases": record_biases,
-                    "record_activity": record_activity,
-                    "timeout_time": timeout_time,
-                },
-                {
-                    "hparam/metric": "loss", # ???
-                    "hparam/metric": "mae"
-                    "hparam/metric": "mse"
-                    "hparam/metric": "snr"
-                    "hparam/metric": "psnr"
-                    "hparam/metric": "ssim"
-                    "hparam/metric": "nmi"
-                    "hparam/metric": "cc"
-                    "hparam/metric": "true_positive_xy"
-                    "hparam/metric": "true_positive_tof"
-                    "hparam/metric": "false_positive_xy"
-                    "hparam/metric": "false_negative_xy"
-                    "hparam/metric": "true_negative_xy"
-                }
-            
-            )
 
         #%% - Dataset Pre-tests
         #if full_dataset_integrity_check: #if full_dataset_integrity_check is set to True, then the scan type is set to full (slow)
@@ -1557,29 +1593,37 @@ if __name__ == "__main__":
         if record_activity or record_weights or record_biases:   # MOVE TO FUCNTION AND THEN TO HELPER FUCNS FILE FOR CLEANER CODE
             register_network_hooks(encoder, decoder, record_activity, record_weights, record_biases, activations, weights_data, biases_data)
 
-        #%% - Running Training Loop
 
-        execution_timer.record_time(event_name="Program Initialisation", event_type="stop") #records the time the program started
-
-
-        print("Training Initiated\nPress Ctr + c to exit and save the model during training.\n")
-        start_time = time.time()                     # Begin the training timer
-
+        #%% Preparing data arrays and structures
         epoch_times_list = []                        
         history_da['train_loss']  = []
         history_da['test_loss'] = []        
 
 
+
+        #%% - Running Training Loop
+        if use_execution_timer:
+            execution_timer.record_time(event_name="Program Initialisation", event_type="stop") #records the time the program started
+        
+        if run_pytorch_profiler:
+            # Start the profiler
+            torch_profiler.start()
+
+
+        print("Training Initiated")
+        tensorboard_logger.launch_dashboard()
+        print("Press Ctrl + c to and save the model during training.\n")
+        
+        start_time = time.time()                     # Begin the training timeout timer  # is this neccesary with the execution timer ??
+
         try:                                         # Try except clause allows user to exit training gracefully whilst still retaiing a saved model and ouput plots
             loop_range = tqdm(range(1, num_epochs+1), desc='Epochs', colour='red', dynamic_ncols=True, postfix="Starting")
-            epoch_start_time = time.time()           # Starts the epoch timer
+            epoch_start_time = time.time()           # Starts the epoch timer # What is the purpose of this?????????
             for epoch in loop_range:                 # For loop that iterates over the number of epochs where 'epoch' takes the values (0) to (num_epochs - 1)
                         
                 #  trackinng progress for exit cleanup
-                progress_state = 0
-
-                execution_timer.record_time(event_name="Epoch", event_type="start") #records the time the program started
-                progress_state = 1
+                if use_execution_timer:
+                    execution_timer.record_time(event_name="Epoch", event_type="start") #records the time the program started
 
                 #### IMPLEMNT THIS TO INJECT SEED VAULE AGAIN WEACH EPOCH SO THAT  THE TRAINING DATA IS THE DETERMINISTICALLY THE SAME EACH EPOCH NOT FRESH EACH TIME
                 if inject_seed_interval and epoch % inject_seed_interval == 0:
@@ -1600,8 +1644,8 @@ if __name__ == "__main__":
 
                 ### Training (use the train function)
                 if not validation_mode:
-                    execution_timer.record_time(event_name="Training", event_type="start") #records the time the program started
-                    progress_state = 2
+                    if use_execution_timer:
+                        execution_timer.record_time(event_name="Training", event_type="start") #records the time the program started
                     train_loss=train_epoch(epoch, 
                                             encoder, 
                                             decoder, 
@@ -1615,14 +1659,15 @@ if __name__ == "__main__":
                                             loss_vs_sparse_img,
                                             renorm_for_loss_calc,
                                             use_tensorboard,
-                                            writer,
+                                            tensorboard_logger,
                                             )
-                    execution_timer.record_time(event_name="Training", event_type="stop") #records the time the program started
+                    if use_execution_timer:
+                        execution_timer.record_time(event_name="Training", event_type="stop") #records the time the program started
 
                 ### Testing (use the test function)
-                execution_timer.record_time(event_name="Testing", event_type="start") #records the time the program started
-                progress_state = 3
-                test_loss, end_of_epoch_plotting_data = test_epoch(encoder, 
+                if use_execution_timer:
+                    execution_timer.record_time(event_name="Testing", event_type="start") #records the time the program started
+                test_loss, end_of_epoch_plotting_data, end_of_epoch_plotting_data_tensor = test_epoch(encoder, 
                                         decoder, 
                                         device, 
                                         test_loader, 
@@ -1633,15 +1678,16 @@ if __name__ == "__main__":
                                         loss_vs_sparse_img,
                                         renorm_for_loss_calc,
                                         )
-                execution_timer.record_time(event_name="Testing", event_type="stop") #records the time the program started
+                if use_execution_timer:
+                    execution_timer.record_time(event_name="Testing", event_type="stop") #records the time the program started
 
 
                 loop_range.set_postfix({'Train Loss': train_loss, 'Test Loss': test_loss})
 
                 # Plotting Data
-                if epoch % print_every_other == 0 and epoch != 0:         
-                    execution_timer.record_time(event_name="Plotting Function", event_type="start") #records the time the program started  
-                    progress_state = 4  
+                if epoch % print_every_other == 0 and epoch != 0:        
+                    if use_execution_timer:
+                        execution_timer.record_time(event_name="Plotting Function", event_type="start") #records the time the program started  
                     # Run plotting function for training feedback and telemetry.
                     encoder.eval()
                     decoder.eval()
@@ -1657,6 +1703,7 @@ if __name__ == "__main__":
                                                                             quantise_reconstructed_output,
                                                                             )
                     
+                    
                     number_of_true_signal_points, number_of_recovered_signal_points, in_data, noisy_data, rec_data = returned_data_from_plotting_function
                     if save_all_raw_plot_data:
                         save_variable(number_of_true_signal_points, f'Epoch {epoch}_number_of_true_signal_points', raw_plotdata_output_dir, force_pickle=True)
@@ -1667,10 +1714,11 @@ if __name__ == "__main__":
             
                     encoder.train()
                     decoder.train()
-                    execution_timer.record_time(event_name="Plotting Function", event_type="stop") #records the time the program started
+                    if use_execution_timer:
+                        execution_timer.record_time(event_name="Plotting Function", event_type="stop") #records the time the program started
 
-                execution_timer.record_time(event_name="Epoch Results", event_type="start") #records the time the program started      
-                progress_state = 5
+                if use_execution_timer:
+                    execution_timer.record_time(event_name="Epoch Results", event_type="start") #records the time the program started
 
                 epoch_end_time = time.time()
                 epoch_time = epoch_end_time - epoch_start_time
@@ -1696,19 +1744,20 @@ if __name__ == "__main__":
 
                 ## NEw tensorboard implemntation for perf data traking
                 if use_tensorboard:
-                    writer.add_scalar('Loss/Train', train_loss, epoch)
-                    writer.add_scalar('Loss/Test', test_loss, epoch)
-                    writer.add_scalar('Epoch Time', epoch_time, epoch)
-                    writer.add_scalar('Learning Rate', get_learning_rate(optim), epoch)
-                    writer.add_scalar('Gradient Norm', get_gradient_norm(encoder, decoder), epoch)
-                    writer.add_scalar('Avg Loss MSE', np.mean(avg_loss_mse), epoch)
-                    writer.add_scalar('Avg Loss SNR', np.mean(avg_loss_snr), epoch)
-                    writer.add_scalar('Avg Loss SSIM', np.mean(avg_loss_ssim), epoch)
-                    writer.add_scalar('Avg Loss NMI', np.mean(avg_loss_nmi), epoch)
-                    writer.add_scalar('Avg Loss CC', np.mean(avg_loss_cc), epoch)
-                    writer.add_scalar('Avg Loss True Positive XY', np.mean(avg_loss_true_positive_xy), epoch)
-                    writer.add_scalar('Avg Loss True Positive TOF', np.mean(avg_loss_true_positive_tof), epoch)
-                    writer.add_scalar('Avg Loss False Positive XY', np.mean(avg_loss_false_positive_xy), epoch)
+                    tensorboard_logger.add_scalar('Loss/Train', train_loss, epoch)
+                    tensorboard_logger.add_scalar('Loss/Test', test_loss, epoch)
+                    # tensorboard_logger.add_scalar('Epoch Time', epoch_time, epoch)
+                    tensorboard_logger.add_scalar('Model/Learning Rate', get_learning_rate(optim), epoch)
+                    tensorboard_logger.add_scalar('Model/Gradient Norm', get_gradient_norm(encoder, decoder), epoch)
+                    tensorboard_logger.add_scalar('Performance/MSE', np.mean(avg_loss_mse), epoch)
+                    tensorboard_logger.add_scalar('Performance/MAE', np.mean(avg_loss_mae), epoch)
+                    tensorboard_logger.add_scalar('Performance/SNR', np.mean(avg_loss_snr), epoch)
+                    tensorboard_logger.add_scalar('Performance/SSIM', np.mean(avg_loss_ssim), epoch)
+                    tensorboard_logger.add_scalar('Performance/NMI', np.mean(avg_loss_nmi), epoch)
+                    tensorboard_logger.add_scalar('Performance/CC', np.mean(avg_loss_cc), epoch)
+                    tensorboard_logger.add_scalar('Performance/True Positive XY (%)', np.mean(avg_loss_true_positive_xy), epoch)
+                    tensorboard_logger.add_scalar('Performance/True Positive TOF (%)', np.mean(avg_loss_true_positive_tof), epoch)
+                    tensorboard_logger.add_scalar('Performance/False Positives', np.mean(avg_loss_false_positive_xy), epoch)
 
 
                 # check if current epoch is a multiple of 'model_checkpoint_interval' and if so save the model
@@ -1721,9 +1770,10 @@ if __name__ == "__main__":
                 ### Live Comparison Plots
                 if plot_comparative_loss:
                     create_comparison_plot_data(slide_live_plot_size, epoch, max_epoch_reached, comparative_live_loss, comparative_loss_titles, comparative_epoch_times, comparative_history_da, data=history_da['train_loss'])
-                execution_timer.record_time(event_name="Epoch Results", event_type="stop") #records the time the program started
-                execution_timer.record_time(event_name="Epoch", event_type="stop") #records the time the program started
-                progress_state = 6
+                
+                if use_execution_timer:
+                    execution_timer.record_time(event_name="Epoch Results", event_type="stop") #records the time the program started
+                    execution_timer.record_time(event_name="Epoch", event_type="stop") #records the time the program started
 
                 ### Training Timeout Check
                 if timeout_time:
@@ -1736,25 +1786,8 @@ if __name__ == "__main__":
         # If user presses Ctr + c to exit training loop, this handles the exception and allows the code to run its final data and model saving etc before exiting        
         except KeyboardInterrupt:
             print("Keyboard interrupt detected. Exiting training gracefully...")
-            execution_timer.record_time(event_name="Training Interrupted by User", event_type="start") #records the time the program started
-            if progress_state >= 1 and progress_state < 6:
-                execution_timer.record_time(event_name="Epoch", event_type="stop") #records the time the program started
-            if progress_state >= 2:
-                execution_timer.record_time(event_name="Training", event_type="stop") #records the time the program started
-            if progress_state >= 3:
-                execution_timer.record_time(event_name="Testing", event_type="stop") #records the time the program started
-            if progress_state >= 4:
-                execution_timer.record_time(event_name="Plotting Function", event_type="stop") #records the time the program started
-            if progress_state >= 5:
-                execution_timer.record_time(event_name="Epoch Results", event_type="stop") #records the time the program started
-            execution_timer.record_time(event_name="Training Interrupted by User", event_type="stop") #records the time the program started
-
-
-        execution_timer.record_time(event_name="Program Debrief", event_type="start") #records the time the program started
-
-        if run_profiler:
-            # Stop profiling
-            profiler.disable()
+            if use_execution_timer:
+                execution_timer.record_time(event_name="Training Interrupted by User", event_type="start") #records the time the program started
 
         #%% - After Training
         encoder.eval()
@@ -1766,6 +1799,15 @@ if __name__ == "__main__":
 
         # Report the training time
         print(f"\nTotal Training Cycle Took {training_time:.2f} seconds")
+        if use_execution_timer:
+            execution_timer.record_time(event_name="Program Debrief", event_type="start") #records the time the program started
+
+        if run_profiler:
+            profiler.disable()
+
+        if run_pytorch_profiler:              
+            print(torch_profiler.key_averages().table(sort_by="cuda_time_total", row_limit=10))
+            torch_profiler.stop()
 
         # Build Dictionary to collect all output data for .txt file
         full_data_output = {}
@@ -1783,6 +1825,62 @@ if __name__ == "__main__":
         detailed_performance_loss_dict["epoch_avg_loss_true_positive_tof"] = epoch_avg_loss_true_positive_tof
         detailed_performance_loss_dict["epoch_avg_loss_false_positive_xy"] = epoch_avg_loss_false_positive_xy
 
+        
+        ##  NEW TENSOBOARD IMPLETATION of saving the settings
+        if use_tensorboard:
+            print("Logging hyperparameters to TensorBoard...")
+            tensorboard_logger.writer.add_hparams(
+                {
+                    "lr": learning_rate,
+                    "batch_size": batch_size,
+                    "epochs": num_epochs,
+                    "max_epochs_reached": max_epoch_reached,
+                    #"optimizer": "AdamW" if use_adamw_optimiser else "Adam",
+                    "weight_decay": optim_w_decay,
+                    "dropout": dropout_prob,
+                    "latent_dim": latent_dim,
+                    "fc_input_dim": fc_input_dim,
+                    #"noise_points": noise_points,
+                    "train_split": train_test_split_ratio,
+                    "val_test_split": val_test_split_ratio,
+                    "time_dimension": time_dimension,
+                    "seed": seeding_value,
+                    "reconstruction_threshold": reconstruction_threshold,
+                    "precision": precision,
+                    "shuffle_train_data": shuffle_train_data,
+                    "record_weights": record_weights,
+                    #"record_biases": record_biases,
+                    #"record_activity": record_activity,
+                    "timeout_time": timeout_time,
+                }
+               , {
+                   
+                    # "hparam/metric": train_loss,
+                    # "hparam/metric": test_loss,
+                    # "hparam/metric": epoch_avg_loss_mse[-1],
+                    # "hparam/metric": history_da['train_loss'][-1],
+                    # "hparam/metric": history_da['test_loss'][-1],
+                    # "hparam/metric": epoch_avg_loss_snr[-1],
+                    # "hparam/metric": epoch_avg_loss_psnr[-1],
+                    # "hparam/metric": epoch_avg_loss_ssim[-1],
+                    # "hparam/metric": epoch_avg_loss_nmi[-1],
+                    # "hparam/metric": epoch_avg_loss_cc[-1],
+                    "hparam/metric": epoch_avg_loss_true_positive_xy[-1],
+                    "hparam/metric": epoch_avg_loss_true_positive_tof[-1],
+                    "hparam/metric": epoch_avg_loss_false_positive_xy[-1],
+
+
+                },
+            
+            )
+
+            # Summing all of the epoch times in the list apart from the final one as it may have been cut short and its difficult to calulate how many samples were processed at atis timee 
+            total_time = sum(epoch_times_list[:-1]) if len(epoch_times_list) > 1 else epoch_times_list[0]
+            total_samples = num_of_files_in_path * (max_epoch_reached - 1)  # Total
+
+            tensorboard_logger.add_scalar('Train Time Normalised Per Sample (s)', total_time / total_samples if total_samples > 0 else 0, 0)
+            tensorboard_logger.add_scalar('Train Time Normalised Per Sample (s)', total_time / total_samples if total_samples > 0 else 0, 1)
+        print("Complete")
 
         #%% - Save any remaining unsaved raw plot data
         epochs_range = range(1,len(history_da["train_loss"])+1) 
@@ -2028,12 +2126,11 @@ if __name__ == "__main__":
                             model_names=model_names, 
                             pretrained_model_folder_paths=pretrained_model_folder_paths,  
                             debug_mode = debug_hpo_perf_analysis)
-
-    execution_timer.record_time(event_name="Program Debrief", event_type="stop") #records the time the program started
+    if use_execution_timer:
+        execution_timer.record_time(event_name="Program Debrief", event_type="stop") #records the time the program started
 
     #%% - End of Program - Printing message to notify user!
     print("\nProgram Complete - Shutting down...\n")    
-
     if run_profiler:
         # save the profiling results to a file
         profiler.dump_stats('profiler_results.prof')
@@ -2042,15 +2139,28 @@ if __name__ == "__main__":
         command = "snakeviz -s profiler_results.prof"
         os.system(command)
 
-    if run_pytorch_profiler:
-        # Stop the profiler
-        torch_profiler.stop()
-        print(torch_profiler.key_averages().table(sort_by="cuda_time_total", row_limit=10))
 
-    print("Generating execution timer plot...")
-    fig = execution_timer.return_plot(dark_mode=True)
-    fig.set_size_inches(28.5, 10.8)
-    Out_Label = graphics_dir + f'{model_save_name} - Execution Timer.png'
-    plot_save_choice(plot_or_save, Out_Label, dpi=100)  
 
-    print("- Completed -")
+
+
+    if use_execution_timer:
+        # Generate and save execution timer plot
+        execution_timer.close()   # Adds stop times for any unclosed timers due to unnforsen exit or user interupt
+
+        print("Generating execution timer plot...")
+        fig = execution_timer.return_plot(dark_mode=True)
+        fig.set_size_inches(28.5, 10.8)
+        Out_Label = graphics_dir + f'{model_save_name} - Execution Timer.png'
+        plot_save_choice(plot_or_save, Out_Label, dpi=100)
+        if use_tensorboard:
+            tensorboard_logger.add_figure('Execution Timer', fig)
+
+
+        print("Execution timer plot complete.")
+
+
+    if use_tensorboard:
+        tensorboard_logger.close()
+
+    print("- DC3D Training Completed -")
+    print("Program Exiting... Goodbye!\n")
