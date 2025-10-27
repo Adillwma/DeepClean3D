@@ -77,7 +77,7 @@ class MTN_Dataset(Dataset):
 
     def __init__(self, dataset_paths_ondisk, large_data_bundles_size, large_batch_size, device, shuffle_data=False, preprocess_on_gpu=True, precision=64, timer=None):
         self.large_dataset = DTM_Dataset(dataset_paths_ondisk)
-        self.large_dataloader = DataLoader(self.large_dataset, large_batch_size, shuffle_data)
+        self.large_dataloader = DataLoader(self.large_dataset, large_batch_size, num_workers=0) # fix shuffle, investigat pin memory, investigate, async, investigate num_workers
         self.large_data_bundles_size = large_data_bundles_size
         self.large_batch_size = large_batch_size
         self.indices = list(range(self.large_data_bundles_size * self.large_batch_size))
@@ -106,16 +106,17 @@ class MTN_Dataset(Dataset):
 
         # take tensor of shape (bundle_size, batch_size, c, x, y) to (bundle_size * batch_size, c, x, y) by placing each bundle dim after the previous
         self.buffer_data = buffer_data.view(-1, *buffer_data.shape[2:])
-        self.execution_timer.record_time(event_name="Data Conversion and move to device in dataset", event_type="start")
+        if self.execution_timer:
+            self.execution_timer.record_time(event_name="Data Conversion and move to device in dataset", event_type="start")
         # convert to the correct precision
         self.buffer_data = self.buffer_data.to(self.dtype)
 
         # move to the correct device
         if self.preprocess_on_gpu:
             self.buffer_data = self.buffer_data.to(self.device)
-        self.execution_timer.record_time(event_name="Data Conversion and move to device in dataset", event_type="stop")
+        if self.execution_timer:
+            self.execution_timer.record_time(event_name="Data Conversion and move to device in dataset", event_type="stop")
 
-    
     def split_list(self, list):
         result = []
         sublist = []
@@ -148,30 +149,47 @@ class MTN_Dataset(Dataset):
 
             for split_index, idx_list in enumerate(split_indices):
                 if idx_list[0] == 0:
-                    self.execution_timer.record_time(event_name="DTM Reload", event_type="start")
+                    if self.execution_timer:
+                        self.execution_timer.record_time(event_name="DTM Reload", event_type="start")
                     self.large_dataloader_iterator = iter(self.large_dataloader)
-                    self.execution_timer.record_time(event_name="DTM Reload", event_type="stop")
-                
-                if idx_list[0] % (self.large_data_bundles_size * self.large_batch_size) == 0: # If the index is a multiple of the bundle size then load a new bundle of data into memory
-                    self.execution_timer.record_time(event_name="Disk to Memory Load", event_type="start")
+                    if self.execution_timer:
+                        self.execution_timer.record_time(event_name="DTM Reload", event_type="stop")
 
+                if idx_list[0] % (self.large_data_bundles_size * self.large_batch_size) == 0: # If the index is a multiple of the bundle size then load a new bundle of data into memory
+                    if self.execution_timer:
+                        self.execution_timer.record_time(event_name="Disk to Memory Load", event_type="start")
+                        self.execution_timer.record_time(event_name="DTM-CLEAR", event_type="start")
+                    
                     #######TRYIN GTO OVERCOME THE HUGE BUMP IN MEMORY WHEN LOADING THE NEW SET? SEEMS LIKE ITS LOADING BEFORE IT CLEARS THE OLD SOMHOW?
                     self.data = None # Clear the memory of the old data
-                    
-                    # Load data from the buffer 
+
+                    if self.execution_timer:
+                        self.execution_timer.record_time(event_name="DTM-CLEAR", event_type="stop")
+                        self.execution_timer.record_time(event_name="DTM-LoadFromBuffer", event_type="start")
+
+                    # Load data from the buffer
                     self.data = self.buffer_data
+                    if self.execution_timer:
+                        self.execution_timer.record_time(event_name="DTM-LoadFromBuffer", event_type="stop")
+                        self.execution_timer.record_time(event_name="DTM-FillBuffer", event_type="start")
 
                     # Load a new bundle of data into the buffer
                     self.call_for_bundles()
+                    if self.execution_timer:
+                        self.execution_timer.record_time(event_name="DTM-FillBuffer", event_type="stop")
+                        self.execution_timer.record_time(event_name="DTM-ShuffleIndices", event_type="start")
 
                     # Shuffling across the bundle, without loosing the ability to use logic based on index
                     self.shuffled_indices = self.indices.copy()
                     if self.shuffle_data:
                         random.shuffle(self.shuffled_indices)
-
-                    self.execution_timer.record_time(event_name="Disk to Memory Load", event_type="stop")
-
-                self.execution_timer.record_time(event_name="Memory to Network Load", event_type="start")
+        
+                    if self.execution_timer:
+                        self.execution_timer.record_time(event_name="DTM-ShuffleIndices", event_type="stop")
+                        self.execution_timer.record_time(event_name="Disk to Memory Load", event_type="stop")
+                
+                if self.execution_timer:
+                    self.execution_timer.record_time(event_name="Memory to Network Load", event_type="start")
 
                 idx_array = np.array(idx_list)
 
@@ -181,11 +199,14 @@ class MTN_Dataset(Dataset):
                 semi_batch = self.data[min_internal_bundle_idx : max_internal_bundle_idx+1]
                 semi_batchs.append(semi_batch)
 
-                self.execution_timer.record_time(event_name="Memory to Network Load", event_type="stop")
-
-            self.execution_timer.record_time(event_name="Memory to Network Cat", event_type="start")
+                if self.execution_timer:
+                    self.execution_timer.record_time(event_name="Memory to Network Load", event_type="stop")
+    
+            if self.execution_timer:
+                self.execution_timer.record_time(event_name="Memory to Network Cat", event_type="start")
             batch = torch.cat(semi_batchs, dim=0)
-            self.execution_timer.record_time(event_name="Memory to Network Cat", event_type="stop")
+            if self.execution_timer:
+                self.execution_timer.record_time(event_name="Memory to Network Cat", event_type="stop")
             return batch
     
 class StackedDatasetLoader(DataLoader):
@@ -236,10 +257,10 @@ if __name__ == "__main__":
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     input_signal_settings = [signal_points, x_std_dev, y_std_dev, tof_std_dev, noise_points]
 
-    dataset_path_ondisk = r'N:\Yr 3 Project Datasets\[V3]_RDT_50K\Data\\'    # Path to the directory where the data files are stored on disk in bundles
+    dataset_path_ondisk = [r'N:\DeepClean3D Project Folder\Yr 3 Project Datasets\[V3]_RDT_50K\Data\\' ]   # Path to the directory where the data files are stored on disk in bundles
     large_data_bundles_size = 10000     # the number of individual files in each bundle
     number_of_bundles_to_memory = 1 # Essentially the 'Large batch Size' i.e how many bundles to load into memory at once [Must be less than or equal to the number of bundles in the dataset on disk]
-    small_batch_size = 5000            # Batch Size for loading into the neural net from the in memory bundles               
+    small_batch_size = 250            # Batch Size for loading into the neural net from the in memory bundles               
     shuffle_data = False             # Shuffle the data across both large and small batches
     preprocess_on_gpu = True        # Preprocess the data on the GPU if available, otherwise on the CPU
     precision = 64                   # The precision of the data to be loaded into the neural network
@@ -256,10 +277,10 @@ if __name__ == "__main__":
                                                   batch_size=small_batch_size, 
                                                   drop_last=False)
 
-    small_dataloader = StackedDatasetLoader(input_signal_settings, physical_scale_parameters, time_dimension, device,  preprocess_on_gpu, precision, dataset=small_dataset, timer=execution_timer, batch_sampler=batch_sampler) # Shuffle is handled by the dataset, set with the variable 'shuffle_data'. It must not be applied here otherwise will induce errors in the logic based on index value
+    small_dataloader = StackedDatasetLoader(input_signal_settings, physical_scale_parameters, time_dimension, device,  preprocess_on_gpu, precision, dataset=small_dataset, timer=execution_timer, batch_sampler=batch_sampler, num_workers=0) # Shuffle is handled by the dataset, set with the variable 'shuffle_data'. It must not be applied here otherwise will induce errors in the logic based on index value
 
+    program_start_time = time.perf_counter()
     for epoch in range(5):
-
         for idx, data in tqdm(enumerate(small_dataloader)):
             execution_timer.record_time(event_name="Small Batch Presented", event_type="start")
             batch, sparse_output_batch, sparse_and_resolution_limited_batch, noised_sparse_reslimited_batch = data
@@ -268,6 +289,8 @@ if __name__ == "__main__":
             #if idx >= 30:
             #    break
     print('Done...')
+    program_end_time = time.perf_counter()
+    print(f"Total program time: {program_end_time - program_start_time} seconds")
 
     fig = execution_timer.return_plot(dark_mode=True)
     plt.show()
