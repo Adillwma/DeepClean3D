@@ -1,6 +1,7 @@
 import torch
 import numpy as np
 import pickle
+import os
 import pandas as pd
 import matplotlib.pyplot as plt
 import openpyxl
@@ -29,6 +30,31 @@ def set_model_precision(encoder, decoder, precision):
 
     return encoder, decoder, dtype
 
+import os
+import re
+
+def extract_model_id_from_path(model_path):
+    """
+    Extracts the model ID from the given model path, regardless of where it appears.
+    
+    The model ID pattern is always 'MID<NUMBERS>__' and can be part of 
+    any folder name or the filename.
+    
+    Args:
+        model_path (str): The full file path of the model.
+    
+    Returns:
+        int: The extracted model ID. Returns 0 if the model predates the model ID system.
+    """
+    # Search for a pattern like 'MID4__' or 'MID123__' anywhere in the path
+    match = re.search(r'MID(\d+)__', model_path)
+    
+    if match:
+        return int(match.group(1))
+    else:
+        # Model predates the model ID system
+        ##! Could log or warn here
+        return 0
 
 def format_time(seconds):
     hours, remainder = divmod(seconds, 3600)
@@ -227,3 +253,19 @@ def plot_save_choice(plot_or_save, output_file_path=None, dpi=None):
                          "2 prints to terminal and saves to disk (blocking till closed).\n"
                          "3 will neither save nor show any plots, they will be immediately closed, useful for debugging.")
     
+
+
+
+
+def get_learning_rate(optimizer):
+    for param_group in optimizer.param_groups:
+        return param_group['lr']
+    
+def get_gradient_norm(encoder, decoder):
+    total_norm = 0.0
+    for p in list(encoder.parameters()) + list(decoder.parameters()):
+        if p.grad is not None:
+            param_norm = p.grad.data.norm(2)
+            total_norm += param_norm.item() ** 2
+    total_norm = total_norm ** (1. / 2)
+    return total_norm   

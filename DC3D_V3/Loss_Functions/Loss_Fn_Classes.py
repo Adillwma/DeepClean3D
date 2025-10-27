@@ -125,6 +125,35 @@ class ACBLossNI(torch.nn.Module):
             ]))
 
 
+
+class BinaryPredMSELoss(torch.nn.Module):
+    def __init__(self):
+        """
+        Initializes the Binary Prediction MSE Loss Function class.
+
+        """
+        super().__init__()   
+        self.mse_loss = torch.nn.MSELoss(reduction='mean')
+
+    def forward(self, reconstructed_image, target_image):
+        """
+        Calculates the mean squared error (MSE) loss between target_image and reconstructed_image.
+        First converting the target image to a binary mask.
+
+        Args:
+        - target_image: a tensor of shape (B, C, H, W) containing the target binary mask
+        - reconstructed_image: a tensor of shape (B, C, H, W) containing the reconstructed binary mask
+
+        Returns:
+        - mse_loss: a scalar tensor containing the MSE loss
+        """
+        # Convert target image to binary mask by making every single non-zero point = 1 and all 0 points to stay 0 (1 for signal, 0 for empty)
+        binary_target = (target_image > 0).float()
+        mse_loss = self.mse_loss(reconstructed_image, binary_target)
+        
+        return mse_loss
+
+
 # Tripple Loss Functions work across the four classes: True Positive, False Positive, False Negative, True Negative
 #Original Tripple Loss Function (DEPRECIATED)
 # ACB-ClassLoss
