@@ -1,3 +1,104 @@
+
+
+
+
+
+
+- High priority
+  - Fix test_epoch / test_epoch2 using undefined `epoch`:
+    - Remove or pass `epoch` where used (e.g., pixel telemetry block) or compute telemetry in caller.
+  - full_model_export returns None when `checkpoint_save` is True:
+    - Ensure function always returns AE file name (add explicit return in both branches).
+  - `shuffle_train_data` flagged as breaking (NaNs in ACBMSE / FP16 behaviour):
+    - Investigate root cause and add guarded tests; add a reproducible minimal test-case.
+  - Inconsistent loss_function_selection checks:
+    - File writes check numeric values (e.g., `if loss_function_selection == 0`) but selection is a string — normalize and fix checks.
+
+- Data loader / preprocessing
+  - `data_loader_workers = 0# FIX!` — decide default and handle edge cases for Windows (multiprocessing issues).
+  - `preprocess_on_gpu` handling — ensure fallback to CPU when CUDA unavailable and avoid double .to(device) moves.
+  - `train_loader` / `test_loader` created twice (first with batch_size, then replaced with batch_sampler) — consolidate and remove duplication.
+  - `num_of_files_in_path` calculation multiplies by `large_data_bundles_size` — confirm logic for bundle-based datasets and add unit tests.
+  - `MTN_Dataset` / StackedDatasetLoader: memory/batching comments — audit memory duplication and document expected memory footprint.
+
+- Precision / device / dtype issues
+  - Precision/dtype handling inconsistent when loading pretrained model:
+    - `precision = 32 #checkpoint["precision"] BUG` and `dtype = torch.float32   # remove once fixed!!!!` — use consistent validation, convert strings to torch dtypes, and propagate reliably.
+  - FP16 / mixed precision NaN handling:
+    - Add checks, automatic fallback, or gradient scaling when using 16-bit; document supported hardware.
+
+- Loss, renormalisation, metrics
+  - `belief_telemetry` returns tensors; comment suggests returning ints:
+    - Cast to Python int (.item()) before returning.
+  - `renorm_for_loss_calc` branching duplicates renorm operations in several places — centralise renorm logic and avoid in-place modification of tensors (use .clone()/.detach()).
+  - Some custom loss functions marked DEFUNCT / NEEDS CLEANING (ff_loss, loss_penalty, loss_reduction) — remove or refactor.
+  - Split loss selection indices vs names inconsistent — normalize interface (use strings or enums).
+
+- Plotting, telemetry and visualisation
+  - `plot_epoch_data` & reconstruct_3D:
+    - 3D masking plotting sometimes raises errors when masked_im shape mismatches — add robust shape checks and clearer error messages.
+  - `plot_pixel_threshold_telemetry` uses variables not passed into functions (e.g., `decoded_data`, `epoch` inside test_epoch) — unify where telemetry is generated.
+  - `plot_or_save` semantics mixed between ints and strings; standardize enum/constants and validate inputs.
+  - `plot_live` comparatives: trimming of comparative epoch lists is fragile (`epoch_t_list = epoch_t_list[1:]`) — fix source of extra 0 time entries.
+
+- Model export / pretrained handling
+  - Robust_model_export2 usage: comments suggest brittle detection and hard-coded AE_file_name:
+    - Simplify: ensure returned script and class names are reliable, remove hard-coded fallbacks.
+  - Loading pretrained checkpoint via exec():
+    - Add security checks, version tagging, and fallbacks if expected classes or fields are missing.
+  - full_model_export: duplicate save logic and path handling is confusing — refactor to single save path builder and document outputs.
+
+- Hooks, telemetry buffering and memory
+  - hook_flush_interval/hook_max_memory_usage marked FIX / CONNECT:
+    - Implement safe flushing, memory tracking, and a clear API for enabling/disabling.
+  - register_network_hooks writes into globals `activations`, `weights_data`, `biases_data` — consider encapsulating and limiting memory growth.
+
+- Profiling, compile and platform caveats
+  - `compile_model` comment "NOT AVAILIBE ON WINDOWS?!" — detect platform and disable/guard torch.compile accordingly.
+  - `run_pytorch_profiler` uses hard-coded trace path '/pytorch_profiler_tracelog' — make configurable and validate write permissions.
+  - cProfile results path and snakeviz call rely on snakeviz installation — make optional and check availability.
+
+- Imports and unused code
+  - Remove or justify odd imports: `from pickle import FALSE`, `from sympy import use`, `from xml.etree.ElementInclude import include` — these appear unused or incorrect.
+  - Consolidate duplicate imports (`torch` imported multiple times) and unused variables.
+
+- Code quality / structure / TODOs
+  - Many "CLEAN UP THIS METHOD TO SOMTHING BETTER!!!!!!" comments:
+    - Refactor large functions into smaller units (e.g., plotting, metric aggregation, training loop).
+  - Centralise settings and CLI override:
+    - `override_globals_with_cli()` currently overrides many globals including complex types — validate/parse lists/dicts robustly and support typed parsing.
+  - Remove placeholder/dummy `checkpoint = {}` when not using pretrained model; use a typed small dataclass for checkpoint metadata.
+  - Replace many global mutable lists (avg_* variables) with a metrics collector object to avoid implicit state leakage.
+  - Remove commented-out dead code and clarify which features are experimental vs supported.
+  - Add unit tests for:
+    - CLI overrides, full_model_export, test_epoch telemetry branch, renormalisation functions, and dataset indexing.
+
+- Documentation / user feedback
+  - Add clearer docstrings and parameter validation for public functions (train_epoch, test_epoch, plot_epoch_data, full_model_export).
+  - Add a CONTRIBUTING or README note describing required environment, supported precision, and tensorboard/profiler dependencies.
+
+- Misc
+  - `tensorboard_logger.launch_dashboard()` is called after TensorBoardLogger already may auto-launch — avoid duplicate launches and guard for headless environments.
+  - Ensure `execution_timer` is optional: many calls assume it exists; guard calls when `use_execution_timer` is False.
+  - Ensure graceful shutdown when saving profiler/tensorboard resources (check existence before calling .close()).
+
+Suggested next steps
+  1. Fix blocking/obvious runtime bugs: undefined `epoch` in test_epoch, full_model_export missing return, inconsistent loss selection checks.
+  2. Add unit tests for fixed items.
+  3. Triage and schedule refactors: dataset/memory, precision handling, and plotting/telemetry consolidation.
+
+
+
+
+
+
+
+
+
+
+
+
+
 improvements:
 
 #### ~~~~
@@ -6,11 +107,11 @@ improvements:
 
 #### ~~~~
 
-#### ~~~~
+#### ~~~~ aLLOW EXECUTION TIMER TO AUTO STOP ALL STARTED TIMER WHEN IT IS SHUTDOWN UNEPECTANTLY???!!!
 
 #### ~~~~ IMPROVE Move o full tensoboard data logging for perf 
 
-#### ~~~~ PArent ID not being set properly as all models pick up 0 for parent id when they are pretrain wheich means thee data was not  ofund for them to nnumbe rit bbut they wer epretrain
+#### ~~~~ [DONE!] PArent ID not being set properly as all models pick up 0 for parent id when they are pretrain wheich means thee data was not  ofund for them to nnumbe rit bbut they wer epretrain
 
 #### ~~~~ IMPROVE:     avg_loss_snr.append((10*np.log10(signal_spatial_retention_raw/numof_false_positives_xy)/batch_size) if numof_false_positives_xy !=0 else 1000)  # Avoid div by 0 but needs a better value for this case!
 
