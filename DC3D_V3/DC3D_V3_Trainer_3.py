@@ -4,8 +4,12 @@
 # University of Bristol
 # adill@neuralworkx.com
 
-
-
+# NOTE: RUN TESTS WITH THE RECON THRESHOLD AT 0 AND AT 1 !!!!
+## isse with 3d PLOTS DATA BBEING WRONG WAY NOW HAVE CHANGED PLOT AXIS !!! -SEEMS TO BE ISSUE IN ADDING NOISE POINTS WHERE THEY GET ADDED OUTSIDE THE ACTIVE SENSOR AREA !!!
+# THE WAY OF COMPARING THE MASKED OUTPUT TO THE INPUT WILL NOT WORK WITH RESOULOTION LIMITING STD DEV SHIFT!!!
+# ALSO THE PERFORMANCE METIRC ANALYSIS OF MASKING WILL NOT WORK WITH SHIFT !!!
+# [DONE!] INVESTIGATE THE TRE POSITIVE XY METIRC, IS IT ACTUALLY DOINGN THE PERCENTAGE OF GUESSES OF SIGNAL THAT WERE SINGAL OR IS IT THE PERCENTAGE OF ACTUALLY TRUE SIGNAL THAT WERE GUESSED CORRECTLY? MASKING STATS NOT LOOKING RIGHT IN DASHBOARD!!! tof should follow xy???
+# 
 import torch
 import tensorboard
 
@@ -24,14 +28,18 @@ dataset_paths = [#"N:/DeepClean3D Project Folder/Yr 3 Project Datasets/V2_1K_FAS
 
 
 #%% - Run Settings
-model_save_name = "Long"      # Name of the model to be saved, this will be the name of the folder that the model is saved in
+model_save_name = "BASELINE_1Knoise"      # Name of the model to be saved, this will be the name of the folder that the model is saved in
 num_epochs = 500                              # Set max number of epochs to run for. {Default = 100}
 timeout_time = False                         # Time in minuits to wait before stopping training, set to False to disable time based stopping. {Default = False}. NOTE! Program will allow the epoch currently in progress to conclude before stopping.
 
 model_checkpoint_interval = 20               # Number of epochs between each model checkpoint save, set to False for no checkpointing. If set to a value then the model will save a checkpoint of the model and optimiser state dicts at the end of each 'model_checkpointing_interval' epochs
-print_every_other = 1                        # [default = 2] 1 is to save/print all training plots every epoch, 2 is every other epoch, 3 is every 3rd epoch etc
+print_every_other = 5                        # [default = 2] 1 is to save/print all training plots every epoch, 2 is every other epoch, 3 is every 3rd epoch etc
 
 validation_mode = False                       # If set to True then validation mode is enabled, if False then training mode is used. In validation mode the model weights are not updated and the model is only evaluated on the validation dataset. {Default = False}
+
+allow_training_pausing = True              # If set to true then the training can be paused and resumed by creating a file called 'pause_training.txt' in the results folder, to resume training delete the file. {Default = True}
+pause_file_check_interval = 60                  # Number of seconds between each check for the pause file, only used if 'allow_training_pausing' is set to True. {Default = 60}
+pause_file_location = "DC3D_V3\Local_Program_Data\pause.txt"        # To set the location of the pause file to be checked for pausing training, only used if 'allow_training_pausing' is set to True. {Default = "DC3D_V3\Local_Program_Data\pause.txt"}
 
 #%% - Training Hyperparameter Settings
 batch_size = 250                             # Set batch size - number of samples to pull per batch. {Default = 64}
@@ -51,8 +59,8 @@ reconstruction_threshold = 0.25               # MUST BE BETWEEN 0-1  #Threshold 
 quantise_reconstructed_output = True
 
 #%% - Image Preprocessing Settings
-signal_points = (25, 35)                    # Set the number of signal points to add
-noise_points = (0, 100)                      # Set the number of noise points to add
+signal_points = 300#(25, 35)                    # Set the number of signal points to add
+noise_points = (0, 1000)                      # Set the number of noise points to add
 x_std_dev = 0                                # (mm) Set the standard deviation of the detectors error in the x axis
 y_std_dev = 0                                # (mm) Set the standard deviation of the detectors error in the y axis
 tof_std_dev = 0                              # (ns) Set the standard deviation of the detectors error in the time of flight 
@@ -172,6 +180,8 @@ plot_Graphwiz = True                         # [default = True]
 
 
 #%% - Advanced Debugging Settings
+eps = 1e-12                                    # Small value to prevent division by zero errors in non critical functions
+
 print_encoder_debug = False                     # [default = False]  
 print_decoder_debug = False                     # [default = False] 
 print_network_summary = False                   # [Default = False] Prints the network summary to terminal
@@ -183,7 +193,7 @@ debug_model_exporter  = False                   # [default = False]
 full_dataset_integrity_check = False            # [Default = False] V slow  #Checks the integrity of the dataset by checking shape of each item as opposed to when set to false which only checks one single random file in the dataset
 full_dataset_distribution_check = False         # [Default = False] V slow  #Checks the distribution of the dataset , false maesn no distributionn check is done
 
-use_execution_timer = True    #FIX!!     ###CONNECT!! # [Default = True] Uses the execution timer to time each module in the process
+use_execution_timer = False    #FIX!!     ###CONNECT!! # [Default = True] Uses the execution timer to time each module in the process
 run_profiler = False                            # [Default = False] Runs the cProfiler on the training loop to check for bottlenecks and slow functions
 run_pytorch_profiler = False # FIX!!
 
@@ -525,7 +535,7 @@ def belief_telemetry(data:torch.Tensor, reconstruction_threshold: float, epoch: 
     return (above_threshold, below_threshold)   # REPLACE WITH return (int(above_threshold.item()), int(below_threshold.item())) once everything downstream has been checked for compatibility!
                 
 
-def quantify_loss_performance(clean_input_batch, noised_target_batch, time_dimension):
+def quantify_loss_performance(clean_input_batch, noised_target_batch, time_dimension, reslimited_batch=None, masked_batch=None):
     """
     This function compares each image in the batch to its corresponding target image and calculates a range of enhanced performance metrics for each. The results for each metric are then avaeraged over the batch and this average is appended to the corresponding list of average metrics results for each epoch which is tracked eleshwehre in the enhanced performance tracking system
 
@@ -562,6 +572,26 @@ def quantify_loss_performance(clean_input_batch, noised_target_batch, time_dimen
 
     avg_loss_snr.append((10*np.log10(signal_spatial_retention_raw/numof_false_positives_xy)/batch_size) if numof_false_positives_xy !=0 else 1000)  # Avoid div by 0 but needs a better value for this case!
     #avg_loss_snr.append(SNR2(clean_input_batch.squeeze(1), noised_target_batch.squeeze(1)))
+
+    if reslimited_batch is not None and masked_batch is not None:  # RENAME ALL THESE VARIABLES PROPERLY!!!
+        clean_reslimited_batch_squeezed = reslimited_batch.squeeze(1)
+        noised_masked_batch_squeezed = masked_batch.squeeze(1)
+
+        masked_avg_loss_mse.append(MSE2(clean_reslimited_batch_squeezed, noised_masked_batch_squeezed))
+        masked_avg_loss_mae.append(MAE2(clean_reslimited_batch_squeezed, noised_masked_batch_squeezed))
+        masked_avg_loss_psnr.append(PSNR2(clean_reslimited_batch_squeezed, noised_masked_batch_squeezed, time_dimension))
+        masked_avg_loss_nmi.append(NomalisedMutualInformation2(clean_reslimited_batch_squeezed, noised_masked_batch_squeezed))
+        masked_avg_loss_cc.append(correlation_coeff2(clean_reslimited_batch_squeezed, noised_masked_batch_squeezed))
+        masked_avg_loss_ssim.append(SSIM2(reslimited_batch, masked_batch, time_dimension))
+
+        percentage_of_true_positive_xy, percentage_of_true_positive_tof, numof_false_positives_xy, num_false_negative_xy, signal_spatial_retention_raw, signal_temporal_retention_raw = compare_images_pixels2(clean_reslimited_batch_squeezed, noised_masked_batch_squeezed)
+        masked_avg_loss_true_positive_xy.append(percentage_of_true_positive_xy)
+        masked_avg_loss_true_positive_tof.append(percentage_of_true_positive_tof)
+        masked_avg_loss_false_positive_xy.append(numof_false_positives_xy / batch_size)
+        #masked_avg_loss_false_negative_xy.append(loss_false_negative_xy / batch_size)
+
+        masked_avg_loss_snr.append((10*np.log10(signal_spatial_retention_raw/numof_false_positives_xy)/batch_size) if numof_false_positives_xy !=0 else 1000)  # Avoid div by 0 but needs a better value for this case!
+        #masked_avg_loss_snr.append(SNR2(reslimited_batch.squeeze(1), masked_batch.squeeze(1)))
 
 
 
@@ -676,6 +706,9 @@ def plot_epoch_data(end_of_epoch_plotting_data, epoch, model_save_name, time_dim
     # 2D Input/Output Comparison Plots 
     fig_2d = plt.figure(figsize=(16,9))                                      #Sets the figure size
     #loop = tqdm(range(n), desc='Plotting 2D Comparisons', leave=False, colour="green") 
+
+    ### USE THE TENSOR END OF EPOCH DATA AS INNPUT AND THEN CONVERT TO NUMP DO CPU DETACH AND QUANTISE UP HERE ALL AS ONE TENSOR
+
     for i, (img, sparse_output_batch, sparse_and_resolution_limited_batch, noised_sparse_reslimited_batch, recovered_batch, recovered_masking_batch) in tqdm(enumerate(end_of_epoch_plotting_data), desc='Plotting 2D Comparisons', leave=False, colour="green", dynamic_ncols=True) :     # CLEAN UP START 
 
         # Update tqdm bar
@@ -920,6 +953,11 @@ def train_epoch(epoch, encoder, decoder, device, dataloader, loss_fn, optimizer,
         # Backward pass
         optimizer.zero_grad() # Reset the gradients - IS THIS CORRECT???
         loss.backward() # Compute the gradients
+
+        gradnorm, paramnorm = get_grad_and_param_norms(encoder, decoder)
+        avg_grad_norm.append(gradnorm)
+        avg_param_norm.append(paramnorm)
+
         optimizer.step() # Update the parameters
 
         batches += 1
@@ -935,12 +973,25 @@ def train_epoch(epoch, encoder, decoder, device, dataloader, loss_fn, optimizer,
             execution_timer.record_time(event_name="Training-postprocess", event_type="stop")
 
     if use_tensorboard:
-        # Add the gradient values to Tensorboard for Biases and Weights
+        # Add the model layer gradient ad values to Tensorboard for Biases and Weights
         for name, param in encoder.named_parameters():
-            tensorboard_logger.add_histogram(name + '/grad', param.grad, global_step=epoch)
+            # Check if parameter is weight or bias, IMPROVEMENT: SHOULD WE also check if is CNN or Linear layer?
+            if name.endswith('weight'):
+                tensorboard_logger.add_histogram('Encoder-Weight-Gradients/' + name, param.grad, global_step=epoch) # Weight gradients
+                tensorboard_logger.add_histogram('Encoder-Weight-Values/' + name, param.data, global_step=epoch) # Weights
+            elif name.endswith('bias'):
+                tensorboard_logger.add_histogram('Encoder-Bias-Gradients/' + name, param.grad, global_step=epoch) # Bias gradients
+                tensorboard_logger.add_histogram('Encoder-Bias-Values/' + name, param.data, global_step=epoch) # Bias values
 
         for name, param in decoder.named_parameters():
-            tensorboard_logger.add_histogram(name + '/grad', param.grad, global_step=epoch)
+            if name.endswith('weight'):
+                tensorboard_logger.add_histogram('Decoder-Weight-Gradients/' + name, param.grad, global_step=epoch)
+                tensorboard_logger.add_histogram('Decoder-Weight-Values/' + name, param.data, global_step=epoch)
+            elif name.endswith('bias'):
+                tensorboard_logger.add_histogram('Decoder-Bias-Gradients/' + name, param.grad, global_step=epoch)
+                tensorboard_logger.add_histogram('Decoder-Bias-Values/' + name, param.data, global_step=epoch)
+
+
 
     return avg_epoch_loss
 
@@ -1026,14 +1077,19 @@ def test_epoch(encoder, decoder, device, dataloader, loss_fn, time_dimension=100
 
             iterator.set_postfix({'Partial Batch Loss': loss.data.item()})
 
+            # Fully filled track
             performance_test_comparator = gaped_renormalisation(loss_comparator.clone(), reconstruction_threshold, time_dimension) #DOES THIS NEED TO BE DETACHED??? # Clone the loss comparator to avoid modifying the original
+            # Model direct output
             performance_test_data = gaped_renormalisation(decoded_data.clone(), reconstruction_threshold, time_dimension, quantise_reconstructed_output) #DOES THIS NEED TO BE DETACHED??? # Clone the decoded data to avoid modifying the original
-
-
+            # sparse data 
+            masked_performance_test_comparator = sparse_output_batch.clone()# Clone the noised input data to avoid modifying the original - no need for renorm as this tensor was never normalised
+            # Masked model output
+            masked_performance_test_data = masking_recovery(noised_sparse_reslimited_batch.clone(), performance_test_data.clone(), time_dimension, debug_masking_function) # Clone the decoded data to avoid modifying the original
+            
             #Run additional perfomrnace metrics
             if use_execution_timer:
                 execution_timer.record_time(event_name="Testing-performance_metrics", event_type="start")
-            quantify_loss_performance(performance_test_comparator, performance_test_data, time_dimension)
+            quantify_loss_performance(performance_test_comparator, performance_test_data, time_dimension, masked_performance_test_comparator, masked_performance_test_data)
             if use_execution_timer:
                 execution_timer.record_time(event_name="Testing-performance_metrics", event_type="stop")
 
@@ -1325,6 +1381,22 @@ if __name__ == "__main__":
         epoch_avg_loss_true_positive_xy = []
         epoch_avg_loss_true_positive_tof = []
         epoch_avg_loss_false_positive_xy = []
+
+        epoch_avg_grad_norm = []
+        epoch_avg_param_norm = []
+
+        masked_epoch_avg_loss_mse = []
+        masked_epoch_avg_loss_mae = []
+        masked_epoch_avg_loss_snr = []
+        masked_epoch_avg_loss_psnr = []
+        masked_epoch_avg_loss_ssim = []
+        masked_epoch_avg_loss_nmi = []
+        masked_epoch_avg_loss_cc = []
+        masked_epoch_avg_loss_true_positive_xy = []
+        masked_epoch_avg_loss_true_positive_tof = []
+        masked_epoch_avg_loss_false_positive_xy = []
+        
+        #%% - Telemetry Initialisation
 
         # Initialises pixel belief telemetry
         telemetry = []# [[0, 0, xdim * ydim]]                # Initalises the telemetry memory, starting values are 0, 0.5, 0.5 which corrspond to epoch(0), above_threshold(0.5), below_threshold(0.5)
@@ -1621,6 +1693,22 @@ if __name__ == "__main__":
             epoch_start_time = time.time()           # Starts the epoch timer # What is the purpose of this?????????
             for epoch in loop_range:                 # For loop that iterates over the number of epochs where 'epoch' takes the values (0) to (num_epochs - 1)
                         
+                # Pause training execution system - usefull fo local machine training when needing to free up GPU/CPU for other tasks 
+                if allow_training_pausing:
+                    # Check for a pause request
+                    if os.path.exists(pause_file_location):
+                        if use_execution_timer:
+                            execution_timer.record_time(event_name="Training Paused by User", event_type="start") #records the time the program started
+                        loop_range.set_postfix("Training Paused... (remove pause file to resume)")
+                        while os.path.exists(pause_file_location):
+                            time.sleep(pause_file_check_interval)  # Sleep for the specified interval before checking again
+                        if use_execution_timer:
+                            execution_timer.record_time(event_name="Training Resumed by User", event_type="stop") #records the time the program started
+                        loop_range.set_postfix("Training Resumed...")
+
+
+
+
                 #  trackinng progress for exit cleanup
                 if use_execution_timer:
                     execution_timer.record_time(event_name="Epoch", event_type="start") #records the time the program started
@@ -1641,6 +1729,20 @@ if __name__ == "__main__":
                 avg_loss_true_positive_xy = []
                 avg_loss_true_positive_tof = []
                 avg_loss_false_positive_xy = []
+
+                avg_grad_norm = []
+                avg_param_norm = []
+
+                masked_avg_loss_mse = []
+                masked_avg_loss_mae = []
+                masked_avg_loss_snr = []
+                masked_avg_loss_psnr = []
+                masked_avg_loss_ssim = []
+                masked_avg_loss_nmi = []
+                masked_avg_loss_cc = []
+                masked_avg_loss_true_positive_xy = []
+                masked_avg_loss_true_positive_tof = []
+                masked_avg_loss_false_positive_xy = []
 
                 ### Training (use the train function)
                 if not validation_mode:
@@ -1742,22 +1844,99 @@ if __name__ == "__main__":
                 epoch_avg_loss_true_positive_tof.append(np.mean(avg_loss_true_positive_tof))
                 epoch_avg_loss_false_positive_xy.append(np.mean(avg_loss_false_positive_xy))
 
+                epoch_avg_grad_norm.append(np.mean(avg_grad_norm))
+                epoch_avg_param_norm.append(np.mean(avg_param_norm))
+
+                masked_epoch_avg_loss_mse.append(np.mean(masked_avg_loss_mse))
+                masked_epoch_avg_loss_mae.append(np.mean(masked_avg_loss_mae))
+                masked_epoch_avg_loss_snr.append(np.mean(masked_avg_loss_snr))
+                masked_epoch_avg_loss_psnr.append(np.mean(masked_avg_loss_psnr))
+                masked_epoch_avg_loss_ssim.append(np.mean(masked_avg_loss_ssim))
+                masked_epoch_avg_loss_nmi.append(np.mean(masked_avg_loss_nmi))
+                masked_epoch_avg_loss_cc.append(np.mean(masked_avg_loss_cc))
+                masked_epoch_avg_loss_true_positive_xy.append(np.mean(masked_avg_loss_true_positive_xy))
+                masked_epoch_avg_loss_true_positive_tof.append(np.mean(masked_avg_loss_true_positive_tof))
+                masked_epoch_avg_loss_false_positive_xy.append(np.mean(masked_avg_loss_false_positive_xy))
+
                 ## NEw tensorboard implemntation for perf data traking
                 if use_tensorboard:
                     tensorboard_logger.add_scalar('Loss/Train', train_loss, epoch)
                     tensorboard_logger.add_scalar('Loss/Test', test_loss, epoch)
                     # tensorboard_logger.add_scalar('Epoch Time', epoch_time, epoch)
-                    tensorboard_logger.add_scalar('Model/Learning Rate', get_learning_rate(optim), epoch)
-                    tensorboard_logger.add_scalar('Model/Gradient Norm', get_gradient_norm(encoder, decoder), epoch)
+
+                    # # Optimiser Parameters
+                    # for key, value in get_optimiser_parameters(optim).items():
+                    #     tensorboard_logger.add_scalar(f'Optimiser/{key}', value, epoch)
+
+                    # # NEW: log per param_group and expand non-scalars safely
+                    # for group_idx, group in enumerate(optim.param_groups):
+                    #     for key, value in group.items():
+                    #         if key == 'params':
+                    #             continue
+                    #         tag_base = f'Optimiser/group_{group_idx}/{key}'
+
+                    #         # # Torch tensors
+                    #         # if isinstance(value, torch.Tensor):
+                    #         #     if value.numel() == 1:
+                    #         #         tensorboard_logger.add_scalar(tag_base, value.item(), epoch)
+                    #         #     else:
+                    #         #         for i, v in enumerate(value.flatten().tolist()):
+                    #         #             tensorboard_logger.add_scalar(f'{tag_base}_{i}', float(v), epoch)
+                    #         #     continue
+
+                    #         # # Tuples/lists (e.g., betas)
+                    #         # if isinstance(value, (tuple, list)):
+                    #         #     for i, v in enumerate(value):
+                    #         #         if isinstance(v, (int, float, bool)):
+                    #         #             tensorboard_logger.add_scalar(f'{tag_base}_{i}', float(v), epoch)
+                    #         #     continue
+
+                    #         # Plain scalars
+                    #         if isinstance(value, (int, float, bool)):
+                    #             tensorboard_logger.add_scalar(tag_base, float(value), epoch)
+                    #             continue
+
+                            # Unsupported types (dict/str/etc.) -> skip
+                            # pass
+
+                    optimiser_learning_rate = get_learning_rate(optim)
+
+                    tensorboard_logger.add_scalar('Model/Learning Rate', optimiser_learning_rate, epoch)
+                    tensorboard_logger.add_scalar('Model/Parameter Norm', np.mean(avg_param_norm), epoch)
+                    tensorboard_logger.add_scalar('Model/Gradient Norm', np.mean(avg_grad_norm), epoch)
+                    tensorboard_logger.add_scalar('Model/Relative Update', (optimiser_learning_rate * np.mean(avg_grad_norm)) / (np.mean(avg_param_norm) + eps), epoch)
+
+
                     tensorboard_logger.add_scalar('Performance/MSE', np.mean(avg_loss_mse), epoch)
                     tensorboard_logger.add_scalar('Performance/MAE', np.mean(avg_loss_mae), epoch)
                     tensorboard_logger.add_scalar('Performance/SNR', np.mean(avg_loss_snr), epoch)
                     tensorboard_logger.add_scalar('Performance/SSIM', np.mean(avg_loss_ssim), epoch)
                     tensorboard_logger.add_scalar('Performance/NMI', np.mean(avg_loss_nmi), epoch)
                     tensorboard_logger.add_scalar('Performance/CC', np.mean(avg_loss_cc), epoch)
+
                     tensorboard_logger.add_scalar('Performance/True Positive XY (%)', np.mean(avg_loss_true_positive_xy), epoch)
                     tensorboard_logger.add_scalar('Performance/True Positive TOF (%)', np.mean(avg_loss_true_positive_tof), epoch)
-                    tensorboard_logger.add_scalar('Performance/False Positives', np.mean(avg_loss_false_positive_xy), epoch)
+                    false_positives_value = np.mean(avg_loss_false_positive_xy)  # As used multiple times so performance gain by storing in variable
+                    tensorboard_logger.add_scalar('Performance/False Positives', false_positives_value, epoch)
+
+                    masked_false_positive_value = np.mean(masked_avg_loss_false_positive_xy)  # As used multiple times so performance gain by storing in variable
+                    ### np.mean(avg_loss_false_positive_xy) this is the total number of false signal points in the model output i.e (the noise the model could not clean + all model induced false signal points)
+                    ### np.mean(masked_avg_loss_false_positive_xy) after masking this number is only the false positives casued by there being a noise point on the input that was not cleaned by the model and so masking could not deal with it
+                    model_induced_distortions = false_positives_value - masked_false_positive_value
+                    remaining_input_noise = false_positives_value - model_induced_distortions
+                    tensorboard_logger.add_scalar('ModelOutputNoise/ModelNoise', model_induced_distortions, epoch)
+                    tensorboard_logger.add_scalar('ModelOutputNoise/RemainingInputNoise', remaining_input_noise, epoch)
+
+
+                    tensorboard_logger.add_scalar('Masked Performance/MSE', np.mean(masked_avg_loss_mse), epoch)
+                    tensorboard_logger.add_scalar('Masked Performance/MAE', np.mean(masked_avg_loss_mae), epoch)
+                    tensorboard_logger.add_scalar('Masked Performance/SNR', np.mean(masked_avg_loss_snr), epoch)
+                    tensorboard_logger.add_scalar('Masked Performance/SSIM', np.mean(masked_avg_loss_ssim), epoch)
+                    tensorboard_logger.add_scalar('Masked Performance/NMI', np.mean(masked_avg_loss_nmi), epoch)
+                    tensorboard_logger.add_scalar('Masked Performance/CC', np.mean(masked_avg_loss_cc), epoch)
+                    tensorboard_logger.add_scalar('Masked Performance/True Positive XY (%)', np.mean(masked_avg_loss_true_positive_xy), epoch)
+                    tensorboard_logger.add_scalar('Masked Performance/True Positive TOF (%)', np.mean(masked_avg_loss_true_positive_tof), epoch)
+                    tensorboard_logger.add_scalar('Masked Performance/False Positives', masked_false_positive_value, epoch)
 
 
                 # check if current epoch is a multiple of 'model_checkpoint_interval' and if so save the model
@@ -1852,22 +2031,23 @@ if __name__ == "__main__":
                     #"record_biases": record_biases,
                     #"record_activity": record_activity,
                     "timeout_time": timeout_time,
+                    "dataset_size": num_of_files_in_path,
                 }
                , {
                    
-                    # "hparam/metric": train_loss,
-                    # "hparam/metric": test_loss,
-                    # "hparam/metric": epoch_avg_loss_mse[-1],
-                    # "hparam/metric": history_da['train_loss'][-1],
-                    # "hparam/metric": history_da['test_loss'][-1],
-                    # "hparam/metric": epoch_avg_loss_snr[-1],
-                    # "hparam/metric": epoch_avg_loss_psnr[-1],
-                    # "hparam/metric": epoch_avg_loss_ssim[-1],
-                    # "hparam/metric": epoch_avg_loss_nmi[-1],
-                    # "hparam/metric": epoch_avg_loss_cc[-1],
-                    "hparam/metric": epoch_avg_loss_true_positive_xy[-1],
-                    "hparam/metric": epoch_avg_loss_true_positive_tof[-1],
-                    "hparam/metric": epoch_avg_loss_false_positive_xy[-1],
+                    "metric/Train Loss": train_loss,
+                    "metric/Test Loss": test_loss,
+                    "metric/MSE": epoch_avg_loss_mse[-1],
+                    # "metric/metric": history_da['train_loss'][-1],
+                    # "hmetric/metric": history_da['test_loss'][-1],
+                    "metric/SNR": epoch_avg_loss_snr[-1],
+                    "metric/PSNR": epoch_avg_loss_psnr[-1],
+                    "metric/SSIM": epoch_avg_loss_ssim[-1],
+                    "metric/NMI": epoch_avg_loss_nmi[-1],
+                    "metric/CC": epoch_avg_loss_cc[-1],
+                    "metric/True Positive XY": epoch_avg_loss_true_positive_xy[-1],
+                    "metric/True Positive TOF": epoch_avg_loss_true_positive_tof[-1],
+                    "metric/False Positive XY": epoch_avg_loss_false_positive_xy[-1],
 
 
                 },
@@ -2011,7 +2191,7 @@ if __name__ == "__main__":
             output_file.write((f"Training Time: {format_time(training_time)}\n")) # Write the training time to the file
             #output_file.write((f"Avg Epoch Time: {format_time(np.mean(epoch_times_list))}\n")) # Write the training time per epoch to the file
             output_file.write((f"Avg Epoch Time: {format_time(training_time/max_epoch_reached)}\n")) # Write the training time per epoch to the file
-
+            output_file.write((f"Dataset size (num samples): {num_of_files_in_path}\n"))  # Write the dataset size to the file
             output_file.write((f"\nTorch Seed Val to Reproduce Run: {T_seed}\n")) 
             output_file.write((f"Numpy Seed Val to Reproduce Run: {N_seed}\n")) 
             if seeding_value:
