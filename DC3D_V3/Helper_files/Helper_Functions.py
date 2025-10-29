@@ -255,11 +255,21 @@ def plot_save_choice(plot_or_save, output_file_path=None, dpi=None):
     
 
 
-
+# Getting model parameters for logging
 
 def get_learning_rate(optimizer):
     for param_group in optimizer.param_groups:
         return param_group['lr']
+    
+def get_optimiser_parameters(optimizer):
+    optim_params = {}
+    for param_group in optimizer.param_groups:
+        for key, value in param_group.items():
+            if key != 'params':  # Skip the 'params' key as it contains the model parameters
+                optim_params[key] = value
+    return optim_params
+
+
     
 def get_gradient_norm(encoder, decoder):
     total_norm = 0.0
@@ -269,3 +279,29 @@ def get_gradient_norm(encoder, decoder):
             total_norm += param_norm.item() ** 2
     total_norm = total_norm ** (1. / 2)
     return total_norm   
+
+
+
+def get_grad_and_param_norms(*models, norm_type: float = 2.0, eps: float = 1e-12):
+    """
+    Function to calulate the gradient and parameter norms for a list of models.
+
+    Args:
+        *models: A list of PyTorch models (e.g., encoder, decoder).
+        norm_type (float): The type of norm to compute (default is 2 for L2 norm).
+        eps (float): A small value to prevent division by zero (default is 1e-12).  
+    
+    Returns (grad_norm, param_norm) aggregated (default L2) across provided models.
+
+
+    """
+    total_grad = 0.0
+    total_param = 0.0
+    for m in models:
+        for p in m.parameters():
+            if p.grad is not None:
+                total_grad += (p.grad.detach().norm(norm_type).item() ** norm_type)
+            total_param += (p.detach().norm(norm_type).item() ** norm_type)
+    grad_norm = (total_grad ** (1.0 / norm_type)) if total_grad > 0 else 0.0
+    param_norm = (total_param ** (1.0 / norm_type)) if total_param > 0 else eps
+    return float(grad_norm), float(param_norm)

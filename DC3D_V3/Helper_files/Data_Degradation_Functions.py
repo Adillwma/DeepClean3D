@@ -205,25 +205,31 @@ def signal_degredation(signal_settings, image_batch, physical_scale_parameters: 
 
     # Create the sparse signal
     if signal_points_r:
-        timer.record_time(event_name="Signal Degredation: Sparse Signal Creation", event_type="start")
+        if timer:
+            timer.record_time(event_name="Signal Degredation: Sparse Signal Creation", event_type="start")
         sparse_output_batch = create_sparse_signal(image_batch, signal_points_r)
-        timer.record_time(event_name="Signal Degredation: Sparse Signal Creation", event_type="stop")
+        if timer:
+            timer.record_time(event_name="Signal Degredation: Sparse Signal Creation", event_type="stop")
     else:
         sparse_output_batch = image_batch.clone()
 
     # Apply the detector resolution limits
     if x_std_dev_r != 0 or y_std_dev_r != 0 or tof_std_dev_r != 0:
-        timer.record_time(event_name="Signal Degredation: Detector Resolution Limits", event_type="start")
+        if timer:
+            timer.record_time(event_name="Signal Degredation: Detector Resolution Limits", event_type="start")
         sparse_and_resolution_limited_batch = simulate_detector_resolution(sparse_output_batch, x_std_dev_pixels, y_std_dev_pixels, tof_std_dev_pixels, time_dimension, device, clamp_photons_to_slice)
-        timer.record_time(event_name="Signal Degredation: Detector Resolution Limits", event_type="stop")
+        if timer:
+            timer.record_time(event_name="Signal Degredation: Detector Resolution Limits", event_type="stop")
     else:
         sparse_and_resolution_limited_batch = sparse_output_batch.clone()
     
     # Add noise points to the image
     if noise_points_r != 0:
-        timer.record_time(event_name="Signal Degredation: Noise Points", event_type="start")
+        if timer:
+            timer.record_time(event_name="Signal Degredation: Noise Points", event_type="start")
         noised_sparse_reslimited_batch = add_noise_points_to_batch_prenorm(sparse_and_resolution_limited_batch, noise_points_r, time_dimension)
-        timer.record_time(event_name="Signal Degredation: Noise Points", event_type="stop")
+        if timer:
+            timer.record_time(event_name="Signal Degredation: Noise Points", event_type="stop")
     else:
         noised_sparse_reslimited_batch = sparse_and_resolution_limited_batch.clone()
         

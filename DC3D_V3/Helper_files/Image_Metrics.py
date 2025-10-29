@@ -543,3 +543,22 @@ def f1_score(output, target):
         return f1
 
 
+
+
+if __name__== "__main__":
+    # testing compare_images_pixels2 function
+
+    clean_image = torch.tensor([[0, 0, 0, 0, 0],
+                                [0, 1, 2, 0, 0],
+                                [0, 0, 3, 0, 0],
+                                [0, 4, 0, 0, 0],
+                                [0, 0, 0, 0, 0]])
+    
+    denoised_image = torch.tensor([[0, 0, 0, 0, 0],
+                                  [0, 1, 0, 0, 0],  
+                                    [0, 0, 3, 0, 0],
+                                    [0, 0, 0, 0, 0],
+                                    [0, 0, 0, 0, 0]])
+    compare_images_pixels2(clean_image, denoised_image, debug_mode=True)
+
+    
