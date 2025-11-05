@@ -28,7 +28,7 @@ dataset_paths = [#"N:/DeepClean3D Project Folder/Yr 3 Project Datasets/V2_1K_FAS
 
 
 #%% - Run Settings
-model_save_name = "BASELINE_1Knoise"      # Name of the model to be saved, this will be the name of the folder that the model is saved in
+model_save_name = "BASELINE_500noise_35-350sig"      # Name of the model to be saved, this will be the name of the folder that the model is saved in
 num_epochs = 500                              # Set max number of epochs to run for. {Default = 100}
 timeout_time = False                         # Time in minuits to wait before stopping training, set to False to disable time based stopping. {Default = False}. NOTE! Program will allow the epoch currently in progress to conclude before stopping.
 
@@ -38,7 +38,7 @@ print_every_other = 5                        # [default = 2] 1 is to save/print 
 validation_mode = False                       # If set to True then validation mode is enabled, if False then training mode is used. In validation mode the model weights are not updated and the model is only evaluated on the validation dataset. {Default = False}
 
 allow_training_pausing = True              # If set to true then the training can be paused and resumed by creating a file called 'pause_training.txt' in the results folder, to resume training delete the file. {Default = True}
-pause_file_check_interval = 60                  # Number of seconds between each check for the pause file, only used if 'allow_training_pausing' is set to True. {Default = 60}
+pause_file_check_interval = 120                  # Number of seconds between each check for the pause file, only used if 'allow_training_pausing' is set to True. {Default = 60}
 pause_file_location = "DC3D_V3\Local_Program_Data\pause.txt"        # To set the location of the pause file to be checked for pausing training, only used if 'allow_training_pausing' is set to True. {Default = "DC3D_V3\Local_Program_Data\pause.txt"}
 
 #%% - Training Hyperparameter Settings
@@ -59,8 +59,8 @@ reconstruction_threshold = 0.25               # MUST BE BETWEEN 0-1  #Threshold 
 quantise_reconstructed_output = True
 
 #%% - Image Preprocessing Settings
-signal_points = 300#(25, 35)                    # Set the number of signal points to add
-noise_points = (0, 1000)                      # Set the number of noise points to add
+signal_points = (25, 350)                    # Set the number of signal points to add
+noise_points = (0, 500)                      # Set the number of noise points to add
 x_std_dev = 0                                # (mm) Set the standard deviation of the detectors error in the x axis
 y_std_dev = 0                                # (mm) Set the standard deviation of the detectors error in the y axis
 tof_std_dev = 0                              # (ns) Set the standard deviation of the detectors error in the time of flight 
@@ -77,7 +77,7 @@ shuffle_train_data = False #FIX CURRENLT BREAKS CODE CAUSING SAME ERROR AS FP16 
 data_loader_workers = 0# FIX!                # Number of workers to use for the data loader, 0 means all data loading will be done on the main thread, 1 means one worker will be used to load data in the background, 2 means two workers will be used etc. 
 pin_memory = False                           # [default = False] If set to true then the data loader will pin the memory for faster data transfer to the GPU, if set to false then the data loader will not pin the memory
 
-inject_seed_interval = 10                    # Number of epochs between each seed injection, set to False for no seed injection. Reinjects the original seeding value to deterministically recreate the same noise and signal points each epoch, this is useful for testing the effect of different hyperparameters on the same data or for allowing the training to see same images multiple times to improve performance
+inject_seed_interval = 250                    # Number of epochs between each seed injection, set to False for no seed injection. Reinjects the original seeding value to deterministically recreate the same noise and signal points each epoch, this is useful for testing the effect of different hyperparameters on the same data or for allowing the training to see same images multiple times to improve performance
 seeding_value = 10 #None                     # None gives no seeeding to RNG, if the value is set this is used for the RNG seeding for numpy, and torch libraries. {Default = None}
 
 # Input Data Settings
@@ -120,7 +120,7 @@ nonzero_loss_choice = 1                                 # Select loss function f
 start_from_pretrained_model = True                      # If set to true then the model will load the pretrained model and optimiser state dicts from the path below
 load_pretrained_optimiser = True                         # Only availible if above is set to true - (pretrain seems to perform better if this is set to true)
 
-pretrained_model_path =   r'N:\DeepClean3D Project Folder\Yr 3 Project Results\MID4__Long150K_DC3Dv1_5 - Training Results [30Hrs No Final Results Data]\Model_Checkpoints\Epoch_300\Combined_checkpoint_epoch_300.pth' #r'N:\Yr 3 Project Results\Online_RUN_020_PTfrom online19 PTfrm47 - Training Results\Model_Checkpoints\Epoch_170\Combined_V2_checkpoint.pth'      # Specify the path to the saved full state dictionary for pretraining
+pretrained_model_path = r'N:\DeepClean3D Project Folder\Yr 3 Project Results\MID53__BASELINE_1Knoise_continued - Training Results\Model_Checkpoints\Epoch_300\Combined_checkpoint_epoch_300.pth' #r'N:\DeepClean3D Project Folder\Yr 3 Project Results\MID52__BASELINE_1Knoise - Training Results\Model_Checkpoints\Epoch_340\Combined_checkpoint_epoch_340.pth' #r'N:\Yr 3 Project Results\Online_RUN_020_PTfrom online19 PTfrm47 - Training Results\Model_Checkpoints\Epoch_170\Combined_V2_checkpoint.pth'  # r'N:\DeepClean3D Project Folder\Yr 3 Project Results\MID4__Long150K_DC3Dv1_5 - Training Results [30Hrs No Final Results Data]\Model_Checkpoints\Epoch_300\Combined_checkpoint_epoch_300.pth' #r'N:\Yr 3 Project Results\Online_RUN_020_PTfrom online19 PTfrm47 - Training Results\Model_Checkpoints\Epoch_170\Combined_V2_checkpoint.pth'      # Specify the path to the saved full state dictionary for pretraining
 
 #%% - Normalisation Settings 
 masking_optimised_binary_norm = False        # If set to true then the model will use the binary normalisation method optimised for masking output. Otherwise will use the gaped custom normalisation optimised for the direct network output
@@ -180,19 +180,23 @@ plot_Graphwiz = True                         # [default = True]
 
 
 #%% - Advanced Debugging Settings
-eps = 1e-12                                    # Small value to prevent division by zero errors in non critical functions
+eps = 1e-12                                    # Small value to prevent division by zero errors where appropriate
 
+# Model
 print_encoder_debug = False                     # [default = False]  
 print_decoder_debug = False                     # [default = False] 
 print_network_summary = False                   # [Default = False] Prints the network summary to terminal
 
+# Funcntions
 debug_noise_function = False                    # [default = False]  
 debug_loader_batch = False                      # SAFELY REMOVE THIS PARAM!!!  #(Default = False) //INPUT 0 or 1//   #Setting debug loader batch will print to user the images taken in by the dataoader in this current batch and print the corresponding labels
 debug_model_exporter  = False                   # [default = False]
 
+# Dataset
 full_dataset_integrity_check = False            # [Default = False] V slow  #Checks the integrity of the dataset by checking shape of each item as opposed to when set to false which only checks one single random file in the dataset
 full_dataset_distribution_check = False         # [Default = False] V slow  #Checks the distribution of the dataset , false maesn no distributionn check is done
 
+# Performance (speed)
 use_execution_timer = False    #FIX!!     ###CONNECT!! # [Default = True] Uses the execution timer to time each module in the process
 run_profiler = False                            # [Default = False] Runs the cProfiler on the training loop to check for bottlenecks and slow functions
 run_pytorch_profiler = False # FIX!!
@@ -216,6 +220,8 @@ debug_hpo_perf_analysis = False
 
 
 #%% ################################## END OF USER SETTINGS ###################################
+print("\nInitialising Workers and Funtions...")
+
 
 def override_globals_with_cli():
     """
@@ -571,6 +577,9 @@ def quantify_loss_performance(clean_input_batch, noised_target_batch, time_dimen
     #avg_loss_false_negative_xy.append(loss_false_negative_xy / batch_size)
 
     avg_loss_snr.append((10*np.log10(signal_spatial_retention_raw/numof_false_positives_xy)/batch_size) if numof_false_positives_xy !=0 else 1000)  # Avoid div by 0 but needs a better value for this case!
+    # This means a positive SNR value is good as it means more signal than false positives
+    # A negative SNR value indicates more false positives than signal, but is not neccesarilly bad as it could still be less than the input noise level
+
     #avg_loss_snr.append(SNR2(clean_input_batch.squeeze(1), noised_target_batch.squeeze(1)))
 
     if reslimited_batch is not None and masked_batch is not None:  # RENAME ALL THESE VARIABLES PROPERLY!!!
@@ -1699,15 +1708,12 @@ if __name__ == "__main__":
                     if os.path.exists(pause_file_location):
                         if use_execution_timer:
                             execution_timer.record_time(event_name="Training Paused by User", event_type="start") #records the time the program started
-                        loop_range.set_postfix("Training Paused... (remove pause file to resume)")
+                        loop_range.set_postfix({"status": "Training Paused... (remove pause file to resume)"})
                         while os.path.exists(pause_file_location):
                             time.sleep(pause_file_check_interval)  # Sleep for the specified interval before checking again
                         if use_execution_timer:
                             execution_timer.record_time(event_name="Training Resumed by User", event_type="stop") #records the time the program started
-                        loop_range.set_postfix("Training Resumed...")
-
-
-
+                        loop_range.set_postfix({"status": "Training Resumed..."})
 
                 #  trackinng progress for exit cleanup
                 if use_execution_timer:
@@ -1782,7 +1788,6 @@ if __name__ == "__main__":
                                         )
                 if use_execution_timer:
                     execution_timer.record_time(event_name="Testing", event_type="stop") #records the time the program started
-
 
                 loop_range.set_postfix({'Train Loss': train_loss, 'Test Loss': test_loss})
 

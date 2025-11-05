@@ -54,14 +54,18 @@ class AsyncDataLoader:
         while True:
             for file_name in self.file_paths:
                 # Load the data from disk
-                self.timer.record_time(event_name="Load from Disk", event_type="start")
+                if self.timer:
+                    self.timer.record_time(event_name="Load from Disk", event_type="start")
                 sample = torch.load(file_name, map_location=self.device)
-                self.timer.record_time(event_name="Load from Disk", event_type="stop")
-                
+                if self.timer:
+                    self.timer.record_time(event_name="Load from Disk", event_type="stop")
+
                 # Convert to the correct precision
-                self.timer.record_time(event_name="Async Dtype Conversion", event_type="start")
+                if self.timer:
+                    self.timer.record_time(event_name="Async Dtype Conversion", event_type="start")
                 sample = sample.to(self.dtype)
-                self.timer.record_time(event_name="Async Dtype Conversion", event_type="stop")
+                if self.timer:
+                    self.timer.record_time(event_name="Async Dtype Conversion", event_type="stop")
 
                 # Add the data into the async queue
                 await self.async_queue.put([sample, file_name])
