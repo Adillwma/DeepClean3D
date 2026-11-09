@@ -1,0 +1,5 @@
+embeddings {
+  tensor_name: "latent_by_pattern:00000"
+  metadata_path: "00000/latent_by_pattern\\metadata.tsv"
+  tensor_path: "00000/latent_by_pattern\\tensors.tsv"
+}
